@@ -186,7 +186,7 @@ tap_on 'content-desc="Send"'
 wait_for_reply 60 || finish "FAIL chat: no reply with the chosen model and workspace"
 sleep 2
 shot 13-chat-workspace
-[ "$(run_as sh -c 'test -f files/rootfs/root/ci-project/note.txt && echo yes')" = yes ] || finish "FAIL the agent did not work in the chosen workspace"
+run_as test -f files/rootfs/root/ci-project/note.txt || finish "FAIL the agent did not work in the chosen workspace"
 
 echo "Settings"
 tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found"
@@ -202,7 +202,7 @@ adb shell input swipe 160 500 160 120 300; sleep 1
 shot 15-settings-keys
 adb shell input swipe 160 500 160 100 300; sleep 1
 shot 16-settings-rules
-[ "$(run_as sh -c 'grep -c OPENROUTER_API_KEY files/rootfs/root/.config/termant/keys.env')" = 1 ] || finish "FAIL the API key was not saved"
+run_as grep -q OPENROUTER_API_KEY files/rootfs/root/.config/termant/keys.env || finish "FAIL the API key was not saved"
 adb shell input keyevent 4
 sleep 2
 
