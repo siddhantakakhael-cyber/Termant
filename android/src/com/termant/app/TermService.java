@@ -9,7 +9,14 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Binder;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Vibrator;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -18,6 +25,8 @@ import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 
 /**
@@ -26,6 +35,12 @@ import java.util.List;
  */
 public class TermService extends Service implements TerminalSessionClient {
     static final String ACTION_EXIT = "com.termant.app.EXIT";
+    static final String ACTION_RING = "com.termant.app.RING";
+    static final String ACTION_STOP_RING = "com.termant.app.STOP_RING";
+    static final String EXTRA_LABEL = "label";
+    private static final String ALARM_CHANNEL = "alarm";
+    private static final int ALARM_NOTIFICATION_ID = 2;
+    private static final long RING_LIMIT_MS = 5 * 60 * 1000;
     static final int MAX_SESSIONS = 8;
     private static final String CHANNEL = "sessions";
     private static final int NOTIFICATION_ID = 1;
@@ -48,6 +63,17 @@ public class TermService extends Service implements TerminalSessionClient {
     }
 
     final List<TerminalSession> sessions = new ArrayList<>();
+    /** Sessions that were opened as AI agent tabs. */
+    final Set<TerminalSession> agentSessions = new HashSet<>();
+    private PhoneBridge bridge;
+    private MediaPlayer ringer;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable ringTimeout = new Runnable() {
+        @Override
+        public void run() {
+            stopRinging();
+        }
+    };
     private final IBinder binder = new LocalBinder();
     private Screen screen;
     private PowerManager.WakeLock wakeLock;
@@ -55,6 +81,7 @@ public class TermService extends Service implements TerminalSessionClient {
     @Override
     public void onCreate() {
         super.onCreate();
+        applyTerminalColors();
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL, getString(R.string.notification_channel), NotificationManager.IMPORTANCE_LOW);
@@ -62,12 +89,38 @@ public class TermService extends Service implements TerminalSessionClient {
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
         startForeground(NOTIFICATION_ID, buildNotification());
+        bridge = new PhoneBridge(this);
+        bridge.start();
+    }
+
+    /** Terminal palette matching the app's dark theme. */
+    private static void applyTerminalColors() {
+        String[] ansi = {
+                "#484f58", "#ff7b72", "#3fb950", "#d29922", "#58a6ff", "#bc8cff", "#39c5cf", "#b1bac4",
+                "#6e7681", "#ffa198", "#56d364", "#e3b341", "#79c0ff", "#d2a8ff", "#56d4dd", "#f0f6fc"};
+        java.util.Properties p = new java.util.Properties();
+        p.setProperty("foreground", "#e6edf3");
+        p.setProperty("background", "#0d1117");
+        p.setProperty("cursor", "#ff7a45");
+        for (int i = 0; i < ansi.length; i++) p.setProperty("color" + i, ansi[i]);
+        com.termux.terminal.TerminalColors.COLOR_SCHEME.updateWith(p);
+    }
+
+    /** Called when Ubuntu has just been (re)installed. */
+    void onUbuntuReady() {
+        if (bridge != null) bridge.publish();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_EXIT.equals(intent.getAction())) {
+        String action = intent == null ? null : intent.getAction();
+        if (ACTION_EXIT.equals(action)) {
             exit();
+        } else if (ACTION_RING.equals(action)) {
+            String label = intent.getStringExtra(EXTRA_LABEL);
+            startRinging(label == null ? "Alarm" : label);
+        } else if (ACTION_STOP_RING.equals(action)) {
+            stopRinging();
         }
         return START_NOT_STICKY;
     }
@@ -81,6 +134,8 @@ public class TermService extends Service implements TerminalSessionClient {
     public void onDestroy() {
         killAll();
         setWakeLock(false);
+        stopRinging();
+        if (bridge != null) bridge.stop();
         super.onDestroy();
     }
 
@@ -111,18 +166,21 @@ public class TermService extends Service implements TerminalSessionClient {
     void removeSession(TerminalSession session) {
         session.finishIfRunning();
         sessions.remove(session);
+        agentSessions.remove(session);
         changed();
     }
 
     void killAll() {
         for (TerminalSession s : sessions) s.finishIfRunning();
         sessions.clear();
+        agentSessions.clear();
     }
 
     /** Stops everything: sessions, notification, service and the screen. */
     void exit() {
         killAll();
         setWakeLock(false);
+        stopRinging();
         if (screen != null) screen.onExitRequested();
         stopForeground(true);
         stopSelf();
@@ -131,6 +189,74 @@ public class TermService extends Service implements TerminalSessionClient {
     private void changed() {
         getSystemService(NotificationManager.class).notify(NOTIFICATION_ID, buildNotification());
         if (screen != null) screen.onSessionListChanged();
+    }
+
+    // ------------------------------------------------------------ ringing
+
+    /** Plays the phone's alarm sound in a loop, with a notification to stop it. */
+    void startRinging(String label) {
+        stopRinging();
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationChannel channel = new NotificationChannel(
+                    ALARM_CHANNEL, "Alarms", NotificationManager.IMPORTANCE_HIGH);
+            channel.setSound(null, null); // the sound is played below, on the alarm volume
+            nm.createNotificationChannel(channel);
+        }
+        int immutable = Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0;
+        PendingIntent stop = PendingIntent.getService(this, 2,
+                new Intent(this, TermService.class).setAction(ACTION_STOP_RING), immutable);
+        PendingIntent open = PendingIntent.getActivity(this, 0,
+                new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), immutable);
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26
+                ? new Notification.Builder(this, ALARM_CHANNEL) : new Notification.Builder(this);
+        b.setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(label)
+                .setContentText(getString(R.string.alarm_ringing))
+                .setCategory(Notification.CATEGORY_ALARM)
+                .setOngoing(true)
+                .setContentIntent(stop)
+                .setFullScreenIntent(open, true)
+                .addAction(new Notification.Action.Builder(null, getString(R.string.alarm_stop), stop).build());
+        nm.notify(ALARM_NOTIFICATION_ID, b.build());
+
+        Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (sound == null) sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+        if (sound == null) sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        try {
+            MediaPlayer player = new MediaPlayer();
+            player.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
+            player.setDataSource(this, sound);
+            player.setLooping(true);
+            player.prepare();
+            player.start();
+            ringer = player;
+        } catch (Exception e) {
+            android.util.Log.e("Termant", "cannot play the alarm sound", e);
+        }
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null && v.hasVibrator()) v.vibrate(new long[]{0, 600, 400}, 0);
+        android.util.Log.i("Termant", "ringing: " + label);
+        handler.postDelayed(ringTimeout, RING_LIMIT_MS);
+    }
+
+    void stopRinging() {
+        handler.removeCallbacks(ringTimeout);
+        if (ringer != null) {
+            try {
+                ringer.stop();
+            } catch (Exception e) {
+                // not playing
+            }
+            ringer.release();
+            ringer = null;
+        }
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null) v.cancel();
+        getSystemService(NotificationManager.class).cancel(ALARM_NOTIFICATION_ID);
     }
 
     boolean hasWakeLock() {
@@ -193,6 +319,7 @@ public class TermService extends Service implements TerminalSessionClient {
             screen.onSessionExited(session);
         } else if (session.getExitStatus() == 0) {
             sessions.remove(session);
+            agentSessions.remove(session);
             if (sessions.isEmpty()) exit();
             else changed();
         }

@@ -1,0 +1,39 @@
+#!/bin/bash
+# Installs (once) and starts OpenCode, an open-source AI coding agent.
+#   termant-agent [--install-only] [opencode arguments]
+export PATH="$HOME/.opencode/bin:$PATH"
+
+if ! command -v opencode >/dev/null 2>&1; then
+  case "$(uname -m)" in
+    aarch64|x86_64) ;;
+    *) echo "OpenCode has no version for this phone's processor ($(uname -m))."; exit 1 ;;
+  esac
+  echo 'Setting up the AI agent (OpenCode). One-time download, about 100 MB.'
+  missing=
+  for tool in curl git tar python3; do command -v $tool >/dev/null 2>&1 || missing=1; done
+  [ -e /etc/ssl/certs/ca-certificates.crt ] || missing=1
+  if [ -n "$missing" ]; then
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      curl ca-certificates git tar python3 \
+      || { echo 'Could not install the tools the agent needs. Check your internet connection.'; exit 1; }
+  fi
+  curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path \
+    || { echo 'OpenCode could not be installed. Check your internet connection and try again.'; exit 1; }
+  command -v opencode >/dev/null 2>&1 || { echo 'OpenCode did not install correctly.'; exit 1; }
+fi
+
+# Tell the agent it lives on a phone and how to control it. The guide is
+# replaced on app updates unless you delete its first line.
+conf="$HOME/.config/opencode"
+mkdir -p "$conf"
+if [ ! -e "$conf/AGENTS.md" ] || head -n 1 "$conf/AGENTS.md" | grep -q termant-managed; then
+  cp /usr/local/lib/termant/AGENTS.md "$conf/AGENTS.md"
+fi
+if [ ! -e "$conf/opencode.json" ] && [ ! -e "$conf/opencode.jsonc" ]; then
+  cp /usr/local/lib/termant/opencode.jsonc "$conf/opencode.jsonc"
+fi
+
+if [ "$1" = --install-only ]; then exit 0; fi
+# The agent reads and edits files in its folder, so give it one of its own.
+if [ "$PWD" = "$HOME" ]; then mkdir -p "$HOME/workspace" && cd "$HOME/workspace"; fi
+exec opencode "$@"

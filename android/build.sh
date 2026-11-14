@@ -47,7 +47,7 @@ echo "== resources"
 
 echo "== java"
 "$BT/aapt2" link -o "$OUT/base.apk" -I "$ANDROID_JAR" --manifest AndroidManifest.xml \
-  --java "$OUT/gen" --extra-packages com.termux.view "$OUT/res.zip"
+  --java "$OUT/gen" --extra-packages com.termux.view -A assets "$OUT/res.zip"
 javac -source 8 -target 8 -nowarn -Xlint:-options \
   -bootclasspath "$ANDROID_JAR:$BT/core-lambda-stubs.jar" -d "$OUT/classes" \
   $(find src vendor/termux/java stubs "$OUT/gen" -name '*.java')
@@ -60,7 +60,7 @@ cp "$OUT/dex/classes.dex" "$OUT/apk/"
 package() { # <name> [extra aapt2 link flags]
   local name="$1"; shift
   "$BT/aapt2" link -o "$OUT/$name-unsigned.apk" -I "$ANDROID_JAR" \
-    --manifest AndroidManifest.xml --extra-packages com.termux.view "$@" "$OUT/res.zip"
+    --manifest AndroidManifest.xml --extra-packages com.termux.view -A assets "$@" "$OUT/res.zip"
   (cd "$OUT/apk" && zip -q -r "$OUT/$name-unsigned.apk" classes.dex lib)
   "$BT/zipalign" -f -p 4 "$OUT/$name-unsigned.apk" "$OUT/$name-aligned.apk"
   "$BT/apksigner" sign --key "$SIGN_KEY" --cert "$SIGN_CERT" --out "$name.apk" "$OUT/$name-aligned.apk"

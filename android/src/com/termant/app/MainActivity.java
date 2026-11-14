@@ -10,7 +10,15 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.speech.RecognizerIntent;
+import android.text.InputType;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -43,9 +51,25 @@ public class MainActivity extends Activity
         implements ServiceConnection, TermService.Screen, Installer.Listener, TerminalViewClient {
 
     private static final int REQUEST_STORAGE = 1;
-    private static final int BAR = 0xff1d1d1d;
-    private static final int KEY_TEXT = 0xffdddddd;
-    private static final int ACCENT = 0xffe95420;
+    private static final int REQUEST_VOICE = 2;
+
+    // One palette for the whole app; the terminal colours in TermService match it.
+    static final int BG = 0xff0d1117;
+    static final int SURFACE = 0xff161b22;
+    static final int SURFACE_HIGH = 0xff262c36;
+    static final int TEXT = 0xffe6edf3;
+    static final int MUTED = 0xff8b949e;
+    static final int ACCENT = 0xffff7a45;
+    static final int ON_ACCENT = 0xff1b0d05;
+    static final int ERROR = 0xffffa198;
+    private static final int KEY_TEXT = 0xffc9d1d9;
+
+    private static boolean onScreen;
+
+    /** Android only lets an app open other apps (Clock, browser) while it is visible. */
+    static boolean isOnScreen() {
+        return onScreen;
+    }
 
     private SharedPreferences prefs;
     private TermService service;
@@ -59,6 +83,8 @@ public class MainActivity extends Activity
     private View terminalPanel;
     private TerminalView terminal;
     private LinearLayout tabs;
+    private View askBar, keyRows;
+    private EditText askInput;
     private TextView ctrlKey, altKey;
     private boolean ctrl, alt;
     private int fontSize, minFont, maxFont;
@@ -92,6 +118,18 @@ public class MainActivity extends Activity
         if (!bindService(intent, this, 0)) {
             throw new IllegalStateException("Cannot bind terminal service");
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        onScreen = true;
+    }
+
+    @Override
+    protected void onStop() {
+        onScreen = false;
+        super.onStop();
     }
 
     @Override
@@ -137,6 +175,19 @@ public class MainActivity extends Activity
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     }
 
+    private Drawable rounded(int color, float radiusDp) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(color);
+        d.setCornerRadius(dp(radiusDp));
+        return d;
+    }
+
+    /** Rounded shape that shows a touch ripple. */
+    private Drawable pressable(int color, float radiusDp) {
+        return new RippleDrawable(ColorStateList.valueOf(0x40ffffff),
+                rounded(color, radiusDp), rounded(0xffffffff, radiusDp));
+    }
+
     private int dp(float value) {
         return (int) TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_DIP, value, getResources().getDisplayMetrics());
@@ -147,43 +198,60 @@ public class MainActivity extends Activity
     private View buildSetupPanel() {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(28), dp(96), dp(28), dp(28));
-        box.setBackgroundColor(0xff300a24);
+        box.setPadding(dp(28), dp(72), dp(28), dp(28));
+
+        TextView mark = new TextView(this);
+        mark.setText(">_");
+        mark.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        mark.setTextSize(22);
+        mark.setTextColor(ON_ACCENT);
+        mark.setGravity(Gravity.CENTER);
+        mark.setBackground(rounded(ACCENT, 16));
+        box.addView(mark, new LinearLayout.LayoutParams(dp(64), dp(64)));
 
         TextView title = new TextView(this);
         title.setText(R.string.setup_title);
         title.setTextSize(24);
-        title.setTextColor(0xffffffff);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(TEXT);
+        title.setPadding(0, dp(24), 0, 0);
         box.addView(title);
 
         setupStatus = new TextView(this);
         setupStatus.setTextSize(15);
-        setupStatus.setTextColor(0xffeadfe6);
-        setupStatus.setPadding(0, dp(24), 0, dp(10));
+        setupStatus.setTextColor(TEXT);
+        setupStatus.setPadding(0, dp(20), 0, dp(10));
         box.addView(setupStatus);
 
         setupBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         setupBar.setMax(100);
+        setupBar.setProgressTintList(ColorStateList.valueOf(ACCENT));
+        setupBar.setIndeterminateTintList(ColorStateList.valueOf(ACCENT));
+        setupBar.setProgressBackgroundTintList(ColorStateList.valueOf(SURFACE_HIGH));
         box.addView(setupBar, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView note = new TextView(this);
         note.setText(R.string.setup_note);
         note.setTextSize(13);
-        note.setTextColor(0xffc9b3c2);
+        note.setTextColor(MUTED);
         note.setPadding(0, dp(20), 0, 0);
         box.addView(note);
 
         setupError = new TextView(this);
         setupError.setTextSize(14);
-        setupError.setTextColor(0xffffb4a1);
-        setupError.setPadding(0, dp(20), 0, dp(12));
+        setupError.setTextColor(ERROR);
+        setupError.setPadding(0, dp(20), 0, dp(16));
         setupError.setTextIsSelectable(true);
         setupError.setVisibility(View.GONE);
         box.addView(setupError);
 
         retryButton = new Button(this);
         retryButton.setText(R.string.retry);
+        retryButton.setAllCaps(false);
+        retryButton.setTextSize(16);
+        retryButton.setTextColor(ON_ACCENT);
+        retryButton.setBackground(pressable(ACCENT, 26));
         retryButton.setVisibility(View.GONE);
         retryButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -196,7 +264,7 @@ public class MainActivity extends Activity
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(0xff300a24);
+        scroll.setBackgroundColor(BG);
         scroll.addView(box);
         return scroll;
     }
@@ -222,7 +290,9 @@ public class MainActivity extends Activity
 
     @Override
     public void onInstallDone() {
-        if (service != null) showTerminal();
+        if (service == null) return;
+        service.onUbuntuReady();
+        showTerminal();
     }
 
     @Override
@@ -239,48 +309,57 @@ public class MainActivity extends Activity
     private View buildTerminalPanel() {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setBackgroundColor(0xff000000);
+        panel.setBackgroundColor(BG);
 
-        // top bar: session tabs, new session, menu
+        // top bar: session tabs, AI, new session, menu
         LinearLayout bar = new LinearLayout(this);
-        bar.setBackgroundColor(BAR);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(dp(6), dp(6), dp(2), dp(6));
         tabs = new LinearLayout(this);
+        tabs.setGravity(Gravity.CENTER_VERTICAL);
         HorizontalScrollView tabScroll = new HorizontalScrollView(this);
         tabScroll.setHorizontalScrollBarEnabled(false);
         tabScroll.addView(tabs);
-        bar.addView(tabScroll, new LinearLayout.LayoutParams(0, dp(40), 1));
+        bar.addView(tabScroll, new LinearLayout.LayoutParams(0, dp(36), 1));
 
-        TextView ai = barButton("AI", getString(R.string.menu_agent));
+        TextView ai = label("\u2726 AI", getString(R.string.menu_agent));
         ai.setTextSize(14);
         ai.setTypeface(Typeface.DEFAULT_BOLD);
-        ai.setTextColor(ACCENT);
+        ai.setTextColor(ON_ACCENT);
+        ai.setBackground(pressable(ACCENT, 18));
+        ai.setPadding(dp(14), 0, dp(14), 0);
         ai.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 openAgent();
             }
         });
-        bar.addView(ai, new LinearLayout.LayoutParams(dp(48), dp(40)));
+        LinearLayout.LayoutParams aiSize = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(36));
+        aiSize.leftMargin = dp(6);
+        bar.addView(ai, aiSize);
 
-        TextView plus = barButton("+", getString(R.string.menu_new));
-        plus.setTextSize(22);
+        TextView plus = label("+", getString(R.string.menu_new));
+        plus.setTextSize(24);
+        plus.setBackground(pressable(0x00000000, 18));
         plus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 newSession();
             }
         });
-        bar.addView(plus, new LinearLayout.LayoutParams(dp(48), dp(40)));
+        bar.addView(plus, new LinearLayout.LayoutParams(dp(44), dp(36)));
 
-        final TextView more = barButton("\u22ee", "Menu");
+        final TextView more = label("\u22ee", "Menu");
         more.setTextSize(20);
+        more.setBackground(pressable(0x00000000, 18));
         more.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showMenu(more);
             }
         });
-        bar.addView(more, new LinearLayout.LayoutParams(dp(48), dp(40)));
+        bar.addView(more, new LinearLayout.LayoutParams(dp(40), dp(36)));
         panel.addView(bar);
 
         terminal = new TerminalView(this, null);
@@ -289,42 +368,147 @@ public class MainActivity extends Activity
         terminal.setTypeface(Typeface.MONOSPACE);
         terminal.setFocusable(true);
         terminal.setFocusableInTouchMode(true);
-        terminal.setKeepScreenOn(false);
-        panel.addView(terminal, new LinearLayout.LayoutParams(
+        terminal.setBackgroundColor(BG);
+        FrameLayout terminalFrame = new FrameLayout(this);
+        terminalFrame.setPadding(dp(6), 0, dp(6), 0);
+        terminalFrame.addView(terminal, match());
+        panel.addView(terminalFrame, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
-        panel.addView(buildKeyRow(new Object[][]{
+        askBar = buildAskBar();
+        askBar.setVisibility(View.GONE);
+        panel.addView(askBar);
+
+        LinearLayout rows = new LinearLayout(this);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        rows.setPadding(dp(3), dp(2), dp(3), dp(4));
+        rows.addView(buildKeyRow(new Object[][]{
                 {"ESC", KeyEvent.KEYCODE_ESCAPE}, {"/", "/"}, {"-", "-"},
                 {"HOME", KeyEvent.KEYCODE_MOVE_HOME}, {"\u2191", KeyEvent.KEYCODE_DPAD_UP},
                 {"END", KeyEvent.KEYCODE_MOVE_END}, {"PGUP", KeyEvent.KEYCODE_PAGE_UP}}));
-        panel.addView(buildKeyRow(new Object[][]{
+        rows.addView(buildKeyRow(new Object[][]{
                 {"TAB", KeyEvent.KEYCODE_TAB}, {"CTRL", "ctrl"}, {"ALT", "alt"},
                 {"\u2190", KeyEvent.KEYCODE_DPAD_LEFT}, {"\u2193", KeyEvent.KEYCODE_DPAD_DOWN},
                 {"\u2192", KeyEvent.KEYCODE_DPAD_RIGHT}, {"PGDN", KeyEvent.KEYCODE_PAGE_DOWN}}));
+        keyRows = rows;
+        panel.addView(rows);
         return panel;
     }
 
-    private TextView barButton(String label, String description) {
+    /** Plain-language box for the agent: a normal text field, so any keyboard, language or voice typing works. */
+    private View buildAskBar() {
+        LinearLayout pill = new LinearLayout(this);
+        pill.setGravity(Gravity.CENTER_VERTICAL);
+        pill.setBackground(rounded(SURFACE, 24));
+        pill.setPadding(dp(16), 0, dp(4), 0);
+
+        askInput = new EditText(this);
+        askInput.setHint(R.string.ask_hint);
+        askInput.setHintTextColor(MUTED);
+        askInput.setTextColor(TEXT);
+        askInput.setTextSize(15);
+        askInput.setBackground(null);
+        askInput.setPadding(0, dp(10), 0, dp(10));
+        askInput.setMaxLines(4);
+        askInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        askInput.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        askInput.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean focused) {
+                // The extra keys are for the terminal; hide them while writing a request.
+                keyRows.setVisibility(focused ? View.GONE : View.VISIBLE);
+            }
+        });
+        pill.addView(askInput, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView mic = label("\uD83C\uDFA4", getString(R.string.ask_voice));
+        mic.setTextSize(17);
+        mic.setBackground(pressable(0x00000000, 20));
+        mic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startVoice();
+            }
+        });
+        pill.addView(mic, new LinearLayout.LayoutParams(dp(40), dp(40)));
+
+        TextView send = label("\u2191", getString(R.string.ask_send));
+        send.setTextSize(20);
+        send.setTypeface(Typeface.DEFAULT_BOLD);
+        send.setTextColor(ON_ACCENT);
+        send.setBackground(pressable(ACCENT, 20));
+        send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendToAgent(askInput.getText().toString());
+            }
+        });
+        pill.addView(send, new LinearLayout.LayoutParams(dp(40), dp(40)));
+
+        FrameLayout wrap = new FrameLayout(this);
+        wrap.setPadding(dp(8), dp(4), dp(8), dp(4));
+        wrap.addView(pill, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return wrap;
+    }
+
+    private void sendToAgent(String text) {
+        final String request = text.trim();
+        final TerminalSession session = current;
+        if (request.isEmpty() || session == null || !session.isRunning() || session.getEmulator() == null) return;
+        askInput.setText("");
+        session.getEmulator().paste(request.replace('\n', ' '));
+        // Enter goes separately, after the agent's input box has taken the text.
+        terminal.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (session.isRunning()) session.write("\r");
+            }
+        }, 200);
+    }
+
+    private void startVoice() {
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        try {
+            startActivityForResult(i, REQUEST_VOICE);
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.voice_missing, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request != REQUEST_VOICE || result != RESULT_OK || data == null) return;
+        java.util.ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+        if (heard == null || heard.isEmpty()) return;
+        // Shown in the box first, so a misheard request can be fixed before sending.
+        askInput.setText(heard.get(0));
+        askInput.setSelection(askInput.length());
+        askInput.requestFocus();
+    }
+
+    private TextView label(String text, String description) {
         TextView v = new TextView(this);
-        v.setText(label);
+        v.setText(text);
         v.setContentDescription(description);
         v.setGravity(Gravity.CENTER);
         v.setTextColor(KEY_TEXT);
         v.setClickable(true);
         v.setFocusable(false);
-        TypedValue ripple = new TypedValue();
-        getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true);
-        v.setBackgroundResource(ripple.resourceId);
+        v.setSingleLine(true);
         return v;
     }
 
     private View buildKeyRow(Object[][] keys) {
         LinearLayout row = new LinearLayout(this);
-        row.setBackgroundColor(BAR);
         for (final Object[] key : keys) {
-            final TextView v = barButton((String) key[0], (String) key[0]);
-            v.setTextSize(13);
+            final TextView v = label((String) key[0], (String) key[0]);
+            v.setTextSize(12);
             v.setTypeface(Typeface.DEFAULT_BOLD);
+            v.setBackground(pressable(SURFACE, 8));
             if ("ctrl".equals(key[1])) ctrlKey = v;
             if ("alt".equals(key[1])) altKey = v;
             v.setOnClickListener(new View.OnClickListener() {
@@ -334,7 +518,9 @@ public class MainActivity extends Activity
                     onExtraKey(key[1]);
                 }
             });
-            row.addView(v, new LinearLayout.LayoutParams(0, dp(38), 1));
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(0, dp(36), 1);
+            size.setMargins(dp(2), dp(2), dp(2), dp(2));
+            row.addView(v, size);
         }
         return row;
     }
@@ -363,8 +549,10 @@ public class MainActivity extends Activity
     }
 
     private void showModifiers() {
-        ctrlKey.setTextColor(ctrl ? ACCENT : KEY_TEXT);
-        altKey.setTextColor(alt ? ACCENT : KEY_TEXT);
+        ctrlKey.setTextColor(ctrl ? ON_ACCENT : KEY_TEXT);
+        ctrlKey.setBackground(pressable(ctrl ? ACCENT : SURFACE, 8));
+        altKey.setTextColor(alt ? ON_ACCENT : KEY_TEXT);
+        altKey.setBackground(pressable(alt ? ACCENT : SURFACE, 8));
     }
 
     private void showTerminal() {
@@ -376,6 +564,7 @@ public class MainActivity extends Activity
         } catch (Exception e) {
             Toast.makeText(this, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
         }
+        service.onUbuntuReady();
         if (service.sessions.isEmpty()) {
             service.createSession();
         }
@@ -391,6 +580,12 @@ public class MainActivity extends Activity
         terminal.attachSession(session);
         terminal.onScreenUpdated();
         rebuildTabs();
+        boolean agent = service != null && service.agentSessions.contains(session);
+        askBar.setVisibility(agent ? View.VISIBLE : View.GONE);
+        if (!agent) {
+            keyRows.setVisibility(View.VISIBLE);
+            terminal.requestFocus();
+        }
     }
 
     private void newSession() {
@@ -406,6 +601,7 @@ public class MainActivity extends Activity
         TerminalSession s = agent
                 ? service.createSession(Ubuntu.agentCommand(this))
                 : service.createSession();
+        if (s != null && agent) service.agentSessions.add(s);
         if (s == null) {
             Toast.makeText(this, R.string.max_sessions, Toast.LENGTH_SHORT).show();
             return;
@@ -429,18 +625,21 @@ public class MainActivity extends Activity
         int i = 0;
         for (final TerminalSession s : service.sessions) {
             i++;
+            boolean agent = service.agentSessions.contains(s);
             String title = s.getTitle();
-            String label = (title == null || title.isEmpty()) ? "Ubuntu " + i : i + ": " + title;
-            if (label.length() > 22) label = label.substring(0, 21) + "\u2026";
-            TextView tab = barButton(label, label);
+            String name = agent ? "\u2726 Agent" : (title == null || title.isEmpty()) ? "Ubuntu" : title;
+            String text = i + "  " + name;
+            if (text.length() > 20) text = text.substring(0, 19) + "\u2026";
+            TextView tab = label(text, text);
             tab.setTextSize(13);
             tab.setPadding(dp(14), 0, dp(14), 0);
-            tab.setSingleLine(true);
             if (s == current) {
-                tab.setTextColor(0xffffffff);
-                tab.setBackgroundColor(0xff000000);
+                tab.setTextColor(TEXT);
+                tab.setTypeface(Typeface.DEFAULT_BOLD);
+                tab.setBackground(pressable(SURFACE_HIGH, 18));
             } else {
-                tab.setTextColor(0xff9a9a9a);
+                tab.setTextColor(MUTED);
+                tab.setBackground(pressable(0x00000000, 18));
             }
             tab.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -448,8 +647,10 @@ public class MainActivity extends Activity
                     select(s);
                 }
             });
-            tabs.addView(tab, new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            size.rightMargin = dp(4);
+            tabs.addView(tab, size);
         }
     }
 

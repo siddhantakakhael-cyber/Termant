@@ -23,6 +23,12 @@
     <string name="notification_text_many">%1$d sessions running</string>
     <string name="notification_exit">Exit</string>
 
+    <string name="alarm_ringing">Tap to stop</string>
+    <string name="alarm_stop">Stop</string>
+    <string name="ask_hint">Ask the agent… Hindi or English</string>
+    <string name="ask_send">Send</string>
+    <string name="ask_voice">Speak</string>
+    <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>
     <string name="menu_new">New session</string>
     <string name="menu_agent">AI agent (OpenCode)</string>
     <string name="menu_close">Close session</string>
