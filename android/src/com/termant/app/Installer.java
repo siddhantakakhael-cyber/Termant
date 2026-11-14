@@ -72,6 +72,7 @@ final class Installer {
                 try {
                     install(app);
                 } catch (Throwable t) {
+                    android.util.Log.e("Termant", "Ubuntu setup failed", t);
                     error = describe(t);
                 }
                 final String result = error;

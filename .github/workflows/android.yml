@@ -39,8 +39,8 @@ jobs:
           target: default
           disk-size: 6000M
           disable-animations: true
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: bash android/ci/emulator-test.sh ci-out 2>&1 | tee ci-out/test.log
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -dns-server 8.8.8.8,1.1.1.1
+          script: bash -o pipefail -c "bash android/ci/emulator-test.sh ci-out 2>&1 | tee ci-out/test.log"
 
       # Build output is also pushed to a hidden ref so it can be read with git.
       - name: Publish logs
