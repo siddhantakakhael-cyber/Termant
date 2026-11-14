@@ -25,7 +25,7 @@
 
     <string name="alarm_ringing">Tap to stop</string>
     <string name="alarm_stop">Stop</string>
-    <string name="ask_hint">Ask the agent… Hindi or English</string>
+    <string name="ask_hint">Ask in Hindi or English…</string>
     <string name="ask_send">Send</string>
     <string name="ask_voice">Speak</string>
     <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>

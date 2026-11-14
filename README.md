@@ -57,6 +57,35 @@ Build it yourself with `android/build.sh` (Android SDK + NDK, JDK 17; no Gradle)
 Release APKs are signed with a public test key (`android/keystore/README.md`), so only
 install APKs from this repository's Releases page.
 
+## Phone control
+
+The agent can use the phone, not only write code. Open the AI tab and type (or
+tap the microphone and say) what you want in Hindi, Hinglish or English:
+
+| You say | What happens |
+| --- | --- |
+| `mujhe subah 7 baje utha dena` | an alarm for 07:00 is set in the phone's Clock app |
+| `3 minute baad chai ka timer bajana` | Termant rings after 3 minutes |
+| `torch on karo` | the flashlight turns on |
+
+It does this with the `phone` command, which also works by hand in any tab:
+
+```
+phone alarm 07:00 Wake up     phone timer 10m Tea      phone ring / phone stop
+phone notify "Title" "Text"   phone say "hello"        phone torch on|off
+phone battery                 phone vibrate 500        phone clipboard get|set
+phone open https://…          phone wake on|off        phone help
+```
+
+If the Clock app cannot be used (for example Termant is not on screen),
+Termant sets its own alarm and rings itself. If `phone alarm` fails
+altogether, the agent is told to write a small Python script that waits until
+the time and rings, and to run it; that only works while Termant stays running.
+
+Limits: an alarm kept by Termant itself is lost if the phone restarts or the
+app is force-stopped; alarms in the Clock app are not. The request is sent to
+OpenCode's free model service, so it needs internet.
+
 ## Web terminal
 
 A real Ubuntu terminal in your browser. Packages you install stay installed.

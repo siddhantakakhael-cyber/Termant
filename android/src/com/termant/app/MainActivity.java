@@ -651,6 +651,17 @@ public class MainActivity extends Activity
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
             size.rightMargin = dp(4);
             tabs.addView(tab, size);
+            if (s == current) {
+                // keep the open tab in view when there are more tabs than fit
+                final View shown = tab;
+                tabs.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        shown.requestRectangleOnScreen(
+                                new android.graphics.Rect(0, 0, shown.getWidth(), shown.getHeight()), false);
+                    }
+                });
+            }
         }
     }
 
