@@ -67,6 +67,37 @@ The real Ubuntu terminal is one tap away: **>_ Terminal** at the top. **Chat**
 (or Back) in the terminal returns to the chat. The first chat message downloads
 the agent (OpenCode, about 100 MB).
 
+## Automation rules
+
+Ask once, and the app keeps doing it by itself:
+
+| You say | Rule the agent creates |
+| --- | --- |
+| `roz raat 11 baje WiFi band karo` | `phone rule add at 23:00 -- phone wifi off` |
+| `jab charging lage toh backup chalao` | `phone rule add charging -- bash /root/backup.sh` |
+| `WiFi se judte hi mummy ko message bhejo` | `phone rule add wifi-connected -- phone sms +91… "…"` |
+
+Triggers: `at HH:MM` (every day), `charging`, `unplugged`, `battery-below N`,
+`wifi-connected`, `wifi-lost`, `boot`. The action is any command in Ubuntu.
+Rules are listed in **Settings** (switch off or delete there) and with
+`phone rule list`. A rule that fails shows a notification.
+
+Limits: there is no trigger for a place, a weekday or a date; "when I reach
+home" can only be approximated by `wifi-connected`, which fires on any Wi-Fi.
+Rules stop if Termant is force-stopped or closed with **Exit**; after a phone
+restart they come back by themselves. Some phones kill background apps
+aggressively: exclude Termant from battery optimisation there. Sending SMS
+needs the SMS permission, which Android asks for the first time.
+
+## Settings: model, workspace, your own API key
+
+Under the chat are two chips: the **workspace folder** the agent works in and
+the **model** that answers. The gear button opens Settings, where you can also
+enter your own API key (Anthropic, OpenAI, Google Gemini, OpenRouter, Groq,
+DeepSeek). With a key, that provider's models appear in the model list and are
+billed to your account; without one, free models are used. Keys are stored only
+on the phone, in Ubuntu at `~/.config/termant/keys.env`.
+
 ## Phone control
 
 The agent can use the phone, not only write code. In the chat, type (or
