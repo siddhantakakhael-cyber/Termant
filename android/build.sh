@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the Termant APKs with plain Android SDK tools (no Gradle, no Maven).
+# Builds the Termant APKs with plain Android SDK tools: no Gradle, no Maven.
 #
 # Needs: Android SDK (ANDROID_HOME) with build-tools, a platform and the NDK;
 #        JDK 17; python3; dpkg-deb; zip.
