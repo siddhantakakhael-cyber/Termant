@@ -72,3 +72,4 @@ echo "== package and sign"
 package Termant
 package Termant-debug --debug-mode
 ls -l Termant.apk Termant-debug.apk
+# 0.6.0
