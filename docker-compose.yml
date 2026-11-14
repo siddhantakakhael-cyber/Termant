@@ -1,0 +1,30 @@
+services:
+  termant:
+    build: .
+    hostname: ubuntu
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # CHANGE THIS. Anyone with the password gets a root shell.
+      TERMANT_PASSWORD: ${TERMANT_PASSWORD:?Set TERMANT_PASSWORD (see README)}
+    # Everything apt, pip, npm etc. write to is kept in named volumes, so
+    # installed packages and files survive restarts, rebuilds and upgrades.
+    # (/bin, /sbin and /lib are symlinks into /usr on Ubuntu.)
+    volumes:
+      - usr:/usr
+      - etc:/etc
+      - var:/var
+      - opt:/opt
+      - srv:/srv
+      - root:/root
+      - home:/home
+
+volumes:
+  usr:
+  etc:
+  var:
+  opt:
+  srv:
+  root:
+  home:
