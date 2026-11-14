@@ -33,8 +33,9 @@ echo "== terminal pty helper (NDK)"
   NDK_PROJECT_PATH="$OUT" \
   APP_BUILD_SCRIPT="$PWD/vendor/termux/jni/Android.mk" \
   APP_ABI="$ABIS" APP_PLATFORM=android-24 \
-  NDK_OUT="$OUT/obj" NDK_LIBS_OUT="$OUT/apk/lib" >/dev/null
+  NDK_OUT="$OUT/obj" NDK_LIBS_OUT="$OUT/ndk-libs" >/dev/null
 for abi in $ABIS; do
+  cp "$OUT/ndk-libs/$abi/libtermux.so" "$OUT/apk/lib/$abi/"
   for f in libproot.so libproot-loader.so libtalloc.so libtermux.so; do
     [ -f "$OUT/apk/lib/$abi/$f" ] || { echo "missing lib/$abi/$f"; exit 1; }
   done
