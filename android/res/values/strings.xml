@@ -24,6 +24,7 @@
     <string name="notification_exit">Exit</string>
 
     <string name="menu_new">New session</string>
+    <string name="menu_agent">AI agent (OpenCode)</string>
     <string name="menu_close">Close session</string>
     <string name="menu_paste">Paste</string>
     <string name="menu_reset">Reset terminal</string>
@@ -41,5 +42,5 @@
     <string name="reinstall_confirm">Erase and reinstall</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
-    <string name="about_text">Termant %1$s\n\nA real Ubuntu 24.04 userland on your phone, without root. Install software with:\n\n    apt update\n    apt install &lt;package&gt;\n\nPinch to change text size. Long-press to select and copy.\n\nOpen source (GPLv3). Terminal by Termux, userland by PRoot, system by Ubuntu.</string>
+    <string name="about_text">Termant %1$s\n\nA real Ubuntu 24.04 userland on your phone, without root. Install software with:\n\n    apt update\n    apt install &lt;package&gt;\n\nTap AI for OpenCode, an AI coding agent that can write and run code for you.\n\nPinch to change text size. Long-press to select and copy.\n\nOpen source (GPLv3). Terminal by Termux, userland by PRoot, system by Ubuntu, agent by OpenCode.</string>
 </resources>

@@ -50,6 +50,7 @@ shot 2-terminal
 
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t.sh'" < android/ci/guest-test.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t2.sh'" < android/ci/guest-test2.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t3.sh'" < android/ci/guest-test3.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -69,5 +70,11 @@ wait_for_end files/rootfs/root/result2.txt 24 || { run_as cat files/rootfs/root/
 run_as cat files/rootfs/root/result2.txt > "$OUT/result2.txt"
 shot 4-second-start
 grep -q '^Hello, world!' "$OUT/result2.txt" || finish "FAIL package gone after restart"
+
+echo "AI agent"
+type_line 'sh%st3.sh'
+wait_for_end files/rootfs/root/result3.txt 180 || { run_as cat files/rootfs/root/result3.txt > "$OUT/result3.txt"; shot 5-agent-timeout; finish "FAIL agent test did not finish"; }
+run_as cat files/rootfs/root/result3.txt > "$OUT/result3.txt"
+grep -q '^version-exit=0' "$OUT/result3.txt" || finish "FAIL OpenCode did not install or start"
 
 finish PASS

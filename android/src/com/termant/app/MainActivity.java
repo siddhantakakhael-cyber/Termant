@@ -250,6 +250,18 @@ public class MainActivity extends Activity
         tabScroll.addView(tabs);
         bar.addView(tabScroll, new LinearLayout.LayoutParams(0, dp(40), 1));
 
+        TextView ai = barButton("AI", getString(R.string.menu_agent));
+        ai.setTextSize(14);
+        ai.setTypeface(Typeface.DEFAULT_BOLD);
+        ai.setTextColor(ACCENT);
+        ai.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openAgent();
+            }
+        });
+        bar.addView(ai, new LinearLayout.LayoutParams(dp(48), dp(40)));
+
         TextView plus = barButton("+", getString(R.string.menu_new));
         plus.setTextSize(22);
         plus.setOnClickListener(new View.OnClickListener() {
@@ -360,6 +372,7 @@ public class MainActivity extends Activity
         terminalPanel.setVisibility(View.VISIBLE);
         try {
             Ubuntu.prepareHost(this);
+            Ubuntu.refreshFiles(this);
         } catch (Exception e) {
             Toast.makeText(this, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
         }
@@ -381,8 +394,18 @@ public class MainActivity extends Activity
     }
 
     private void newSession() {
+        openSession(false);
+    }
+
+    private void openAgent() {
+        openSession(true);
+    }
+
+    private void openSession(boolean agent) {
         if (service == null) return;
-        TerminalSession s = service.createSession();
+        TerminalSession s = agent
+                ? service.createSession(Ubuntu.agentCommand(this))
+                : service.createSession();
         if (s == null) {
             Toast.makeText(this, R.string.max_sessions, Toast.LENGTH_SHORT).show();
             return;
@@ -436,6 +459,7 @@ public class MainActivity extends Activity
         PopupMenu popup = new PopupMenu(this, anchor);
         Menu m = popup.getMenu();
         m.add(0, 1, 0, R.string.menu_new);
+        m.add(0, 10, 0, R.string.menu_agent);
         m.add(0, 2, 0, R.string.menu_close);
         m.add(0, 3, 0, R.string.menu_paste);
         m.add(0, 4, 0, R.string.menu_reset);
@@ -487,6 +511,9 @@ public class MainActivity extends Activity
                 break;
             case 9:
                 showAbout();
+                break;
+            case 10:
+                openAgent();
                 break;
             default:
                 break;

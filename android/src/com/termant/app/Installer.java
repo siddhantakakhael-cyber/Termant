@@ -252,7 +252,7 @@ final class Installer {
         }
     }
 
-    private static void write(File f, String text) throws IOException {
+    static void write(File f, String text) throws IOException {
         File dir = f.getParentFile();
         if (dir != null) dir.mkdirs();
         // Replace rather than follow: the image may ship a dangling symlink here.
@@ -270,11 +270,7 @@ final class Installer {
         // apt cannot switch to its unprivileged "_apt" user without real root.
         write(new File(root, "etc/apt/apt.conf.d/99termant"),
                 "APT::Sandbox::User \"root\";\n");
-        write(new File(root, "etc/profile.d/termant.sh"),
-                "if [ ! -e \"$HOME/.termant-welcome\" ]; then\n"
-                        + "  touch \"$HOME/.termant-welcome\"\n"
-                        + "  printf '\\nWelcome to Ubuntu on Termant.\\nInstall software with:\\n  apt update\\n  apt install <package>\\n\\n'\n"
-                        + "fi\n");
+        Ubuntu.refreshFiles(c);
         write(new File(root, "usr/local/lib/termant/setup.sh"),
                 "#!/bin/sh\n"
                         + "# Give Android's numeric groups a name so tools do not complain.\n"

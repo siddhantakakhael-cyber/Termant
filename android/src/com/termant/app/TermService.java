@@ -91,11 +91,15 @@ public class TermService extends Service implements TerminalSessionClient {
     // ------------------------------------------------------------ sessions
 
     TerminalSession createSession() {
+        return createSession(Ubuntu.shellCommand(this));
+    }
+
+    TerminalSession createSession(String[] command) {
         if (sessions.size() >= MAX_SESSIONS) return null;
         TerminalSession session = new TerminalSession(
                 Ubuntu.proot(this).getPath(),
                 getFilesDir().getPath(),
-                Ubuntu.shellCommand(this),
+                command,
                 Ubuntu.hostEnvironment(this),
                 5000,
                 this);

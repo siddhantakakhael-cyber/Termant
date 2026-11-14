@@ -8,6 +8,7 @@ import android.system.Os;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -166,4 +167,59 @@ final class Ubuntu {
     static String[] shellCommand(Context c) {
         return command(c, "/bin/bash", "-l");
     }
+
+    /** Starts the AI agent; when it closes (or cannot start) the tab becomes a normal shell. */
+    static String[] agentCommand(Context c) {
+        return command(c, "/bin/bash", "-l", "-c", "termant-agent; exec /bin/bash -l");
+    }
+
+    /**
+     * Small files Termant adds to Ubuntu. Rewritten on every start so that
+     * app updates reach systems that are already installed.
+     */
+    static void refreshFiles(Context c) throws IOException {
+        File root = rootfs(c);
+        Installer.write(new File(root, "etc/profile.d/termant.sh"),
+                "export PATH=\"$HOME/.opencode/bin:$PATH\"\n"
+                        + "if [ ! -e \"$HOME/.termant-welcome\" ]; then\n"
+                        + "  touch \"$HOME/.termant-welcome\"\n"
+                        + "  printf '\\nWelcome to Ubuntu on Termant.\\nInstall software with:\\n"
+                        + "  apt update\\n  apt install <package>\\n"
+                        + "AI coding agent: tap AI, or run\\n  termant-agent\\n\\n'\n"
+                        + "fi\n");
+
+        File agent = new File(root, "usr/local/bin/termant-agent");
+        Installer.write(agent, AGENT_SCRIPT);
+        try {
+            Os.chmod(agent.getPath(), 0755);
+        } catch (Exception e) {
+            throw new IOException("chmod " + agent + ": " + e.getMessage());
+        }
+    }
+
+    private static final String AGENT_SCRIPT = "#!/bin/bash\n"
+            + "# Installs (once) and starts OpenCode, an open-source AI coding agent.\n"
+            + "#   termant-agent [--install-only] [opencode arguments]\n"
+            + "export PATH=\"$HOME/.opencode/bin:$PATH\"\n"
+            + "if ! command -v opencode >/dev/null 2>&1; then\n"
+            + "  case \"$(uname -m)\" in\n"
+            + "    aarch64|x86_64) ;;\n"
+            + "    *) echo \"OpenCode has no version for this phone's processor ($(uname -m)).\"; exit 1 ;;\n"
+            + "  esac\n"
+            + "  echo 'Setting up the AI agent (OpenCode). One-time download, about 60 MB.'\n"
+            + "  missing=\n"
+            + "  for tool in curl git tar; do command -v $tool >/dev/null 2>&1 || missing=1; done\n"
+            + "  [ -e /etc/ssl/certs/ca-certificates.crt ] || missing=1\n"
+            + "  if [ -n \"$missing\" ]; then\n"
+            + "    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \\\n"
+            + "      curl ca-certificates git tar || { echo 'Could not install the tools OpenCode needs. Check your internet connection.'; exit 1; }\n"
+            + "  fi\n"
+            + "  curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path \\\n"
+            + "    || { echo 'OpenCode could not be installed. Check your internet connection and try again.'; exit 1; }\n"
+            + "  command -v opencode >/dev/null 2>&1 || { echo 'OpenCode did not install correctly.'; exit 1; }\n"
+            + "fi\n"
+            + "if [ \"$1\" = --install-only ]; then exit 0; fi\n"
+            + "# The agent reads and edits files in its folder, so give it one of its own.\n"
+            + "if [ \"$PWD\" = \"$HOME\" ]; then mkdir -p \"$HOME/workspace\" && cd \"$HOME/workspace\"; fi\n"
+            + "exec opencode \"$@\"\n";
 }
