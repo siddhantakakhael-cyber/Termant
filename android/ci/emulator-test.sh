@@ -26,13 +26,8 @@ wait_for_end() { # <file in app data> <tries of 5 s>
 }
 type_line() { adb shell input text "$1"; adb shell input keyevent 66; }
 
-echo "waiting for the emulator's network"
-for _ in $(seq 1 30); do
-  adb shell ping -c 1 -W 3 cdimage.ubuntu.com >/dev/null 2>&1 && break
-  sleep 4
-done
-adb shell ping -c 1 -W 3 8.8.8.8 2>&1 | tail -2
-adb shell ping -c 1 -W 3 cdimage.ubuntu.com 2>&1 | tail -2
+# Give the freshly booted emulator a moment to bring its network up.
+sleep 20
 
 adb install -g android/Termant-debug.apk || finish "FAIL install"
 adb logcat -c
@@ -44,7 +39,7 @@ echo "waiting for Ubuntu setup"
 ok=
 for _ in $(seq 1 180); do
   if run_as test -f files/installed; then ok=1; break; fi
-  if adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell grep -q "Setup did not finish" /sdcard/ui.xml; then
+  if adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell "grep -q 'Setup did not finish' /sdcard/ui.xml"; then
     break
   fi
   sleep 4

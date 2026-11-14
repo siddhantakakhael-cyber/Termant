@@ -36,7 +36,7 @@ echo "== terminal pty helper (NDK)"
   NDK_OUT="$OUT/obj" NDK_LIBS_OUT="$OUT/ndk-libs" >/dev/null
 for abi in $ABIS; do
   cp "$OUT/ndk-libs/$abi/libtermux.so" "$OUT/apk/lib/$abi/"
-  for f in libproot.so libproot-loader.so libtalloc.so libtermux.so; do
+  for f in libproot.so libproot-loader.so libtalloc.so libandroid-shmem.so libtermux.so; do
     [ -f "$OUT/apk/lib/$abi/$f" ] || { echo "missing lib/$abi/$f"; exit 1; }
   done
 done

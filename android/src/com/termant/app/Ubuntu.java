@@ -88,7 +88,7 @@ final class Ubuntu {
         File loader32 = new File(dir, "libproot-loader32.so");
         if (loader32.exists()) env.add("PROOT_LOADER_32=" + loader32.getPath());
         env.add("PROOT_TMP_DIR=" + new File(c.getFilesDir(), "tmp").getPath());
-        env.add("LD_LIBRARY_PATH=" + new File(c.getFilesDir(), "lib").getPath());
+        env.add("LD_LIBRARY_PATH=" + new File(c.getFilesDir(), "lib").getPath() + ":" + dir.getPath());
         env.add("HOME=" + c.getFilesDir().getPath());
         env.add("PATH=/system/bin");
         return env.toArray(new String[0]);

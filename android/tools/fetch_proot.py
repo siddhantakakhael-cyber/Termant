@@ -11,7 +11,8 @@ Android accepts for bundled native files (lib*.so):
     libproot.so           the proot program
     libproot-loader.so    its program loader
     libproot-loader32.so  loader for 32-bit programs (64-bit ARM only)
-    libtalloc.so          the library proot links against (libtalloc.so.2)
+    libtalloc.so          library proot links against (as libtalloc.so.2)
+    libandroid-shmem.so   library proot links against
 """
 import glob
 import hashlib
@@ -78,6 +79,12 @@ def main(dest):
             if len(libs) != 1:
                 raise SystemExit(f"expected one libtalloc, found {libs}")
             shutil.copy(libs[0], os.path.join(target, "libtalloc.so"))
+            shmem = fetch_package(index, "libandroid-shmem", work)
+            shutil.copy(os.path.join(shmem, "lib/libandroid-shmem.so"), target)
+        needed = subprocess.run(["readelf", "-d", os.path.join(target, "libproot.so")],
+                                capture_output=True, text=True).stdout
+        print("  proot needs:", " ".join(
+            line.split("[")[1].rstrip("]") for line in needed.splitlines() if "NEEDED" in line))
         for f in sorted(os.listdir(target)):
             os.chmod(os.path.join(target, f), 0o755)
 
