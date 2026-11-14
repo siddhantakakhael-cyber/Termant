@@ -30,5 +30,5 @@ echo "== agent sets an alarm"
 timeout 240 opencode run --standalone --auto "mujhe subah 7 baje utha dena" 2>&1 | tail -40; echo "wake-exit=$?"
 echo "== raw output of a coding request (what the chat has to read)"
 timeout 240 opencode run --standalone --auto --continue "Write hi.py that prints hi, run it, and tell me what it printed" </dev/null 2>&1 | cat -v | tail -60; echo "code-exit=$?"
-echo "== timed rule"; cat /root/timed.txt; echo "timed-exit=$?"; phone rule list
+echo "== timed rule"; for i in $(seq 1 30); do [ -f /root/timed.txt ] && break; sleep 5; done; date; cat /root/timed.txt; echo "timed-exit=$?"; phone rule list
 echo TERMANT-TEST-END
