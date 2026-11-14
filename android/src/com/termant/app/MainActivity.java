@@ -19,6 +19,8 @@ import android.speech.RecognizerIntent;
 import android.text.InputType;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+
+import java.util.List;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -52,6 +54,7 @@ public class MainActivity extends Activity
 
     private static final int REQUEST_STORAGE = 1;
     private static final int REQUEST_VOICE = 2;
+    private static final int REQUEST_SMS = 3;
 
     // One palette for the whole app; the terminal colours in TermService match it.
     static final int BG = 0xff0d1117;
@@ -82,6 +85,8 @@ public class MainActivity extends Activity
 
     private View terminalPanel;
     private ChatView chatPanel;
+    private SettingsView settingsPanel;
+    private static MainActivity visible;
     private TerminalView terminal;
     private LinearLayout tabs;
     private View askBar, keyRows;
@@ -116,8 +121,46 @@ public class MainActivity extends Activity
             public void onVoice() {
                 startVoice();
             }
+
+            @Override
+            public void onSettings() {
+                showSettings();
+            }
+
+            @Override
+            public void onPickWorkspace() {
+                pickWorkspace();
+            }
+
+            @Override
+            public void onPickModel() {
+                pickModel(false);
+            }
         });
+        settingsPanel = new SettingsView(this, new SettingsView.Host() {
+            @Override
+            public void onCloseSettings() {
+                showChat();
+            }
+
+            @Override
+            public void onPickModel() {
+                pickModel(false);
+            }
+
+            @Override
+            public void onPickWorkspace() {
+                pickWorkspace();
+            }
+
+            @Override
+            public void onAskSms() {
+                askForSms();
+            }
+        });
+        settingsPanel.setVisibility(View.GONE);
         rootView.addView(chatPanel, match());
+        rootView.addView(settingsPanel, match());
         rootView.addView(terminalPanel, match());
         rootView.addView(setupPanel, match());
         chatPanel.setVisibility(View.GONE);
@@ -138,11 +181,13 @@ public class MainActivity extends Activity
     protected void onStart() {
         super.onStart();
         onScreen = true;
+        visible = this;
     }
 
     @Override
     protected void onStop() {
         onScreen = false;
+        if (visible == this) visible = null;
         super.onStop();
     }
 
@@ -150,6 +195,7 @@ public class MainActivity extends Activity
     protected void onDestroy() {
         Installer.detach(this);
         chatPanel.detach();
+        settingsPanel.detach();
         if (service != null) {
             service.setScreen(null);
             service = null;
@@ -181,7 +227,7 @@ public class MainActivity extends Activity
 
     @Override
     public void onBackPressed() {
-        if (terminalPanel.getVisibility() == View.VISIBLE) {
+        if (terminalPanel.getVisibility() == View.VISIBLE || settingsPanel.getVisibility() == View.VISIBLE) {
             showChat();
             return;
         }
@@ -291,6 +337,7 @@ public class MainActivity extends Activity
     private void startInstall() {
         terminalPanel.setVisibility(View.GONE);
         chatPanel.setVisibility(View.GONE);
+        settingsPanel.setVisibility(View.GONE);
         setupPanel.setVisibility(View.VISIBLE);
         setupError.setVisibility(View.GONE);
         retryButton.setVisibility(View.GONE);
@@ -588,6 +635,7 @@ public class MainActivity extends Activity
         }
         service.onUbuntuReady();
         chatPanel.attach(service.chat);
+        settingsPanel.attach(service.rules);
         if (service.terminalShown) showTerminal();
         else showChat();
     }
@@ -597,7 +645,140 @@ public class MainActivity extends Activity
         hideKeyboard();
         setupPanel.setVisibility(View.GONE);
         terminalPanel.setVisibility(View.GONE);
+        settingsPanel.setVisibility(View.GONE);
+        chatPanel.refreshChips();
         chatPanel.setVisibility(View.VISIBLE);
+    }
+
+    private void showSettings() {
+        hideKeyboard();
+        settingsPanel.refresh();
+        chatPanel.setVisibility(View.GONE);
+        settingsPanel.setVisibility(View.VISIBLE);
+    }
+
+    /** Asks Android for permission to send text messages, if the app is on screen. */
+    static void askForSms() {
+        if (visible != null) {
+            visible.requestPermissions(new String[]{Manifest.permission.SEND_SMS}, REQUEST_SMS);
+        }
+    }
+
+    private void settingsChanged() {
+        chatPanel.refreshChips();
+        settingsPanel.refresh();
+    }
+
+    // ------------------------------------------------------------ workspace and model
+
+    private void pickWorkspace() {
+        final List<String> folders = Config.workspaces(this);
+        String[] names = new String[folders.size() + 1];
+        int current = -1;
+        for (int i = 0; i < folders.size(); i++) {
+            String f = folders.get(i);
+            names[i] = f.equals("/sdcard") ? getString(R.string.workspace_storage)
+                    : f.startsWith("/root/") ? "~/" + f.substring(6) : f;
+            if (f.equals(Config.workspace(this))) current = i;
+        }
+        names[folders.size()] = getString(R.string.workspace_new);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.workspace_title)
+                .setSingleChoiceItems(names, current, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        if (which == folders.size()) newWorkspace();
+                        else useWorkspace(folders.get(which));
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void newWorkspace() {
+        final EditText box = new EditText(this);
+        box.setHint(R.string.workspace_new_hint);
+        box.setSingleLine(true);
+        FrameLayout wrap = new FrameLayout(this);
+        wrap.setPadding(dp(20), dp(8), dp(20), 0);
+        wrap.addView(box);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.workspace_title)
+                .setView(wrap)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String name = box.getText().toString().trim();
+                        if (!name.matches("[A-Za-z0-9_][A-Za-z0-9._-]{0,40}")) {
+                            Toast.makeText(MainActivity.this, R.string.workspace_bad_name, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        new java.io.File(Ubuntu.rootfs(MainActivity.this), "root/" + name).mkdirs();
+                        useWorkspace("/root/" + name);
+                    }
+                })
+                .show();
+    }
+
+    private void useWorkspace(String path) {
+        if (!path.equals(Config.workspace(this))) {
+            Config.setWorkspace(this, path);
+            // OpenCode keeps conversations per folder, so the next message starts a new one
+            if (service != null) service.chat.startOver();
+        }
+        settingsChanged();
+    }
+
+    private void pickModel(boolean reloaded) {
+        if (service == null) return;
+        final List<String> models = Config.cachedModels(this);
+        if (models.isEmpty() && !reloaded) {
+            loadModels();
+            return;
+        }
+        String[] names = new String[models.size() + 2];
+        names[0] = getString(R.string.model_auto_long);
+        int current = Config.model(this).isEmpty() ? 0 : -1;
+        for (int i = 0; i < models.size(); i++) {
+            names[i + 1] = models.get(i);
+            if (models.get(i).equals(Config.model(this))) current = i + 1;
+        }
+        names[models.size() + 1] = getString(R.string.model_refresh);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.model_title)
+                .setSingleChoiceItems(names, current, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        if (which == models.size() + 1) {
+                            loadModels();
+                            return;
+                        }
+                        Config.setModel(MainActivity.this, which == 0 ? "" : models.get(which - 1));
+                        settingsChanged();
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void loadModels() {
+        Toast.makeText(this, R.string.model_loading, Toast.LENGTH_SHORT).show();
+        service.chat.loadModels(new Chat.ModelsCallback() {
+            @Override
+            public void onModels(List<String> found) {
+                if (isFinishing() || isDestroyed()) return;
+                if (found == null) {
+                    boolean downloaded = new java.io.File(Ubuntu.rootfs(MainActivity.this),
+                            "root/.opencode/bin/opencode").exists();
+                    Toast.makeText(MainActivity.this,
+                            downloaded ? R.string.model_failed : R.string.model_not_ready, Toast.LENGTH_LONG).show();
+                }
+                pickModel(true);
+            }
+        });
     }
 
     private void showTerminal() {
@@ -785,6 +966,10 @@ public class MainActivity extends Activity
 
     @Override
     public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        if (request == REQUEST_SMS) {
+            settingsPanel.refresh();
+            return;
+        }
         if (request != REQUEST_STORAGE) return;
         boolean ok = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
         Toast.makeText(this, ok ? R.string.storage_granted : R.string.storage_denied, Toast.LENGTH_LONG).show();

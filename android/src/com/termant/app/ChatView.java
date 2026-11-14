@@ -32,6 +32,12 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         void onOpenTerminal();
 
         void onVoice();
+
+        void onSettings();
+
+        void onPickWorkspace();
+
+        void onPickModel();
     }
 
     private static final int BG = MainActivity.BG, SURFACE = MainActivity.SURFACE,
@@ -46,6 +52,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private final ScrollView scroll;
     private final EditText input;
     private final TextView send;
+    private final TextView workspaceChip, modelChip;
     private Chat chat;
 
     ChatView(Context context, Host host) {
@@ -66,8 +73,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         title.setTypeface(Typeface.DEFAULT_BOLD);
         bar.addView(title, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView fresh = button(context.getString(R.string.chat_new), context.getString(R.string.chat_new_description));
-        fresh.setTextColor(MUTED);
+        TextView fresh = button("\uff0b", context.getString(R.string.chat_new_description));
+        fresh.setTextSize(20);
+        fresh.setPadding(0, 0, 0, 0);
         fresh.setBackground(pressable(0x00000000, 18));
         fresh.setOnClickListener(new OnClickListener() {
             @Override
@@ -75,7 +83,19 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 if (chat != null) chat.clear();
             }
         });
-        bar.addView(fresh, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36)));
+        bar.addView(fresh, new LayoutParams(dp(40), dp(36)));
+
+        TextView gear = button("\u2699", context.getString(R.string.settings));
+        gear.setTextSize(20);
+        gear.setPadding(0, 0, 0, 0);
+        gear.setBackground(pressable(0x00000000, 18));
+        gear.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ChatView.this.host.onSettings();
+            }
+        });
+        bar.addView(gear, new LayoutParams(dp(40), dp(36)));
 
         TextView terminal = button(">_ " + context.getString(R.string.chat_terminal),
                 context.getString(R.string.chat_terminal_description));
@@ -100,6 +120,30 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         scroll.setFillViewport(true);
         scroll.addView(list);
         addView(scroll, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+
+        // where the agent works and which model answers
+        LinearLayout chips = new LinearLayout(context);
+        chips.setPadding(dp(12), dp(2), dp(12), dp(2));
+        workspaceChip = chip(context.getString(R.string.workspace_title));
+        workspaceChip.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ChatView.this.host.onPickWorkspace();
+            }
+        });
+        chips.addView(workspaceChip, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30)));
+        modelChip = chip(context.getString(R.string.model_title));
+        modelChip.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ChatView.this.host.onPickModel();
+            }
+        });
+        LayoutParams modelSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
+        modelSize.leftMargin = dp(6);
+        chips.addView(modelChip, modelSize);
+        addView(chips);
+        refreshChips();
 
         // message box
         LinearLayout pill = new LinearLayout(context);
@@ -163,6 +207,23 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     void detach() {
         if (chat != null) chat.setListener(null);
         chat = null;
+    }
+
+    /** Shows the chosen folder and model under the messages. */
+    void refreshChips() {
+        workspaceChip.setText("\uD83D\uDCC1 " + Config.workspaceName(getContext()) + " \u25be");
+        modelChip.setText("\u2726 " + Config.modelName(getContext()) + " \u25be");
+    }
+
+    private TextView chip(String description) {
+        TextView v = button("", description);
+        v.setTextSize(12);
+        v.setTextColor(MUTED);
+        v.setMaxWidth(dp(150));
+        v.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        v.setPadding(dp(10), 0, dp(10), 0);
+        v.setBackground(pressable(SURFACE, 15));
+        return v;
     }
 
     /** Puts dictated text in the box, so it can be corrected before sending. */

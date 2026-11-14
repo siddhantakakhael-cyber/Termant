@@ -1,5 +1,6 @@
 package com.termant.app;
 
+import android.Manifest;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -12,7 +13,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.telephony.SmsManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
@@ -66,6 +71,10 @@ final class PhoneBridge {
                     + "  phone battery               charge level\n"
                     + "  phone clipboard get|set TEXT\n"
                     + "  phone open URL              open a link\n"
+                    + "  phone wifi on|off           Wi-Fi\n"
+                    + "  phone volume 0-100          media volume\n"
+                    + "  phone sms NUMBER TEXT       send a text message (costs what an SMS costs)\n"
+                    + "  phone rule ...              automation: run a command when something happens (phone rule help)\n"
                     + "  phone wake on|off           keep running with the screen off\n"
                     + "  phone info                  phone model and Android version\n";
 
@@ -179,7 +188,7 @@ final class PhoneBridge {
         return new String(b.toByteArray(), StandardCharsets.UTF_8);
     }
 
-    private static final class Refused extends Exception {
+    static final class Refused extends Exception {
         Refused(String message) {
             super(message);
         }
@@ -280,6 +289,19 @@ final class PhoneBridge {
             }
             case "torch":
                 return torch(args);
+            case "rule":
+                return onMain(new Action() {
+                    @Override
+                    public String run() throws Exception {
+                        return service.rules.command(args);
+                    }
+                });
+            case "wifi":
+                return wifi(args);
+            case "volume":
+                return volume(args);
+            case "sms":
+                return sms(args);
             case "battery":
                 return battery();
             case "clipboard":
@@ -454,6 +476,60 @@ final class PhoneBridge {
             }
         }
         throw new Refused("This phone has no flashlight.");
+    }
+
+    private String wifi(List<String> args) throws Exception {
+        String mode = args.size() > 1 ? args.get(1) : "";
+        if (!mode.equals("on") && !mode.equals("off")) throw new Refused("usage: phone wifi on|off");
+        WifiManager wm = (WifiManager) service.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        boolean done;
+        try {
+            done = wm != null && wm.setWifiEnabled(mode.equals("on"));
+        } catch (Exception e) {
+            done = false;
+        }
+        if (!done) throw new Refused("This phone does not let apps switch Wi-Fi. Switch it in the phone's settings.");
+        return "Wi-Fi " + mode + ".";
+    }
+
+    private String volume(List<String> args) throws Exception {
+        int percent;
+        try {
+            percent = Integer.parseInt(args.size() > 1 ? args.get(1) : "");
+        } catch (NumberFormatException e) {
+            percent = -1;
+        }
+        if (percent < 0 || percent > 100) throw new Refused("usage: phone volume 0-100");
+        AudioManager am = (AudioManager) service.getSystemService(Context.AUDIO_SERVICE);
+        int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        try {
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, Math.round(max * percent / 100f), 0);
+        } catch (SecurityException e) {
+            throw new Refused("The phone is in Do Not Disturb mode and refused to change the volume.");
+        }
+        return "Media volume " + percent + "%.";
+    }
+
+    private String sms(List<String> args) throws Exception {
+        String number = args.size() > 1 ? args.get(1) : "";
+        String text = rest(args, 2);
+        if (!number.matches("\\+?[0-9][0-9 -]{2,18}") || text.isEmpty()) {
+            throw new Refused("usage: phone sms NUMBER TEXT   (for example: phone sms +919876543210 Ghar pahunch gaya)");
+        }
+        if (service.checkSelfPermission(Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    MainActivity.askForSms();
+                }
+            });
+            throw new Refused("Termant is not allowed to send SMS yet. The phone is asking the user now "
+                    + "(or: Settings > Automation > Allow SMS). Ask the user to allow it, then try again.");
+        }
+        SmsManager sm = SmsManager.getDefault();
+        sm.sendMultipartTextMessage(number.replaceAll("[ -]", ""), null, sm.divideMessage(text), null, null);
+        android.util.Log.i("Termant", "sms handed to the phone for " + number);
+        return "SMS handed to the phone for sending to " + number + ".";
     }
 
     private String battery() {

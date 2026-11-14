@@ -69,6 +69,7 @@ shot 3-terminal
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t.sh'" < android/ci/guest-test.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t2.sh'" < android/ci/guest-test2.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t3.sh'" < android/ci/guest-test3.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest-test4.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -108,6 +109,20 @@ grep -q 'ringing: CI-timer' "$OUT/phone-log.txt" || finish "FAIL timer did not r
 grep -q 'alarm 07:00 sent to the Clock app' "$OUT/phone-log.txt" || finish "FAIL agent did not set the 7:00 alarm"
 adb shell dumpsys alarm > "$OUT/dumpsys-alarm.txt" 2>&1
 
+echo "Automation rules"
+grep -q '^bad-rule-exit=1' "$OUT/result3.txt" || finish "FAIL rule with a wrong time was accepted"
+grep -q '^bad-trigger-exit=1' "$OUT/result3.txt" || finish "FAIL rule with an unknown trigger was accepted"
+grep -q '^rule-add-exit=0' "$OUT/result3.txt" || finish "FAIL phone rule add"
+grep -q '^manual: .*20[0-9][0-9]' "$OUT/result3.txt" || finish "FAIL phone rule run"
+grep -q '^timed-rule-ran' "$OUT/result3.txt" || finish "FAIL the timed rule did not run by itself"
+grep -q '^volume-exit=0' "$OUT/result3.txt" || finish "FAIL phone volume"
+grep -q '^bad-sms-exit=1' "$OUT/result3.txt" || finish "FAIL phone sms without text was accepted"
+# Plug the charger in: the "charging" rule must write its file with nobody asking.
+adb shell dumpsys battery unplug; sleep 4
+adb shell dumpsys battery set ac 1; sleep 12
+adb shell dumpsys battery reset
+[ -n "$(run_as cat files/rootfs/root/charged.txt 2>/dev/null)" ] || finish "FAIL the charging rule did not run"
+
 echo "Chat"
 tap_on 'content-desc="Back to the chat"' || finish "FAIL Chat button not found"
 sleep 3
@@ -134,5 +149,73 @@ tap_on 'content-desc="Send"'
 if wait_for_reply 60; then echo "second chat message answered" > "$OUT/chat2.txt"; else echo "second chat message NOT answered" > "$OUT/chat2.txt"; fi
 sleep 2
 shot 9-chat-code
+
+echo "Rule from the chat"
+tap_on 'class="android.widget.EditText"' && sleep 2
+adb shell input text 'roz%sraat%s11%sbaje%sWiFi%sband%skaro'
+sleep 1
+tap_on 'content-desc="Send"'
+wait_for_reply 60 || finish "FAIL chat: no reply to the rule request"
+sleep 2
+shot 10-chat-rule
+run_as cat files/rules.json > "$OUT/rules.json"
+grep -q '"trigger":"at 23:00","command":"phone wifi off"' "$OUT/rules.json" || finish "FAIL chat: the agent did not create the 23:00 Wi-Fi rule"
+
+echo "Model and workspace"
+tap_on 'content-desc="Model"' || finish "FAIL model chip not found"
+sleep 12
+shot 11-models
+tap_on 'text="opencode/big-pickle"' || finish "FAIL model list did not show big-pickle"
+sleep 2
+tap_on 'content-desc="Workspace folder"' || finish "FAIL workspace chip not found"
+sleep 2
+shot 12-workspaces
+tap_on 'New folder' || finish "FAIL New folder not found"
+sleep 2
+tap_on 'class="android.widget.EditText"'; sleep 1
+adb shell input text 'ci-project'
+tap_on 'text="Save"' || tap_on 'text="SAVE"' || finish "FAIL Save not found"
+sleep 2
+run_as cat shared_prefs/termant.xml > "$OUT/prefs.xml"
+grep -q 'opencode/big-pickle' "$OUT/prefs.xml" || finish "FAIL the chosen model was not saved"
+grep -q '/root/ci-project' "$OUT/prefs.xml" || finish "FAIL the chosen workspace was not saved"
+tap_on 'class="android.widget.EditText"' && sleep 2
+adb shell input text 'Create%sa%sfile%snamed%snote.txt%scontaining%sthe%sword%shello'
+sleep 1
+tap_on 'content-desc="Send"'
+wait_for_reply 60 || finish "FAIL chat: no reply with the chosen model and workspace"
+sleep 2
+shot 13-chat-workspace
+[ "$(run_as sh -c 'test -f files/rootfs/root/ci-project/note.txt && echo yes')" = yes ] || finish "FAIL the agent did not work in the chosen workspace"
+
+echo "Settings"
+tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found"
+sleep 2
+shot 14-settings
+tap_on 'content-desc="OpenRouter"' || finish "FAIL API key row not found"
+sleep 2
+tap_on 'class="android.widget.EditText"'; sleep 1
+adb shell input text 'sk-or-v1-termant-ci-not-a-real-key'
+tap_on 'text="Save"' || tap_on 'text="SAVE"' || finish "FAIL Save not found for the key"
+sleep 2
+adb shell input swipe 160 500 160 120 300; sleep 1
+shot 15-settings-keys
+adb shell input swipe 160 500 160 100 300; sleep 1
+shot 16-settings-rules
+[ "$(run_as sh -c 'grep -c OPENROUTER_API_KEY files/rootfs/root/.config/termant/keys.env')" = 1 ] || finish "FAIL the API key was not saved"
+adb shell input keyevent 4
+sleep 2
+
+echo "Settings reach Ubuntu; Wi-Fi switch"
+tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button not found at the end"
+sleep 4
+type_line 'sh%st4.sh'
+wait_for_end files/rootfs/root/result4.txt 60 || { run_as cat files/rootfs/root/result4.txt > "$OUT/result4.txt"; finish "FAIL settings test did not finish"; }
+run_as cat files/rootfs/root/result4.txt > "$OUT/result4.txt"
+adb shell dumpsys wifi | grep -m1 'Wi-Fi is' > "$OUT/wifi.txt"
+adb shell svc wifi enable
+grep -q '^key-set=yes' "$OUT/result4.txt" || finish "FAIL the API key did not reach Ubuntu"
+grep -q '^wifi-off-exit=0' "$OUT/result4.txt" || finish "FAIL phone wifi off"
+grep -q 'disabled' "$OUT/wifi.txt" || finish "FAIL Wi-Fi was not really switched off"
 
 finish PASS

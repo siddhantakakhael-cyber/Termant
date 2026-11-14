@@ -38,13 +38,78 @@ final class Chat {
 
     private static final String MARKER = "@@TERMANT-RUN@@";
     private static final int SETUP_FAILED = 97;
-    /** Runs inside Ubuntu; $1 is the message, $2 is "--continue" or empty. */
+    /** Runs inside Ubuntu; $1 message, $2 "--continue" or empty, $3 workspace folder, $4 model or empty. */
     private static final String SCRIPT =
             "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
-                    + "mkdir -p \"$HOME/workspace\" && cd \"$HOME/workspace\"\n"
+                    + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
+                    + "mkdir -p \"$3\" && cd \"$3\" || exit " + SETUP_FAILED + "\n"
                     + "echo " + MARKER + "\n"
+                    + "if [ -n \"$4\" ]; then exec opencode run --standalone --auto $2 --model \"$4\" \"$1\" </dev/null; fi\n"
                     + "exec opencode run --standalone --auto $2 \"$1\" </dev/null\n";
+    /** Prints the models that can be used, one "provider/model" per line; exit 3 if the agent is not downloaded yet. */
+    private static final String MODELS_SCRIPT =
+            "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
+                    + "command -v opencode >/dev/null 2>&1 || exit 3\n"
+                    + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
+                    + "mkdir -p \"$1\" && cd \"$1\"\n"
+                    + "opencode models --standalone 2>/dev/null </dev/null || opencode models </dev/null\n";
+    private static final Pattern MODEL = Pattern.compile("^[A-Za-z0-9._-]+/[A-Za-z0-9._:/@-]+$");
+
+    interface ModelsCallback {
+        /** models is null when the agent has not been downloaded yet or the list could not be read. */
+        void onModels(List<String> models);
+    }
+
+    /** Asks OpenCode which models exist (free ones, plus those of any provider with a key). */
+    void loadModels(final ModelsCallback callback) {
+        final String workspace = Config.workspace(context);
+        new Thread("termant-models") {
+            @Override
+            public void run() {
+                List<String> found = null;
+                try {
+                    Ubuntu.prepareHost(context);
+                    ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
+                            "/bin/bash", "-c", MODELS_SCRIPT, "termant-models", workspace));
+                    Map<String, String> env = pb.environment();
+                    env.clear();
+                    for (String e : Ubuntu.hostEnvironment(context)) {
+                        int eq = e.indexOf('=');
+                        env.put(e.substring(0, eq), e.substring(eq + 1));
+                    }
+                    pb.redirectErrorStream(true);
+                    Process p = pb.start();
+                    p.getOutputStream().close();
+                    java.io.BufferedReader in = new java.io.BufferedReader(
+                            new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+                    List<String> lines = new ArrayList<>();
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        line = ANSI.matcher(line).replaceAll("").trim();
+                        if (MODEL.matcher(line).matches()) lines.add(line);
+                    }
+                    if (p.waitFor() == 0 && !lines.isEmpty()) found = lines;
+                } catch (Exception e) {
+                    android.util.Log.e("Termant", "cannot list models", e);
+                }
+                final List<String> result = found;
+                main.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (result != null) Config.setCachedModels(context, result);
+                        callback.onModels(result);
+                    }
+                });
+            }
+        }.start();
+    }
+
+    /** The next message starts a new conversation in OpenCode (used when the folder changes). */
+    void startOver() {
+        continues = false;
+        save();
+    }
 
     private static final Pattern ANSI = Pattern.compile("\u001b\\[[0-9;?]*[ -/]*[@-~]|\u001b\\][^\u0007]*\u0007|\r");
     /** OpenCode prints "> agent · model" before each thing the model says or does. */
@@ -112,6 +177,8 @@ final class Chat {
         status = "";
         final int id = ++run;
         final boolean cont = continues;
+        final String workspace = Config.workspace(context);
+        final String model = Config.model(context);
         save();
         changed();
 
@@ -123,7 +190,8 @@ final class Chat {
                 try {
                     Ubuntu.prepareHost(context);
                     ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
-                            "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont ? "--continue" : ""));
+                            "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont ? "--continue" : "",
+                            workspace, model));
                     Map<String, String> env = pb.environment();
                     env.clear();
                     for (String e : Ubuntu.hostEnvironment(context)) {

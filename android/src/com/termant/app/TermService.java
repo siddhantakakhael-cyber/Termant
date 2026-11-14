@@ -36,6 +36,8 @@ import java.util.List;
 public class TermService extends Service implements TerminalSessionClient {
     static final String ACTION_EXIT = "com.termant.app.EXIT";
     static final String ACTION_RING = "com.termant.app.RING";
+    static final String ACTION_RULE = "com.termant.app.RULE";
+    static final String ACTION_BOOT = "com.termant.app.BOOT";
     static final String ACTION_STOP_RING = "com.termant.app.STOP_RING";
     static final String EXTRA_LABEL = "label";
     private static final String ALARM_CHANNEL = "alarm";
@@ -69,6 +71,8 @@ public class TermService extends Service implements TerminalSessionClient {
     Chat chat;
     /** Whether the terminal, not the chat, was the screen last shown. */
     boolean terminalShown;
+    /** Automation rules; they keep running as long as this service does. */
+    Rules rules;
     private PhoneBridge bridge;
     private MediaPlayer ringer;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -94,6 +98,8 @@ public class TermService extends Service implements TerminalSessionClient {
         }
         startForeground(NOTIFICATION_ID, buildNotification());
         chat = new Chat(this);
+        rules = new Rules(this);
+        rules.start();
         bridge = new PhoneBridge(this);
         bridge.start();
     }
@@ -126,8 +132,17 @@ public class TermService extends Service implements TerminalSessionClient {
             startRinging(label == null ? "Alarm" : label);
         } else if (ACTION_STOP_RING.equals(action)) {
             stopRinging();
+        } else if (ACTION_RULE.equals(action) && intent.getData() != null) {
+            try {
+                rules.onAlarm(Integer.parseInt(intent.getData().getLastPathSegment()));
+            } catch (NumberFormatException e) {
+                // not one of ours
+            }
+        } else if (ACTION_BOOT.equals(action)) {
+            rules.fire("boot");
         }
-        return START_NOT_STICKY;
+        // Restarted by Android if it is ever killed, so rules keep working.
+        return START_STICKY;
     }
 
     @Override
@@ -140,6 +155,7 @@ public class TermService extends Service implements TerminalSessionClient {
         killAll();
         setWakeLock(false);
         stopRinging();
+        rules.stop();
         if (bridge != null) bridge.stop();
         super.onDestroy();
     }
