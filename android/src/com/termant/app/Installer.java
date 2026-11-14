@@ -273,7 +273,7 @@ final class Installer {
         write(new File(root, "etc/profile.d/termant.sh"),
                 "if [ ! -e \"$HOME/.termant-welcome\" ]; then\n"
                         + "  touch \"$HOME/.termant-welcome\"\n"
-                        + "  printf '\\nWelcome to Ubuntu on Termant.\\nInstall software with:  apt update && apt install <package>\\n\\n'\n"
+                        + "  printf '\\nWelcome to Ubuntu on Termant.\\nInstall software with:\\n  apt update\\n  apt install <package>\\n\\n'\n"
                         + "fi\n");
         write(new File(root, "usr/local/lib/termant/setup.sh"),
                 "#!/bin/sh\n"
