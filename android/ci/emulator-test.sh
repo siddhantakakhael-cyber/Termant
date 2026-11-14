@@ -203,7 +203,7 @@ shot 15-settings-keys
 adb shell input swipe 160 500 160 100 300; sleep 1
 shot 16-settings-rules
 run_as grep -q OPENROUTER_API_KEY files/rootfs/root/.config/termant/keys.env || finish "FAIL the API key was not saved"
-adb shell input keyevent 4
+tap_on 'content-desc="Back to the chat"' || finish "FAIL Back arrow not found in settings"
 sleep 2
 
 echo "Settings reach Ubuntu; Wi-Fi switch"
