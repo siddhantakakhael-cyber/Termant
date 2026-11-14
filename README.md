@@ -43,6 +43,23 @@ Hosts without persistent disks (for example free tiers that give you a
 temporary filesystem) cannot keep packages, whatever software you run on them.
 Use a host where Docker volumes are stored on a real disk.
 
+## Android app
+
+[`android/Termant.apk`](android/Termant.apk) is a small Android app (Android 7.0+)
+that opens your Termant server full screen, without the browser bars.
+
+1. Start the server (see **Run it** above). The app is only a screen for the
+   server; Ubuntu itself does not run on the phone.
+2. Copy `Termant.apk` to the phone and open it. Android will ask you to allow
+   installing from this source.
+3. Enter the server address, for example `http://192.168.1.10:3000`, then log in.
+
+Press Back inside the terminal to exit or to change the server address.
+
+To rebuild it, run `android/build.sh` on a machine with the Android SDK
+(`ANDROID_HOME` set), or use the **Android APK** workflow on GitHub. A build
+signed with a different key cannot update an installed copy; uninstall first.
+
 ## Security
 
 The password gives a **root shell**. Use a long password and put Termant behind
