@@ -1,15 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Termant</string>
-    <string name="setup_title">Termant</string>
-    <string name="setup_text">Enter the address of your Termant server. It is the same address you open in a browser.</string>
-    <string name="setup_hint">http://192.168.1.10:3000</string>
-    <string name="connect">Connect</string>
-    <string name="bad_address">That does not look like a web address.</string>
-    <string name="load_failed">Could not reach %1$s\n%2$s</string>
-    <string name="leave_title">Leave terminal?</string>
-    <string name="leave_text">Your shells keep running on the server.</string>
-    <string name="exit">Exit</string>
-    <string name="change_server">Change server</string>
+
+    <!-- used by the vendored terminal view -->
+    <string name="paste_text">Paste</string>
+    <string name="copy_text">Copy</string>
+    <string name="text_selection_more">More…</string>
+
+    <string name="setup_title">Setting up Ubuntu 24.04</string>
+    <string name="setup_note">One-time download of about 30 MB. After this, Ubuntu and everything you install stay on your phone.</string>
+    <string name="setup_failed">Setup did not finish</string>
+    <string name="retry">Try again</string>
+    <string name="unsupported_device">This phone\'s processor type (%1$s) is not supported. Termant needs ARM or x86-64.</string>
+
+    <string name="step_find">Finding the Ubuntu image…</string>
+    <string name="step_download">Downloading Ubuntu… %1$d of %2$d MB</string>
+    <string name="step_extract">Unpacking Ubuntu…</string>
+    <string name="step_configure">Finishing setup…</string>
+
+    <string name="notification_channel">Terminal sessions</string>
+    <string name="notification_text_one">1 session running</string>
+    <string name="notification_text_many">%1$d sessions running</string>
+    <string name="notification_exit">Exit</string>
+
+    <string name="menu_new">New session</string>
+    <string name="menu_close">Close session</string>
+    <string name="menu_paste">Paste</string>
+    <string name="menu_reset">Reset terminal</string>
+    <string name="menu_keep_on">Keep screen on</string>
+    <string name="menu_wake">Keep running in background</string>
+    <string name="menu_storage">Allow phone storage (/sdcard)</string>
+    <string name="menu_reinstall">Reinstall Ubuntu…</string>
+    <string name="menu_about">About</string>
+
+    <string name="storage_granted">Phone storage is at /sdcard in new sessions.</string>
+    <string name="storage_denied">Storage permission was not granted.</string>
+    <string name="max_sessions">Close a session before opening another.</string>
+    <string name="reinstall_title">Reinstall Ubuntu?</string>
+    <string name="reinstall_text">This erases Ubuntu, every installed package and every file in it, then downloads a fresh copy. Phone storage is not touched.</string>
+    <string name="reinstall_confirm">Erase and reinstall</string>
     <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="about_text">Termant %1$s\n\nA real Ubuntu 24.04 userland on your phone, without root. Install software with:\n\n    apt update\n    apt install &lt;package&gt;\n\nPinch to change text size. Long-press to select and copy.\n\nOpen source (GPLv3). Terminal by Termux, userland by PRoot, system by Ubuntu.</string>
 </resources>
