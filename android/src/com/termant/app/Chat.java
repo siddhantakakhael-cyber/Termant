@@ -223,7 +223,7 @@ final class Chat {
     /**
      * OpenCode's plain output is a series of blocks, each starting with a
      * "> agent · model" line. A block is either something the model says, or
-     * "$ command" followed by that command's output. The answer is the last
+     * "$ command" (or "← Write file") followed by that tool's output. The answer is the last
      * thing the model said; command output is left out.
      */
     static Parsed parse(String output) {
@@ -236,6 +236,10 @@ final class Chat {
                 said.setLength(0);
                 inCommand = false;
             } else if (line.startsWith("$ ")) {
+                result.steps.add(line.substring(2).trim());
+                inCommand = true;
+            } else if (line.startsWith("\u2190 ") || line.startsWith("\u2192 ")) {
+                // file tools: "← Write hi.py", "→ Read notes.txt"
                 result.steps.add(line.substring(2).trim());
                 inCommand = true;
             } else if (!inCommand) {

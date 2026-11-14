@@ -18,7 +18,7 @@ apt update
 apt install python3 git nano
 ```
 
-- **AI coding agent built in.** Tap **AI** to open [OpenCode](https://github.com/sst/opencode), an open-source agent that writes, edits and runs code for you. It comes with free models, so it works without an account or API key. First use downloads it (about 60 MB).
+- **AI agent chat is the home screen.** It uses [OpenCode](https://github.com/sst/opencode), an open-source agent that writes, edits and runs code for you. It comes with free models, so it works without an account or API key. First use downloads it (about 100 MB).
 - **Real Ubuntu with apt.** The same packages as on a PC, for ARM64, 32-bit ARM and x86-64 phones.
 - **Everything stays installed.** Ubuntu lives in the app's storage. Packages and files survive closing the app, reboots and app updates. Only uninstalling the app, clearing its data, or "Reinstall Ubuntu" removes them.
 - **Sessions keep running** in the background (see the notification), up to 8 tabs.
@@ -28,7 +28,7 @@ apt install python3 git nano
 
 ### AI agent
 
-Tap **AI** in the top bar (or run `termant-agent` in any tab). The agent works in `~/workspace`;
+The chat screen talks to the agent for you. For the full OpenCode interface, open the terminal and choose **AI agent (OpenCode)** in the menu (or run `termant-agent` in any tab). The agent works in `~/workspace`;
 `cd` to another folder first to use it there. Inside OpenCode, `/models` switches model and
 `/connect` adds your own provider key if you want a paid model.
 
@@ -57,9 +57,19 @@ Build it yourself with `android/build.sh` (Android SDK + NDK, JDK 17; no Gradle)
 Release APKs are signed with a public test key (`android/keystore/README.md`), so only
 install APKs from this repository's Releases page.
 
+## Chat first
+
+Termant opens as a chat, not a terminal. Type or speak what you want in Hindi,
+Hinglish or English; the agent answers in a chat bubble and lists the commands
+it ran above its answer. **New chat** starts a fresh conversation.
+
+The real Ubuntu terminal is one tap away: **>_ Terminal** at the top. **Chat**
+(or Back) in the terminal returns to the chat. The first chat message downloads
+the agent (OpenCode, about 100 MB).
+
 ## Phone control
 
-The agent can use the phone, not only write code. Open the AI tab and type (or
+The agent can use the phone, not only write code. In the chat, type (or
 tap the microphone and say) what you want in Hindi, Hinglish or English:
 
 | You say | What happens |
