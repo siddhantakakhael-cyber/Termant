@@ -77,4 +77,18 @@ wait_for_end files/rootfs/root/result3.txt 180 || { run_as cat files/rootfs/root
 run_as cat files/rootfs/root/result3.txt > "$OUT/result3.txt"
 grep -q '^version-exit=0' "$OUT/result3.txt" || finish "FAIL OpenCode did not install or start"
 
+# Open the agent the way a user does: tap the AI button, then ask something.
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+bounds=$(adb shell cat /sdcard/ui.xml | tr '>' '\n' | grep 'content-desc="AI agent' | grep -o 'bounds="[^"]*"' | grep -o '[0-9]*' | tr '\n' ' ')
+set -- $bounds
+[ $# -eq 4 ] || finish "FAIL AI button not found"
+adb shell input tap $(( ($1 + $3) / 2 )) $(( ($2 + $4) / 2 ))
+sleep 30
+shot 5-agent
+adb shell input text 'Say%shello%sin%sfive%swords'
+adb shell input keyevent 66
+sleep 45
+shot 6-agent-reply
+[ "$(run_as sh -c 'ls files/rootfs/root/workspace >/dev/null 2>&1 && echo yes')" = yes ] || finish "FAIL agent tab did not start"
+
 finish PASS

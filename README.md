@@ -18,6 +18,7 @@ apt update
 apt install python3 git nano
 ```
 
+- **AI coding agent built in.** Tap **AI** to open [OpenCode](https://github.com/sst/opencode), an open-source agent that writes, edits and runs code for you. It comes with free models, so it works without an account or API key. First use downloads it (about 60 MB).
 - **Real Ubuntu with apt.** The same packages as on a PC, for ARM64, 32-bit ARM and x86-64 phones.
 - **Everything stays installed.** Ubuntu lives in the app's storage. Packages and files survive closing the app, reboots and app updates. Only uninstalling the app, clearing its data, or "Reinstall Ubuntu" removes them.
 - **Sessions keep running** in the background (see the notification), up to 8 tabs.
@@ -25,12 +26,22 @@ apt install python3 git nano
 - **Pinch** to resize text, **long-press** to select, copy and paste.
 - **Phone storage** appears at `/sdcard` after you allow it from the menu.
 
+### AI agent
+
+Tap **AI** in the top bar (or run `termant-agent` in any tab). The agent works in `~/workspace`;
+`cd` to another folder first to use it there. Inside OpenCode, `/models` switches model and
+`/connect` adds your own provider key if you want a paid model.
+
+- The free models are run by OpenCode, not by Termant. Your prompts and the files the agent reads are sent to their service, and the list of free models changes over time.
+- The agent runs as root inside Ubuntu and can change or delete anything there, and in `/sdcard` if you allowed storage. It cannot touch the rest of the phone.
+- OpenCode has no 32-bit build, so the agent needs a 64-bit phone.
+
 ### Limits
 
 - No root means no `systemd`, no `mount`, no Docker, and ports below 1024 cannot be opened. Start services directly (for example `nginx` on port 8080, `sshd -p 8022`).
 - Programs run through [PRoot](https://proot-me.github.io/), which is slower than native, mostly for work with many small files.
 - Android 12 and newer may stop background programs that use many processes ("signal 9"). This is an Android limit that also affects Termux.
-- Every build is tested automatically on an Android 14 x86-64 emulator (set up Ubuntu, `apt install`, restart, package still there). ARM phones use the same code with ARM builds of the same components, but are not covered by that automatic test.
+- Every build is tested automatically on an Android 14 x86-64 emulator (set up Ubuntu, `apt install`, restart, package still there, install OpenCode and get a reply from a free model). ARM phones use the same code with ARM builds of the same components, but are not covered by that automatic test.
 
 ### How it works
 
@@ -38,6 +49,7 @@ apt install python3 git nano
 | --- | --- |
 | Terminal emulator and view | [Termux](https://github.com/termux/termux-app) `terminal-emulator` / `terminal-view`, vendored in `android/vendor/termux` |
 | Running Linux programs without root | Termux's build of PRoot, fetched and checksum-verified at build time |
+| AI agent | [OpenCode](https://github.com/sst/opencode), installed inside Ubuntu on first use with its official installer |
 | The system | Ubuntu Base 24.04 from `cdimage.ubuntu.com`, downloaded by the app |
 
 Build it yourself with `android/build.sh` (Android SDK + NDK, JDK 17; no Gradle), or let the
