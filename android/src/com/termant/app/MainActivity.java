@@ -81,6 +81,7 @@ public class MainActivity extends Activity
     private Button retryButton;
 
     private View terminalPanel;
+    private ChatView chatPanel;
     private TerminalView terminal;
     private LinearLayout tabs;
     private View askBar, keyRows;
@@ -105,8 +106,21 @@ public class MainActivity extends Activity
         rootView.setFitsSystemWindows(true);
         terminalPanel = buildTerminalPanel();
         setupPanel = buildSetupPanel();
+        chatPanel = new ChatView(this, new ChatView.Host() {
+            @Override
+            public void onOpenTerminal() {
+                showTerminal();
+            }
+
+            @Override
+            public void onVoice() {
+                startVoice();
+            }
+        });
+        rootView.addView(chatPanel, match());
         rootView.addView(terminalPanel, match());
         rootView.addView(setupPanel, match());
+        chatPanel.setVisibility(View.GONE);
         terminalPanel.setVisibility(View.GONE);
         setupPanel.setVisibility(View.GONE);
         setContentView(rootView);
@@ -135,6 +149,7 @@ public class MainActivity extends Activity
     @Override
     protected void onDestroy() {
         Installer.detach(this);
+        chatPanel.detach();
         if (service != null) {
             service.setScreen(null);
             service = null;
@@ -152,7 +167,7 @@ public class MainActivity extends Activity
         service = ((TermService.LocalBinder) binder).service();
         service.setScreen(this);
         if (Ubuntu.isInstalled(this) && !Installer.isRunning()) {
-            showTerminal();
+            showReady();
         } else {
             startInstall();
         }
@@ -166,6 +181,10 @@ public class MainActivity extends Activity
 
     @Override
     public void onBackPressed() {
+        if (terminalPanel.getVisibility() == View.VISIBLE) {
+            showChat();
+            return;
+        }
         // Leave without ending the sessions; the notification brings them back.
         moveTaskToBack(true);
     }
@@ -271,6 +290,7 @@ public class MainActivity extends Activity
 
     private void startInstall() {
         terminalPanel.setVisibility(View.GONE);
+        chatPanel.setVisibility(View.GONE);
         setupPanel.setVisibility(View.VISIBLE);
         setupError.setVisibility(View.GONE);
         retryButton.setVisibility(View.GONE);
@@ -291,8 +311,7 @@ public class MainActivity extends Activity
     @Override
     public void onInstallDone() {
         if (service == null) return;
-        service.onUbuntuReady();
-        showTerminal();
+        showReady();
     }
 
     @Override
@@ -322,7 +341,7 @@ public class MainActivity extends Activity
         tabScroll.addView(tabs);
         bar.addView(tabScroll, new LinearLayout.LayoutParams(0, dp(36), 1));
 
-        TextView ai = label("\u2726 AI", getString(R.string.menu_agent));
+        TextView ai = label("\u2726 " + getString(R.string.chat_back), getString(R.string.chat_back_description));
         ai.setTextSize(14);
         ai.setTypeface(Typeface.DEFAULT_BOLD);
         ai.setTextColor(ON_ACCENT);
@@ -331,7 +350,7 @@ public class MainActivity extends Activity
         ai.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openAgent();
+                showChat();
             }
         });
         LinearLayout.LayoutParams aiSize = new LinearLayout.LayoutParams(
@@ -485,6 +504,10 @@ public class MainActivity extends Activity
         java.util.ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
         if (heard == null || heard.isEmpty()) return;
         // Shown in the box first, so a misheard request can be fixed before sending.
+        if (chatPanel.getVisibility() == View.VISIBLE) {
+            chatPanel.setDraft(heard.get(0));
+            return;
+        }
         askInput.setText(heard.get(0));
         askInput.setSelection(askInput.length());
         askInput.requestFocus();
@@ -555,9 +578,8 @@ public class MainActivity extends Activity
         altKey.setBackground(pressable(alt ? ACCENT : SURFACE, 8));
     }
 
-    private void showTerminal() {
-        setupPanel.setVisibility(View.GONE);
-        terminalPanel.setVisibility(View.VISIBLE);
+    /** Ubuntu is installed: bring its helper files up to date and show the chat (or the terminal, if that was open). */
+    private void showReady() {
         try {
             Ubuntu.prepareHost(this);
             Ubuntu.refreshFiles(this);
@@ -565,6 +587,25 @@ public class MainActivity extends Activity
             Toast.makeText(this, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
         }
         service.onUbuntuReady();
+        chatPanel.attach(service.chat);
+        if (service.terminalShown) showTerminal();
+        else showChat();
+    }
+
+    private void showChat() {
+        if (service != null) service.terminalShown = false;
+        hideKeyboard();
+        setupPanel.setVisibility(View.GONE);
+        terminalPanel.setVisibility(View.GONE);
+        chatPanel.setVisibility(View.VISIBLE);
+    }
+
+    private void showTerminal() {
+        if (service == null) return;
+        service.terminalShown = true;
+        setupPanel.setVisibility(View.GONE);
+        chatPanel.setVisibility(View.GONE);
+        terminalPanel.setVisibility(View.VISIBLE);
         if (service.sessions.isEmpty()) {
             service.createSession();
         }
@@ -613,7 +654,9 @@ public class MainActivity extends Activity
         if (service == null || session == null) return;
         service.removeSession(session);
         if (service.sessions.isEmpty()) {
-            service.exit();
+            // the last tab is closed: back to the chat, the app keeps running
+            current = null;
+            showChat();
             return;
         }
         if (session == current) select(service.sessions.get(service.sessions.size() - 1));
@@ -756,6 +799,8 @@ public class MainActivity extends Activity
                     public void onClick(DialogInterface dialog, int which) {
                         if (service == null) return;
                         service.killAll();
+                        service.chat.stop();
+                        service.terminalShown = false;
                         current = null;
                         Ubuntu.marker(MainActivity.this).delete();
                         rebuildTabs();

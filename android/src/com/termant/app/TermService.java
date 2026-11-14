@@ -65,6 +65,10 @@ public class TermService extends Service implements TerminalSessionClient {
     final List<TerminalSession> sessions = new ArrayList<>();
     /** Sessions that were opened as AI agent tabs. */
     final Set<TerminalSession> agentSessions = new HashSet<>();
+    /** The chat with the agent; lives here so a reply keeps arriving while the screen is closed. */
+    Chat chat;
+    /** Whether the terminal, not the chat, was the screen last shown. */
+    boolean terminalShown;
     private PhoneBridge bridge;
     private MediaPlayer ringer;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -89,6 +93,7 @@ public class TermService extends Service implements TerminalSessionClient {
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
         startForeground(NOTIFICATION_ID, buildNotification());
+        chat = new Chat(this);
         bridge = new PhoneBridge(this);
         bridge.start();
     }
@@ -179,6 +184,7 @@ public class TermService extends Service implements TerminalSessionClient {
     /** Stops everything: sessions, notification, service and the screen. */
     void exit() {
         killAll();
+        chat.stop();
         setWakeLock(false);
         stopRinging();
         if (screen != null) screen.onExitRequested();
@@ -284,7 +290,7 @@ public class TermService extends Service implements TerminalSessionClient {
                 new Intent(this, TermService.class).setAction(ACTION_EXIT), immutable);
 
         int count = sessions.size();
-        String text = count == 1
+        String text = count == 0 ? getString(R.string.notification_text_none) : count == 1
                 ? getString(R.string.notification_text_one)
                 : getString(R.string.notification_text_many, count);
 
@@ -320,8 +326,7 @@ public class TermService extends Service implements TerminalSessionClient {
         } else if (session.getExitStatus() == 0) {
             sessions.remove(session);
             agentSessions.remove(session);
-            if (sessions.isEmpty()) exit();
-            else changed();
+            changed();
         }
     }
 

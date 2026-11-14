@@ -18,4 +18,6 @@ phone timer 4s CI-timer; echo "timer-exit=$?"
 sleep 9; phone stop; echo "stop-exit=$?"
 echo "== agent sets an alarm"
 timeout 240 opencode run --standalone --auto "mujhe subah 7 baje utha dena" 2>&1 | tail -40; echo "wake-exit=$?"
+echo "== raw output of a coding request (what the chat has to read)"
+timeout 240 opencode run --standalone --auto --continue "Write hi.py that prints hi, run it, and tell me what it printed" </dev/null 2>&1 | cat -v | tail -60; echo "code-exit=$?"
 echo TERMANT-TEST-END

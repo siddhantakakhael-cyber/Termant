@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.termant.app"
-    android:versionCode="4"
-    android:versionName="0.4.0">
+    android:versionCode="5"
+    android:versionName="0.5.0">
 
     <!-- targetSdkVersion stays at 28 for the same reason as Termux: a Linux
          userland needs to map and run program files stored in app data. -->
@@ -31,7 +31,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize|stateAlwaysVisible"
+            android:windowSoftInputMode="adjustResize|stateHidden"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

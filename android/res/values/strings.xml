@@ -29,6 +29,28 @@
     <string name="ask_send">Send</string>
     <string name="ask_voice">Speak</string>
     <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>
+    <string name="chat_new">New chat</string>
+    <string name="chat_new_description">Start a new chat</string>
+    <string name="chat_terminal">Terminal</string>
+    <string name="chat_terminal_description">Open the Ubuntu terminal</string>
+    <string name="chat_back">Chat</string>
+    <string name="chat_back_description">Back to the chat</string>
+    <string name="chat_stop">Stop</string>
+    <string name="chat_thinking">Thinking…</string>
+    <string name="chat_working">Working…</string>
+    <string name="chat_stopped">Stopped.</string>
+    <string name="chat_done">Done.</string>
+    <string name="chat_no_answer">The agent gave no answer. Check your internet connection and try again.</string>
+    <string name="chat_setup_failed">The agent could not be set up. Check your internet connection and try again.</string>
+    <string name="chat_welcome">Namaste. What should I do?</string>
+    <string name="chat_welcome_text">Ask in Hindi or English. I can set alarms and timers, control the phone, and write and run code in Ubuntu. The first request downloads the agent (about 100 MB).</string>
+    <string-array name="chat_ideas">
+        <item>Mujhe subah 7 baje utha dena</item>
+        <item>10 minute baad chai ka timer bajana</item>
+        <item>Phone ki battery kitni hai?</item>
+        <item>Write and run a Python script that prints the first 20 prime numbers</item>
+    </string-array>
+    <string name="notification_text_none">Ready</string>
     <string name="menu_new">New session</string>
     <string name="menu_agent">AI agent (OpenCode)</string>
     <string name="menu_close">Close session</string>
