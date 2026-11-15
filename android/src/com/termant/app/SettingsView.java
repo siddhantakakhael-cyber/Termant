@@ -39,6 +39,8 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         void onAskSms();
 
         void onOpenArena();
+
+        void onPickBackups();
     }
 
     private static final int BG = MainActivity.BG, SURFACE = MainActivity.SURFACE,
@@ -127,6 +129,25 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                     }
                 });
 
+        row(c.getString(R.string.switch_title), c.getString(Config.autoSwitch(c) ? R.string.on : R.string.off),
+                c.getString(R.string.switch_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Config.setAutoSwitch(c, !Config.autoSwitch(c));
+                        refresh();
+                    }
+                });
+        if (Config.autoSwitch(c)) {
+            int chosen = Config.chosenBackups(c).size();
+            row(c.getString(R.string.backups_title),
+                    chosen == 0 ? c.getString(R.string.backups_all_free) : String.valueOf(chosen),
+                    c.getString(R.string.backups_note), new OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            host.onPickBackups();
+                        }
+                    });
+        }
         row(c.getString(R.string.arena_title), "\u2197", c.getString(R.string.arena_note), new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -171,6 +192,8 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
 
     private static String modelText(Context c) {
         String m = Config.model(c);
+        String active = Config.activeModel(c);
+        if (!active.equals(m)) return c.getString(R.string.model_switched_now, active);
         return m.isEmpty() ? c.getString(R.string.model_auto_long) : m;
     }
 

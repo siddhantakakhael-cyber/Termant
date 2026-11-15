@@ -265,6 +265,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     @Override
     public void onChatChanged() {
         if (chat == null) return;
+        refreshChips(); // auto-switch may have moved to another model
         boolean busy = chat.isBusy();
         send.setText(busy ? "\u25a0" : "\u2191");
         send.setTextSize(busy ? 15 : 20);
@@ -374,6 +375,14 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             text.setTextIsSelectable(true);
             bubble.addView(text);
         }
+        if (!m.note.isEmpty()) {
+            TextView note = new TextView(c);
+            note.setText("\u21bb " + m.note);
+            note.setTextColor(MUTED);
+            note.setTextSize(12);
+            if (!m.text.isEmpty() || !m.steps.isEmpty()) note.setPadding(0, dp(8), 0, 0);
+            bubble.addView(note);
+        }
         if (working) {
             TextView state = new TextView(c);
             String status = chat.status;
@@ -382,7 +391,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             state.setTextColor(MUTED);
             state.setTextSize(14);
             state.setMaxLines(2);
-            if (!m.text.isEmpty()) state.setPadding(0, dp(6), 0, 0);
+            if (!m.text.isEmpty() || !m.note.isEmpty()) state.setPadding(0, dp(6), 0, 0);
             bubble.addView(state);
         }
         LayoutParams size = new LayoutParams(

@@ -167,6 +167,11 @@ public class MainActivity extends Activity
             public void onOpenArena() {
                 openArena();
             }
+
+            @Override
+            public void onPickBackups() {
+                pickBackups(false);
+            }
         });
         settingsPanel.setVisibility(View.GONE);
         rootView.addView(chatPanel, match());
@@ -780,6 +785,50 @@ public class MainActivity extends Activity
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    /** Which models auto-switch may move to, in the order of the list. */
+    private void pickBackups(boolean reloaded) {
+        if (service == null) return;
+        final List<String> models = Config.cachedModels(this);
+        if (models.isEmpty()) {
+            if (reloaded) return;
+            Toast.makeText(this, R.string.model_loading, Toast.LENGTH_SHORT).show();
+            service.chat.loadModels(new Chat.ModelsCallback() {
+                @Override
+                public void onModels(List<String> found) {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (found == null) {
+                        Toast.makeText(MainActivity.this, R.string.model_not_ready, Toast.LENGTH_LONG).show();
+                    }
+                    pickBackups(true);
+                }
+            });
+            return;
+        }
+        List<String> chosen = Config.chosenBackups(this);
+        final boolean[] ticked = new boolean[models.size()];
+        for (int i = 0; i < ticked.length; i++) ticked[i] = chosen.contains(models.get(i));
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.backups_title)
+                .setMultiChoiceItems(models.toArray(new String[0]), ticked,
+                        new DialogInterface.OnMultiChoiceClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                                ticked[which] = isChecked;
+                            }
+                        })
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        List<String> picked = new java.util.ArrayList<>();
+                        for (int i = 0; i < ticked.length; i++) if (ticked[i]) picked.add(models.get(i));
+                        Config.setBackups(MainActivity.this, picked);
+                        settingsChanged();
+                    }
+                })
                 .show();
     }
 

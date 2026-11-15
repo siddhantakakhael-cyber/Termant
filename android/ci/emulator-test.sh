@@ -230,4 +230,30 @@ grep -q '^key-set=yes' "$OUT/result4.txt" || finish "FAIL the API key did not re
 grep -q '^wifi-off-exit=0' "$OUT/result4.txt" || finish "FAIL phone wifi off"
 grep -q 'disabled' "$OUT/wifi.txt" || finish "FAIL Wi-Fi was not really switched off"
 
+echo "Auto-switch: the chosen model does not exist, a backup must answer"
+sleep 15 # Wi-Fi is coming back
+adb shell am force-stop "$PKG"
+adb shell "run-as $PKG sed -i 's#\\(name=.model.>\\)[^<]*#\\1opencode/no-such-model#' shared_prefs/termant.xml"
+run_as cat shared_prefs/termant.xml > "$OUT/prefs2.xml"
+grep -q 'no-such-model' "$OUT/prefs2.xml" || finish "FAIL could not prepare the auto-switch test"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+tap_on 'class="android.widget.EditText"' || finish "FAIL message box not found for auto-switch"
+sleep 2
+adb shell input text 'Say%shello%sin%sthree%swords'
+sleep 1
+tap_on 'content-desc="Send"'
+wait_for_reply 80 || finish "FAIL auto-switch: no reply"
+sleep 2
+shot 17-auto-switch
+adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
+grep -q "gave no answer, switching to" "$OUT/phone-log.txt" || finish "FAIL auto-switch did not happen"
+grep -q 'Switched to' "$OUT/chat.json" || finish "FAIL auto-switch: the reply does not say it switched"
+python3 - "$OUT/chat.json" <<'PY' || finish "FAIL auto-switch: the backup model did not answer"
+import json, sys
+last = json.load(open(sys.argv[1]))["messages"][-1]
+print("auto-switch reply:", last)
+sys.exit(1 if last["failed"] or not last["text"].strip() else 0)
+PY
+
 finish PASS

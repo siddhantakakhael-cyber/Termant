@@ -27,7 +27,17 @@ final class Config {
             {"OpenRouter", "OPENROUTER_API_KEY"},
             {"Groq", "GROQ_API_KEY"},
             {"DeepSeek", "DEEPSEEK_API_KEY"},
+            {"Cerebras", "CEREBRAS_API_KEY"},
+            {"Mistral", "MISTRAL_API_KEY"},
     };
+    /** Free models to fall back on before the real list has been fetched. */
+    private static final String[] KNOWN_FREE = {
+            "opencode/big-pickle", "opencode/glm-5.3-flash-free",
+            "opencode/deepseek-v4.1-flash-free", "opencode/minimax-m3.1-flash-free",
+    };
+    /** How long the app stays on a model it switched to before trying the chosen one again. */
+    private static final long SWITCH_LASTS_MS = 3 * 60 * 60 * 1000;
+    static final int MAX_ATTEMPTS = 5;
     static final String DEFAULT_WORKSPACE = "/root/workspace";
     /** Path inside Ubuntu of the file with the keys; the chat and login shells read it. */
     static final String KEYS_FILE = "/root/.config/termant/keys.env";
@@ -49,12 +59,74 @@ final class Config {
     }
 
     static void setModel(Context c, String model) {
-        prefs(c).edit().putString("model", model).apply();
+        prefs(c).edit().putString("model", model).remove("switched").apply();
+    }
+
+    /** The model in use right now: the chosen one, or the one auto-switch moved to. */
+    static String activeModel(Context c) {
+        SharedPreferences p = prefs(c);
+        String switched = p.getString("switched", "");
+        if (!switched.isEmpty() && autoSwitch(c)
+                && System.currentTimeMillis() - p.getLong("switched_at", 0) < SWITCH_LASTS_MS) {
+            return switched;
+        }
+        return model(c);
+    }
+
+    /** Remembers that the chosen model stopped answering and this one worked. */
+    static void setSwitched(Context c, String model) {
+        prefs(c).edit().putString("switched", model).putLong("switched_at", System.currentTimeMillis()).apply();
     }
 
     static String modelName(Context c) {
-        String m = model(c);
+        String m = activeModel(c);
         return m.isEmpty() ? c.getString(R.string.model_auto) : m.substring(m.lastIndexOf('/') + 1);
+    }
+
+    // ------------------------------------------------------------ auto-switch
+
+    static boolean autoSwitch(Context c) {
+        return prefs(c).getBoolean("auto_switch", true);
+    }
+
+    static void setAutoSwitch(Context c, boolean on) {
+        prefs(c).edit().putBoolean("auto_switch", on).apply();
+    }
+
+    static boolean isFree(String model) {
+        return model.startsWith("opencode/") || model.endsWith(":free") || model.endsWith("-free");
+    }
+
+    /** Backup models the user picked; empty means "all free models". */
+    static List<String> chosenBackups(Context c) {
+        String all = prefs(c).getString("backups", "");
+        return all.isEmpty() ? new ArrayList<String>() : new ArrayList<>(Arrays.asList(all.split("\n")));
+    }
+
+    static void setBackups(Context c, List<String> models) {
+        StringBuilder b = new StringBuilder();
+        for (String m : models) b.append(b.length() > 0 ? "\n" : "").append(m);
+        prefs(c).edit().putString("backups", b.toString()).apply();
+    }
+
+    /** Models to try for one message, in order: the active one, then the backups. */
+    static List<String> attempts(Context c) {
+        List<String> order = new ArrayList<>();
+        String first = activeModel(c);
+        order.add(first);
+        if (!autoSwitch(c)) return order;
+        List<String> backups = chosenBackups(c);
+        if (backups.isEmpty()) {
+            for (String m : cachedModels(c)) if (isFree(m)) backups.add(m);
+            if (backups.isEmpty()) backups.addAll(Arrays.asList(KNOWN_FREE));
+            // "Automatic" most likely means this one already, so it goes last
+            if (first.isEmpty() && backups.remove("opencode/big-pickle")) backups.add("opencode/big-pickle");
+        }
+        for (String m : backups) {
+            if (order.size() >= MAX_ATTEMPTS) break;
+            if (!order.contains(m)) order.add(m);
+        }
+        return order;
     }
 
     static List<String> cachedModels(Context c) {

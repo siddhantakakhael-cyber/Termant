@@ -30,6 +30,8 @@ final class Chat {
         /** Commands the agent ran for this reply. */
         final List<String> steps = new ArrayList<>();
         boolean failed;
+        /** Set when the app moved to another model to get this reply. */
+        String note = "";
     }
 
     interface Listener {
@@ -178,55 +180,111 @@ final class Chat {
         final int id = ++run;
         final boolean cont = continues;
         final String workspace = Config.workspace(context);
-        final String model = Config.model(context);
+        final List<String> models = Config.attempts(context);
         save();
         changed();
 
         new Thread("termant-chat") {
             @Override
             public void run() {
-                int exit = -1;
-                final StringBuilder out = new StringBuilder();
-                try {
-                    Ubuntu.prepareHost(context);
-                    ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
-                            "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont ? "--continue" : "",
-                            workspace, model));
-                    Map<String, String> env = pb.environment();
-                    env.clear();
-                    for (String e : Ubuntu.hostEnvironment(context)) {
-                        int eq = e.indexOf('=');
-                        env.put(e.substring(0, eq), e.substring(eq + 1));
-                    }
-                    pb.redirectErrorStream(true);
-                    final Process p = pb.start();
-                    p.getOutputStream().close();
-                    main.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (id == Chat.this.run) process = p;
-                            else p.destroy();
+                for (int attempt = 0; ; attempt++) {
+                    final String model = models.get(attempt);
+                    int exit = -1;
+                    final StringBuilder out = new StringBuilder();
+                    try {
+                        Ubuntu.prepareHost(context);
+                        ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
+                                "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont ? "--continue" : "",
+                                workspace, model));
+                        Map<String, String> env = pb.environment();
+                        env.clear();
+                        for (String e : Ubuntu.hostEnvironment(context)) {
+                            int eq = e.indexOf('=');
+                            env.put(e.substring(0, eq), e.substring(eq + 1));
                         }
-                    });
-                    Reader in = new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8);
-                    char[] buf = new char[4096];
-                    int n;
-                    long shown = 0;
-                    while ((n = in.read(buf)) > 0) {
-                        out.append(buf, 0, n);
-                        long now = System.currentTimeMillis();
-                        if (now - shown > 150) { // do not redraw for every few bytes
-                            shown = now;
-                            publish(id, reply, out.toString(), null);
+                        pb.redirectErrorStream(true);
+                        final Process p = pb.start();
+                        p.getOutputStream().close();
+                        main.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (id == Chat.this.run) process = p;
+                                else p.destroy();
+                            }
+                        });
+                        Reader in = new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8);
+                        char[] buf = new char[4096];
+                        int n;
+                        long shown = 0;
+                        while ((n = in.read(buf)) > 0) {
+                            out.append(buf, 0, n);
+                            long now = System.currentTimeMillis();
+                            if (now - shown > 150) { // do not redraw for every few bytes
+                                shown = now;
+                                publish(id, reply, out.toString(), null);
+                            }
                         }
+                        exit = p.waitFor();
+                    } catch (Exception e) {
+                        out.append('\n').append(e);
                     }
-                    exit = p.waitFor();
-                } catch (Exception e) {
-                    out.append('\n').append(e);
+                    if (id != Chat.this.run) return; // stopped by the user
+                    if (attempt + 1 < models.size() && modelGaveUp(out.toString(), exit)) {
+                        final String next = models.get(attempt + 1);
+                        android.util.Log.i("Termant", "model '" + model + "' gave no answer, switching to " + next);
+                        main.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (id != Chat.this.run) return;
+                                reply.text = "";
+                                reply.note = context.getString(R.string.chat_switched, shortName(next),
+                                        model.isEmpty() ? context.getString(R.string.model_auto) : shortName(model));
+                                changed();
+                            }
+                        });
+                        continue;
+                    }
+                    final boolean switched = attempt > 0 && exit == 0;
+                    if (switched) Config.setSwitched(context, model);
+                    else if (attempt > 0) {
+                        main.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                reply.note = context.getString(R.string.chat_all_failed);
+                            }
+                        });
+                    }
+                    publish(id, reply, out.toString(), exit);
+                    return;
                 }
-                publish(id, reply, out.toString(), exit);
             }
         }.start();
+    }
+
+    private static String shortName(String model) {
+        return model.substring(model.lastIndexOf('/') + 1);
+    }
+
+    private static final Pattern LIMIT = Pattern.compile(
+            "(?i)rate.?limit|quota|\\b429\\b|too many requests|usage limit|limit (reached|exceeded)|"
+                    + "insufficient|out of credits|overloaded|unavailable|not found|unauthorized|invalid api key");
+
+    /**
+     * Whether this model failed in a way another model could fix: it ended
+     * with an error or said nothing, typically because its free limit is used
+     * up. Never true once the agent has run a command, because trying again
+     * would do that work twice.
+     */
+    static boolean modelGaveUp(String raw, int exit) {
+        String output = ANSI.matcher(raw).replaceAll("");
+        int start = output.indexOf(MARKER);
+        if (start < 0) return false; // the agent itself could not be set up
+        String said = output.substring(start + MARKER.length());
+        Parsed parsed = parse(said);
+        if (!parsed.steps.isEmpty()) return false;
+        if (exit != 0 || parsed.text.isEmpty()) return true;
+        return said.length() < 800 && said.toLowerCase(java.util.Locale.US).contains("error")
+                && LIMIT.matcher(said).find();
     }
 
     /** Shows the output so far; exit is null while the agent is still running. */
@@ -241,6 +299,14 @@ final class Chat {
                     process = null;
                     status = "";
                     if (exit == 0) continues = true;
+                    if (exit == 0 && Config.cachedModels(context).isEmpty()) {
+                        loadModels(new ModelsCallback() {
+                            @Override
+                            public void onModels(List<String> models) {
+                                // stored by loadModels; nothing to show
+                            }
+                        });
+                    }
                     save();
                 }
                 changed();
@@ -329,7 +395,7 @@ final class Chat {
             JSONArray list = new JSONArray();
             for (Message m : messages) {
                 list.put(new JSONObject().put("user", m.user).put("text", m.text)
-                        .put("failed", m.failed).put("steps", new JSONArray(m.steps)));
+                        .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps)));
             }
             Installer.write(store, new JSONObject().put("continues", continues).put("messages", list).toString());
         } catch (Exception e) {
@@ -353,6 +419,7 @@ final class Chat {
                 m.user = j.optBoolean("user");
                 m.text = j.optString("text");
                 m.failed = j.optBoolean("failed");
+                m.note = j.optString("note");
                 JSONArray steps = j.optJSONArray("steps");
                 for (int k = 0; steps != null && k < steps.length(); k++) m.steps.add(steps.getString(k));
                 // a reply that was cut off when the app was closed
