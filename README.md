@@ -91,6 +91,13 @@ needs the SMS permission, which Android asks for the first time.
 
 ## Settings: model, workspace, your own API key
 
+**Auto-switch** (on by default): when a model ends with an error or says
+nothing, usually because its free limit is used up, Termant tries the next
+backup model by itself (up to 5 per message) and says so under the reply. It
+stays on the model that worked for 3 hours. Backups are all free models unless
+you pick your own in Settings. It never retries once the agent has already run
+a command, so nothing is done twice.
+
 The **Arena ↗** chip opens the arena.ai website in your browser, where you
 sign in and use it. Arena.ai offers no way for other apps to use its agent, so
 it is not connected to the chat and cannot control the phone or Ubuntu.
@@ -98,7 +105,7 @@ it is not connected to the chat and cannot control the phone or Ubuntu.
 Under the chat are two chips: the **workspace folder** the agent works in and
 the **model** that answers. The gear button opens Settings, where you can also
 enter your own API key (Anthropic, OpenAI, Google Gemini, OpenRouter, Groq,
-DeepSeek). With a key, that provider's models appear in the model list and are
+DeepSeek, Cerebras, Mistral). With a key, that provider's models appear in the model list and are
 billed to your account; without one, free models are used. Keys are stored only
 on the phone, in Ubuntu at `~/.config/termant/keys.env`.
 
