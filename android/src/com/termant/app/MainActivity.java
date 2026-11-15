@@ -136,6 +136,11 @@ public class MainActivity extends Activity
             public void onPickModel() {
                 pickModel(false);
             }
+
+            @Override
+            public void onOpenArena() {
+                openArena();
+            }
         });
         settingsPanel = new SettingsView(this, new SettingsView.Host() {
             @Override
@@ -156,6 +161,11 @@ public class MainActivity extends Activity
             @Override
             public void onAskSms() {
                 askForSms();
+            }
+
+            @Override
+            public void onOpenArena() {
+                openArena();
             }
         });
         settingsPanel.setVisibility(View.GONE);
@@ -655,6 +665,15 @@ public class MainActivity extends Activity
         settingsPanel.refresh();
         chatPanel.setVisibility(View.GONE);
         settingsPanel.setVisibility(View.VISIBLE);
+    }
+
+    /** Opens the Arena.ai website in the phone's browser; signing in happens there. */
+    private void openArena() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://arena.ai/")));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.arena_no_browser, Toast.LENGTH_LONG).show();
+        }
     }
 
     /** Asks Android for permission to send text messages, if the app is on screen. */

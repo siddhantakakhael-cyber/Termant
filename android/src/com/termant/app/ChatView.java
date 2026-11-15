@@ -38,6 +38,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         void onPickWorkspace();
 
         void onPickModel();
+
+        void onOpenArena();
     }
 
     private static final int BG = MainActivity.BG, SURFACE = MainActivity.SURFACE,
@@ -142,7 +144,24 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         LayoutParams modelSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
         modelSize.leftMargin = dp(6);
         chips.addView(modelChip, modelSize);
-        addView(chips);
+
+        // Arena.ai has no way for other apps to use its agent, so this opens its website.
+        TextView arena = chip(context.getString(R.string.arena_description));
+        arena.setText("Arena \u2197");
+        arena.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ChatView.this.host.onOpenArena();
+            }
+        });
+        LayoutParams arenaSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
+        arenaSize.leftMargin = dp(6);
+        chips.addView(arena, arenaSize);
+
+        android.widget.HorizontalScrollView chipScroll = new android.widget.HorizontalScrollView(context);
+        chipScroll.setHorizontalScrollBarEnabled(false);
+        chipScroll.addView(chips);
+        addView(chipScroll);
         refreshChips();
 
         // message box
@@ -219,7 +238,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         TextView v = button("", description);
         v.setTextSize(12);
         v.setTextColor(MUTED);
-        v.setMaxWidth(dp(150));
+        v.setMaxWidth(dp(120));
         v.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         v.setPadding(dp(10), 0, dp(10), 0);
         v.setBackground(pressable(SURFACE, 15));

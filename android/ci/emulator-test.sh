@@ -188,6 +188,17 @@ sleep 2
 shot 13-chat-workspace
 run_as test -f files/rootfs/root/ci-project/note.txt || finish "FAIL the agent did not work in the chosen workspace"
 
+echo "Arena button"
+tap_on 'content-desc="Open Arena.ai in the browser"' || finish "FAIL Arena button not found"
+sleep 8
+shot 13b-arena
+adb shell dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity' > "$OUT/arena.txt"
+adb shell dumpsys activity activities | grep -m3 'arena.ai' >> "$OUT/arena.txt"
+grep -q "$PKG" "$OUT/arena.txt" && finish "FAIL the Arena button did not open a browser"
+grep -q 'arena.ai' "$OUT/arena.txt" || finish "FAIL the browser was not given the arena.ai address"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 3
+
 echo "Settings"
 tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found"
 sleep 2

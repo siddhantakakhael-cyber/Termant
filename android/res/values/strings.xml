@@ -63,6 +63,10 @@
     <string name="rule_last_failed">last run %1$s, failed</string>
     <string name="sms_allow">Allow SMS</string>
     <string name="sms_note">Needed only for rules or requests that send a text message.</string>
+    <string name="arena_title">Arena.ai</string>
+    <string name="arena_description">Open Arena.ai in the browser</string>
+    <string name="arena_note">Opens the arena.ai website in your browser, where you sign in and use it. It is separate from this chat: it cannot control the phone or Ubuntu.</string>
+    <string name="arena_no_browser">No browser app was found on this phone.</string>
     <string name="chat_new">New chat</string>
     <string name="chat_new_description">Start a new chat</string>
     <string name="chat_terminal">Terminal</string>

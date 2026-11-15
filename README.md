@@ -91,6 +91,10 @@ needs the SMS permission, which Android asks for the first time.
 
 ## Settings: model, workspace, your own API key
 
+The **Arena ↗** chip opens the arena.ai website in your browser, where you
+sign in and use it. Arena.ai offers no way for other apps to use its agent, so
+it is not connected to the chat and cannot control the phone or Ubuntu.
+
 Under the chat are two chips: the **workspace folder** the agent works in and
 the **model** that answers. The gear button opens Settings, where you can also
 enter your own API key (Anthropic, OpenAI, Google Gemini, OpenRouter, Groq,

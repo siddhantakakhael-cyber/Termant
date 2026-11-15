@@ -37,6 +37,8 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         void onPickWorkspace();
 
         void onAskSms();
+
+        void onOpenArena();
     }
 
     private static final int BG = MainActivity.BG, SURFACE = MainActivity.SURFACE,
@@ -124,6 +126,13 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                         host.onPickWorkspace();
                     }
                 });
+
+        row(c.getString(R.string.arena_title), "\u2197", c.getString(R.string.arena_note), new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                host.onOpenArena();
+            }
+        });
 
         heading(R.string.settings_keys, R.string.settings_keys_note);
         Map<String, String> keys = Config.keys(c);
