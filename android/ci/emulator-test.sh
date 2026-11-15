@@ -203,6 +203,7 @@ echo "Settings"
 tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found"
 sleep 2
 shot 14-settings
+adb shell input swipe 160 450 160 250 400; sleep 1
 tap_on 'content-desc="OpenRouter"' || finish "FAIL API key row not found"
 sleep 2
 tap_on 'class="android.widget.EditText"'; sleep 1
