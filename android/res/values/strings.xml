@@ -87,22 +87,23 @@
     <string name="chat_stop">Stop</string>
     <string-array name="thinking">
         <item>Soch raha hoon…</item>
-        <item>Dimaag ki batti jala raha hoon 💡</item>
-        <item>Aapki baat samajh raha hoon…</item>
-        <item>Sahi tareeka dhoondh raha hoon 🔍</item>
-        <item>Thoda sa sabr, bas aa hi gaya…</item>
-        <item>Chai thandi mat hone dena ☕</item>
+        <item>Dimaag laga raha hoon 💡</item>
+        <item>Baat samajh raha hoon…</item>
+        <item>Tareeka dhoondh raha hoon 🔍</item>
+        <item>Bas aa hi gaya…</item>
+        <item>Chai pee lo tab tak ☕</item>
         <item>Plan bana raha hoon 📝</item>
-        <item>Ek second… almost done ✨</item>
+        <item>Almost done ✨</item>
     </string-array>
     <string-array name="working">
         <item>Kaam chal raha hai… ⚙️</item>
         <item>Commands chala raha hoon 🚀</item>
-        <item>Phone se baat kar raha hoon 📱</item>
+        <item>Phone se baat chal rahi hai 📱</item>
         <item>Result check kar raha hoon ✅</item>
         <item>Bas thoda aur…</item>
     </string-array>
     <string name="history_title">Chat history</string>
+    <string name="chat_try">Try asking</string>
     <string name="history_recent">Recent chats</string>
     <string name="history_all">All %1$d chats</string>
     <string name="history_none">No earlier chats yet.</string>

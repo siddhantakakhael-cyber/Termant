@@ -63,7 +63,11 @@ Termant opens as a chat, not a terminal. Type or speak what you want in Hindi,
 Hinglish or English; the agent answers in a chat bubble and lists the commands
 it ran above its answer. **New chat** starts a fresh conversation.
 
-The real Ubuntu terminal is one tap away: **>_ Terminal** at the top. **Chat**
+Earlier chats are kept: they are listed on the new-chat screen and under the
+**☰** button, and opening one continues it where it stopped (it carries on in
+the same OpenCode session, so the agent still knows what was said).
+
+The real Ubuntu terminal is one tap away: **>_** at the top. **Chat**
 (or Back) in the terminal returns to the chat. The first chat message downloads
 the agent (OpenCode, about 100 MB).
 

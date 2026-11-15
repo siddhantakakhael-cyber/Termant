@@ -304,20 +304,46 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
     private void addWelcome() {
         Context c = getContext();
-        list.setGravity(Gravity.CENTER_VERTICAL);
+        List<Chat.Summary> earlier = chat.history();
+        list.setGravity(earlier.isEmpty() ? Gravity.CENTER_VERTICAL : Gravity.TOP);
         TextView hello = new TextView(c);
         hello.setText(R.string.chat_welcome);
         hello.setTextColor(TEXT);
-        hello.setTextSize(26);
+        hello.setTextSize(earlier.isEmpty() ? 26 : 22);
         hello.setTypeface(Typeface.DEFAULT_BOLD);
-        hello.setPadding(dp(8), 0, dp(8), 0);
+        hello.setPadding(dp(8), dp(8), dp(8), 0);
         list.addView(hello);
-        TextView about = new TextView(c);
-        about.setText(R.string.chat_welcome_text);
-        about.setTextColor(MUTED);
-        about.setTextSize(15);
-        about.setPadding(dp(8), dp(8), dp(8), dp(20));
-        list.addView(about);
+        if (earlier.isEmpty()) {
+            // first time: say what this is
+            TextView about = new TextView(c);
+            about.setText(R.string.chat_welcome_text);
+            about.setTextColor(MUTED);
+            about.setTextSize(15);
+            about.setPadding(dp(8), dp(8), dp(8), dp(12));
+            list.addView(about);
+        } else {
+            // earlier chats stay within reach when a new one is started
+            list.addView(sectionTitle(R.string.history_recent));
+            for (int i = 0; i < earlier.size() && i < 3; i++) {
+                list.addView(historyRow(earlier.get(i), null), rowSize());
+            }
+            if (earlier.size() > 3) {
+                TextView all = new TextView(c);
+                all.setText(getResources().getString(R.string.history_all, earlier.size()));
+                all.setTextColor(ACCENT);
+                all.setTextSize(14);
+                all.setPadding(dp(16), dp(10), dp(16), dp(4));
+                all.setBackground(pressable(0x00000000, 14));
+                all.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showHistory();
+                    }
+                });
+                list.addView(all);
+            }
+            list.addView(sectionTitle(R.string.chat_try));
+        }
         for (final String idea : getResources().getStringArray(R.array.chat_ideas)) {
             TextView chip = new TextView(c);
             chip.setText(idea);
@@ -331,38 +357,18 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                     if (chat != null && !chat.isBusy()) chat.send(idea);
                 }
             });
-            LayoutParams size = new LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            size.topMargin = dp(8);
-            list.addView(chip, size);
+            list.addView(chip, rowSize());
         }
+    }
 
-        // earlier chats stay within reach when a new one is started
-        List<Chat.Summary> earlier = chat.history();
-        if (earlier.isEmpty()) return;
-        TextView heading = new TextView(c);
-        heading.setText(R.string.history_recent);
+    private TextView sectionTitle(int text) {
+        TextView heading = new TextView(getContext());
+        heading.setText(text);
         heading.setTextColor(MUTED);
         heading.setTextSize(13);
         heading.setTypeface(Typeface.DEFAULT_BOLD);
-        heading.setPadding(dp(8), dp(24), 0, 0);
-        list.addView(heading);
-        for (int i = 0; i < earlier.size() && i < 3; i++) list.addView(historyRow(earlier.get(i), null), rowSize());
-        if (earlier.size() > 3) {
-            TextView all = new TextView(c);
-            all.setText(getResources().getString(R.string.history_all, earlier.size()));
-            all.setTextColor(ACCENT);
-            all.setTextSize(14);
-            all.setPadding(dp(16), dp(12), dp(16), dp(12));
-            all.setBackground(pressable(0x00000000, 14));
-            all.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    showHistory();
-                }
-            });
-            list.addView(all);
-        }
+        heading.setPadding(dp(8), dp(18), 0, 0);
+        return heading;
     }
 
     // ------------------------------------------------------------ earlier chats
