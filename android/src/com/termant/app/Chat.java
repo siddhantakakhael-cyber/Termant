@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -190,6 +191,7 @@ final class Chat {
                 for (int attempt = 0; ; attempt++) {
                     final String model = models.get(attempt);
                     int exit = -1;
+                    boolean stuck = false;
                     final StringBuilder out = new StringBuilder();
                     try {
                         Ubuntu.prepareHost(context);
@@ -216,8 +218,14 @@ final class Chat {
                         char[] buf = new char[4096];
                         int n;
                         long shown = 0;
+                        // With another model to move to, do not sit through OpenCode's own retries.
+                        int patience = attempt + 1 < models.size() ? RETRIES_BEFORE_SWITCH : RETRIES_BEFORE_GIVING_UP;
                         while ((n = in.read(buf)) > 0) {
                             out.append(buf, 0, n);
+                            if (!stuck && retries(out.toString()) >= patience) {
+                                stuck = true;
+                                p.destroy();
+                            }
                             long now = System.currentTimeMillis();
                             if (now - shown > 150) { // do not redraw for every few bytes
                                 shown = now;
@@ -225,6 +233,7 @@ final class Chat {
                             }
                         }
                         exit = p.waitFor();
+                        if (stuck) exit = STUCK;
                     } catch (Exception e) {
                         out.append('\n').append(e);
                     }
@@ -259,6 +268,28 @@ final class Chat {
                 }
             }
         }.start();
+    }
+
+    private static final int STUCK = 75;
+    private static final int RETRIES_BEFORE_SWITCH = 3;
+    private static final int RETRIES_BEFORE_GIVING_UP = 6;
+    /** OpenCode prints this each time the model's service fails and it asks again. */
+    private static final Pattern RETRYING = Pattern.compile("(?m)^! retrying \\(attempt (\\d+)\\)");
+
+    /**
+     * How often OpenCode has already retried, as long as the agent has done
+     * nothing yet; 0 once it has run a command, so its work is never cut off.
+     */
+    static int retries(String raw) {
+        String output = ANSI.matcher(raw).replaceAll("");
+        int start = output.indexOf(MARKER);
+        if (start < 0) return 0;
+        output = output.substring(start);
+        if (!parse(output).steps.isEmpty()) return 0;
+        int highest = 0;
+        Matcher m = RETRYING.matcher(output);
+        while (m.find()) highest = Math.max(highest, Integer.parseInt(m.group(1)));
+        return highest;
     }
 
     private static String shortName(String model) {
@@ -334,9 +365,11 @@ final class Chat {
         reply.text = parsed.text;
         if (exit != null && reply.text.isEmpty()) {
             reply.failed = exit != 0;
+            String rest = output.substring(start + MARKER.length());
             reply.text = exit == 0 && !reply.steps.isEmpty()
                     ? context.getString(R.string.chat_done)
-                    : context.getString(R.string.chat_no_answer) + tail(output.substring(start + MARKER.length()));
+                    : context.getString(rest.contains("Provider returned error")
+                    ? R.string.chat_provider_error : R.string.chat_no_answer) + tail(rest);
         }
     }
 
@@ -376,6 +409,9 @@ final class Chat {
                 // file tools: "← Write hi.py", "→ Read notes.txt"
                 result.steps.add(line.substring(2).trim());
                 inCommand = true;
+            } else if (line.startsWith("! retrying (attempt ")) {
+                // OpenCode's own progress line, not something the model said
+                inCommand = false;
             } else if (!inCommand) {
                 said.append(line).append('\n');
             }

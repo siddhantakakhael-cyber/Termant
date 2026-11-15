@@ -32,7 +32,7 @@
     <string name="rule_failed">Rule failed: %1$s</string>
     <string name="model_auto">Auto</string>
     <string name="model_title">Model</string>
-    <string name="model_auto_long">Automatic (a free model, unless you add a key)</string>
+    <string name="model_auto_long">Automatic (a free model)</string>
     <string name="model_refresh">↻ Refresh the list</string>
     <string name="model_loading">Loading the model list…</string>
     <string name="model_not_ready">The model list appears after the agent is downloaded. Send one chat message first.</string>
@@ -63,6 +63,7 @@
     <string name="rule_last_failed">last run %1$s, failed</string>
     <string name="sms_allow">Allow SMS</string>
     <string name="sms_note">Needed only for rules or requests that send a text message.</string>
+    <string name="chat_provider_error">The model\'s provider refused the request. With an OpenRouter key this usually means: the model is not free and the account has no credit, the free daily limit is used up, or free models are blocked in OpenRouter\'s privacy settings. Pick a model whose name ends in :free, or another provider.</string>
     <string name="chat_switched">Switched to %1$s: %2$s did not answer (limit reached or not available).</string>
     <string name="chat_all_failed">Other models were tried too; none answered.</string>
     <string name="model_switched_now">%1$s (switched automatically)</string>

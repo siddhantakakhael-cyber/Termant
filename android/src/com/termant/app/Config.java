@@ -113,6 +113,9 @@ final class Config {
     static List<String> attempts(Context c) {
         List<String> order = new ArrayList<>();
         String first = activeModel(c);
+        // With a key saved, OpenCode's own choice could be a model that costs
+        // money; "Automatic" must stay free, so name the free default.
+        if (first.isEmpty() && !keys(c).isEmpty()) first = KNOWN_FREE[0];
         order.add(first);
         if (!autoSwitch(c)) return order;
         List<String> backups = chosenBackups(c);
