@@ -203,7 +203,11 @@ echo "Settings"
 tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found"
 sleep 2
 shot 14-settings
-adb shell input swipe 160 450 160 250 400; sleep 1
+for _ in 1 2 3 4 5; do
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  adb shell "grep -q 'content-desc=.OpenRouter.' /sdcard/ui.xml" && break
+  adb shell input swipe 160 450 160 250 400; sleep 1
+done
 tap_on 'content-desc="OpenRouter"' || finish "FAIL API key row not found"
 sleep 2
 tap_on 'class="android.widget.EditText"'; sleep 1
