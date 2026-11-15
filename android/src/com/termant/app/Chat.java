@@ -41,15 +41,27 @@ final class Chat {
 
     private static final String MARKER = "@@TERMANT-RUN@@";
     private static final int SETUP_FAILED = 97;
-    /** Runs inside Ubuntu; $1 message, $2 "--continue" or empty, $3 workspace folder, $4 model or empty. */
+    private static final String SESSION_MARKER = "@@TERMANT-SESSION@@";
+    private static final Pattern SESSION_ID = Pattern.compile("\\bses_[A-Za-z0-9]+");
+    /**
+     * Runs inside Ubuntu; $1 message, $2 "--continue", "--session ID" or empty, $3 workspace folder,
+     * $4 model or empty, $5 non-empty to also print which OpenCode session the reply belongs to.
+     */
     private static final String SCRIPT =
             "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
                     + "mkdir -p \"$3\" && cd \"$3\" || exit " + SETUP_FAILED + "\n"
                     + "echo " + MARKER + "\n"
-                    + "if [ -n \"$4\" ]; then exec opencode run --standalone --auto $2 --model \"$4\" \"$1\" </dev/null; fi\n"
-                    + "exec opencode run --standalone --auto $2 \"$1\" </dev/null\n";
+                    + "if [ -n \"$4\" ]; then opencode run --standalone --auto $2 --model \"$4\" \"$1\" </dev/null\n"
+                    + "else opencode run --standalone --auto $2 \"$1\" </dev/null; fi\n"
+                    + "code=$?\n"
+                    + "if [ $code -eq 0 ] && [ -n \"$5\" ]; then\n"
+                    + "  echo; echo " + SESSION_MARKER + "\n"
+                    + "  { opencode session list --standalone --max-count 1 --format json 2>/dev/null </dev/null"
+                    + " || opencode session list --max-count 1 --format json 2>/dev/null </dev/null; } | head -c 3000\n"
+                    + "fi\n"
+                    + "exit $code\n";
     /** Prints the models that can be used, one "provider/model" per line; exit 3 if the agent is not downloaded yet. */
     private static final String MODELS_SCRIPT =
             "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
@@ -111,6 +123,7 @@ final class Chat {
     /** The next message starts a new conversation in OpenCode (used when the folder changes). */
     void startOver() {
         continues = false;
+        session = "";
         save();
     }
 
@@ -130,11 +143,80 @@ final class Chat {
     private int run; // identifies the current request; stale threads are ignored
     private boolean busy;
     private boolean continues;
+    /** The conversation on screen: its id, the OpenCode session it lives in and the folder it was held in. */
+    private String id = newId();
+    private String session = "";
+    private String workspace = "";
+    /** When the reply now being awaited was asked for (elapsed-realtime clock). */
+    long startedAt;
+    /** Finished and unfinished conversations, one file each. */
+    private final File archive;
+
+    /** One line of the list of earlier chats. */
+    static final class Summary {
+        String id;
+        String title;
+        long updated;
+    }
 
     Chat(Context context) {
         this.context = context.getApplicationContext();
         store = new File(context.getFilesDir(), "chat.json");
-        load();
+        archive = new File(context.getFilesDir(), "chats");
+        load(store);
+        if (!messages.isEmpty()) save(); // a chat from an older version joins the list
+    }
+
+    private static String newId() {
+        return "c" + System.currentTimeMillis();
+    }
+
+    String id() {
+        return id;
+    }
+
+    /** Earlier chats, newest first (at most 100). */
+    List<Summary> history() {
+        List<Summary> all = new ArrayList<>();
+        File[] files = archive.listFiles();
+        if (files == null) return all;
+        for (File f : files) {
+            try {
+                JSONObject o = new JSONObject(read(f));
+                Summary s = new Summary();
+                s.id = o.getString("id");
+                s.title = o.optString("title");
+                s.updated = o.optLong("updated");
+                all.add(s);
+            } catch (Exception e) {
+                // not a chat file
+            }
+        }
+        java.util.Collections.sort(all, new java.util.Comparator<Summary>() {
+            @Override
+            public int compare(Summary a, Summary b) {
+                return Long.compare(b.updated, a.updated);
+            }
+        });
+        return all.size() > 100 ? new ArrayList<>(all.subList(0, 100)) : all;
+    }
+
+    /** Brings an earlier chat back on screen, to read it or carry on with it. */
+    void open(String chatId) {
+        File f = new File(archive, chatId + ".json");
+        if (chatId.equals(id) || !f.isFile()) return;
+        stop();
+        load(f);
+        // its OpenCode session lives in the folder the chat was held in
+        if (!workspace.isEmpty()) Config.setWorkspace(context, workspace);
+        save();
+        changed();
+    }
+
+    void delete(String chatId) {
+        new File(archive, chatId + ".json").delete();
+        if (chatId.equals(id)) clear();
+        else changed();
     }
 
     void setListener(Listener l) {
@@ -145,11 +227,14 @@ final class Chat {
         return busy;
     }
 
-    /** Forgets the conversation; the next message starts a fresh one. */
+    /** Starts a new, empty chat. The one on screen stays in the list of earlier chats. */
     void clear() {
         stop();
         messages.clear();
         continues = false;
+        id = newId();
+        session = "";
+        workspace = "";
         save();
         changed();
     }
@@ -178,9 +263,15 @@ final class Chat {
         messages.add(reply);
         busy = true;
         status = "";
+        startedAt = android.os.SystemClock.elapsedRealtime();
         final int id = ++run;
-        final boolean cont = continues;
         final String workspace = Config.workspace(context);
+        this.workspace = workspace;
+        // Carry on in this chat's own OpenCode session. Without a known session,
+        // "--continue" is only right if this chat was the last one to run.
+        final String cont = !session.isEmpty() ? "--session " + session
+                : continues && this.id.equals(Config.lastChat(context)) ? "--continue" : "";
+        final String wantSession = session.isEmpty() ? "1" : "";
         final List<String> models = Config.attempts(context);
         save();
         changed();
@@ -196,8 +287,8 @@ final class Chat {
                     try {
                         Ubuntu.prepareHost(context);
                         ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
-                                "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont ? "--continue" : "",
-                                workspace, model));
+                                "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont,
+                                workspace, model, wantSession));
                         Map<String, String> env = pb.environment();
                         env.clear();
                         for (String e : Ubuntu.hostEnvironment(context)) {
@@ -285,6 +376,7 @@ final class Chat {
         int start = output.indexOf(MARKER);
         if (start < 0) return 0;
         output = output.substring(start);
+        if (output.contains(SESSION_MARKER)) return 0; // the answer is complete
         if (!parse(output).steps.isEmpty()) return 0;
         int highest = 0;
         Matcher m = RETRYING.matcher(output);
@@ -311,6 +403,7 @@ final class Chat {
         int start = output.indexOf(MARKER);
         if (start < 0) return false; // the agent itself could not be set up
         String said = output.substring(start + MARKER.length());
+        if (said.contains(SESSION_MARKER)) said = said.substring(0, said.indexOf(SESSION_MARKER));
         Parsed parsed = parse(said);
         if (!parsed.steps.isEmpty()) return false;
         if (exit != 0 || parsed.text.isEmpty()) return true;
@@ -329,7 +422,15 @@ final class Chat {
                     busy = false;
                     process = null;
                     status = "";
-                    if (exit == 0) continues = true;
+                    if (exit == 0) {
+                        continues = true;
+                        Config.setLastChat(context, Chat.this.id);
+                        int at = output.indexOf(SESSION_MARKER);
+                        Matcher found = at < 0 ? null : SESSION_ID.matcher(output.substring(at));
+                        if (found != null && found.find()) session = found.group();
+                        android.util.Log.i("Termant", "chat " + Chat.this.id + " session: "
+                                + (session.isEmpty() ? "unknown" : session));
+                    }
                     if (exit == 0 && Config.cachedModels(context).isEmpty()) {
                         loadModels(new ModelsCallback() {
                             @Override
@@ -359,6 +460,8 @@ final class Chat {
             return;
         }
         status = "";
+        int end = output.indexOf(SESSION_MARKER);
+        if (end > start) output = output.substring(0, end);
         Parsed parsed = parse(output.substring(start + MARKER.length()));
         reply.steps.clear();
         reply.steps.addAll(parsed.steps);
@@ -429,25 +532,37 @@ final class Chat {
     private void save() {
         try {
             JSONArray list = new JSONArray();
+            String title = "";
             for (Message m : messages) {
+                if (title.isEmpty() && m.user) title = m.text.length() > 80 ? m.text.substring(0, 80) : m.text;
                 list.put(new JSONObject().put("user", m.user).put("text", m.text)
                         .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps)));
             }
-            Installer.write(store, new JSONObject().put("continues", continues).put("messages", list).toString());
+            String json = new JSONObject().put("id", id).put("title", title)
+                    .put("updated", System.currentTimeMillis()).put("session", session)
+                    .put("workspace", workspace).put("continues", continues).put("messages", list).toString();
+            Installer.write(store, json);
+            if (!messages.isEmpty()) Installer.write(new File(archive, id + ".json"), json);
         } catch (Exception e) {
             android.util.Log.e("Termant", "cannot save the chat", e);
         }
     }
 
-    private void load() {
-        if (!store.isFile()) return;
-        try (InputStream in = new FileInputStream(store)) {
+    private static String read(File f) throws java.io.IOException {
+        try (InputStream in = new FileInputStream(f)) {
             java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
             byte[] buf = new byte[8192];
             int n;
             while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
-            JSONObject o = new JSONObject(new String(b.toByteArray(), StandardCharsets.UTF_8));
-            continues = o.optBoolean("continues");
+            return new String(b.toByteArray(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private void load(File from) {
+        if (!from.isFile()) return;
+        try {
+            JSONObject o = new JSONObject(read(from));
+            List<Message> loaded = new ArrayList<>();
             JSONArray list = o.getJSONArray("messages");
             for (int i = 0; i < list.length(); i++) {
                 JSONObject j = list.getJSONObject(i);
@@ -460,10 +575,16 @@ final class Chat {
                 for (int k = 0; steps != null && k < steps.length(); k++) m.steps.add(steps.getString(k));
                 // a reply that was cut off when the app was closed
                 if (!m.user && m.text.isEmpty()) m.text = context.getString(R.string.chat_stopped);
-                messages.add(m);
+                loaded.add(m);
             }
-        } catch (Exception e) {
             messages.clear();
+            messages.addAll(loaded);
+            continues = o.optBoolean("continues");
+            id = o.optString("id", newId());
+            session = o.optString("session");
+            workspace = o.optString("workspace");
+        } catch (Exception e) {
+            android.util.Log.e("Termant", "cannot read a chat", e);
         }
     }
 }

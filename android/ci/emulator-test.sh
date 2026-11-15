@@ -260,4 +260,44 @@ print("auto-switch reply:", last)
 sys.exit(1 if last["failed"] or not last["text"].strip() else 0)
 PY
 
+echo "Chat history: an earlier chat can be reopened and continued"
+ask() { # <text with %s for spaces>
+  tap_on 'class="android.widget.EditText"' || return 1
+  sleep 2
+  adb shell input text "$1"
+  sleep 1
+  tap_on 'content-desc="Send"' || return 1
+  sleep 3
+}
+tap_on 'content-desc="Start a new chat"' || finish "FAIL New chat button not found"
+sleep 2
+ask 'Remember%sthis%ssecret%sword:%smango.%sReply%sonly%sOK' || finish "FAIL could not send in a new chat"
+shot 18-thinking
+wait_for_reply 80 || finish "FAIL history: no reply in chat one"
+tap_on 'content-desc="Start a new chat"'
+sleep 2
+shot 19-new-chat-with-recent
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'Remember this secret' /sdcard/ui.xml" || finish "FAIL the earlier chat is not shown after New chat"
+ask 'Say%shi%sin%sone%sword' || finish "FAIL could not send in chat two"
+wait_for_reply 80 || finish "FAIL history: no reply in chat two"
+tap_on 'content-desc="Chat history"' || finish "FAIL history button not found"
+sleep 2
+shot 20-history
+tap_on 'Remember this secret' || finish "FAIL the earlier chat is not in the history list"
+sleep 3
+run_as cat files/chat.json > "$OUT/chat-reopened.json"
+grep -q 'secret word: mango' "$OUT/chat-reopened.json" || finish "FAIL the earlier chat did not reopen"
+ask 'Which%ssecret%sword%sdid%sI%stell%syou?%sAnswer%swith%sthat%sword%sonly' || finish "FAIL could not send in the reopened chat"
+wait_for_reply 80 || finish "FAIL history: no reply in the reopened chat"
+sleep 2
+shot 21-reopened
+adb logcat -d -s Termant:I | grep 'session:' > "$OUT/sessions.txt"
+python3 - "$OUT/chat.json" <<'PY' || finish "FAIL the reopened chat did not remember what was said in it"
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"]
+print("reopened chat:", len(m), "messages; last:", m[-1]["text"])
+sys.exit(0 if len(m) == 4 and "mango" in m[-1]["text"].lower() else 1)
+PY
+
 finish PASS

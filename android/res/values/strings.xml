@@ -85,8 +85,29 @@
     <string name="chat_back">Chat</string>
     <string name="chat_back_description">Back to the chat</string>
     <string name="chat_stop">Stop</string>
-    <string name="chat_thinking">Thinking…</string>
-    <string name="chat_working">Working…</string>
+    <string-array name="thinking">
+        <item>Soch raha hoon…</item>
+        <item>Dimaag ki batti jala raha hoon 💡</item>
+        <item>Aapki baat samajh raha hoon…</item>
+        <item>Sahi tareeka dhoondh raha hoon 🔍</item>
+        <item>Thoda sa sabr, bas aa hi gaya…</item>
+        <item>Chai thandi mat hone dena ☕</item>
+        <item>Plan bana raha hoon 📝</item>
+        <item>Ek second… almost done ✨</item>
+    </string-array>
+    <string-array name="working">
+        <item>Kaam chal raha hai… ⚙️</item>
+        <item>Commands chala raha hoon 🚀</item>
+        <item>Phone se baat kar raha hoon 📱</item>
+        <item>Result check kar raha hoon ✅</item>
+        <item>Bas thoda aur…</item>
+    </string-array>
+    <string name="history_title">Chat history</string>
+    <string name="history_recent">Recent chats</string>
+    <string name="history_all">All %1$d chats</string>
+    <string name="history_none">No earlier chats yet.</string>
+    <string name="history_untitled">Chat</string>
+    <string name="history_delete">Delete chat</string>
     <string name="chat_stopped">Stopped.</string>
     <string name="chat_done">Done.</string>
     <string name="chat_no_answer">The agent gave no answer. Check your internet connection and try again.</string>

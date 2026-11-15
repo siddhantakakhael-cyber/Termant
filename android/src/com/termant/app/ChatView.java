@@ -23,6 +23,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,6 +76,18 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         title.setTypeface(Typeface.DEFAULT_BOLD);
         bar.addView(title, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
+        TextView past = button("\u2630", context.getString(R.string.history_title));
+        past.setTextSize(18);
+        past.setPadding(0, 0, 0, 0);
+        past.setBackground(pressable(0x00000000, 18));
+        past.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showHistory();
+            }
+        });
+        bar.addView(past, new LayoutParams(dp(40), dp(36)));
+
         TextView fresh = button("\uff0b", context.getString(R.string.chat_new_description));
         fresh.setTextSize(20);
         fresh.setPadding(0, 0, 0, 0);
@@ -99,8 +112,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         bar.addView(gear, new LayoutParams(dp(40), dp(36)));
 
-        TextView terminal = button(">_ " + context.getString(R.string.chat_terminal),
-                context.getString(R.string.chat_terminal_description));
+        TextView terminal = button(">_", context.getString(R.string.chat_terminal_description));
         terminal.setTypeface(Typeface.DEFAULT_BOLD);
         terminal.setBackground(pressable(SURFACE_HIGH, 18));
         terminal.setOnClickListener(new OnClickListener() {
@@ -324,6 +336,118 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             size.topMargin = dp(8);
             list.addView(chip, size);
         }
+
+        // earlier chats stay within reach when a new one is started
+        List<Chat.Summary> earlier = chat.history();
+        if (earlier.isEmpty()) return;
+        TextView heading = new TextView(c);
+        heading.setText(R.string.history_recent);
+        heading.setTextColor(MUTED);
+        heading.setTextSize(13);
+        heading.setTypeface(Typeface.DEFAULT_BOLD);
+        heading.setPadding(dp(8), dp(24), 0, 0);
+        list.addView(heading);
+        for (int i = 0; i < earlier.size() && i < 3; i++) list.addView(historyRow(earlier.get(i), null), rowSize());
+        if (earlier.size() > 3) {
+            TextView all = new TextView(c);
+            all.setText(getResources().getString(R.string.history_all, earlier.size()));
+            all.setTextColor(ACCENT);
+            all.setTextSize(14);
+            all.setPadding(dp(16), dp(12), dp(16), dp(12));
+            all.setBackground(pressable(0x00000000, 14));
+            all.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showHistory();
+                }
+            });
+            list.addView(all);
+        }
+    }
+
+    // ------------------------------------------------------------ earlier chats
+
+    private LayoutParams rowSize() {
+        LayoutParams size = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        size.topMargin = dp(8);
+        return size;
+    }
+
+    /** One earlier chat: tap to open it; with a dialog given, it also gets a delete button. */
+    private View historyRow(final Chat.Summary s, final android.app.Dialog dialog) {
+        Context c = getContext();
+        LinearLayout row = new LinearLayout(c);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(16), dp(10), dp(dialog == null ? 16 : 4), dp(10));
+        row.setBackground(pressable(chat != null && s.id.equals(chat.id()) ? SURFACE_HIGH : SURFACE, 14));
+        row.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (dialog != null) dialog.dismiss();
+                if (chat != null) chat.open(s.id);
+            }
+        });
+        LinearLayout text = new LinearLayout(c);
+        text.setOrientation(VERTICAL);
+        TextView title = new TextView(c);
+        title.setText(s.title.isEmpty() ? c.getString(R.string.history_untitled) : s.title);
+        title.setTextColor(TEXT);
+        title.setTextSize(15);
+        title.setMaxLines(2);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        text.addView(title);
+        TextView when = new TextView(c);
+        when.setText(android.text.format.DateUtils.getRelativeTimeSpanString(
+                s.updated, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS));
+        when.setTextColor(MUTED);
+        when.setTextSize(12);
+        text.addView(when);
+        row.addView(text, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        if (dialog != null) {
+            TextView delete = new TextView(c);
+            delete.setText("\u2715");
+            delete.setContentDescription(c.getString(R.string.history_delete));
+            delete.setTextColor(MUTED);
+            delete.setTextSize(15);
+            delete.setGravity(Gravity.CENTER);
+            delete.setBackground(pressable(0x00000000, 20));
+            delete.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    dialog.dismiss();
+                    if (chat != null) chat.delete(s.id);
+                    showHistory();
+                }
+            });
+            row.addView(delete, new LayoutParams(dp(40), dp(40)));
+        }
+        return row;
+    }
+
+    private void showHistory() {
+        if (chat == null) return;
+        Context c = getContext();
+        List<Chat.Summary> all = chat.history();
+        LinearLayout rows = new LinearLayout(c);
+        rows.setOrientation(VERTICAL);
+        rows.setPadding(dp(12), dp(4), dp(12), dp(12));
+        ScrollView scroller = new ScrollView(c);
+        scroller.addView(rows);
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(c)
+                .setTitle(R.string.history_title)
+                .setView(scroller)
+                .setNegativeButton(R.string.close, null)
+                .create();
+        if (all.isEmpty()) {
+            TextView none = new TextView(c);
+            none.setText(R.string.history_none);
+            none.setTextColor(MUTED);
+            none.setTextSize(15);
+            none.setPadding(dp(12), dp(12), dp(12), dp(12));
+            rows.addView(none);
+        }
+        for (Chat.Summary s : all) rows.addView(historyRow(s, dialog), rowSize());
+        dialog.show();
     }
 
     private void addMine(Chat.Message m) {
@@ -384,15 +508,14 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             bubble.addView(note);
         }
         if (working) {
-            TextView state = new TextView(c);
-            String status = chat.status;
-            state.setText(!status.isEmpty() ? status
-                    : c.getString(m.text.isEmpty() ? R.string.chat_thinking : R.string.chat_working));
-            state.setTextColor(MUTED);
-            state.setTextSize(14);
-            state.setMaxLines(2);
-            if (!m.text.isEmpty() || !m.note.isEmpty()) state.setPadding(0, dp(6), 0, 0);
-            bubble.addView(state);
+            // Setup progress is shown as it is; otherwise the wait gets changing lines.
+            String[] lines = !chat.status.isEmpty() ? new String[]{chat.status}
+                    : getResources().getStringArray(m.steps.isEmpty() ? R.array.thinking : R.array.working);
+            Thinking state = new Thinking(c, lines, chat.startedAt, density);
+            LayoutParams stateSize = new LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (!m.text.isEmpty() || !m.note.isEmpty() || !m.steps.isEmpty()) stateSize.topMargin = dp(6);
+            bubble.addView(state, stateSize);
         }
         LayoutParams size = new LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -440,6 +563,89 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private static void mono(SpannableStringBuilder out, int from) {
         out.setSpan(new TypefaceSpan("monospace"), from, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         out.setSpan(new ForegroundColorSpan(CODE), from, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    /**
+     * The "working on it" indicator: three dots that ride a wave and change
+     * colour, a line of text that changes every few seconds, and the seconds
+     * waited. Everything is computed from the clock, so it keeps its place
+     * when the chat is redrawn.
+     */
+    private static final class Thinking extends View {
+        private static final int[] COLORS = {0xffff7a45, 0xffd2a8ff, 0xff79c0ff, 0xff56d364};
+        private static final long LINE_MS = 2800, FADE_MS = 350;
+        private final String[] lines;
+        private final long startedAt;
+        private final float density;
+        private final android.graphics.Paint dot = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Paint text = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Paint time = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.animation.ArgbEvaluator blend = new android.animation.ArgbEvaluator();
+
+        Thinking(Context c, String[] lines, long startedAt, float density) {
+            super(c);
+            this.lines = lines;
+            this.startedAt = startedAt;
+            this.density = density;
+            text.setColor(TEXT);
+            text.setTextSize(14 * getResources().getDisplayMetrics().scaledDensity);
+            time.setColor(MUTED);
+            time.setTextSize(12 * getResources().getDisplayMetrics().scaledDensity);
+        }
+
+        private float dotsWidth() {
+            return 46 * density;
+        }
+
+        @Override
+        protected void onMeasure(int widthSpec, int heightSpec) {
+            float widest = 0;
+            for (String line : lines) widest = Math.max(widest, text.measureText(line));
+            int wanted = (int) (dotsWidth() + widest + time.measureText("  \u00b7 999s") + 4 * density);
+            setMeasuredDimension(resolveSize(wanted, widthSpec), resolveSize((int) (30 * density), heightSpec));
+        }
+
+        @Override
+        protected void onDraw(android.graphics.Canvas canvas) {
+            long now = android.os.SystemClock.elapsedRealtime();
+            long waited = Math.max(0, now - startedAt);
+            float middle = getHeight() / 2f;
+
+            // dots: a wave runs through them while the colours drift
+            for (int i = 0; i < 3; i++) {
+                double phase = now / 260.0 - i * 0.9;
+                float lift = (float) Math.sin(phase);
+                float size = (3.4f + 1.2f * Math.max(0, lift)) * density;
+                float drift = (now / 1400f + i * 0.33f) % COLORS.length;
+                int from = (int) drift;
+                dot.setColor((Integer) blend.evaluate(drift - from, COLORS[from], COLORS[(from + 1) % COLORS.length]));
+                canvas.drawCircle((7 + i * 14) * density, middle - lift * 4.5f * density, size, dot);
+            }
+
+            // the line of text: the next one slides up as the old one fades
+            int index = (int) (waited / LINE_MS % lines.length);
+            long into = waited % LINE_MS;
+            float appear = lines.length == 1 ? 1 : Math.min(1f, into / (float) FADE_MS);
+            float leave = lines.length == 1 ? 0 : Math.max(0f, (into - (LINE_MS - FADE_MS)) / (float) FADE_MS);
+            float alpha = Math.min(appear, 1 - leave);
+            float baseline = middle - (text.descent() + text.ascent()) / 2 + (1 - appear) * 6 * density - leave * 6 * density;
+            float room = getWidth() - dotsWidth();
+            String line = lines[index];
+            if (text.measureText(line) > room) {
+                line = android.text.TextUtils.ellipsize(line, new android.text.TextPaint(text), room,
+                        android.text.TextUtils.TruncateAt.END).toString();
+            }
+            text.setAlpha((int) (255 * alpha));
+            canvas.drawText(line, dotsWidth(), baseline, text);
+            if (waited >= 5000) {
+                float x = dotsWidth() + text.measureText(line);
+                if (x + time.measureText("  \u00b7 999s") <= getWidth() + 1) {
+                    time.setAlpha((int) (255 * alpha));
+                    canvas.drawText("  \u00b7 " + waited / 1000 + "s", x, baseline, time);
+                }
+            }
+            postInvalidateOnAnimation();
+        }
     }
 
     // ------------------------------------------------------------ helpers

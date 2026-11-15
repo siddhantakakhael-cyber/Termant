@@ -143,6 +143,15 @@ final class Config {
         prefs(c).edit().putString("models", b.toString()).apply();
     }
 
+    /** The chat whose message OpenCode handled last; only that one can be resumed with "--continue". */
+    static String lastChat(Context c) {
+        return prefs(c).getString("last_chat", "");
+    }
+
+    static void setLastChat(Context c, String id) {
+        prefs(c).edit().putString("last_chat", id).apply();
+    }
+
     // ------------------------------------------------------------ workspace
 
     /** Folder inside Ubuntu where the agent reads, writes and runs files. */
