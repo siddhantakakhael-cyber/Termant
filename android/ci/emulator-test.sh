@@ -40,6 +40,22 @@ wait_for_reply() { # <tries of 3 s>: the chat file has no empty reply once the a
   return 1
 }
 
+# If the emulator itself stops, every adb command would wait for it for ever:
+# end the test instead, and say so.
+(
+  while sleep 30; do
+    adb get-state >/dev/null 2>&1 && continue
+    sleep 30
+    adb get-state >/dev/null 2>&1 && continue
+    echo "RESULT: FAIL the emulator stopped" > "$OUT/verdict.txt"
+    pkill -f 'adb (shell|exec-out|logcat|pull|install)' 2>/dev/null
+    kill $$
+    exit 1
+  done
+) >/dev/null 2>&1 &
+WATCH=$!
+trap 'kill $WATCH 2>/dev/null' EXIT
+
 # Give the freshly booted emulator a moment to bring its network up.
 sleep 20
 

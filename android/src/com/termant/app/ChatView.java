@@ -691,6 +691,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             time.setColor(mutedColor);
             time.setTextAlign(android.graphics.Paint.Align.RIGHT);
             setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            // Drawn into a small picture by the processor, which the graphics chip then only has to
+            // show: gradients on text and on arcs are not safe on every phone's graphics driver.
+            setLayerType(LAYER_TYPE_SOFTWARE, null);
         }
 
         @Override
@@ -765,11 +768,12 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             fill.setColor(RING[2]);
             canvas.drawCircle(cx + (float) Math.cos(back) * (r + 0.5f * dp), cy + (float) Math.sin(back) * (r + 0.5f * dp),
                     2.2f * dp, fill);
-            // the icon pops a little when the work changes
-            float pop = 1f + 0.35f * (1 - arrive) + 0.04f * pulse;
+            // the icon drops in when the work changes (always at one size: every new size of an
+            // emoji is a new picture for the phone to make)
+            icon.setAlpha((int) (255 * arrive));
             canvas.save();
-            canvas.scale(pop, pop, cx, cy);
-            canvas.drawText(glyph, cx, cy - (icon.descent() + icon.ascent()) / 2, icon);
+            canvas.clipRect(cx - r, cy - r, cx + r, cy + r);
+            canvas.drawText(glyph, cx, cy - (icon.descent() + icon.ascent()) / 2 - (1 - arrive) * 9 * dp, icon);
             canvas.restore();
 
             // first line: the title, with a light running over it, and the time waited
@@ -826,7 +830,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             canvas.drawRoundRect(box, thick / 2, thick / 2, bar);
             canvas.restore();
 
-            postInvalidateOnAnimation();
+            postInvalidateDelayed(24); // about 40 pictures a second: smooth, and easy on the battery
         }
     }
 
