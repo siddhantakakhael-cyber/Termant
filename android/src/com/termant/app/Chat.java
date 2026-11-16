@@ -174,6 +174,8 @@ final class Chat {
     private final Handler main = new Handler(Looper.getMainLooper());
     private Listener listener;
     private Runnable watcher;
+    /** What the agent ran in the current attempt, as told by its event feed (its printed text can leave calls out). */
+    private final List<String> ran = java.util.Collections.synchronizedList(new ArrayList<String>());
     private Process process;
     private int run; // identifies the current request; stale threads are ignored
     private boolean busy;
@@ -496,7 +498,7 @@ final class Chat {
                         stream.finish();
                     }
                     if (id != Chat.this.run) return; // stopped by the user
-                    if (attempt + 1 < models.size() && modelGaveUp(out.toString(), exit)) {
+                    if (attempt + 1 < models.size() && ran.isEmpty() && modelGaveUp(out.toString(), exit)) {
                         final String next = models.get(attempt + 1);
                         android.util.Log.i("Termant", "model '" + model + "' gave no answer, switching to " + next);
                         main.post(new Runnable() {
@@ -632,6 +634,22 @@ final class Chat {
         Parsed parsed = parse(output.substring(start + MARKER.length()));
         reply.steps.clear();
         reply.steps.addAll(parsed.steps);
+        // Calls the printed text left out (two commands started together, a web search) are added from the feed.
+        List<String> told;
+        synchronized (ran) {
+            told = new ArrayList<>(ran);
+        }
+        for (String step : told) {
+            String first = step.split("\n", 2)[0].trim();
+            boolean listed = false;
+            for (String shown : reply.steps) {
+                if (shown.equals(step) || shown.equals(first) || oneLine(shown).equals(oneLine(step))) {
+                    listed = true;
+                    break;
+                }
+            }
+            if (!listed) reply.steps.add(first.equals(step) ? step : first + " \u2026");
+        }
         reply.text = parsed.text;
         // While the agent works, the paragraph still being written is newer than anything printed.
         String writing = live;
@@ -671,6 +689,7 @@ final class Chat {
             super("termant-stream");
             this.id = id;
             this.reply = reply;
+            ran.clear();
             try {
                 Installer.write(file, ""); // nothing left over from the reply before
             } catch (Exception e) {
@@ -769,6 +788,13 @@ final class Chat {
                         String name = tools.get(d.optString("id"));
                         JSONObject input = d.optJSONObject("input");
                         doing(kindOf(name, input), aboutOf(name, input));
+                        if (input != null) {
+                            String command = input.optString("command").trim();
+                            String step = !command.isEmpty() ? command
+                                    : "websearch".equals(name) ? "web search: " + input.optString("query")
+                                    : "webfetch".equals(name) ? "web page: " + input.optString("url") : "";
+                            if (!step.isEmpty() && ran.size() < 200) ran.add(step);
+                        }
                         return false;
                     }
                     case "session.tool.success":
