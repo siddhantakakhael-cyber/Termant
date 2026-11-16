@@ -63,6 +63,16 @@ Termant opens as a chat, not a terminal. Type or speak what you want in Hindi,
 Hinglish or English; the agent answers in a chat bubble and lists the commands
 it ran above its answer. **New chat** starts a fresh conversation.
 
+The answer appears while it is being written, word by word, instead of all at
+once at the end. The microphone button next to the message box takes
+dictation inside the app when the phone has a speech service (Google's, on
+most phones); what you say lands in the message box so you can correct it
+before sending.
+
+**Language and look:** the app's own buttons and messages are in Hindi
+(Hinglish) by default. Settings → *Bhasha (Language)* switches to English and
+back, and *Theme* switches between dark and light. Both apply at once.
+
 Earlier chats are kept: they are listed on the new-chat screen and under the
 **☰** button, and opening one continues it where it stopped (it carries on in
 the same OpenCode session, so the agent still knows what was said).
@@ -116,9 +126,12 @@ on the phone, in Ubuntu at `~/.config/termant/keys.env`.
 **MCP servers:** in Settings → MCP servers you can add servers (name + command)
 that OpenCode connects to and uses as tools, for example a filesystem server
 so the agent can read files in phone storage. Termant writes them to
-`~/.config/opencode/opencode.jsonc` inside Ubuntu before each agent run. You
-need an actual MCP server and internet for it to work; this is not tested on a
-real phone yet.
+`~/.config/opencode/opencode.jsonc` inside Ubuntu before each agent run, under
+`mcp.servers`. The command is run by `bash -lc`, so it can be typed as in a
+terminal, for example `npx -y @modelcontextprotocol/server-filesystem /sdcard`
+(that one needs `apt install nodejs npm` first). The automated test checks
+that OpenCode starts such a server and asks it for its tools; no published
+MCP server has been tried on a real phone yet.
 
 ## Phone control
 
