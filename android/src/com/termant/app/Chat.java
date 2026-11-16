@@ -235,6 +235,10 @@ final class Chat {
     private static final Pattern SCREEN_USE = Pattern.compile(
             "^phone (screen|tap|type|swipe|key|app|apps)\\b.*");
 
+    /** Which part of a command line names it, most telling first. */
+    private static final List<Integer> SHELL_RANK = java.util.Arrays.asList(
+            ACT_WAIT, ACT_SCREEN, ACT_PHONE, ACT_INSTALL, ACT_GITHUB, ACT_SHELL);
+
     /** The kind of work a tool call is, from the tool's name and (once known) what it was given. */
     static int kindOf(String tool, JSONObject input) {
         String name = tool == null ? "" : tool.toLowerCase(java.util.Locale.US);
@@ -245,13 +249,20 @@ final class Chat {
         switch (name) {
             case "shell":
             case "bash": {
-                String command = input == null ? "" : oneLine(input.optString("command"));
-                if (command.startsWith("phone ask ")) return ACT_WAIT;
-                if (SCREEN_USE.matcher(command).matches()) return ACT_SCREEN;
-                if (command.startsWith("phone ") || command.equals("phone")) return ACT_PHONE;
-                if (INSTALLS.matcher(command).matches()) return ACT_INSTALL;
-                if (command.startsWith("git ") || command.startsWith("gh ")) return ACT_GITHUB;
-                return ACT_SHELL;
+                // One command line is often several commands ("date; phone alarm 07:00 ..."):
+                // name it after the part that matters most to the person waiting.
+                String line = input == null ? "" : input.optString("command");
+                int kind = ACT_SHELL;
+                for (String piece : line.split("&&|\\|\\||[;|\\n]")) {
+                    String command = oneLine(piece).replaceFirst("^(?:[A-Za-z_][A-Za-z0-9_]*=\\S*\\s+)*(?:sudo\\s+)?", "");
+                    int found = command.startsWith("phone ask ") ? ACT_WAIT
+                            : SCREEN_USE.matcher(command).matches() ? ACT_SCREEN
+                            : command.startsWith("phone ") || command.equals("phone") ? ACT_PHONE
+                            : INSTALLS.matcher(command).matches() ? ACT_INSTALL
+                            : command.startsWith("git ") || command.startsWith("gh ") ? ACT_GITHUB : ACT_SHELL;
+                    if (SHELL_RANK.indexOf(found) < SHELL_RANK.indexOf(kind)) kind = found;
+                }
+                return kind;
             }
             case "read":
                 return ACT_READ;

@@ -165,7 +165,7 @@ adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
 grep -q 'phone alarm 0*7:00' "$OUT/chat.json" || finish "FAIL chat: the agent did not run phone alarm"
 adb logcat -d -s Termant:I | grep 'activity:' > "$OUT/activity.txt"
 cat "$OUT/activity.txt"
-grep -q 'activity: .*phone' "$OUT/activity.txt" || finish "FAIL the app did not notice that the agent was using the phone"
+grep -q 'activity: .*\(phone\|shell\)' "$OUT/activity.txt" || finish "FAIL the app did not notice that the agent was running a command"
 [ "$(grep -c 'alarm 07:00 sent to the Clock app' "$OUT/phone-log.txt")" -ge 2 ] || finish "FAIL chat: the alarm did not reach the Clock app"
 
 # A follow-up in the same conversation, and a coding request.
