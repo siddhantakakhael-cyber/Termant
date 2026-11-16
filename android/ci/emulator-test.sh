@@ -297,7 +297,6 @@ print("auto-switch reply:", last)
 sys.exit(1 if last["failed"] or not last["text"].strip() else 0)
 PY
 
-echo "Chat history: an earlier chat can be reopened and continued"
 ask() { # <text with %s for spaces>
   tap_on 'class="android.widget.EditText"' || return 1
   sleep 2
@@ -306,6 +305,118 @@ ask() { # <text with %s for spaces>
   tap_on 'content-desc="Send"' || return 1
   sleep 3
 }
+
+echo "Free limit in the middle of the work: a model of another service carries on"
+# OpenCode's "Free usage limit reached" cannot be caused on purpose, so a stand-in
+# (ci/fake-limit.sh) ends the first model's run that way after the first half of the work.
+change_prefs() { # <name=value, or name= to remove it> ...: stops the app and changes its settings
+  sleep 2
+  adb shell am force-stop "$PKG"
+  run_as cat shared_prefs/termant.xml > "$OUT/prefs-now.xml"
+  python3 - "$OUT/prefs-now.xml" "$@" <<'PY' || return 1
+import re, sys
+path = sys.argv[1]
+x = open(path).read()
+if "</map>" not in x:
+    sys.exit(1)
+for change in sys.argv[2:]:
+    name, _, value = change.partition("=")
+    n = re.escape(name)
+    x = re.sub(r'[ \t]*<string name="%s">.*?</string>\n?' % n, "", x, flags=re.S)
+    x = re.sub(r'[ \t]*<(long|int|boolean|float) name="%s"[^>]*/>\n?' % n, "", x)
+    if value:
+        x = x.replace("</map>", '    <string name="%s">%s</string>\n</map>' % (name, value))
+open(path, "w").write(x)
+PY
+  adb shell "run-as $PKG sh -c 'cat > shared_prefs/termant.xml'" < "$OUT/prefs-now.xml"
+}
+limit_check() { # <calls expected, space separated> <python condition on the last message "m">
+  run_as cat "$CACHE/ci-calls.txt" > "$OUT/limit-calls.txt"
+  python3 - "$OUT/chat.json" "$OUT/limit-calls.txt" "$1" "$2" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+calls = open(sys.argv[2]).read().split()
+print("free limit: models asked:", calls)
+print("free limit: reply:", m)
+ok = calls == sys.argv[3].split() and eval(sys.argv[4])
+sys.exit(0 if ok else 1)
+PY
+}
+BIN=files/rootfs/root/.opencode/bin
+CACHE=files/rootfs/root/.cache/termant
+sleep 2
+adb shell am force-stop "$PKG"
+run_as cat shared_prefs/termant.xml > "$OUT/prefs-before-limit.xml"
+grep -q '</map>' "$OUT/prefs-before-limit.xml" || finish "FAIL free limit: could not read the settings"
+change_prefs model=opencode/big-pickle switched= switched_at= free_limit_until= backups=ci/other-free || finish "FAIL free limit: could not prepare the settings"
+run_as mv "$BIN/opencode" "$BIN/opencode-real" || finish "FAIL free limit: OpenCode is not where the test expects it"
+adb shell "run-as $PKG sh -c 'cat > $BIN/opencode'" < android/ci/fake-limit.sh
+run_as chmod 755 "$BIN/opencode"
+run_as rm -f "$CACHE/ci-calls.txt" files/rootfs/root/limit-one files/rootfs/root/limit-two
+run_as touch "$CACHE/ci-limit" "$CACHE/ci-limit-first"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+tap_on 'content-desc="Start a new chat"' || finish "FAIL free limit: New chat button not found"
+sleep 2
+ask 'First%srun%sthe%scommand:%stouch%s/root/limit-one%s%s%sThen%srun%sthe%scommand:%stouch%s/root/limit-two%s%s%sThen%sreply%swith%sthe%sword%sFINISHED' || finish "FAIL free limit: could not send the request"
+wait_for_reply 120 || { shot 17b-limit-timeout; adb logcat -d -s Termant:I | tail -30; finish "FAIL free limit: no reply"; }
+sleep 2
+shot 17b-limit-midway
+adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
+cp "$OUT/chat.json" "$OUT/chat-limit.json"
+grep 'free limit:\|in the middle of the work\|gave no answer\| session: ' "$OUT/phone-log.txt" | tail -6
+grep -q "free limit: OpenCode refused 'opencode/big-pickle'" "$OUT/phone-log.txt" || finish "FAIL free limit: the app did not recognise the refusal"
+grep -q "stopped in the middle of the work .* with ci/other-free" "$OUT/phone-log.txt" || finish "FAIL free limit: the work was not handed on in the middle"
+limit_check "opencode/big-pickle ci/other-free" \
+  'not m["failed"] and m["text"].strip() and "Free usage limit" not in m["text"] and "in the middle of the work" in m["note"] and "limit-one" in " ".join(m["steps"]) and "limit-two" in " ".join(m["steps"])' \
+  || finish "FAIL free limit: the reply after the switch is not right"
+run_as test -e files/rootfs/root/limit-one || finish "FAIL free limit: the first half of the work was not done"
+run_as test -e files/rootfs/root/limit-two || finish "FAIL free limit: the second model did not finish the work"
+python3 - "$OUT/phone-log.txt" <<'PY' || finish "FAIL free limit: the second model did not carry on in the same conversation"
+import re, sys
+log = open(sys.argv[1], errors="replace").read()
+handed = re.findall(r"carrying on in (ses_\w+)", log)
+ended = re.findall(r" session: (ses_\w+)", log)
+print("free limit: handed on in", handed[-1:], "and the chat ended in", ended[-1:])
+sys.exit(0 if handed and ended and handed[-1] == ended[-1] else 1)
+PY
+
+echo "Free limit known: the next message starts with the other service, no error first"
+change_prefs switched= switched_at= || finish "FAIL free limit: could not change the settings"
+grep -q 'name="free_limit_until"' "$OUT/prefs-now.xml" || finish "FAIL free limit: how long it lasts was not remembered"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+ask 'Reply%sonly%swith%sthe%sword%sAGAIN' || finish "FAIL free limit: could not send the second message"
+wait_for_reply 80 || finish "FAIL free limit: no reply to the second message"
+adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
+grep -q "free limit: OpenCode's free models wait until .* starting with ci/other-free" "$OUT/phone-log.txt" || finish "FAIL free limit: the app did not start with the other service"
+limit_check "opencode/big-pickle ci/other-free ci/other-free" \
+  'not m["failed"] and "AGAIN" in m["text"].upper() and "Free usage limit" not in m["text"]' \
+  || finish "FAIL free limit: the second message was not answered by the other service straight away"
+
+echo "Free limit with no other service: one clear message, the other free models are not tried"
+change_prefs switched= switched_at= backups=opencode/glm-5.3-flash-free || finish "FAIL free limit: could not change the settings"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+ask 'Reply%sonly%swith%sthe%sword%sLAST' || finish "FAIL free limit: could not send the third message"
+wait_for_reply 60 || finish "FAIL free limit: no message when nothing can take over"
+sleep 2
+shot 17c-limit-message
+limit_check "opencode/big-pickle ci/other-free ci/other-free opencode/big-pickle" \
+  'm["failed"] and "free limit is used up until" in m["text"] and "Free usage limit reached" not in m["text"]' \
+  || finish "FAIL free limit: the message when nothing can take over is not right"
+cp "$OUT/chat.json" "$OUT/chat-limit-end.json"
+
+# Back to the real OpenCode and the settings from before.
+sleep 2
+adb shell am force-stop "$PKG"
+run_as rm -f "$CACHE/ci-limit" "$CACHE/ci-limit-first"
+run_as mv "$BIN/opencode-real" "$BIN/opencode" || finish "FAIL free limit: could not put OpenCode back"
+adb shell "run-as $PKG sh -c 'cat > shared_prefs/termant.xml'" < "$OUT/prefs-before-limit.xml"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+
+echo "Chat history: an earlier chat can be reopened and continued"
 tap_on 'content-desc="Start a new chat"' || finish "FAIL New chat button not found"
 sleep 2
 ask 'Remember%sthis%ssecret%sword:%smango.%sReply%sonly%sOK' || finish "FAIL could not send in a new chat"

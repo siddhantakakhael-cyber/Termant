@@ -72,7 +72,10 @@ final class Config {
     }
 
     static void setModel(Context c, String model) {
-        prefs(c).edit().putString("model", model).remove("switched").apply();
+        SharedPreferences.Editor e = prefs(c).edit().putString("model", model).remove("switched");
+        // Chosen by hand: try it first, even if OpenCode's free allowance was used up a while ago.
+        if (onFreeAllowance(model)) e.remove("free_limit_until");
+        e.apply();
     }
 
     /** The model in use right now: the chosen one, or the one auto-switch moved to. */
@@ -124,25 +127,98 @@ final class Config {
 
     /** Models to try for one message, in order: the active one, then the backups. */
     static List<String> attempts(Context c) {
-        List<String> order = new ArrayList<>();
         String first = activeModel(c);
         // With a key saved, OpenCode's own choice could be a model that costs
         // money; "Automatic" must stay free, so name the free default.
         if (first.isEmpty() && hasModelKey(c)) first = KNOWN_FREE[0];
-        order.add(first);
-        if (!autoSwitch(c)) return order;
-        List<String> backups = chosenBackups(c);
+        return order(first, autoSwitch(c), chosenBackups(c), cachedModels(c), freeLimitUntil(c) > 0);
+    }
+
+    /**
+     * The order itself, kept apart from the stored settings so that it can be
+     * checked on its own. "chosen" are the backups the user ticked, "known"
+     * every model OpenCode listed; freeUsedUp says that OpenCode's free
+     * allowance is known to be used up right now.
+     */
+    static List<String> order(String first, boolean autoSwitch, List<String> chosen, List<String> known,
+            boolean freeUsedUp) {
+        List<String> all = new ArrayList<>();
+        all.add(first);
+        if (!autoSwitch) return all;
+        List<String> backups = new ArrayList<>(chosen);
         if (backups.isEmpty()) {
-            for (String m : cachedModels(c)) if (isFree(m)) backups.add(m);
-            if (backups.isEmpty()) backups.addAll(Arrays.asList(KNOWN_FREE));
+            List<String> free = new ArrayList<>();
+            for (String m : known) if (isFree(m)) free.add(m);
+            if (free.isEmpty()) free.addAll(Arrays.asList(KNOWN_FREE));
             // "Automatic" most likely means this one already, so it goes last
-            if (first.isEmpty() && backups.remove("opencode/big-pickle")) backups.add("opencode/big-pickle");
+            if (first.isEmpty() && free.remove("opencode/big-pickle")) free.add("opencode/big-pickle");
+            backups = mixed(free);
         }
-        for (String m : backups) {
-            if (order.size() >= MAX_ATTEMPTS) break;
-            if (!order.contains(m)) order.add(m);
+        for (String m : backups) if (!all.contains(m)) all.add(m);
+        if (freeUsedUp) {
+            // Do not start with models that are known to refuse: the others go first.
+            List<String> usable = new ArrayList<>(), waiting = new ArrayList<>();
+            for (String m : all) (onFreeAllowance(m) ? waiting : usable).add(m);
+            all.clear();
+            all.addAll(usable);
+            all.addAll(waiting);
+        }
+        List<String> order = new ArrayList<>(all.subList(0, Math.min(MAX_ATTEMPTS, all.size())));
+        // OpenCode's free models stop together, so keep one model of another service within reach.
+        boolean elsewhere = false;
+        for (String m : order) elsewhere |= !onFreeAllowance(m);
+        if (!elsewhere) {
+            for (String m : all.subList(order.size(), all.size())) {
+                if (onFreeAllowance(m)) continue;
+                order.set(order.size() - 1, m);
+                break;
+            }
         }
         return order;
+    }
+
+    /** The same models, taking one of each service in turn ("opencode/x", "openrouter/y", "opencode/z", ...). */
+    private static List<String> mixed(List<String> models) {
+        Map<String, List<String>> byService = new LinkedHashMap<>();
+        for (String m : models) {
+            String service = m.contains("/") ? m.substring(0, m.indexOf('/')) : "";
+            if (!byService.containsKey(service)) byService.put(service, new ArrayList<String>());
+            byService.get(service).add(m);
+        }
+        List<String> out = new ArrayList<>();
+        for (int i = 0; out.size() < models.size(); i++) {
+            for (List<String> of : byService.values()) if (i < of.size()) out.add(of.get(i));
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------ OpenCode's free allowance
+
+    /** OpenCode's refusal does not always say when free use comes back; then look again after this long. */
+    static final long FREE_LIMIT_GUESS_MS = 60 * 60 * 1000;
+    private static final long FREE_LIMIT_MAX_MS = 45L * 24 * 60 * 60 * 1000;
+
+    /**
+     * Whether a model runs on OpenCode's free allowance: its own models, and
+     * "" which lets OpenCode choose one of them. That allowance is counted
+     * per network, so when one of these models refuses, all of them do.
+     */
+    static boolean onFreeAllowance(String model) {
+        return model.isEmpty() || model.startsWith("opencode/");
+    }
+
+    /** Until when OpenCode's free allowance is known to be used up; 0 when it is not. */
+    static long freeLimitUntil(Context c) {
+        long until = prefs(c).getLong("free_limit_until", 0);
+        return until > System.currentTimeMillis() ? until : 0;
+    }
+
+    /** Remembers that OpenCode refused free use; "until" is 0 when it did not say for how long. */
+    static long setFreeLimitUntil(Context c, long until) {
+        long now = System.currentTimeMillis();
+        if (until <= now || until - now > FREE_LIMIT_MAX_MS) until = now + FREE_LIMIT_GUESS_MS;
+        prefs(c).edit().putLong("free_limit_until", until).apply();
+        return until;
     }
 
     static List<String> cachedModels(Context c) {

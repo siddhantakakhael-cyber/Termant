@@ -74,11 +74,13 @@
     <string name="chat_provider_error">Model ke provider ne request mana kar di. OpenRouter key ke saath iska matlab aksar yeh hota hai: model free nahi hai aur account mein credit nahi hai, aaj ki free limit khatam ho gayi hai, ya OpenRouter ki privacy settings mein free models band hain. Aisa model chunein jiske naam ke aakhir mein :free ho, ya koi doosra provider.</string>
     <string name="chat_switched">%1$s par switch kiya: %2$s ne jawab nahi diya (limit khatam ya model uplabdh nahi).</string>
     <string name="chat_all_failed">Doosre models bhi try kiye; kisi ne jawab nahi diya.</string>
+    <string name="chat_switched_midway">Kaam ke beech mein %1$s par switch kiya: %2$s ki limit khatam ho gayi. Kaam wahin se aage badha.</string>
+    <string name="chat_free_limit">OpenCode ki free limit lagbhag %1$s tak khatam hai. Yeh limit OpenCode ke sabhi free models ki ek saath hoti hai, aur kisi doosri service ka model juda nahi hai jo kaam sambhal le. Bina ruke kaam chalta rahe, iske liye: Settings → kisi doosri service ki key jodein (OpenRouter par free models hain, unke naam ke aakhir mein :free hota hai). Phir app khud us par chala jayega, kaam ke beech mein bhi.</string>
     <string name="model_switched_now">%1$s (apne aap switch hua)</string>
     <string name="on">Chalu</string>
     <string name="off">Band</string>
     <string name="switch_title">Model apne aap badlein</string>
-    <string name="switch_note">Jab koi model jawab dena band kar de, aksar free limit khatam hone par, app khud agla backup model try karta hai. Jo model chal jaye, 3 ghante tak wahi rehta hai.</string>
+    <string name="switch_note">Jab koi model jawab dena band kar de, aksar free limit khatam hone par, app khud agla backup model try karta hai. Kaam ke beech mein ho to agla model wahin se kaam aage badhata hai. Jo model chal jaye, 3 ghante tak wahi rehta hai. OpenCode ke sabhi free models ki limit ek hi hai: switch hone ke liye neeche kisi doosri service ki key jodein.</string>
     <string name="backups_title">Backup ke models</string>
     <string name="backups_all_free">Sabhi free</string>
     <string name="backups_note">Jin models par switch karna hai; list mein upar se neeche try hote hain. Kuch bhi tick na karein to sabhi free models istemal honge. Jis provider ki key aapne daali hai uske models ka paisa lag sakta hai, agar woh key free plan par na ho.</string>

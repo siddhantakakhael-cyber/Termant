@@ -513,6 +513,11 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
             }
             Config.writeOpencodeConfig(c); // a search key changes which search service is used
             if (!value.isEmpty()) Toast.makeText(c, R.string.key_saved, Toast.LENGTH_LONG).show();
+            // A model key brings new models: fetch the list now, so that auto-switch can move to them.
+            boolean modelKey = false;
+            for (String[] provider : Config.PROVIDERS) modelKey |= provider[1].equals(name);
+            TermService service = TermService.get();
+            if (modelKey && !value.isEmpty() && service != null && service.chat != null) service.chat.refreshModels();
         } catch (Exception e) {
             Toast.makeText(c, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
         }

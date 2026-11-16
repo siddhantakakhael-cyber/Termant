@@ -117,8 +117,31 @@ needs the SMS permission, which Android asks for the first time.
 nothing, usually because its free limit is used up, Termant tries the next
 backup model by itself (up to 5 per message) and says so under the reply. It
 stays on the model that worked for 3 hours. Backups are all free models unless
-you pick your own in Settings. It never retries once the agent has already run
-a command, so nothing is done twice.
+you pick your own in Settings; with models of several services, they are tried
+in turn (one of each).
+
+If the model stops **in the middle of the work** (after it has already run
+commands), nothing is started again: the next model is put into the same
+OpenCode conversation, told that the one before stopped, and carries on from
+there. The steps of both models stay listed under the reply.
+
+**OpenCode's "Free usage limit reached".** OpenCode counts free use per
+network, for all of its free models (`opencode/...`) together, so another
+OpenCode model cannot help. Termant therefore
+
+- moves straight to a backup model of **another service**, and remembers until
+  when OpenCode's free use is paused (OpenCode says when; otherwise one hour).
+  Until then, new messages start with the other service, so the error does not
+  come up again;
+- if there is no model of another service, shows one message that says until
+  when the limit lasts and what to do, instead of trying every free model.
+
+So to keep working without a stop, save a key of a second service in Settings.
+OpenRouter has free models (names ending in `:free`), which are used as
+backups automatically; models of other services have to be ticked under
+"Backup models". Termant cannot see how much free use is left, so the switch
+happens at the moment OpenCode refuses, not earlier. Picking an OpenCode model
+by hand makes Termant try it again at once.
 
 The **Arena ↗** chip opens the arena.ai website in your browser, where you
 sign in and use it. Arena.ai offers no way for other apps to use its agent, so

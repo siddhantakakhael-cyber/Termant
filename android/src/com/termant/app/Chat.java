@@ -110,6 +110,16 @@ final class Chat {
         void onModels(List<String> models);
     }
 
+    /** Fetches the list of models in the background, for auto-switch; nothing is shown. */
+    void refreshModels() {
+        loadModels(new ModelsCallback() {
+            @Override
+            public void onModels(List<String> models) {
+                // stored by loadModels
+            }
+        });
+    }
+
     /** Asks OpenCode which models exist (free ones, plus those of any provider with a key). */
     void loadModels(final ModelsCallback callback) {
         final String workspace = Config.workspace(context);
@@ -191,6 +201,16 @@ final class Chat {
      * finished paragraph; empty when nothing is being written.
      */
     private volatile String live = "";
+    /** Steps of this reply done by a model that then stopped; the next model carries on after them. Main thread. */
+    private final List<String> carried = new ArrayList<>();
+    /**
+     * Sent in the same OpenCode session when a model stops in the middle of
+     * the work and another one takes over; the request itself follows.
+     */
+    private static final String CARRY_ON = "The model that was working on this request stopped in the middle "
+            + "because its usage limit was reached. You are taking over in the same conversation. Look at what has "
+            + "already been done above and carry on from exactly there: do not repeat steps that are already done, "
+            + "do only what is still missing, then answer. The request was:\n\n";
 
     /** The paragraph of the answer that is being written right now. */
     String writing() {
@@ -437,7 +457,14 @@ final class Chat {
         final String cont = !session.isEmpty() ? "--session " + session
                 : continues && this.id.equals(Config.lastChat(context)) ? "--continue" : "";
         final String wantSession = session.isEmpty() ? "1" : "";
+        final String known = session;
         final List<String> models = Config.attempts(context);
+        carried.clear();
+        if (Config.freeLimitUntil(context) > 0 && !Config.onFreeAllowance(models.get(0))
+                && Config.onFreeAllowance(Config.activeModel(context))) {
+            android.util.Log.i("Termant", "free limit: OpenCode's free models wait until "
+                    + new java.util.Date(Config.freeLimitUntil(context)) + ", starting with " + models.get(0));
+        }
         save();
         changed();
 
@@ -446,7 +473,9 @@ final class Chat {
             public void run() {
                 // Make the user's MCP servers available to OpenCode this run.
                 Config.writeOpencodeConfig(context);
-                for (int attempt = 0; ; attempt++) {
+                String prompt = request, how = cont;
+                boolean moved = false;
+                for (int attempt = 0; ; ) {
                     final String model = models.get(attempt);
                     int exit = -1;
                     boolean stuck = false;
@@ -459,7 +488,7 @@ final class Chat {
                         Ubuntu.prepareHost(context);
                         stream.start();
                         ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
-                                "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont,
+                                "/bin/bash", "-c", SCRIPT, "termant-chat", prompt, how,
                                 workspace, model, wantSession, STREAM_FILE));
                         Map<String, String> env = pb.environment();
                         env.clear();
@@ -492,7 +521,7 @@ final class Chat {
                             long now = System.currentTimeMillis();
                             if (now - shown > 150) { // do not redraw for every few bytes
                                 shown = now;
-                                publish(id, reply, out.toString(), null);
+                                publish(id, reply, out.toString(), null, null, false);
                             }
                         }
                         exit = p.waitFor();
@@ -503,36 +532,118 @@ final class Chat {
                         stream.finish();
                     }
                     if (id != Chat.this.run) return; // stopped by the user
-                    if (attempt + 1 < models.size() && ran.isEmpty() && modelGaveUp(out.toString(), exit)) {
-                        final String next = models.get(attempt + 1);
-                        android.util.Log.i("Termant", "model '" + model + "' gave no answer, switching to " + next);
+                    final String raw = out.toString();
+                    final String failure = stream.failure;
+                    // OpenCode's free models share one allowance: when it is used up, none of them is worth trying.
+                    final boolean freeLimit = exit != 0 && Config.onFreeAllowance(model) && isFreeLimit(raw, failure);
+                    long until = 0;
+                    if (freeLimit) {
+                        until = Config.setFreeLimitUntil(context, stream.retryAt);
+                        android.util.Log.i("Termant", "free limit: OpenCode refused '" + model + "', its free models wait until "
+                                + new java.util.Date(until));
+                    }
+                    int next = attempt + 1;
+                    if (freeLimit) while (next < models.size() && Config.onFreeAllowance(models.get(next))) next++;
+                    final List<String> done = stepsOf(parse(body(raw)));
+                    final boolean worked = !done.isEmpty();
+                    final boolean midway = worked && limitHit(raw, exit, failure);
+                    if (next < models.size() && (midway || (!worked && modelGaveUp(raw, exit)))) {
+                        final String to = models.get(next);
+                        if (midway) {
+                            // The work so far is in the OpenCode session: the next model carries on there.
+                            String at = stream.session != null ? stream.session : known;
+                            how = at.isEmpty() ? "--continue" : "--session " + at;
+                            prompt = CARRY_ON + request;
+                            android.util.Log.i("Termant", "model '" + model + "' stopped in the middle of the work ("
+                                    + (failure == null ? "error" : failure) + ") after " + done.size()
+                                    + " steps, carrying on in " + (at.isEmpty() ? "the last session" : at) + " with " + to);
+                        } else {
+                            android.util.Log.i("Termant", "model '" + model + "' gave no answer, switching to " + to);
+                        }
                         main.post(new Runnable() {
                             @Override
                             public void run() {
                                 if (id != Chat.this.run) return;
+                                if (midway) carried.addAll(done);
+                                reply.steps.clear();
+                                reply.steps.addAll(carried);
                                 reply.text = "";
-                                reply.note = Lang.of(context).getString(R.string.chat_switched, shortName(next),
+                                reply.note = Lang.of(context).getString(
+                                        midway ? R.string.chat_switched_midway : R.string.chat_switched, shortName(to),
                                         model.isEmpty() ? Lang.of(context).getString(R.string.model_auto) : shortName(model));
                                 changed();
                             }
                         });
+                        moved = true;
+                        attempt = next;
                         continue;
                     }
-                    final boolean switched = attempt > 0 && exit == 0;
-                    if (switched) Config.setSwitched(context, model);
-                    else if (attempt > 0) {
-                        main.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                reply.note = Lang.of(context).getString(R.string.chat_all_failed);
-                            }
-                        });
+                    // Remember the model that worked: one moved to, or one that went first
+                    // because OpenCode's free allowance is used up.
+                    if (exit == 0 && (moved || (!Config.onFreeAllowance(model)
+                            && Config.onFreeAllowance(Config.activeModel(context))))) {
+                        Config.setSwitched(context, model);
                     }
-                    publish(id, reply, out.toString(), exit);
+                    String note = null;
+                    if (freeLimit) {
+                        long now = System.currentTimeMillis();
+                        boolean today = until - now < 20 * 60 * 60 * 1000;
+                        note = Lang.of(context).getString(R.string.chat_free_limit, android.text.format.DateUtils
+                                .formatDateTime(context, until, android.text.format.DateUtils.FORMAT_SHOW_TIME
+                                        | (today ? 0 : android.text.format.DateUtils.FORMAT_SHOW_DATE)));
+                    } else if (moved && exit != 0) {
+                        note = Lang.of(context).getString(R.string.chat_all_failed);
+                    }
+                    publish(id, reply, raw, exit, note, freeLimit);
                     return;
                 }
             }
         }.start();
+    }
+
+    /** What OpenCode printed for this request, without the script's own markers. */
+    private static String body(String raw) {
+        String output = ANSI.matcher(raw).replaceAll("");
+        int start = output.indexOf(MARKER);
+        if (start < 0) return "";
+        output = output.substring(start + MARKER.length());
+        int end = output.indexOf(SESSION_MARKER);
+        return end < 0 ? output : output.substring(0, end);
+    }
+
+    /** The "Error: ..." line OpenCode ends a failed run with, or null. */
+    static String lastError(String raw) {
+        String[] lines = body(raw).split("\n");
+        for (int i = lines.length - 1, seen = 0; i >= 0 && seen < 6; i--) {
+            String line = lines[i].trim();
+            if (line.isEmpty()) continue;
+            seen++;
+            if (line.startsWith("Error:")) return line;
+        }
+        return null;
+    }
+
+    /**
+     * Whether the run ended because the model's service refused or failed
+     * (limit used up, no credit, not reachable under that name), which
+     * another model can get past. "failure" is OpenCode's own name for the
+     * error when its event feed gave one.
+     */
+    static boolean limitHit(String raw, int exit, String failure) {
+        if (exit == 0) return false;
+        if (failure != null && failure.startsWith("provider.") && !failure.equals("provider.content-filter")
+                && !failure.equals("provider.transport") && !failure.equals("provider.invalid-request")) {
+            return true;
+        }
+        String error = lastError(raw);
+        return error != null && LIMIT.matcher(error).find();
+    }
+
+    /** Whether that was OpenCode's "Free usage limit reached", which holds for all its free models at once. */
+    static boolean isFreeLimit(String raw, String failure) {
+        if ("provider.free-limit".equals(failure)) return true;
+        String error = lastError(raw);
+        return error != null && error.contains("Free usage limit reached");
     }
 
     private static final int STUCK = 75;
@@ -563,7 +674,7 @@ final class Chat {
     }
 
     private static final Pattern LIMIT = Pattern.compile(
-            "(?i)rate.?limit|quota|\\b429\\b|too many requests|usage limit|limit (reached|exceeded)|"
+            "(?i)rate.?limit|quota|\\b429\\b|too many requests|usage limit|spend limit|limit (reached|exceeded)|switch models|"
                     + "insufficient|out of credits|overloaded|unavailable|not found|unauthorized|invalid api key");
 
     /**
@@ -586,12 +697,22 @@ final class Chat {
     }
 
     /** Shows the output so far; exit is null while the agent is still running. */
-    private void publish(final int id, final Message reply, final String output, final Integer exit) {
+    private void publish(final int id, final Message reply, final String output, final Integer exit,
+            final String note, final boolean freeLimit) {
         main.post(new Runnable() {
             @Override
             public void run() {
                 if (id != run) return;
                 apply(reply, output, exit);
+                if (note != null) reply.note = note;
+                if (freeLimit) {
+                    // Say it in the user's language once, not as OpenCode's raw error line.
+                    Parsed said = parse(body(output));
+                    String text = said.text.replaceAll("(?m)^Error: Free usage limit reached\\..*$", "").trim();
+                    reply.failed = true;
+                    reply.text = text.isEmpty() ? note : text;
+                    if (text.isEmpty()) reply.note = "";
+                }
                 if (exit != null) {
                     busy = false;
                     process = null;
@@ -605,14 +726,8 @@ final class Chat {
                         android.util.Log.i("Termant", "chat " + Chat.this.id + " session: "
                                 + (session.isEmpty() ? "unknown" : session));
                     }
-                    if (exit == 0 && Config.cachedModels(context).isEmpty()) {
-                        loadModels(new ModelsCallback() {
-                            @Override
-                            public void onModels(List<String> models) {
-                                // stored by loadModels; nothing to show
-                            }
-                        });
-                    }
+                    // After a free limit too: a key saved since then may have brought models to move to.
+                    if ((exit == 0 || freeLimit) && Config.cachedModels(context).isEmpty()) refreshModels();
                     save();
                 }
                 changed();
@@ -638,23 +753,8 @@ final class Chat {
         if (end > start) output = output.substring(0, end);
         Parsed parsed = parse(output.substring(start + MARKER.length()));
         reply.steps.clear();
-        reply.steps.addAll(parsed.steps);
-        // Calls the printed text left out (two commands started together, a web search) are added from the feed.
-        List<String> told;
-        synchronized (ran) {
-            told = new ArrayList<>(ran);
-        }
-        for (String step : told) {
-            String first = step.split("\n", 2)[0].trim();
-            boolean listed = false;
-            for (String shown : reply.steps) {
-                if (shown.equals(step) || shown.equals(first) || oneLine(shown).equals(oneLine(step))) {
-                    listed = true;
-                    break;
-                }
-            }
-            if (!listed) reply.steps.add(first.equals(step) ? step : first + " \u2026");
-        }
+        reply.steps.addAll(carried);
+        reply.steps.addAll(stepsOf(parsed));
         reply.text = parsed.text;
         // While the agent works, the paragraph still being written is newer than anything printed.
         String writing = live;
@@ -667,6 +767,31 @@ final class Chat {
                     : context.getString(rest.contains("Provider returned error")
                     ? R.string.chat_provider_error : R.string.chat_no_answer) + tail(rest);
         }
+    }
+
+    /**
+     * The steps of a run: the ones OpenCode printed, plus the calls its
+     * printed text left out (two commands started together, a web search),
+     * which are taken from the event feed.
+     */
+    private List<String> stepsOf(Parsed parsed) {
+        List<String> steps = new ArrayList<>(parsed.steps);
+        List<String> told;
+        synchronized (ran) {
+            told = new ArrayList<>(ran);
+        }
+        for (String step : told) {
+            String first = step.split("\n", 2)[0].trim();
+            boolean listed = false;
+            for (String shown : steps) {
+                if (shown.equals(step) || shown.equals(first) || oneLine(shown).equals(oneLine(step))) {
+                    listed = true;
+                    break;
+                }
+            }
+            if (!listed) steps.add(first.equals(step) ? step : first + " \u2026");
+        }
+        return steps;
     }
 
     /**
@@ -683,7 +808,14 @@ final class Chat {
         private volatile boolean done;
         private final StringBuilder text = new StringBuilder();
         private String part = "";
-        private String session;
+        /** The OpenCode session this reply belongs to, once the feed has named it. */
+        volatile String session;
+        /** OpenCode's name for the error the run failed with ("provider.free-limit", ...), or null. */
+        volatile String failure;
+        /** When the model's service said it can be asked again; 0 if it did not say. */
+        volatile long retryAt;
+        private long offset;
+        private final java.io.ByteArrayOutputStream line = new java.io.ByteArrayOutputStream();
         /** Tool calls seen so far (id to tool name), and the thinking of the current step. */
         private final Map<String, String> tools = new java.util.HashMap<>();
         private final StringBuilder thought = new StringBuilder();
@@ -705,6 +837,13 @@ final class Chat {
         void finish() {
             done = true;
             interrupt();
+            // The last lines say how the run ended; they may have arrived since the thread last looked.
+            try {
+                join(1500);
+                if (!isAlive()) read();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             android.util.Log.i("Termant", "stream: " + pieces + " pieces"
                     + (firstAfter < 0 ? "" : ", first after " + firstAfter + " ms")
                     + ", reply after " + (android.os.SystemClock.elapsedRealtime() - began) + " ms");
@@ -713,37 +852,40 @@ final class Chat {
 
         @Override
         public void run() {
-            long offset = 0;
-            java.io.ByteArrayOutputStream line = new java.io.ByteArrayOutputStream();
-            byte[] buf = new byte[8192];
             while (!done) {
-                boolean changed = false;
-                try (java.io.RandomAccessFile in = new java.io.RandomAccessFile(file, "r")) {
-                    if (in.length() > offset) {
-                        in.seek(offset);
-                        int n;
-                        while ((n = in.read(buf)) > 0) {
-                            offset += n;
-                            for (int i = 0; i < n; i++) {
-                                if (buf[i] != '\n') {
-                                    line.write(buf[i]);
-                                    continue;
-                                }
-                                changed |= take(new String(line.toByteArray(), StandardCharsets.UTF_8));
-                                line.reset();
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    // not there yet, or being written: look again in a moment
-                }
-                if (changed) show(text.toString());
+                if (read()) show(text.toString());
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
                     return;
                 }
             }
+        }
+
+        /** Takes in what the feed has gained; returns whether the words of the reply changed. */
+        private boolean read() {
+            boolean changed = false;
+            byte[] buf = new byte[8192];
+            try (java.io.RandomAccessFile in = new java.io.RandomAccessFile(file, "r")) {
+                if (in.length() > offset) {
+                    in.seek(offset);
+                    int n;
+                    while ((n = in.read(buf)) > 0) {
+                        offset += n;
+                        for (int i = 0; i < n; i++) {
+                            if (buf[i] != '\n') {
+                                line.write(buf[i]);
+                                continue;
+                            }
+                            changed |= take(new String(line.toByteArray(), StandardCharsets.UTF_8));
+                            line.reset();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // not there yet, or being written: look again in a moment
+            }
+            return changed;
         }
 
         /**
@@ -770,8 +912,23 @@ final class Chat {
                 if (!of.equals(session)) return false;
                 switch (type) {
                     case "session.step.started":
+                        failure = null; // a step that failed is being tried again
                         doing(ACT_THINK, "");
                         return false;
+                    case "session.step.failed":
+                    case "session.execution.failed": {
+                        JSONObject error = d.optJSONObject("error");
+                        if (error == null) return false;
+                        failure = error.optString("type");
+                        long wait = error.optLong("retryAfterMs", -1);
+                        if (wait >= 0) {
+                            long created = o.optLong("created", 0);
+                            long now = System.currentTimeMillis();
+                            // counted from when the failure was recorded, if the feed gives a usable clock time
+                            retryAt = (Math.abs(created - now) < 10 * 60 * 1000 ? created : now) + wait;
+                        }
+                        return false;
+                    }
                     case "session.reasoning.started":
                         thought.setLength(0);
                         doing(ACT_THINK, "");

@@ -78,11 +78,13 @@
     <string name="chat_provider_error">The model\'s provider refused the request. With an OpenRouter key this usually means: the model is not free and the account has no credit, the free daily limit is used up, or free models are blocked in OpenRouter\'s privacy settings. Pick a model whose name ends in :free, or another provider.</string>
     <string name="chat_switched">Switched to %1$s: %2$s did not answer (limit reached or not available).</string>
     <string name="chat_all_failed">Other models were tried too; none answered.</string>
+    <string name="chat_switched_midway">Switched to %1$s in the middle of the work: %2$s reached its limit. The work carried on from where it was.</string>
+    <string name="chat_free_limit">OpenCode\'s free limit is used up until about %1$s. It counts for all of OpenCode\'s free models together, and no model of another service is set up to take over. To keep working without this stop: Settings → add a key of another service (OpenRouter has free models, their names end in :free). The app then moves to it by itself, also in the middle of a task.</string>
     <string name="model_switched_now">%1$s (switched automatically)</string>
     <string name="on">On</string>
     <string name="off">Off</string>
     <string name="switch_title">Auto-switch</string>
-    <string name="switch_note">When a model stops answering, usually because its free limit is used up, try the next backup model by itself. It stays on the model that worked for 3 hours.</string>
+    <string name="switch_note">When a model stops answering, usually because its free limit is used up, try the next backup model by itself. In the middle of a task the next model carries on from where the work stopped. It stays on the model that worked for 3 hours. OpenCode\'s free models share one limit: add a key of another service below to have somewhere to switch to.</string>
     <string name="backups_title">Backup models</string>
     <string name="backups_all_free">All free</string>
     <string name="backups_note">Models to switch to, tried from the top of the list. Tick none to use all free models. Models from a provider with your key may cost money unless that key is on a free plan.</string>
