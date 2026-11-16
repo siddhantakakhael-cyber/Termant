@@ -45,6 +45,11 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
 
         /** The language or the theme was changed: every screen has to be built again. */
         void onLookChanged();
+
+        /** Opens Android's Accessibility settings, where Screen control is turned on. */
+        void onOpenScreenSettings();
+
+        void onOpenLink(String url);
     }
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
@@ -179,8 +184,50 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
             }
         });
 
+        heading(R.string.settings_tools, R.string.settings_tools_note);
+        final Map<String, String> keys = Config.keys(c);
+        final String account = Config.githubUser(c);
+        row(c.getString(R.string.github_title),
+                account.isEmpty() ? c.getString(R.string.github_off)
+                        : account.equals("?") ? c.getString(R.string.github_unchecked) : "@" + account,
+                c.getString(R.string.github_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        editGithub(!account.isEmpty());
+                    }
+                });
+        row(c.getString(R.string.search_title), c.getString(Config.webSearch(c) ? R.string.on : R.string.off),
+                c.getString(R.string.search_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Config.setWebSearch(c, !Config.webSearch(c));
+                        Config.writeOpencodeConfig(c);
+                        refresh();
+                    }
+                });
+        if (Config.webSearch(c)) {
+            for (final String[] service : Config.SEARCH_KEYS) {
+                final String key = keys.get(service[1]);
+                row(c.getString(R.string.search_key, service[0]),
+                        key == null ? c.getString(R.string.search_key_none) : mask(key), null, new OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                editKey(new String[]{c.getString(R.string.search_key, service[0]), service[1]},
+                                        key != null);
+                            }
+                        });
+            }
+        }
+        final boolean screenOn = ScreenService.isOn(c);
+        row(c.getString(R.string.screen_title), c.getString(screenOn ? R.string.on : R.string.off),
+                c.getString(R.string.screen_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        askScreenControl(screenOn);
+                    }
+                });
+
         heading(R.string.settings_keys, R.string.settings_keys_note);
-        Map<String, String> keys = Config.keys(c);
         for (final String[] provider : Config.PROVIDERS) {
             final String key = keys.get(provider[1]);
             row(provider[0], key == null ? c.getString(R.string.key_not_set) : mask(key), null,
@@ -278,6 +325,165 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         b.show();
     }
 
+    /** Explains screen control before sending the user to Android's settings, where it is turned on or off. */
+    private void askScreenControl(boolean on) {
+        final Context c = getContext();
+        AlertDialog.Builder b = new AlertDialog.Builder(c)
+                .setTitle(R.string.screen_title)
+                .setMessage(on ? R.string.screen_on_text : R.string.screen_ask_text)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.screen_open, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        host.onOpenScreenSettings();
+                    }
+                });
+        if (on && ScreenService.get() != null) {
+            b.setNeutralButton(R.string.screen_stop, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    ScreenService running = ScreenService.get();
+                    if (running != null) running.turnOff();
+                    postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            refresh();
+                        }
+                    }, 400);
+                }
+            });
+        }
+        b.show();
+    }
+
+    private static final String GITHUB_TOKEN_PAGE =
+            "https://github.com/settings/tokens/new?description=Termant&scopes=repo,workflow,gist,read:org";
+
+    private void editGithub(boolean connected) {
+        final Context c = getContext();
+        final EditText box = new EditText(c);
+        box.setHint(R.string.github_hint);
+        box.setSingleLine(true);
+        box.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        LinearLayout wrap = new LinearLayout(c);
+        wrap.setOrientation(VERTICAL);
+        wrap.setPadding(dp(20), dp(8), dp(20), 0);
+        TextView how = new TextView(c);
+        how.setText(R.string.github_how);
+        how.setTextColor(MUTED);
+        how.setTextSize(14);
+        wrap.addView(how);
+        TextView link = new TextView(c);
+        link.setText(R.string.github_make);
+        link.setTextColor(ACCENT);
+        link.setTextSize(15);
+        link.setTypeface(Typeface.DEFAULT_BOLD);
+        link.setPadding(0, dp(10), 0, dp(6));
+        link.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                host.onOpenLink(GITHUB_TOKEN_PAGE);
+            }
+        });
+        wrap.addView(link);
+        wrap.addView(box);
+        AlertDialog.Builder b = new AlertDialog.Builder(c)
+                .setTitle(R.string.github_title)
+                .setView(wrap)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String token = box.getText().toString().trim();
+                        if (!token.isEmpty()) checkGithub(token);
+                    }
+                });
+        if (connected) {
+            b.setNeutralButton(R.string.github_remove, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    saveGithub("", "", "", R.string.github_removed);
+                }
+            });
+        }
+        b.show();
+    }
+
+    /** Asks GitHub whose token this is, so that a mistyped one is noticed now and not at the first push. */
+    private void checkGithub(final String token) {
+        final Context c = getContext();
+        if (!token.matches("[\\x21-\\x7e]+") || token.contains("'")) {
+            Toast.makeText(c, R.string.key_bad, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Toast.makeText(c, R.string.github_checking, Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int code = 0;
+                String login = "", email = "";
+                java.net.HttpURLConnection http = null;
+                try {
+                    http = (java.net.HttpURLConnection) new java.net.URL("https://api.github.com/user").openConnection();
+                    http.setConnectTimeout(12000);
+                    http.setReadTimeout(12000);
+                    http.setRequestProperty("Authorization", "Bearer " + token);
+                    http.setRequestProperty("Accept", "application/vnd.github+json");
+                    http.setRequestProperty("User-Agent", "Termant");
+                    code = http.getResponseCode();
+                    if (code == 200) {
+                        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                        try (java.io.InputStream in = http.getInputStream()) {
+                            byte[] buf = new byte[4096];
+                            int n;
+                            while ((n = in.read(buf)) > 0 && out.size() < 200000) out.write(buf, 0, n);
+                        }
+                        org.json.JSONObject user = new org.json.JSONObject(out.toString("UTF-8"));
+                        login = user.optString("login", "");
+                        if (!login.matches("[A-Za-z0-9-]+")) login = "";
+                        long id = user.optLong("id", 0);
+                        if (!login.isEmpty()) email = (id > 0 ? id + "+" : "") + login + "@users.noreply.github.com";
+                    }
+                } catch (Exception e) {
+                    code = 0; // no internet: keep the token, unchecked
+                } finally {
+                    if (http != null) http.disconnect();
+                }
+                final int result = code;
+                final String who = login, mail = email;
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        android.util.Log.i("Termant", "github: token check gave " + result);
+                        if (result == 401) {
+                            Toast.makeText(c, R.string.github_rejected, Toast.LENGTH_LONG).show();
+                        } else if (who.isEmpty()) {
+                            saveGithub(token, "", "", R.string.github_saved_unchecked);
+                        } else {
+                            saveGithub(token, who, mail, 0);
+                            Toast.makeText(c, c.getString(R.string.github_saved, who), Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
+            }
+        }, "github-check").start();
+    }
+
+    private void saveGithub(String token, String login, String email, int message) {
+        Context c = getContext();
+        try {
+            if (!Config.setGithub(c, token, login, email)) {
+                Toast.makeText(c, R.string.key_bad, Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (message != 0) Toast.makeText(c, message, Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(c, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
+        }
+        refresh();
+    }
+
     private void saveKey(String name, String value) {
         Context c = getContext();
         try {
@@ -285,6 +491,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                 Toast.makeText(c, R.string.key_bad, Toast.LENGTH_LONG).show();
                 return;
             }
+            Config.writeOpencodeConfig(c); // a search key changes which search service is used
             if (!value.isEmpty()) Toast.makeText(c, R.string.key_saved, Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(c, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
@@ -356,7 +563,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         card.addView(text, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
         TextView delete = new TextView(c);
-        delete.setText("\\u2715");
+        delete.setText("\u2715");
         delete.setContentDescription(c.getString(R.string.mcp_remove));
         delete.setTextColor(MUTED);
         delete.setTextSize(16);

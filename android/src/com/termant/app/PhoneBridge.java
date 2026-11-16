@@ -71,6 +71,13 @@ final class PhoneBridge {
                     + "  phone battery               charge level\n"
                     + "  phone clipboard get|set TEXT\n"
                     + "  phone open URL              open a link\n"
+                    + "  phone app NAME              open an app by its name (phone apps lists them)\n"
+                    + "  phone screen                what is on the screen now, as a numbered list\n"
+                    + "  phone tap N | TEXT | X Y    tap item N of that list, the item with these words, or a point\n"
+                    + "  phone type TEXT             type into the text box that has the cursor\n"
+                    + "  phone swipe up|down|left|right   up shows what is further below\n"
+                    + "  phone key back|home|recents|notifications|enter\n"
+                    + "                              (screen, tap, type, swipe and key need Screen control: Termant Settings)\n"
                     + "  phone wifi on|off           Wi-Fi\n"
                     + "  phone volume 0-100          media volume\n"
                     + "  phone sms NUMBER TEXT       send a text message (costs what an SMS costs)\n"
@@ -308,6 +315,38 @@ final class PhoneBridge {
                 return clipboard(args);
             case "open":
                 return open(rest(args, 1));
+            case "apps":
+                return ScreenService.apps(service);
+            case "app": {
+                // Android lets an app open others only while it is on screen, or with screen control on
+                ScreenService screen = ScreenService.get();
+                if (screen == null && !MainActivity.isOnScreen()) {
+                    throw new Refused("Android only allows opening apps while Termant is on screen, "
+                            + "or with Screen control turned on (Termant \u2192 Settings).");
+                }
+                String[] opened = ScreenService.openApp(screen != null ? screen : service, rest(args, 1));
+                if (screen == null) return opened[0];
+                screen.waitForApp(opened[1], 8000);
+                return opened[0] + after(screen, 0);
+            }
+            case "screen":
+                return screen().describe(250);
+            case "tap": {
+                ScreenService screen = screen();
+                return screen.tap(args.subList(1, args.size())) + after(screen, 900);
+            }
+            case "type": {
+                ScreenService screen = screen();
+                return screen.type(rest(args, 1)) + after(screen, 400);
+            }
+            case "swipe": {
+                ScreenService screen = screen();
+                return screen.swipe(args.size() > 1 ? args.get(1) : "") + after(screen, 700);
+            }
+            case "key": {
+                ScreenService screen = screen();
+                return screen.key(args.size() > 1 ? args.get(1) : "") + after(screen, 900);
+            }
             case "wake": {
                 final String mode = args.size() > 1 ? args.get(1) : "";
                 if (!mode.equals("on") && !mode.equals("off")) throw new Refused("usage: phone wake on|off");
@@ -562,6 +601,18 @@ final class PhoneBridge {
                 return text == null ? "" : text.toString();
             }
         });
+    }
+
+    private static ScreenService screen() throws Refused {
+        ScreenService screen = ScreenService.get();
+        if (screen == null) throw new Refused(ScreenService.OFF);
+        return screen;
+    }
+
+    /** What the screen shows once an action has had time to take effect, so the agent need not ask. */
+    private static String after(ScreenService screen, long ms) throws InterruptedException {
+        Thread.sleep(ms);
+        return "\nThe screen now:\n" + screen.describe(80);
     }
 
     private String open(final String url) throws Exception {

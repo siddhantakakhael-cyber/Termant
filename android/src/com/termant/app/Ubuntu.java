@@ -181,6 +181,8 @@ final class Ubuntu {
             {"termant-agent", "usr/local/bin/termant-agent", "x"},
             {"AGENTS.md", "usr/local/lib/termant/AGENTS.md", ""},
             {"opencode.jsonc", "usr/local/lib/termant/opencode.jsonc", ""},
+            {"github.sh", "usr/local/lib/termant/github.sh", ""},
+            {"git-credential", "usr/local/lib/termant/git-credential", "x"},
     };
 
     /**

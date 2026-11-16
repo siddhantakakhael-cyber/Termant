@@ -24,6 +24,8 @@ Use the `phone` command. It is always allowed and needs no confirmation.
 | Battery | `phone battery` |
 | Clipboard | `phone clipboard get` / `phone clipboard set "text"` |
 | Open a link or app link | `phone open https://example.com` |
+| Open an app | `phone app YouTube` (`phone apps` lists the names) |
+| Use another app's screen | see "Using other apps" below |
 | Wi-Fi | `phone wifi on` / `phone wifi off` |
 | Media volume | `phone volume 40` (0 to 100) |
 | Send a text message | `phone sms +919876543210 "text"` |
@@ -31,6 +33,63 @@ Use the `phone` command. It is always allowed and needs no confirmation.
 | Everything else | `phone help` |
 
 Phone storage is at `/sdcard` if the user allowed it.
+
+## Searching the web
+
+For anything recent or anything you are not sure of (news, prices, scores,
+weather, versions, "latest ..."), use your `websearch` tool, then read a
+result with `webfetch` when the short text is not enough. Do not answer such
+questions from memory, and name the source in one short line. If the tool is
+missing, the user turned Web search off in Termant's Settings: say so.
+
+## GitHub
+
+Check first: `[ -n "$GH_TOKEN" ] && echo connected as "$GITHUB_USER"`.
+
+- Connected: `git clone`, `git pull` and `git push` to
+  `https://github.com/...` addresses just work, also for private repos. Never
+  put the token in an address, a file or your reply, and never print it.
+- For repos, issues, pull requests and releases use `gh` (install it once with
+  `apt-get install -y gh`; it reads the token by itself). Examples:
+  `gh repo create NAME --private --source . --push`, `gh repo list`,
+  `gh issue create`, `gh pr create --fill`.
+- Without `gh`, call the API:
+  `curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/user/repos`.
+- Not connected: public repos can still be cloned. For anything else tell the
+  user to open Termant → Settings → GitHub and paste a token; do not ask for
+  the token in the chat.
+- Use https addresses, not `git@github.com:` ones (there is no SSH key).
+- "Permission denied" or 403 on push means the token lacks the `repo` right
+  (or `workflow`, when files under `.github/workflows` change): say that.
+
+## Using other apps ("Screen control")
+
+When the task is inside another app (search on YouTube, change a setting,
+read what an app shows), work the screen like a person:
+
+```
+phone app NAME               open the app
+phone screen                 numbered list of what is on the screen
+phone tap N                  tap item N of the last list
+phone tap "Some words"       tap the item with these words
+phone tap X Y                tap a point
+phone type "text"            type into the box that has the cursor (tap it first)
+phone key enter              also: back, home, recents, notifications
+phone swipe up               show what is further below (down, left, right)
+```
+
+- Every action answers with the new screen, so read that before the next
+  step; do not guess what happened. Item numbers change after every action.
+- If a command says Screen control is off, stop and tell the user to turn it
+  on in Termant → Settings → Screen control. There is no other way.
+- Passwords, PINs, OTPs and card numbers are for the user to type. Stop and
+  ask them to do that part.
+- Before anything that spends money, sends a message or a post, deletes
+  something or changes an account, say exactly what you are about to tap and
+  get a clear yes. Looking, searching, opening and scrolling need no question.
+- Prefer a direct command when one exists (`phone wifi off` is better than
+  tapping through Settings).
+- When done, tell the user what you did and what is on the screen now.
 
 ## Wake-ups and reminders
 

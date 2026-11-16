@@ -34,6 +34,15 @@ final class Config {
             {"Cerebras", "CEREBRAS_API_KEY"},
             {"Mistral", "MISTRAL_API_KEY"},
     };
+    /** Optional keys for web search services: {name shown, environment variable, OpenCode's name for it}. */
+    static final String[][] SEARCH_KEYS = {
+            {"Exa", "EXA_API_KEY", "exa"},
+            {"Tavily", "TAVILY_API_KEY", "tavily"},
+    };
+    /** The GitHub token; `gh` reads it by this name, and github.sh hands it to git. */
+    static final String GITHUB_KEY = "GH_TOKEN", GITHUB_USER = "GITHUB_USER", GITHUB_EMAIL = "GITHUB_EMAIL";
+    /** Path inside Ubuntu of the file that signs git and gh in with that token. */
+    static final String GITHUB_FILE = "/usr/local/lib/termant/github.sh";
     /** Free models to fall back on before the real list has been fetched. */
     private static final String[] KNOWN_FREE = {
             "opencode/big-pickle", "opencode/glm-5.3-flash-free",
@@ -119,7 +128,7 @@ final class Config {
         String first = activeModel(c);
         // With a key saved, OpenCode's own choice could be a model that costs
         // money; "Automatic" must stay free, so name the free default.
-        if (first.isEmpty() && !keys(c).isEmpty()) first = KNOWN_FREE[0];
+        if (first.isEmpty() && hasModelKey(c)) first = KNOWN_FREE[0];
         order.add(first);
         if (!autoSwitch(c)) return order;
         List<String> backups = chosenBackups(c);
@@ -206,13 +215,29 @@ final class Config {
         return keys;
     }
 
+    /** Whether a key of a model service is saved (the file also holds GitHub and search keys). */
+    static boolean hasModelKey(Context c) {
+        Map<String, String> keys = keys(c);
+        for (String[] provider : PROVIDERS) if (keys.containsKey(provider[1])) return true;
+        return false;
+    }
+
     /** Saves a key, or removes it when value is empty. Returns false if the key has characters a key never has. */
     static boolean setKey(Context c, String name, String value) throws IOException {
-        value = value.trim();
-        if (!value.matches("[\\x21-\\x7e]*") || value.contains("'")) return false;
+        Map<String, String> one = new LinkedHashMap<>();
+        one.put(name, value);
+        return setKeys(c, one);
+    }
+
+    /** Saves several values at once; an empty value removes that name. */
+    static boolean setKeys(Context c, Map<String, String> changes) throws IOException {
         Map<String, String> keys = keys(c);
-        if (value.isEmpty()) keys.remove(name);
-        else keys.put(name, value);
+        for (Map.Entry<String, String> change : changes.entrySet()) {
+            String value = change.getValue().trim();
+            if (!value.matches("[\\x21-\\x7e]*") || value.contains("'")) return false;
+            if (value.isEmpty()) keys.remove(change.getKey());
+            else keys.put(change.getKey(), value);
+        }
         StringBuilder b = new StringBuilder("# Written by Termant's settings screen.\n");
         for (Map.Entry<String, String> e : keys.entrySet()) {
             b.append("export ").append(e.getKey()).append("='").append(e.getValue()).append("'\n");
@@ -227,6 +252,42 @@ final class Config {
         // a key changes which models exist
         prefs(c).edit().remove("models").apply();
         return true;
+    }
+
+    // ------------------------------------------------------------ GitHub
+
+    /** The account name of the saved GitHub token; "" when none is saved, "?" when it could not be checked. */
+    static String githubUser(Context c) {
+        Map<String, String> keys = keys(c);
+        if (!keys.containsKey(GITHUB_KEY)) return "";
+        String user = keys.get(GITHUB_USER);
+        return user == null ? "?" : user;
+    }
+
+    /** Saves the token with the account it belongs to (login may be empty if unknown); an empty token signs out. */
+    static boolean setGithub(Context c, String token, String login, String email) throws IOException {
+        Map<String, String> changes = new LinkedHashMap<>();
+        changes.put(GITHUB_KEY, token);
+        changes.put(GITHUB_USER, token.isEmpty() ? "" : login);
+        changes.put(GITHUB_EMAIL, token.isEmpty() ? "" : email);
+        return setKeys(c, changes);
+    }
+
+    // ------------------------------------------------------------ web search
+
+    static boolean webSearch(Context c) {
+        return prefs(c).getBoolean("web_search", true);
+    }
+
+    static void setWebSearch(Context c, boolean on) {
+        prefs(c).edit().putBoolean("web_search", on).apply();
+    }
+
+    /** The search service in use: one the user has a key for, else Exa, which works without one. */
+    static String searchProvider(Context c) {
+        Map<String, String> keys = keys(c);
+        for (String[] service : SEARCH_KEYS) if (keys.containsKey(service[1])) return service[2];
+        return "exa";
     }
 
     // ------------------------------------------------------------ MCP servers
@@ -255,8 +316,8 @@ final class Config {
         prefs(c).edit().putString("mcp_servers", o.toString()).apply();
     }
 
-    /** Writes opencode.jsonc (the phone-control permissions plus the user's MCP
-     *  servers) into Ubuntu's OpenCode config dir, so the agent picks the MCP
+    /** Writes opencode.jsonc (the phone-control permissions, web search and the
+     *  user's MCP servers) into Ubuntu's OpenCode config dir, so the agent picks the MCP
      *  servers up on its next run. A no-op until Ubuntu is installed. */
     static void writeOpencodeConfig(Context c) {
         try {
@@ -270,6 +331,14 @@ final class Config {
             JSONArray perms = new JSONArray();
             perms.put(new JSONObject().put("action", "shell").put("resource", "phone *").put("effect", "allow"));
             perms.put(new JSONObject().put("action", "shell").put("resource", "date *").put("effect", "allow"));
+            // Without a search service named here OpenCode asks which one to use, and in a chat nobody can answer.
+            if (webSearch(c)) {
+                perms.put(new JSONObject().put("action", "websearch").put("resource", "*").put("effect", "allow"));
+                perms.put(new JSONObject().put("action", "webfetch").put("resource", "*").put("effect", "allow"));
+                o.put("websearch", new JSONObject().put("provider", searchProvider(c)));
+            } else {
+                o.put("websearch", false);
+            }
             o.put("permissions", perms);
             JSONObject servers = new JSONObject();
             for (Map.Entry<String, String> e : mcpServers(c).entrySet()) {

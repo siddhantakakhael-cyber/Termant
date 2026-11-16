@@ -447,8 +447,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         text.addView(title);
         TextView when = new TextView(c);
-        when.setText(android.text.format.DateUtils.getRelativeTimeSpanString(
-                s.updated, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS));
+        when.setText(ago(c, s.updated));
         when.setTextColor(MUTED);
         when.setTextSize(12);
         text.addView(when);
@@ -559,13 +558,10 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             bubble.addView(note);
         }
         if (working) {
-            // Setup progress is shown as it is; otherwise the wait gets changing lines.
-            String[] lines = !chat.status.isEmpty() ? new String[]{chat.status}
-                    : getResources().getStringArray(m.steps.isEmpty() ? R.array.thinking : R.array.working);
-            Thinking state = new Thinking(c, lines, chat.startedAt, density);
+            Working state = new Working(c, chat, density);
             LayoutParams stateSize = new LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            if (!m.text.isEmpty() || !m.note.isEmpty() || !m.steps.isEmpty()) stateSize.topMargin = dp(6);
+            if (!m.text.isEmpty() || !m.note.isEmpty() || !m.steps.isEmpty()) stateSize.topMargin = dp(10);
             bubble.addView(state, stateSize);
         }
         LayoutParams size = new LayoutParams(
@@ -574,6 +570,16 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         size.topMargin = dp(14);
         size.rightMargin = dp(32);
         list.addView(bubble, size);
+    }
+
+    /** "5 minutes ago", in the language chosen in the app (Android's own wording follows the phone's language). */
+    static String ago(Context c, long then) {
+        long minutes = Math.max(0, System.currentTimeMillis() - then) / 60000;
+        if (minutes < 1) return c.getString(R.string.time_now);
+        if (minutes < 60) return c.getString(R.string.time_minutes, (int) minutes);
+        if (minutes < 60 * 24) return c.getString(R.string.time_hours, (int) (minutes / 60));
+        if (minutes < 60 * 24 * 7) return c.getString(R.string.time_days, (int) (minutes / (60 * 24)));
+        return android.text.format.DateFormat.getMediumDateFormat(c).format(new java.util.Date(then));
     }
 
     /** The little Markdown that models use in short answers: **bold**, `code` and ``` blocks. */
@@ -617,84 +623,209 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     }
 
     /**
-     * The "working on it" indicator: three dots that ride a wave and change
-     * colour, a line of text that changes every few seconds, and the seconds
-     * waited. Everything is computed from the clock, so it keeps its place
-     * when the chat is redrawn.
+     * The "working on it" indicator. It says what the agent is doing at this
+     * moment (thinking, running which command, reading which file, searching
+     * the web for what) and, when there is nothing to add, shows a tip.
+     *
+     * Drawn by hand: a ring that turns around an icon for the kind of work,
+     * a title with a light that runs over it, the time waited, and a bar
+     * with a comet at the bottom. It reads the chat's state on every frame,
+     * so the list need not be rebuilt when the work changes.
      */
-    private static final class Thinking extends View {
-        private static final int[] COLORS = {0xffff7a45, 0xffd2a8ff, 0xff79c0ff, 0xff56d364};
-        private static final long LINE_MS = 2800, FADE_MS = 350;
-        private final String[] lines;
-        private final long startedAt;
-        private final float density;
-        private final android.graphics.Paint dot = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-        private final android.graphics.Paint text = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    private static final class Working extends View {
+        private static final int[] RING = {0xffff7a45, 0xffd2a8ff, 0xff79c0ff, 0xff56d364, 0xffff7a45};
+        private static final String[] ICONS = {
+                "\uD83D\uDE80", "\uD83D\uDCE1", "\uD83E\uDDE0", "\u270D\uFE0F", "\uD83D\uDCBB", "\uD83D\uDCE6",
+                "\uD83D\uDCF1", "\uD83D\uDC46", "\uD83D\uDC19", "\uD83D\uDCC4", "\u270F\uFE0F", "\uD83D\uDD0E",
+                "\uD83C\uDF10", "\uD83D\uDD17", "\uD83D\uDDD2\uFE0F", "\uD83E\uDD1D", "\uD83E\uDDE9", "\u23F3",
+                "\uD83D\uDC40"};
+        private static final String SETUP_ICON = "\u2B07\uFE0F";
+        private static final long TIP_MS = 5200, FADE_MS = 380, TIPS_AFTER_MS = 3500;
+
+        private final Chat chat;
+        private final String[] titles, tips;
+        private final String setupTitle;
+        private final float dp, sp;
+        private final int textColor, mutedColor, accentColor, trackColor;
+        private final android.graphics.Paint ring = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Paint fill = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Paint icon = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.text.TextPaint title = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.text.TextPaint about = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.text.TextPaint tip = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         private final android.graphics.Paint time = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-        private final android.animation.ArgbEvaluator blend = new android.animation.ArgbEvaluator();
+        private final android.graphics.Paint bar = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Matrix move = new android.graphics.Matrix();
+        private final android.graphics.RectF box = new android.graphics.RectF();
+        private android.graphics.Shader ringShader, shine, comet;
+        private float shineWidth, cometWidth;
+        /** The title on screen and when it came, for the change-over. */
+        private String shownTitle = "", described = "";
+        private long shownAt;
 
-        Thinking(Context c, String[] lines, long startedAt, float density) {
+        Working(Context c, Chat chat, float density) {
             super(c);
-            this.lines = lines;
-            this.startedAt = startedAt;
-            this.density = density;
-            text.setColor(Theme.text());
-            text.setTextSize(14 * getResources().getDisplayMetrics().scaledDensity);
-            time.setColor(Theme.muted());
-            time.setTextSize(12 * getResources().getDisplayMetrics().scaledDensity);
-        }
-
-        private float dotsWidth() {
-            return 46 * density;
+            this.chat = chat;
+            dp = density;
+            sp = getResources().getDisplayMetrics().scaledDensity;
+            titles = getResources().getStringArray(R.array.activity_titles);
+            tips = getResources().getStringArray(R.array.tips);
+            setupTitle = c.getString(R.string.activity_setup);
+            textColor = Theme.text();
+            mutedColor = Theme.muted();
+            accentColor = Theme.accent();
+            trackColor = Theme.surfaceHigh();
+            ring.setStyle(android.graphics.Paint.Style.STROKE);
+            ring.setStrokeWidth(2.6f * dp);
+            ring.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+            icon.setTextSize(15 * sp);
+            icon.setTextAlign(android.graphics.Paint.Align.CENTER);
+            title.setTextSize(15 * sp);
+            title.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            about.setTextSize(12 * sp);
+            about.setTypeface(Typeface.MONOSPACE);
+            about.setColor(mutedColor);
+            tip.setTextSize(12.5f * sp);
+            tip.setColor(mutedColor);
+            time.setTextSize(12 * sp);
+            time.setColor(mutedColor);
+            time.setTextAlign(android.graphics.Paint.Align.RIGHT);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         }
 
         @Override
         protected void onMeasure(int widthSpec, int heightSpec) {
-            float widest = 0;
-            for (String line : lines) widest = Math.max(widest, text.measureText(line));
-            int wanted = (int) (dotsWidth() + widest + time.measureText("  \u00b7 999s") + 4 * density);
-            setMeasuredDimension(resolveSize(wanted, widthSpec), resolveSize((int) (30 * density), heightSpec));
+            int height = (int) (10 * dp + 20 * sp + 18 * sp + 12 * dp);
+            setMeasuredDimension(resolveSize((int) (290 * dp), widthSpec), resolveSize(height, heightSpec));
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            float r = 15 * dp;
+            ringShader = new android.graphics.SweepGradient(r + 3 * dp, centerY(), RING, null);
+            shineWidth = 90 * dp;
+            // the title in its own colour, with a band of the accent colour to slide over it
+            shine = new android.graphics.LinearGradient(0, 0, shineWidth, 0,
+                    new int[]{textColor, accentColor, textColor}, null, android.graphics.Shader.TileMode.CLAMP);
+            cometWidth = Math.max(60 * dp, w * 0.32f);
+            comet = new android.graphics.LinearGradient(0, 0, cometWidth, 0,
+                    new int[]{accentColor & 0x00ffffff, accentColor, RING[1], RING[1] & 0x00ffffff},
+                    new float[]{0f, 0.45f, 0.7f, 1f}, android.graphics.Shader.TileMode.CLAMP);
+        }
+
+        private float centerY() {
+            return 6 * dp + (20 * sp + 18 * sp) / 2;
+        }
+
+        private static String clock(long ms) {
+            long s = ms / 1000;
+            return s < 60 ? s + "s" : s / 60 + ":" + (s % 60 < 10 ? "0" : "") + s % 60;
         }
 
         @Override
         protected void onDraw(android.graphics.Canvas canvas) {
             long now = android.os.SystemClock.elapsedRealtime();
-            long waited = Math.max(0, now - startedAt);
-            float middle = getHeight() / 2f;
+            long waited = Math.max(0, now - chat.startedAt);
+            int w = getWidth();
 
-            // dots: a wave runs through them while the colours drift
-            for (int i = 0; i < 3; i++) {
-                double phase = now / 260.0 - i * 0.9;
-                float lift = (float) Math.sin(phase);
-                float size = (3.4f + 1.2f * Math.max(0, lift)) * density;
-                float drift = (now / 1400f + i * 0.33f) % COLORS.length;
-                int from = (int) drift;
-                dot.setColor((Integer) blend.evaluate(drift - from, COLORS[from], COLORS[(from + 1) % COLORS.length]));
-                canvas.drawCircle((7 + i * 14) * density, middle - lift * 4.5f * density, size, dot);
+            // what is going on: the agent being installed, or one of the kinds of work
+            String status = chat.status;
+            int kind = Math.max(0, Math.min(titles.length - 1, chat.activity));
+            String name = status.isEmpty() ? titles[kind] : setupTitle;
+            String detail = status.isEmpty() ? chat.activityDetail : status;
+            String glyph = status.isEmpty() ? ICONS[Math.min(kind, ICONS.length - 1)] : SETUP_ICON;
+            if (!name.equals(shownTitle)) {
+                shownTitle = name;
+                shownAt = now;
+            }
+            String say = detail.isEmpty() ? name : name + ": " + detail;
+            if (!say.equals(described)) {
+                described = say;
+                setContentDescription(say);
+            }
+            float arrive = Math.min(1f, (now - shownAt) / 240f);
+
+            // the ring: three quarters of a circle that turns, a dot going the other way, the icon inside
+            float r = 15 * dp, cx = r + 3 * dp, cy = centerY();
+            float pulse = (float) Math.sin(now / 420.0);
+            fill.setColor(accentColor);
+            fill.setAlpha((int) (26 + 16 * pulse));
+            canvas.drawCircle(cx, cy, r + (1.5f + 1.5f * pulse) * dp, fill);
+            fill.setColor(trackColor);
+            fill.setAlpha(255);
+            canvas.drawCircle(cx, cy, r - 1.5f * dp, fill);
+            float turn = (now % 1600) / 1600f * 360f;
+            canvas.save();
+            canvas.rotate(turn, cx, cy);
+            ring.setShader(ringShader);
+            box.set(cx - r, cy - r, cx + r, cy + r);
+            canvas.drawArc(box, 0, 270, false, ring);
+            canvas.restore();
+            double back = -(now % 2600) / 2600.0 * 2 * Math.PI;
+            fill.setColor(RING[2]);
+            canvas.drawCircle(cx + (float) Math.cos(back) * (r + 0.5f * dp), cy + (float) Math.sin(back) * (r + 0.5f * dp),
+                    2.2f * dp, fill);
+            // the icon pops a little when the work changes
+            float pop = 1f + 0.35f * (1 - arrive) + 0.04f * pulse;
+            canvas.save();
+            canvas.scale(pop, pop, cx, cy);
+            canvas.drawText(glyph, cx, cy - (icon.descent() + icon.ascent()) / 2, icon);
+            canvas.restore();
+
+            // first line: the title, with a light running over it, and the time waited
+            float left = 2 * r + 14 * dp;
+            float line1 = 6 * dp + 20 * sp * 0.74f;
+            String clock = waited >= 3000 ? clock(waited) : "";
+            float clockRoom = clock.isEmpty() ? 0 : time.measureText(clock) + 8 * dp;
+            if (!clock.isEmpty()) canvas.drawText(clock, w - 1 * dp, line1, time);
+            CharSequence heading = android.text.TextUtils.ellipsize(name, title, w - left - clockRoom,
+                    android.text.TextUtils.TruncateAt.END);
+            float headingWidth = title.measureText(heading, 0, heading.length());
+            float sweep = (now % 2000) / 2000f;
+            move.setTranslate(left - shineWidth + sweep * (headingWidth + 2 * shineWidth), 0);
+            shine.setLocalMatrix(move);
+            title.setShader(shine);
+            title.setAlpha((int) (255 * arrive));
+            canvas.drawText(heading, 0, heading.length(), left, line1 + (1 - arrive) * 6 * dp, title);
+
+            // second line: what exactly (the command, the file, the search), or a tip while there is nothing to say
+            float line2 = 6 * dp + 20 * sp + 18 * sp * 0.7f;
+            if (!detail.isEmpty()) {
+                // thoughts are followed at their end, everything else is read from its start
+                boolean thinking = status.isEmpty() && kind == Chat.ACT_THINK;
+                CharSequence what = android.text.TextUtils.ellipsize((thinking ? "" : "\u203a ") + detail, about,
+                        w - left, thinking ? android.text.TextUtils.TruncateAt.START : android.text.TextUtils.TruncateAt.END);
+                about.setAlpha((int) (255 * arrive));
+                canvas.drawText(what, 0, what.length(), left, line2, about);
+            } else if (waited >= TIPS_AFTER_MS && tips.length > 0) {
+                long since = waited - TIPS_AFTER_MS;
+                long into = since % TIP_MS;
+                float in = Math.min(1f, into / (float) FADE_MS);
+                float out = Math.max(0f, (into - (TIP_MS - FADE_MS)) / (float) FADE_MS);
+                CharSequence words = android.text.TextUtils.ellipsize(tips[(int) (since / TIP_MS % tips.length)], tip,
+                        w - left, android.text.TextUtils.TruncateAt.END);
+                tip.setAlpha((int) (255 * Math.min(in, 1 - out)));
+                canvas.drawText(words, 0, words.length(), left, line2 + (1 - in) * 5 * dp - out * 5 * dp, tip);
             }
 
-            // the line of text: the next one slides up as the old one fades
-            int index = (int) (waited / LINE_MS % lines.length);
-            long into = waited % LINE_MS;
-            float appear = lines.length == 1 ? 1 : Math.min(1f, into / (float) FADE_MS);
-            float leave = lines.length == 1 ? 0 : Math.max(0f, (into - (LINE_MS - FADE_MS)) / (float) FADE_MS);
-            float alpha = Math.min(appear, 1 - leave);
-            float baseline = middle - (text.descent() + text.ascent()) / 2 + (1 - appear) * 6 * density - leave * 6 * density;
-            float room = getWidth() - dotsWidth();
-            String line = lines[index];
-            if (text.measureText(line) > room) {
-                line = android.text.TextUtils.ellipsize(line, new android.text.TextPaint(text), room,
-                        android.text.TextUtils.TruncateAt.END).toString();
-            }
-            text.setAlpha((int) (255 * alpha));
-            canvas.drawText(line, dotsWidth(), baseline, text);
-            if (waited >= 5000) {
-                float x = dotsWidth() + text.measureText(line);
-                if (x + time.measureText("  \u00b7 999s") <= getWidth() + 1) {
-                    time.setAlpha((int) (255 * alpha));
-                    canvas.drawText("  \u00b7 " + waited / 1000 + "s", x, baseline, time);
-                }
-            }
+            // the bar: a comet that crosses it, slow at the ends and fast in the middle
+            float top = getHeight() - 5 * dp, thick = 3 * dp;
+            bar.setShader(null);
+            bar.setColor(trackColor);
+            box.set(0, top, w, top + thick);
+            canvas.drawRoundRect(box, thick / 2, thick / 2, bar);
+            float t = (now % 1500) / 1500f;
+            float eased = t < 0.5f ? 2 * t * t : 1 - (float) Math.pow(-2 * t + 2, 2) / 2;
+            float head = -cometWidth + eased * (w + cometWidth);
+            move.setTranslate(head, 0);
+            comet.setLocalMatrix(move);
+            bar.setShader(comet);
+            canvas.save();
+            canvas.clipRect(0, top, w, top + thick);
+            box.set(Math.max(0, head), top, Math.min(w, head + cometWidth), top + thick);
+            canvas.drawRoundRect(box, thick / 2, thick / 2, bar);
+            canvas.restore();
+
             postInvalidateOnAnimation();
         }
     }

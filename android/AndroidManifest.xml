@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.termant.app"
-    android:versionCode="13"
-    android:versionName="0.10.0">
+    android:versionCode="14"
+    android:versionName="0.11.0">
 
     <!-- targetSdkVersion stays at 28 for the same reason as Termux: a Linux
          userland needs to map and run program files stored in app data. -->
@@ -50,6 +50,22 @@
         </activity>
 
         <service android:name=".TermService" android:exported="false" />
+
+        <!-- Screen control for the agent (phone screen / tap / type / swipe).
+             Only Android itself can bind it, and only after the user turns
+             it on in Settings → Accessibility. -->
+        <service
+            android:name=".ScreenService"
+            android:label="@string/screen_service_label"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/screen_service" />
+        </service>
 
         <!-- Brings automation rules back after the phone restarts. -->
         <receiver android:name=".BootReceiver" android:exported="true">

@@ -76,6 +76,7 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t.sh'" < android/ci/guest-
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t2.sh'" < android/ci/guest-test2.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t3.sh'" < android/ci/guest-test3.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest-test4.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest-test5.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -145,6 +146,9 @@ sleep 2
 shot 8-chat-reply
 adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
 grep -q 'phone alarm 0*7:00' "$OUT/chat.json" || finish "FAIL chat: the agent did not run phone alarm"
+adb logcat -d -s Termant:I | grep 'activity:' > "$OUT/activity.txt"
+cat "$OUT/activity.txt"
+grep -q 'activity: .*phone' "$OUT/activity.txt" || finish "FAIL the app did not notice that the agent was using the phone"
 [ "$(grep -c 'alarm 07:00 sent to the Clock app' "$OUT/phone-log.txt")" -ge 2 ] || finish "FAIL chat: the alarm did not reach the Clock app"
 
 # A follow-up in the same conversation, and a coding request.
@@ -209,11 +213,19 @@ echo "Settings"
 tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found"
 sleep 2
 shot 14-settings
-for _ in 1 2 3 4 5; do
-  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
-  adb shell "grep -q 'content-desc=.OpenRouter.' /sdcard/ui.xml" && break
-  adb shell input swipe 160 450 160 250 400; sleep 1
-done
+scroll_to() { # <content-desc of a Settings row>: scrolls down until it is on screen
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do
+    adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+    adb shell "grep -q 'content-desc=.$1.' /sdcard/ui.xml" && return 0
+    adb shell input swipe 160 450 160 250 400; sleep 1
+  done
+  return 1
+}
+scroll_to GitHub || finish "FAIL GitHub row not found in Settings"
+shot 14-settings-tools
+scroll_to 'Web search' || finish "FAIL Web search row not found in Settings"
+scroll_to 'Screen control' || finish "FAIL Screen control row not found in Settings"
+scroll_to OpenRouter
 tap_on 'content-desc="OpenRouter"' || finish "FAIL API key row not found"
 sleep 2
 tap_on 'class="android.widget.EditText"'; sleep 1
@@ -238,6 +250,8 @@ adb shell dumpsys wifi | grep -m1 'Wi-Fi is' > "$OUT/wifi.txt"
 adb shell svc wifi enable
 grep -q '^key-set=yes' "$OUT/result4.txt" || finish "FAIL the API key did not reach Ubuntu"
 grep -q '^wifi-off-exit=0' "$OUT/result4.txt" || finish "FAIL phone wifi off"
+grep -q '^screen-off-exit=1' "$OUT/result4.txt" || finish "FAIL phone screen worked although screen control is off"
+grep -q 'Screen control is off' "$OUT/result4.txt" || finish "FAIL phone screen did not say that screen control is off"
 grep -q 'disabled' "$OUT/wifi.txt" || finish "FAIL Wi-Fi was not really switched off"
 
 echo "Auto-switch: the chosen model does not exist, a backup must answer"
@@ -355,6 +369,116 @@ cat "$OUT/mcp.txt"
 sleep 2
 shot 25-mcp
 
+echo "Tools: GitHub token, web search, screen control"
+tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found for the tools test"
+sleep 2
+scroll_to GitHub || finish "FAIL GitHub row not found"
+tap_on 'content-desc="GitHub"' || finish "FAIL GitHub row could not be tapped"
+sleep 2
+shot 32-github-dialog
+tap_on 'class="android.widget.EditText"'; sleep 1
+adb shell input text 'ghp_termantCiNotARealToken0000000000000'
+tap_on 'text="Save"' || tap_on 'text="SAVE"' || finish "FAIL Save not found for the GitHub token"
+sleep 8
+shot 33-github-answer
+adb logcat -d -s Termant:I | grep 'github:' > "$OUT/github.txt"
+cat "$OUT/github.txt"
+grep -q 'github: token check gave' "$OUT/github.txt" || finish "FAIL the GitHub token was not checked"
+# GitHub says 401 to a made-up token, and then it must not be kept
+if grep -q 'gave 401' "$OUT/github.txt"; then
+  run_as grep -q GH_TOKEN files/rootfs/root/.config/termant/keys.env && finish "FAIL a token GitHub refused was saved anyway"
+fi
+scroll_to 'Screen control' || finish "FAIL Screen control row not found"
+tap_on 'content-desc="Screen control"' || finish "FAIL Screen control row could not be tapped"
+sleep 2
+shot 34-screen-control-ask
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'Open settings' /sdcard/ui.xml" || adb shell "grep -q 'OPEN SETTINGS' /sdcard/ui.xml" || finish "FAIL the screen control explanation did not open"
+tap_on 'text="Cancel"' || tap_on 'text="CANCEL"' || adb shell input keyevent 4
+sleep 1
+tap_on 'content-desc="Back to the chat"' || finish "FAIL Back arrow not found after the tools rows"
+sleep 2
+tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button not found for the screen control test"
+sleep 3
+# What the user does by hand in Android's Accessibility settings.
+adb shell settings put secure enabled_accessibility_services "$PKG/$PKG.ScreenService"
+adb shell settings put secure accessibility_enabled 1
+sleep 6
+adb logcat -d -s Termant:I | grep 'screen control:' > "$OUT/screen-control.txt"
+cat "$OUT/screen-control.txt"
+grep -q 'screen control: on' "$OUT/screen-control.txt" || finish "FAIL Android did not start the screen control service"
+type_line 'sh%st5.sh'
+wait_for_end files/rootfs/root/result5.txt 40 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
+run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"
+cat "$OUT/result5.txt"
+sleep 2
+shot 35-after-screen-control
+grep -q '^screen-exit=0' "$OUT/result5.txt" || finish "FAIL phone screen"
+grep -q '^App: ' "$OUT/result5.txt" || finish "FAIL phone screen did not describe the screen"
+grep -q '^apps-exit=0' "$OUT/result5.txt" || finish "FAIL phone apps"
+grep -q '^app-exit=0' "$OUT/result5.txt" || finish "FAIL phone app"
+grep -q '^app-opened=yes' "$OUT/result5.txt" || finish "FAIL phone app did not bring the Settings app to the screen"
+grep -q '^swipe-exit=0' "$OUT/result5.txt" || finish "FAIL phone swipe"
+grep -q '^tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap by words"
+grep -q '^tap-number-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap by number"
+grep -q '^key-back-exit=0' "$OUT/result5.txt" || finish "FAIL phone key back"
+grep -q '^key-home-exit=0' "$OUT/result5.txt" || finish "FAIL phone key home"
+grep -q '^bad-key-exit=1' "$OUT/result5.txt" || finish "FAIL phone key accepted an unknown key"
+grep -q '^bad-app-exit=1' "$OUT/result5.txt" || finish "FAIL phone app accepted an unknown app"
+grep -q '^return-exit=0' "$OUT/result5.txt" || finish "FAIL phone app could not bring Termant back"
+grep -q '^cred: password=ci-token-not-real' "$OUT/result5.txt" || finish "FAIL git was not given the GitHub token"
+grep -q '^cred: username=ci-user' "$OUT/result5.txt" || finish "FAIL git was not given the GitHub account name"
+grep -q '^other: password=ci-token-not-real' "$OUT/result5.txt" && finish "FAIL the GitHub token was offered to another site"
+grep -q '^git-name=ci-user' "$OUT/result5.txt" || finish "FAIL git did not get the account's name for commits"
+grep -q '"websearch"' "$OUT/result5.txt" || finish "FAIL web search is not in the agent's settings"
+grep -q '"provider": *"exa"' "$OUT/result5.txt" || finish "FAIL web search has no search service chosen"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 3
+tap_on 'content-desc="Settings"' || { tap_on 'content-desc="Back to the chat"'; sleep 2; tap_on 'content-desc="Settings"'; }
+sleep 2
+scroll_to 'Screen control'
+shot 36-screen-control-on
+tap_on 'content-desc="Back to the chat"'
+sleep 2
+
+echo "Web search and another app from the chat (reported, do not fail the test: they need the model to choose the tool)"
+tap_on 'content-desc="Start a new chat"'
+sleep 2
+if ask 'Search%sthe%sweb%sfor%sthe%snewest%sstable%sPython%sversion%sand%stell%sme%sthe%snumber'; then
+  for i in 1 2 3 4 5 6; do sleep 2; shot "37-search-$i"; done
+  if wait_for_reply 80; then echo "web search request: answered" > "$OUT/search.txt"; else echo "web search request: NOT answered" > "$OUT/search.txt"; fi
+  sleep 2
+  shot 38-search-done
+  adb logcat -d -s Termant:I | grep 'activity:' | tail -n 1 >> "$OUT/search.txt"
+  if tail -n 1 "$OUT/search.txt" | grep -q 'search'; then echo "web search: USED" >> "$OUT/search.txt"; else echo "web search: not used" >> "$OUT/search.txt"; fi
+  python3 - "$OUT/chat.json" >> "$OUT/search.txt" 2>&1 <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"]
+print("reply:", m[-1]["text"][:600])
+print("steps:", m[-1].get("steps"))
+PY
+  cat "$OUT/search.txt"
+fi
+if ask 'Open%sthe%sClock%sapp%sand%stell%sme%swhich%sbuttons%sit%sshows.%sThen%scome%sback%sto%sTermant'; then
+  for i in 1 2 3 4 5 6; do sleep 3; shot "39-screen-chat-$i"; done
+  if wait_for_reply 80; then echo "screen request: answered" > "$OUT/screen-chat.txt"; else echo "screen request: NOT answered" > "$OUT/screen-chat.txt"; fi
+  adb logcat -d -s Termant:I | grep 'activity:' | tail -n 1 >> "$OUT/screen-chat.txt"
+  python3 - "$OUT/chat.json" >> "$OUT/screen-chat.txt" 2>&1 <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"]
+print("reply:", m[-1]["text"][:600])
+print("steps:", m[-1].get("steps"))
+PY
+  cat "$OUT/screen-chat.txt"
+  adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+  sleep 3
+  shot 40-screen-chat-done
+fi
+adb logcat -d -s Termant:I | grep 'activity:' > "$OUT/activity.txt"
+# the look test reads the screen with a tool that pauses services like ours; leave it off from here
+adb shell settings delete secure enabled_accessibility_services
+sleep 2
+
 echo "Look: light theme, then Hindi"
 tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found for the look test"
 sleep 2
@@ -369,6 +493,9 @@ shot 27-chat-light
 tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button not found in the light theme"
 sleep 4
 shot 28-terminal-light
+python3 android/ci/pixel.py "$OUT/28-terminal-light.png" 90 20 90 28 90 36 60 40 40 30 > "$OUT/terminal-light.txt" 2>&1
+cat "$OUT/terminal-light.txt"
+[ "$(tail -n 1 "$OUT/terminal-light.txt")" = light ] || finish "FAIL the terminal stayed dark in the light theme"
 tap_on 'content-desc="Back to the chat"' || finish "FAIL Chat button not found in the light theme"
 sleep 2
 tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found in the light theme"
@@ -378,6 +505,8 @@ sleep 5
 shot 29-settings-hindi
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
 adb shell "grep -q 'Bhasha aur rang' /sdcard/ui.xml" || finish "FAIL Settings are not in Hindi after choosing it"
+adb shell "grep -q 'Rang (Theme)' /sdcard/ui.xml" || finish "FAIL the Theme row is not in Hindi"
+adb shell "grep -q 'Kaam ka folder' /sdcard/ui.xml" || adb shell "grep -q 'AI model' /sdcard/ui.xml" || finish "FAIL the agent rows are not in Hindi"
 tap_on 'content-desc="Chat par wapas jayein"' || finish "FAIL Hindi back button not found"
 sleep 2
 shot 30-chat-hindi
@@ -386,5 +515,13 @@ adb shell "grep -q 'Nayi chat shuru karein' /sdcard/ui.xml" || finish "FAIL the 
 tap_on 'content-desc="Nayi chat shuru karein"'
 sleep 2
 shot 31-welcome-hindi
+tap_on 'content-desc="Purani chats"' || tap_on 'content-desc="Chat history"'
+sleep 2
+shot 41-history-hindi
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell cat /sdcard/ui.xml | tr '>' '\n' | grep -o 'text="[^"]*\(pehle\|Abhi\|ago\)[^"]*"' | head -n 5 > "$OUT/history-hindi.txt"
+cat "$OUT/history-hindi.txt"
+grep -q ' ago"' "$OUT/history-hindi.txt" && finish "FAIL the chat list still says 'ago' in Hindi"
+grep -q 'pehle\|Abhi' "$OUT/history-hindi.txt" || finish "FAIL the chat list shows no time in Hindi"
 
 finish PASS

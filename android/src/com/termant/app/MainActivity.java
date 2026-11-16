@@ -222,8 +222,29 @@ public class MainActivity extends Activity
             @Override
             public void onLookChanged() {
                 backToSettings = true;
-                if (service != null) service.refreshNotification();
+                if (service != null) {
+                    service.refreshNotification();
+                    service.recolorTerminals();
+                }
                 recreate();
+            }
+
+            @Override
+            public void onOpenScreenSettings() {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, R.string.screen_no_settings, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onOpenLink(String url) {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)));
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, url, Toast.LENGTH_LONG).show();
+                }
             }
         });
         settingsPanel.setVisibility(View.GONE);
@@ -250,6 +271,8 @@ public class MainActivity extends Activity
         super.onStart();
         onScreen = true;
         visible = this;
+        // back from Android's settings: Screen control may have been turned on or off there
+        if (settingsPanel != null) settingsPanel.refresh();
     }
 
     @Override

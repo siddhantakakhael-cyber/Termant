@@ -67,9 +67,9 @@ final class Theme {
         return current == LIGHT;
     }
 
-    /** The terminal keeps its dark background in both themes: programs print light text. */
+    /** The terminal's background: the app's background, in both themes. */
     static int terminalBg() {
-        return DARK[IDX_BG];
+        return current[IDX_BG];
     }
 
     static int code() {

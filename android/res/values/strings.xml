@@ -97,23 +97,6 @@
     <string name="chat_back">Chat</string>
     <string name="chat_back_description">Back to the chat</string>
     <string name="chat_stop">Stop</string>
-    <string-array name="thinking">
-        <item>Soch raha hoon…</item>
-        <item>Dimaag laga raha hoon 💡</item>
-        <item>Baat samajh raha hoon…</item>
-        <item>Tareeka dhoondh raha hoon 🔍</item>
-        <item>Bas aa hi gaya…</item>
-        <item>Chai pee lo tab tak ☕</item>
-        <item>Plan bana raha hoon 📝</item>
-        <item>Almost done ✨</item>
-    </string-array>
-    <string-array name="working">
-        <item>Kaam chal raha hai… ⚙️</item>
-        <item>Commands chala raha hoon 🚀</item>
-        <item>Phone se baat chal rahi hai 📱</item>
-        <item>Result check kar raha hoon ✅</item>
-        <item>Bas thoda aur…</item>
-    </string-array>
     <string name="history_title">Chat history</string>
     <string name="chat_try">Try asking</string>
     <string name="history_recent">Recent chats</string>
@@ -168,4 +151,72 @@
     <string name="voice_denied">The microphone was not allowed, so voice input cannot listen.</string>
     <string name="voice_nothing">Did not catch that. Tap the microphone and try again.</string>
     <string name="voice_failed">Voice input stopped (%1$s). Check the internet connection and try again.</string>
+    <!-- What the agent is doing right now; same order as Chat.ACT_*. -->
+    <string-array name="activity_titles">
+        <item>Starting the agent</item>
+        <item>Asking the model</item>
+        <item>Thinking</item>
+        <item>Writing the answer</item>
+        <item>Running a command</item>
+        <item>Installing</item>
+        <item>Using the phone</item>
+        <item>Working on the screen</item>
+        <item>Working with Git / GitHub</item>
+        <item>Reading a file</item>
+        <item>Changing a file</item>
+        <item>Looking through the files</item>
+        <item>Searching the web</item>
+        <item>Reading a web page</item>
+        <item>Planning the steps</item>
+        <item>A helper agent is working</item>
+        <item>Using a tool</item>
+        <item>The model is busy, trying again</item>
+        <item>Looking at the result</item>
+    </string-array>
+    <string name="activity_setup">Installing the AI agent (once only)</string>
+    <string-array name="tips">
+        <item>💡 You can tap the microphone and say it</item>
+        <item>☕ Time for a sip of tea</item>
+        <item>💡 The ☰ button brings back earlier chats</item>
+        <item>💡 Say \"turn Wi-Fi off every night at 11\" to make a rule</item>
+        <item>💡 >_ opens the real Ubuntu terminal</item>
+        <item>💡 Connect GitHub in Settings and I can push your code</item>
+        <item>💡 Need fresh facts? I can search the web</item>
+        <item>💡 With Screen control on, I can use other apps for you</item>
+        <item>⏳ Free models are slower at busy hours</item>
+        <item>💡 The ■ button stops me at any time</item>
+    </string-array>
+    <string name="time_now">Just now</string>
+    <string name="time_minutes">%1$d min ago</string>
+    <string name="time_hours">%1$d h ago</string>
+    <string name="time_days">%1$d d ago</string>
+    <!-- Tools: GitHub, web search, screen control. -->
+    <string name="settings_tools">Tools for the agent</string>
+    <string name="settings_tools_note">What the agent may use besides Ubuntu and the phone controls.</string>
+    <string name="github_title">GitHub</string>
+    <string name="github_off">Not connected</string>
+    <string name="github_unchecked">Token saved (not checked)</string>
+    <string name="github_note">With a token the agent can clone your private repos, commit, push, and open issues and pull requests.</string>
+    <string name="github_how">Make a token on GitHub (tick repo), copy it and paste it here. It stays on this phone, inside Ubuntu.</string>
+    <string name="github_make">Make a token on github.com ↗</string>
+    <string name="github_hint">ghp_… or github_pat_…</string>
+    <string name="github_remove">Disconnect</string>
+    <string name="github_removed">GitHub disconnected</string>
+    <string name="github_checking">Checking with GitHub…</string>
+    <string name="github_rejected">GitHub did not accept this token. Copy it again, or make a new one.</string>
+    <string name="github_saved">Connected to GitHub as @%1$s</string>
+    <string name="github_saved_unchecked">Token saved. GitHub could not be reached to check it.</string>
+    <string name="search_title">Web search</string>
+    <string name="search_note">The agent looks things up on the internet when it needs fresh facts. Free, no key needed.</string>
+    <string name="search_key">%1$s search key (optional)</string>
+    <string name="search_key_none">Not needed</string>
+    <string name="screen_title">Screen control</string>
+    <string name="screen_note">Lets the agent read the screen and tap, type and swipe in other apps, like a person would.</string>
+    <string name="screen_ask_text">With this on, the agent can open any app, read what it shows and tap, type and swipe for you.\n\n• It acts only when you ask in the chat.\n• It never types into password boxes.\n• Turn it off here whenever you like.\n\nOn the next screen choose “Termant screen control” (under Installed or Downloaded apps) and switch it on.\n\nIf Android says “Restricted setting”: open App info for Termant, tap ⋮ at the top right, choose “Allow restricted settings”, then come back here.</string>
+    <string name="screen_on_text">Screen control is on. The agent can read the screen and tap, type and swipe in other apps when you ask it to.</string>
+    <string name="screen_open">Open settings</string>
+    <string name="screen_stop">Turn off</string>
+    <string name="screen_no_settings">Open Android Settings → Accessibility yourself.</string>
+    <string name="screen_service_label">Termant screen control</string>
+    <string name="screen_service_description">Lets Termant’s AI agent read what is on the screen and tap, type and swipe in other apps when you ask it to in the chat. It does nothing on its own, records nothing, and never types into password boxes.</string>
 </resources>

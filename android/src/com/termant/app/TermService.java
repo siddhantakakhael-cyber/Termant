@@ -89,6 +89,7 @@ public class TermService extends Service implements TerminalSessionClient {
     @Override
     public void onCreate() {
         super.onCreate();
+        Theme.apply(this);
         applyTerminalColors();
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel channel = new NotificationChannel(
@@ -104,17 +105,30 @@ public class TermService extends Service implements TerminalSessionClient {
         bridge.start();
     }
 
-    /** Terminal palette matching the app's dark theme. */
-    private static void applyTerminalColors() {
-        String[] ansi = {
+    /** Terminal palette matching the app's theme (dark or light). */
+    static void applyTerminalColors() {
+        boolean light = Theme.isLight();
+        // On a light background "white" has to be a grey that can be read, as in other light terminals.
+        String[] ansi = light ? new String[]{
+                "#24292f", "#cf222e", "#116329", "#9a6700", "#0969da", "#8250df", "#1b7c83", "#6e7781",
+                "#57606a", "#a40e26", "#1a7f37", "#7d4e00", "#218bff", "#a475f9", "#3192aa", "#8c959f"}
+                : new String[]{
                 "#484f58", "#ff7b72", "#3fb950", "#d29922", "#58a6ff", "#bc8cff", "#39c5cf", "#b1bac4",
                 "#6e7681", "#ffa198", "#56d364", "#e3b341", "#79c0ff", "#d2a8ff", "#56d4dd", "#f0f6fc"};
         java.util.Properties p = new java.util.Properties();
-        p.setProperty("foreground", "#e6edf3");
-        p.setProperty("background", "#0d1117");
-        p.setProperty("cursor", "#ff7a45");
+        p.setProperty("foreground", light ? "#24292f" : "#e6edf3");
+        p.setProperty("background", light ? "#f6f8fa" : "#0d1117");
+        p.setProperty("cursor", light ? "#d25a2e" : "#ff7a45");
         for (int i = 0; i < ansi.length; i++) p.setProperty("color" + i, ansi[i]);
         com.termux.terminal.TerminalColors.COLOR_SCHEME.updateWith(p);
+    }
+
+    /** The theme was changed: terminals that are already open take the new colours too. */
+    void recolorTerminals() {
+        applyTerminalColors();
+        for (TerminalSession s : sessions) {
+            if (s.getEmulator() != null) s.getEmulator().mColors.reset();
+        }
     }
 
     /** Called when Ubuntu has just been (re)installed. */

@@ -54,6 +54,9 @@ final class Chat {
             "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
+                    // git must fail rather than wait for a password nobody can type
+                    + "[ -f " + Config.GITHUB_FILE + " ] && . " + Config.GITHUB_FILE + "\n"
+                    + "export GIT_TERMINAL_PROMPT=0 GH_PROMPT_DISABLED=1\n"
                     + "mkdir -p \"$3\" && cd \"$3\" || exit " + SETUP_FAILED + "\n"
                     // OpenCode prints a paragraph only when it is complete. To show the words while
                     // they are written, start its server here and copy the server's event feed to $6.
@@ -188,6 +191,104 @@ final class Chat {
     /** Finished and unfinished conversations, one file each. */
     private final File archive;
 
+    /** What the agent is doing at this moment, for the "working" indicator. */
+    static final int ACT_START = 0, ACT_ASK = 1, ACT_THINK = 2, ACT_WRITE = 3, ACT_SHELL = 4,
+            ACT_INSTALL = 5, ACT_PHONE = 6, ACT_SCREEN = 7, ACT_GITHUB = 8, ACT_READ = 9,
+            ACT_EDIT = 10, ACT_FIND = 11, ACT_SEARCH = 12, ACT_FETCH = 13, ACT_PLAN = 14,
+            ACT_HELPER = 15, ACT_TOOL = 16, ACT_RETRY = 17, ACT_RESULT = 18;
+    /** One of the ACT_ values, the command, file or search it is about, and when it began. */
+    volatile int activity = ACT_START;
+    volatile String activityDetail = "";
+    volatile long activityAt;
+
+    private static final String[] ACT_NAMES = {"start", "ask", "think", "write", "shell", "install", "phone",
+            "screen", "github", "read", "edit", "find", "search", "fetch", "plan", "helper", "tool", "retry",
+            "result"};
+    /** The kinds of work of the current request in order, for the log. */
+    private final StringBuilder trail = new StringBuilder();
+
+    private synchronized void doing(int kind, String detail) {
+        String about = detail == null ? "" : detail;
+        if (kind != activity || trail.length() == 0) {
+            activityAt = android.os.SystemClock.elapsedRealtime();
+            if (trail.length() < 600) trail.append(trail.length() == 0 ? "" : " ").append(ACT_NAMES[kind]);
+        }
+        activity = kind;
+        activityDetail = about;
+    }
+
+    private synchronized String trail(boolean clear) {
+        String t = trail.toString();
+        if (clear) trail.setLength(0);
+        return t;
+    }
+
+    /** One line that fits the indicator: no line breaks, no runs of spaces, not endless. */
+    private static String oneLine(String text) {
+        String t = text == null ? "" : text.replaceAll("\\s+", " ").trim();
+        return t.length() > 300 ? t.substring(0, 300) : t;
+    }
+
+    private static final Pattern INSTALLS = Pattern.compile(
+            "^(sudo )?(apt|apt-get|pip|pip3|pipx|npm|yarn|pnpm|uv|gem|cargo)\\b.*\\b(install|add)\\b.*");
+    private static final Pattern SCREEN_USE = Pattern.compile(
+            "^phone (screen|tap|type|swipe|key|app|apps)\\b.*");
+
+    /** The kind of work a tool call is, from the tool's name and (once known) what it was given. */
+    static int kindOf(String tool, JSONObject input) {
+        String name = tool == null ? "" : tool.toLowerCase(java.util.Locale.US);
+        if (name.isEmpty() && input != null) {
+            // the call's start was missed: what it was given tells which tool it is
+            name = input.has("command") ? "shell" : input.has("query") ? "websearch" : input.has("url") ? "webfetch" : "";
+        }
+        switch (name) {
+            case "shell":
+            case "bash": {
+                String command = input == null ? "" : oneLine(input.optString("command"));
+                if (SCREEN_USE.matcher(command).matches()) return ACT_SCREEN;
+                if (command.startsWith("phone ") || command.equals("phone")) return ACT_PHONE;
+                if (INSTALLS.matcher(command).matches()) return ACT_INSTALL;
+                if (command.startsWith("git ") || command.startsWith("gh ")) return ACT_GITHUB;
+                return ACT_SHELL;
+            }
+            case "read":
+                return ACT_READ;
+            case "write":
+            case "edit":
+            case "patch":
+                return ACT_EDIT;
+            case "glob":
+            case "grep":
+            case "list":
+            case "lsp":
+                return ACT_FIND;
+            case "websearch":
+                return ACT_SEARCH;
+            case "webfetch":
+                return ACT_FETCH;
+            case "todowrite":
+            case "todo":
+                return ACT_PLAN;
+            case "subagent":
+            case "task":
+                return ACT_HELPER;
+            default:
+                return ACT_TOOL;
+        }
+    }
+
+    /** What a tool call is about: the command, the file, the search words. */
+    static String aboutOf(String tool, JSONObject input) {
+        String name = tool == null ? "" : tool;
+        if (input == null) return kindOf(name, null) == ACT_TOOL ? name : "";
+        for (String key : new String[]{"command", "path", "filePath", "file_path", "query", "url",
+                "pattern", "description", "name"}) {
+            String value = input.optString(key);
+            if (!value.isEmpty()) return oneLine(kindOf(name, input) == ACT_TOOL ? name + ": " + value : value);
+        }
+        return kindOf(name, input) == ACT_TOOL ? name : "";
+    }
+
     /** One line of the list of earlier chats. */
     static final class Summary {
         String id;
@@ -300,6 +401,8 @@ final class Chat {
         busy = true;
         status = "";
         startedAt = android.os.SystemClock.elapsedRealtime();
+        trail(true);
+        doing(ACT_START, "");
         final int id = ++run;
         final String workspace = Config.workspace(context);
         this.workspace = workspace;
@@ -323,6 +426,8 @@ final class Chat {
                     boolean stuck = false;
                     final StringBuilder out = new StringBuilder();
                     live = "";
+                    trail(true);
+                    doing(ACT_START, "");
                     final Stream stream = new Stream(id, reply);
                     try {
                         Ubuntu.prepareHost(context);
@@ -537,6 +642,9 @@ final class Chat {
         private final StringBuilder text = new StringBuilder();
         private String part = "";
         private String session;
+        /** Tool calls seen so far (id to tool name), and the thinking of the current step. */
+        private final Map<String, String> tools = new java.util.HashMap<>();
+        private final StringBuilder thought = new StringBuilder();
         private int pieces;
         private long firstAfter = -1;
 
@@ -557,6 +665,7 @@ final class Chat {
             android.util.Log.i("Termant", "stream: " + pieces + " pieces"
                     + (firstAfter < 0 ? "" : ", first after " + firstAfter + " ms")
                     + ", reply after " + (android.os.SystemClock.elapsedRealtime() - began) + " ms");
+            android.util.Log.i("Termant", "activity: " + trail(true));
         }
 
         @Override
@@ -596,14 +705,17 @@ final class Chat {
 
         /**
          * One line of the event feed: "data: {type, data: {sessionID, ...}}".
-         * Only the words of the conversation asked here count: the first
-         * session in the feed is that one, later ones belong to sub-agents.
+         * Only the conversation asked here counts: the first session in the
+         * feed is that one, later ones belong to helper agents it starts.
+         * Returns whether the words of the reply changed.
          */
         private boolean take(String line) {
             if (!line.startsWith("data:")) return false;
-            boolean words = line.contains("\"session.text.");
-            if (!words && session != null) return false;
-            if (!line.contains("\"sessionID\"")) return false;
+            if (line.contains("\"type\":\"server.connected\"")) {
+                doing(ACT_ASK, "");
+                return false;
+            }
+            if (!line.contains("\"type\":\"session.") || !line.contains("\"sessionID\"")) return false;
             try {
                 JSONObject o = new JSONObject(line.substring(5));
                 JSONObject d = o.optJSONObject("data");
@@ -611,9 +723,49 @@ final class Chat {
                 String of = d.optString("sessionID");
                 if (of.isEmpty()) return false;
                 String type = o.optString("type");
-                if (session == null && type.startsWith("session.")) session = of;
-                if (!words || !of.equals(session)) return false;
-                if (!type.equals("session.text.started") && !type.equals("session.text.delta")) return false;
+                if (session == null) session = of;
+                if (!of.equals(session)) return false;
+                switch (type) {
+                    case "session.step.started":
+                        doing(ACT_THINK, "");
+                        return false;
+                    case "session.reasoning.started":
+                        thought.setLength(0);
+                        doing(ACT_THINK, "");
+                        return false;
+                    case "session.reasoning.delta": {
+                        thought.append(d.optString("delta"));
+                        if (thought.length() > 4000) thought.delete(0, thought.length() - 2000);
+                        // the sentence being thought right now
+                        String all = thought.toString();
+                        int cut = Math.max(all.lastIndexOf('\n', all.length() - 2), all.lastIndexOf(". ", all.length() - 3));
+                        doing(ACT_THINK, oneLine(cut < 0 ? all : all.substring(cut + 1)));
+                        return false;
+                    }
+                    case "session.tool.input.started":
+                        tools.put(d.optString("id"), d.optString("name"));
+                        doing(kindOf(d.optString("name"), null), aboutOf(d.optString("name"), null));
+                        return false;
+                    case "session.tool.called": {
+                        String name = tools.get(d.optString("id"));
+                        JSONObject input = d.optJSONObject("input");
+                        doing(kindOf(name, input), aboutOf(name, input));
+                        return false;
+                    }
+                    case "session.tool.success":
+                    case "session.tool.failed":
+                        doing(ACT_RESULT, "");
+                        return false;
+                    case "session.retry.scheduled":
+                        doing(ACT_RETRY, "");
+                        return false;
+                    case "session.text.started":
+                    case "session.text.delta":
+                        break;
+                    default:
+                        return false;
+                }
+                doing(ACT_WRITE, "");
                 String id = d.optString("assistantMessageID") + ":" + d.optInt("ordinal");
                 if (!id.equals(part)) {
                     part = id;

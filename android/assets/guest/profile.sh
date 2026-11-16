@@ -5,3 +5,4 @@ if [ ! -e "$HOME/.termant-welcome" ]; then
 fi
 # API keys entered in Termant's settings screen.
 [ -f "$HOME/.config/termant/keys.env" ] && . "$HOME/.config/termant/keys.env"
+[ -f /usr/local/lib/termant/github.sh ] && . /usr/local/lib/termant/github.sh

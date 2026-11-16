@@ -28,19 +28,19 @@
     <string name="voice_missing">Is phone mein voice typing app nahi hai. Keyboard ka microphone button istemal karein.</string>
     <string name="rule_failed">Rule fail hua: %1$s</string>
     <string name="model_auto">Auto</string>
-    <string name="model_title">Model</string>
+    <string name="model_title">AI model</string>
     <string name="model_auto_long">Automatic (ek free model)</string>
     <string name="model_refresh">↻ List refresh karein</string>
     <string name="model_loading">Model list aa rahi hai…</string>
     <string name="model_not_ready">Model list agent download hone ke baad dikhegi. Pehle chat mein ek message bhejein.</string>
     <string name="model_failed">Model list nahi aa payi. Internet connection check karein.</string>
-    <string name="workspace_title">Workspace folder</string>
+    <string name="workspace_title">Kaam ka folder</string>
     <string name="workspace_new">＋ Naya folder…</string>
     <string name="workspace_new_hint">Folder ka naam, jaise my-website</string>
     <string name="workspace_bad_name">Sirf letters, numbers, dot, dash aur underscore istemal karein.</string>
     <string name="workspace_storage">Phone storage (/sdcard)</string>
     <string name="settings">Settings</string>
-    <string name="settings_agent">Agent</string>
+    <string name="settings_agent">AI agent</string>
     <string name="settings_model_note">Chat mein kaunsa AI model jawab dega.</string>
     <string name="settings_workspace_note">Ubuntu ka woh folder jahan agent apni files rakhta aur chalata hai.</string>
     <string name="settings_keys">Aapki apni API key</string>
@@ -62,7 +62,7 @@
     <string name="mcp_none">Abhi koi MCP server nahi hai.</string>
     <string name="mcp_saved">MCP servers save ho gaye.</string>
     <string name="mcp_bad">Naam aur command dono likhein.</string>
-    <string name="settings_rules">Automation rules</string>
+    <string name="settings_rules">Apne aap chalne wale rules</string>
     <string name="settings_rules_note">Rules apne aap chalte hain, phone restart hone ke baad bhi, jab tak Termant force-stop na kiya jaye. Banane ke liye chat mein bolein, jaise: \"roz raat 11 baje WiFi band karo\" ya \"jab charging lage toh backup chalao\".</string>
     <string name="rules_none">Abhi koi rule nahi hai.</string>
     <string name="rule_delete">Rule hatayein</string>
@@ -77,9 +77,9 @@
     <string name="model_switched_now">%1$s (apne aap switch hua)</string>
     <string name="on">Chalu</string>
     <string name="off">Band</string>
-    <string name="switch_title">Auto-switch</string>
+    <string name="switch_title">Model apne aap badlein</string>
     <string name="switch_note">Jab koi model jawab dena band kar de, aksar free limit khatam hone par, app khud agla backup model try karta hai. Jo model chal jaye, 3 ghante tak wahi rehta hai.</string>
-    <string name="backups_title">Backup models</string>
+    <string name="backups_title">Backup ke models</string>
     <string name="backups_all_free">Sabhi free</string>
     <string name="backups_note">Jin models par switch karna hai; list mein upar se neeche try hote hain. Kuch bhi tick na karein to sabhi free models istemal honge. Jis provider ki key aapne daali hai uske models ka paisa lag sakta hai, agar woh key free plan par na ho.</string>
     <string name="arena_title">Arena.ai</string>
@@ -93,16 +93,6 @@
     <string name="chat_back">Chat</string>
     <string name="chat_back_description">Chat par wapas jayein</string>
     <string name="chat_stop">Rokein</string>
-    <string-array name="thinking">
-        <item>Soch raha hoon…</item>
-        <item>Dimaag laga raha hoon 💡</item>
-        <item>Baat samajh raha hoon…</item>
-        <item>Tareeka dhoondh raha hoon 🔍</item>
-        <item>Bas aa hi gaya…</item>
-        <item>Chai pee lo tab tak ☕</item>
-        <item>Plan bana raha hoon 📝</item>
-        <item>Bas ho hi gaya ✨</item>
-    </string-array>
     <string name="history_title">Purani chats</string>
     <string name="chat_try">Yeh poochkar dekhein</string>
     <string name="history_recent">Haal ki chats</string>
@@ -138,9 +128,9 @@
     <string name="close">Band karein</string>
     <string name="about_text">Termant %1$s\n\nAapke phone par asli Ubuntu 24.04, bina root ke. Software aise install karein:\n\n    apt update\n    apt install &lt;package&gt;\n\nAI dabane par OpenCode khulta hai, ek AI coding agent jo aapke liye code likhkar chala sakta hai.\n\nText chhota-bada karne ke liye pinch karein. Select aur copy karne ke liye der tak dabayein.\n\nOpen source (GPLv3). Terminal Termux ka, userland PRoot ka, system Ubuntu ka, agent OpenCode ka.</string>
     <string name="settings_look">Bhasha aur rang</string>
-    <string name="theme_title">Theme</string>
-    <string name="theme_dark">Dark</string>
-    <string name="theme_light">Light</string>
+    <string name="theme_title">Rang (Theme)</string>
+    <string name="theme_dark">Andhera (Dark)</string>
+    <string name="theme_light">Ujala (Light)</string>
     <string name="theme_note">Poore app ke liye dark ya light rang.</string>
     <string name="lang_title">Bhasha (Language)</string>
     <string name="lang_hindi">Hindi (Hinglish)</string>
@@ -151,4 +141,80 @@
     <string name="voice_denied">Microphone ki ijazat nahi mili, isliye bolkar likhna kaam nahi karega.</string>
     <string name="voice_nothing">Samajh nahi aaya. Microphone dabakar dobara bolein.</string>
     <string name="voice_failed">Voice input ruk gaya (%1$s). Internet connection check karke dobara koshish karein.</string>
+    <!-- What the agent is doing right now; same order as Chat.ACT_*. -->
+    <string-array name="activity_titles">
+        <item>Agent shuru ho raha hai</item>
+        <item>Model se pooch raha hoon</item>
+        <item>Soch raha hoon</item>
+        <item>Jawab likh raha hoon</item>
+        <item>Command chala raha hoon</item>
+        <item>Install kar raha hoon</item>
+        <item>Phone se kaam le raha hoon</item>
+        <item>Screen par kaam kar raha hoon</item>
+        <item>Git / GitHub par kaam kar raha hoon</item>
+        <item>File padh raha hoon</item>
+        <item>File badal raha hoon</item>
+        <item>Files mein dhoondh raha hoon</item>
+        <item>Web par khoj raha hoon</item>
+        <item>Web page padh raha hoon</item>
+        <item>Kaam ke steps bana raha hoon</item>
+        <item>Sahayak agent kaam kar raha hai</item>
+        <item>Tool chala raha hoon</item>
+        <item>Model busy hai, dobara koshish kar raha hoon</item>
+        <item>Nateeja dekh raha hoon</item>
+    </string-array>
+    <string name="activity_setup">AI agent install ho raha hai (sirf ek baar)</string>
+    <string-array name="tips">
+        <item>💡 Mic dabakar bol bhi sakte hain</item>
+        <item>☕ Chai pee lo tab tak</item>
+        <item>💡 ☰ button se purani chats wapas aati hain</item>
+        <item>💡 \"Roz raat 11 baje WiFi band karo\" bolkar rule banayein</item>
+        <item>💡 >_ se asli Ubuntu terminal khulta hai</item>
+        <item>💡 Settings mein GitHub jodein, code push kar dunga</item>
+        <item>💡 Taaza jaankari chahiye? Main web par khoj leta hoon</item>
+        <item>💡 Screen control chalu ho to doosre apps bhi chala sakta hoon</item>
+        <item>⏳ Free models busy time mein dheere hote hain</item>
+        <item>💡 ■ button se mujhe kabhi bhi rok sakte hain</item>
+    </string-array>
+    <string name="time_now">Abhi</string>
+    <string name="time_minutes">%1$d minute pehle</string>
+    <string name="time_hours">%1$d ghante pehle</string>
+    <string name="time_days">%1$d din pehle</string>
+    <!-- Tools: GitHub, web search, screen control. -->
+    <string name="settings_tools">Agent ke auzaar</string>
+    <string name="settings_tools_note">Ubuntu aur phone controls ke alawa agent kya-kya istemal kar sakta hai.</string>
+    <string name="github_title">GitHub</string>
+    <string name="github_off">Juda nahi hai</string>
+    <string name="github_unchecked">Token save hai (jaancha nahi gaya)</string>
+    <string name="github_note">Token dene par agent aapke private repo clone kar sakta hai, commit aur push kar sakta hai, issue aur pull request bana sakta hai.</string>
+    <string name="github_how">GitHub par ek token banayein (repo par tick karein), copy karke yahan paste karein. Yeh isi phone mein, Ubuntu ke andar rehta hai.</string>
+    <string name="github_make">github.com par token banayein ↗</string>
+    <string name="github_hint">ghp_… ya github_pat_…</string>
+    <string name="github_remove">Hata dein</string>
+    <string name="github_removed">GitHub hata diya gaya</string>
+    <string name="github_checking">GitHub se jaanch ho rahi hai…</string>
+    <string name="github_rejected">GitHub ne yeh token nahi maana. Dobara copy karein ya naya banayein.</string>
+    <string name="github_saved">GitHub se jud gaya: @%1$s</string>
+    <string name="github_saved_unchecked">Token save ho gaya. Jaanch ke liye GitHub tak pahunch nahi hui.</string>
+    <string name="search_title">Web par khoj</string>
+    <string name="search_note">Taaza jaankari chahiye ho to agent internet par dhoondh leta hai. Muft, koi key nahi chahiye.</string>
+    <string name="search_key">%1$s search key (zaroori nahi)</string>
+    <string name="search_key_none">Zaroorat nahi</string>
+    <string name="screen_title">Screen control</string>
+    <string name="screen_note">Agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai, jaise aap karte hain.</string>
+    <string name="screen_ask_text">Ise chalu karne par agent koi bhi app khol sakta hai, usme jo dikh raha hai padh sakta hai, aur aapke liye tap, type aur swipe kar sakta hai.\n\n• Yeh tabhi kaam karta hai jab aap chat mein kahein.\n• Password wale box mein kabhi type nahi karta.\n• Jab chahein yahin se band kar dein.\n\nAgli screen par “Termant screen control” chunein (Installed ya Downloaded apps ke neeche) aur chalu karein.\n\nAgar Android “Restricted setting” kahe: Termant ki App info kholein, upar daayein ⋮ dabayein, “Allow restricted settings” chunein, phir yahan wapas aayein.</string>
+    <string name="screen_on_text">Screen control chalu hai. Aapke kehne par agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai.</string>
+    <string name="screen_open">Settings kholein</string>
+    <string name="screen_stop">Band karein</string>
+    <string name="screen_no_settings">Android Settings → Accessibility khud kholein.</string>
+    <string name="screen_service_label">Termant screen control</string>
+    <string name="screen_service_description">Aapke chat mein kehne par Termant ka AI agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai. Yeh apne aap kuch nahi karta, kuch record nahi karta, aur password wale box mein kabhi type nahi karta.</string>
+    <string name="paste_text">Paste karein</string>
+    <string name="copy_text">Copy karein</string>
+    <string-array name="chat_ideas">
+        <item>Mujhe subah 7 baje utha dena</item>
+        <item>10 minute baad chai ka timer bajana</item>
+        <item>Aaj ki badi khabrein web par dhoondh kar batao</item>
+        <item>Python script likho aur chalao jo pehle 20 prime number dikhaye</item>
+    </string-array>
 </resources>
