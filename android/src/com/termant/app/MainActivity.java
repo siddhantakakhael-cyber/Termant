@@ -55,6 +55,7 @@ public class MainActivity extends Activity
     private static final int REQUEST_STORAGE = 1;
     private static final int REQUEST_VOICE = 2;
     private static final int REQUEST_SMS = 3;
+    private static final int REQUEST_MIC = 4;
 
     // Colours come from Theme (dark/light). These methods keep old call sites working.
     static int bg() {
@@ -117,16 +118,34 @@ public class MainActivity extends Activity
     private LinearLayout tabs;
     private View askBar, keyRows;
     private EditText askInput;
-    private TextView ctrlKey, altKey;
+    private TextView ctrlKey, altKey, askMic;
+    /** Dictation: the listener, where its words go, and what was in the box before. */
+    private Voice voice;
+    private boolean voiceInChat;
+    private String voiceBefore = "";
     private boolean ctrl, alt;
     private int fontSize, minFont, maxFont;
 
     // ------------------------------------------------------------ lifecycle
 
+    /** Set while the screens are rebuilt after a change of language or theme, to land in Settings again. */
+    private static boolean backToSettings;
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(Lang.wrap(base));
+    }
+
     @Override
     protected void onCreate(Bundle state) {
-        super.onCreate(state);
         Theme.apply(this);
+        setTheme(Theme.isLight() ? R.style.AppTheme_Light : R.style.AppTheme);
+        super.onCreate(state);
+        if (Theme.isLight() && Build.VERSION.SDK_INT >= 26) {
+            // dark icons in the navigation bar too; the status bar's come from the style
+            View decor = getWindow().getDecorView();
+            decor.setSystemUiVisibility(decor.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
         prefs = getSharedPreferences("termant", MODE_PRIVATE);
 
         float density = getResources().getDisplayMetrics().density;
@@ -199,6 +218,13 @@ public class MainActivity extends Activity
             public void onPickBackups() {
                 pickBackups(false);
             }
+
+            @Override
+            public void onLookChanged() {
+                backToSettings = true;
+                if (service != null) service.refreshNotification();
+                recreate();
+            }
         });
         settingsPanel.setVisibility(View.GONE);
         rootView.addView(chatPanel, match());
@@ -228,6 +254,7 @@ public class MainActivity extends Activity
 
     @Override
     protected void onStop() {
+        if (voice != null) voice.cancel(); // never listen from the background
         onScreen = false;
         if (visible == this) visible = null;
         super.onStop();
@@ -235,6 +262,7 @@ public class MainActivity extends Activity
 
     @Override
     protected void onDestroy() {
+        if (voice != null) voice.destroy();
         Installer.detach(this);
         chatPanel.detach();
         settingsPanel.detach();
@@ -291,7 +319,7 @@ public class MainActivity extends Activity
 
     /** Rounded shape that shows a touch ripple. */
     private Drawable pressable(int color, float radiusDp) {
-        return new RippleDrawable(ColorStateList.valueOf(0x40ffffff),
+        return new RippleDrawable(ColorStateList.valueOf(Theme.ripple()),
                 rounded(color, radiusDp), rounded(0xffffffff, radiusDp));
     }
 
@@ -476,7 +504,7 @@ public class MainActivity extends Activity
         terminal.setTypeface(Typeface.MONOSPACE);
         terminal.setFocusable(true);
         terminal.setFocusableInTouchMode(true);
-        terminal.setBackgroundColor(bg());
+        terminal.setBackgroundColor(Theme.terminalBg());
         FrameLayout terminalFrame = new FrameLayout(this);
         terminalFrame.setPadding(dp(6), 0, dp(6), 0);
         terminalFrame.addView(terminal, match());
@@ -530,16 +558,16 @@ public class MainActivity extends Activity
         });
         pill.addView(askInput, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView mic = label("\uD83C\uDFA4", getString(R.string.ask_voice));
-        mic.setTextSize(17);
-        mic.setBackground(pressable(0x00000000, 20));
-        mic.setOnClickListener(new View.OnClickListener() {
+        askMic = label("\uD83C\uDFA4", getString(R.string.ask_voice));
+        askMic.setTextSize(17);
+        askMic.setBackground(pressable(0x00000000, 20));
+        askMic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startVoice();
             }
         });
-        pill.addView(mic, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        pill.addView(askMic, new LinearLayout.LayoutParams(dp(40), dp(40)));
 
         TextView send = label("\u2191", getString(R.string.ask_send));
         send.setTextSize(20);
@@ -576,14 +604,75 @@ public class MainActivity extends Activity
         }, 200);
     }
 
+    /**
+     * The microphone button: listens inside the app and writes the words into
+     * the message box as they are spoken; a second tap ends it. Phones whose
+     * speech service cannot do that get the service's own window instead.
+     */
     private void startVoice() {
-        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        if (voice != null && voice.isListening()) {
+            voice.stop();
+            return;
+        }
+        if (!Voice.available(this)) {
+            voiceWindow();
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_MIC);
+            return;
+        }
+        listen();
+    }
+
+    private void listen() {
+        voiceInChat = chatPanel.getVisibility() == View.VISIBLE;
+        voiceBefore = (voiceInChat ? chatPanel.draft() : askInput.getText().toString()).trim();
+        if (voice == null) {
+            voice = new Voice(this, new Voice.Listener() {
+                @Override
+                public void onListening(boolean listening) {
+                    chatPanel.setListening(listening && voiceInChat);
+                    boolean here = listening && !voiceInChat;
+                    askMic.setBackground(pressable(here ? accent() : 0x00000000, 20));
+                    askMic.setContentDescription(getString(here ? R.string.voice_stop : R.string.ask_voice));
+                    askInput.setHint(here ? R.string.voice_listening : R.string.ask_hint);
+                }
+
+                @Override
+                public void onHeard(String text, boolean last) {
+                    heard(voiceBefore.isEmpty() ? text : voiceBefore + " " + text);
+                }
+
+                @Override
+                public void onProblem(int message, String detail) {
+                    android.util.Log.i("Termant", "voice: " + (message == 0 ? "using the speech window, " : "") + detail);
+                    if (message == 0) voiceWindow();
+                    else Toast.makeText(MainActivity.this, getString(message, detail), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+        voice.start();
+    }
+
+    /** The speech service's own window; its result arrives in onActivityResult. */
+    private void voiceWindow() {
         try {
-            startActivityForResult(i, REQUEST_VOICE);
+            startActivityForResult(Voice.request(this), REQUEST_VOICE);
         } catch (Exception e) {
             Toast.makeText(this, R.string.voice_missing, Toast.LENGTH_LONG).show();
         }
+    }
+
+    /** Shown in the box first, so a misheard request can be fixed before sending. */
+    private void heard(String text) {
+        if (voiceInChat) {
+            chatPanel.setDraft(text);
+            return;
+        }
+        askInput.setText(text);
+        askInput.setSelection(askInput.length());
+        askInput.requestFocus();
     }
 
     @Override
@@ -592,14 +681,8 @@ public class MainActivity extends Activity
         if (request != REQUEST_VOICE || result != RESULT_OK || data == null) return;
         java.util.ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
         if (heard == null || heard.isEmpty()) return;
-        // Shown in the box first, so a misheard request can be fixed before sending.
-        if (chatPanel.getVisibility() == View.VISIBLE) {
-            chatPanel.setDraft(heard.get(0));
-            return;
-        }
-        askInput.setText(heard.get(0));
-        askInput.setSelection(askInput.length());
-        askInput.requestFocus();
+        voiceInChat = chatPanel.getVisibility() == View.VISIBLE;
+        heard(heard.get(0));
     }
 
     private TextView label(String text, String description) {
@@ -680,6 +763,10 @@ public class MainActivity extends Activity
         settingsPanel.attach(service.rules);
         if (service.terminalShown) showTerminal();
         else showChat();
+        if (backToSettings) {
+            backToSettings = false;
+            showSettings();
+        }
     }
 
     private void showChat() {
@@ -1063,6 +1150,11 @@ public class MainActivity extends Activity
     public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
         if (request == REQUEST_SMS) {
             settingsPanel.refresh();
+            return;
+        }
+        if (request == REQUEST_MIC) {
+            if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) listen();
+            else Toast.makeText(this, R.string.voice_denied, Toast.LENGTH_LONG).show();
             return;
         }
         if (request != REQUEST_STORAGE) return;

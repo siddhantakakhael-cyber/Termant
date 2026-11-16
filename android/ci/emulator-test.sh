@@ -45,6 +45,12 @@ sleep 20
 
 adb install -g android/Termant-debug.apk || finish "FAIL install"
 adb logcat -c
+# The app's texts are in Hindi unless Settings say otherwise; this test reads
+# the English ones, and switches to Hindi itself at the end.
+adb shell "run-as $PKG mkdir -p shared_prefs"
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" '<map>' '    <string name="lang">en</string>' '</map>' \
+  | adb shell "run-as $PKG sh -c 'cat > shared_prefs/termant.xml'"
+run_as cat shared_prefs/termant.xml | grep -q 'name="lang">en<' || finish "FAIL could not choose English for the test"
 adb shell am start -W -n "$PKG/.MainActivity"
 sleep 6
 shot 1-setup
@@ -299,5 +305,82 @@ m = json.load(open(sys.argv[1]))["messages"]
 print("reopened chat:", len(m), "messages; last:", m[-1]["text"])
 sys.exit(0 if len(m) == 4 and "mango" in m[-1]["text"].lower() else 1)
 PY
+
+echo "Streaming: the words of a reply show up while it is being written"
+tap_on 'content-desc="Start a new chat"'
+sleep 2
+ask 'Write%sa%sstory%sof%sabout%s150%swords%sabout%sa%skite.%sDo%snot%srun%sany%scommand' || finish "FAIL could not send the streaming request"
+for i in 1 2 3 4 5 6 7 8; do sleep 2; shot "22-stream-$i"; done
+wait_for_reply 80 || finish "FAIL streaming: no reply"
+sleep 2
+shot 23-stream-done
+adb logcat -d -s Termant:I | grep 'stream:' > "$OUT/stream.txt"
+cat "$OUT/stream.txt"
+run_as ls -la files/rootfs/root/.config/opencode files/rootfs/root/.config/opencode/plugin > "$OUT/opencode-dir.txt" 2>&1
+grep -q 'stream: [1-9][0-9]* pieces' "$OUT/stream.txt" || finish "FAIL streaming: no reply arrived piece by piece"
+
+echo "Voice button: this emulator has no speech service, so only that nothing breaks"
+tap_on 'content-desc="Speak"' || finish "FAIL microphone button not found"
+sleep 3
+shot 24-voice
+adb logcat -d -s Termant:I | grep 'voice:' > "$OUT/voice.txt"
+adb shell pidof "$PKG" >/dev/null || finish "FAIL the app stopped when the microphone was tapped"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 3
+
+echo "MCP: OpenCode starts a server added in Settings (reported, does not fail the test)"
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/mcp-ci.sh'" < android/ci/mcp-server.sh
+adb shell am force-stop "$PKG"
+run_as cat shared_prefs/termant.xml > "$OUT/prefs-mcp.xml"
+python3 - "$OUT/prefs-mcp.xml" <<'PY'
+import sys
+path = sys.argv[1]
+text = open(path).read()
+text = text.replace('</map>', '    <string name="mcp_servers">{&quot;ci&quot;:&quot;bash /root/mcp-ci.sh&quot;}</string>\n</map>')
+open(path, 'w').write(text)
+PY
+adb shell "run-as $PKG sh -c 'cat > shared_prefs/termant.xml'" < "$OUT/prefs-mcp.xml"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+if ask 'Say%shi%sin%sone%sword' && wait_for_reply 80; then echo "chat with an MCP server: answered" > "$OUT/mcp.txt"; else echo "chat with an MCP server: NOT answered" > "$OUT/mcp.txt"; fi
+run_as cat files/rootfs/root/.config/opencode/opencode.jsonc > "$OUT/opencode.jsonc" 2>&1
+echo "requests the MCP server got:" >> "$OUT/mcp.txt"
+run_as cat files/rootfs/root/mcp-ci.log >> "$OUT/mcp.txt" 2>&1
+if grep -q '^tools/list' "$OUT/mcp.txt"; then echo "MCP: connected" >> "$OUT/mcp.txt"; else echo "MCP: NOT connected" >> "$OUT/mcp.txt"; fi
+cat "$OUT/mcp.txt"
+sleep 2
+shot 25-mcp
+
+echo "Look: light theme, then Hindi"
+tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found for the look test"
+sleep 2
+tap_on 'content-desc="Theme"' || finish "FAIL Theme row not found"
+sleep 5
+shot 26-settings-light
+run_as cat shared_prefs/termant.xml > "$OUT/prefs3.xml"
+grep -q 'name="theme">light<' "$OUT/prefs3.xml" || finish "FAIL the light theme was not saved"
+tap_on 'content-desc="Back to the chat"' || finish "FAIL Settings did not come back after the theme change"
+sleep 2
+shot 27-chat-light
+tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button not found in the light theme"
+sleep 4
+shot 28-terminal-light
+tap_on 'content-desc="Back to the chat"' || finish "FAIL Chat button not found in the light theme"
+sleep 2
+tap_on 'content-desc="Settings"' || finish "FAIL Settings button not found in the light theme"
+sleep 2
+tap_on 'content-desc="Language"' || finish "FAIL Language row not found"
+sleep 5
+shot 29-settings-hindi
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'Bhasha' /sdcard/ui.xml" || finish "FAIL Settings are not in Hindi after choosing it"
+tap_on 'content-desc="Chat par wapas jayein"' || finish "FAIL Hindi back button not found"
+sleep 2
+shot 30-chat-hindi
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'Nayi chat shuru karein' /sdcard/ui.xml" || finish "FAIL the chat is not in Hindi after choosing it"
+tap_on 'content-desc="Nayi chat shuru karein"'
+sleep 2
+shot 31-welcome-hindi
 
 finish PASS

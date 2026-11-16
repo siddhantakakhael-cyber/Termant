@@ -1,14 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
   // The agent may use the phone controls without asking each time.
-  // Everything else still asks first.
-  "permissions": [
-    { "action": "shell", "resource": "phone *", "effect": "allow" },
-    { "action": "shell", "resource": "date *", "effect": "allow" }
-  ],
-  // MCP servers the agent can connect to and use as tools.
-  // Add your own in Termant's Settings → MCP servers, for example:
-  // "mcpServers": {
-  //   "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/sdcard"] }
+  "permission": {
+    "bash": { "phone *": "allow", "date *": "allow" }
+  }
+  // Termant writes this file again before each chat message, from its
+  // Settings: MCP servers added there appear here as, for example,
+  // "mcp": {
+  //   "filesystem": { "type": "local", "command": ["/bin/bash", "-lc", "npx -y @modelcontextprotocol/server-filesystem /sdcard"] }
   // }
 }

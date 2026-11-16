@@ -92,7 +92,7 @@ public class TermService extends Service implements TerminalSessionClient {
         applyTerminalColors();
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL, getString(R.string.notification_channel), NotificationManager.IMPORTANCE_LOW);
+                    CHANNEL, Lang.of(this).getString(R.string.notification_channel), NotificationManager.IMPORTANCE_LOW);
             channel.setShowBadge(false);
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
@@ -208,6 +208,11 @@ public class TermService extends Service implements TerminalSessionClient {
         stopSelf();
     }
 
+    /** Writes the notification again, in the language just chosen in Settings. */
+    void refreshNotification() {
+        getSystemService(NotificationManager.class).notify(NOTIFICATION_ID, buildNotification());
+    }
+
     private void changed() {
         getSystemService(NotificationManager.class).notify(NOTIFICATION_ID, buildNotification());
         if (screen != null) screen.onSessionListChanged();
@@ -234,12 +239,12 @@ public class TermService extends Service implements TerminalSessionClient {
                 ? new Notification.Builder(this, ALARM_CHANNEL) : new Notification.Builder(this);
         b.setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(label)
-                .setContentText(getString(R.string.alarm_ringing))
+                .setContentText(Lang.of(this).getString(R.string.alarm_ringing))
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setOngoing(true)
                 .setContentIntent(stop)
                 .setFullScreenIntent(open, true)
-                .addAction(new Notification.Action.Builder(null, getString(R.string.alarm_stop), stop).build());
+                .addAction(new Notification.Action.Builder(null, Lang.of(this).getString(R.string.alarm_stop), stop).build());
         nm.notify(ALARM_NOTIFICATION_ID, b.build());
 
         Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
@@ -306,20 +311,20 @@ public class TermService extends Service implements TerminalSessionClient {
                 new Intent(this, TermService.class).setAction(ACTION_EXIT), immutable);
 
         int count = sessions.size();
-        String text = count == 0 ? getString(R.string.notification_text_none) : count == 1
-                ? getString(R.string.notification_text_one)
-                : getString(R.string.notification_text_many, count);
+        String text = count == 0 ? Lang.of(this).getString(R.string.notification_text_none) : count == 1
+                ? Lang.of(this).getString(R.string.notification_text_one)
+                : Lang.of(this).getString(R.string.notification_text_many, count);
 
         Notification.Builder b = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(this, CHANNEL)
                 : new Notification.Builder(this);
         b.setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(getString(R.string.app_name))
+                .setContentTitle(Lang.of(this).getString(R.string.app_name))
                 .setContentText(text)
                 .setContentIntent(open)
                 .setOngoing(true)
                 .setShowWhen(false)
-                .addAction(new Notification.Action.Builder(null, getString(R.string.notification_exit), exit).build());
+                .addAction(new Notification.Action.Builder(null, Lang.of(this).getString(R.string.notification_exit), exit).build());
         return b.build();
     }
 

@@ -42,9 +42,12 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         void onOpenArena();
 
         void onPickBackups();
+
+        /** The language or the theme was changed: every screen has to be built again. */
+        void onLookChanged();
     }
 
-    private static final int BG = Theme.bg(), SURFACE = Theme.surface(),
+    private final int BG = Theme.bg(), SURFACE = Theme.surface(),
             SURFACE_HIGH = Theme.surfaceHigh(), TEXT = Theme.text(), MUTED = Theme.muted(),
             ACCENT = Theme.accent(), ERROR = Theme.error();
 
@@ -114,6 +117,26 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         final Context c = getContext();
         content.removeAllViews();
 
+        heading(R.string.settings_look, 0);
+        final boolean hindi = Lang.HINDI.equals(Lang.current(c));
+        row(c.getString(R.string.lang_title), c.getString(hindi ? R.string.lang_hindi : R.string.lang_english),
+                c.getString(R.string.lang_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Lang.set(c, hindi ? Lang.ENGLISH : Lang.HINDI);
+                        host.onLookChanged();
+                    }
+                });
+        final boolean light = Theme.currentName(c).equals("light");
+        row(c.getString(R.string.theme_title), c.getString(light ? R.string.theme_light : R.string.theme_dark),
+                c.getString(R.string.theme_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Theme.set(c, light ? "dark" : "light");
+                        host.onLookChanged();
+                    }
+                });
+
         heading(R.string.settings_agent, 0);
         row(c.getString(R.string.model_title), modelText(c), c.getString(R.string.settings_model_note),
                 new OnClickListener() {
@@ -153,18 +176,6 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
             @Override
             public void onClick(View v) {
                 host.onOpenArena();
-            }
-        });
-
-        row(c.getString(R.string.theme_title),
-                c.getString(Theme.currentName(c).equals("light") ? R.string.theme_light : R.string.theme_dark),
-                c.getString(R.string.theme_note), new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String next = Theme.currentName(c).equals("light") ? "dark" : "light";
-                Theme.set(c, next);
-                refresh();
-                Toast.makeText(c, R.string.theme_restart, Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -504,7 +515,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
     }
 
     private Drawable pressable(int color, float radiusDp) {
-        return new RippleDrawable(ColorStateList.valueOf(0x40ffffff),
+        return new RippleDrawable(ColorStateList.valueOf(Theme.ripple()),
                 rounded(color, radiusDp), rounded(0xffffffff, radiusDp));
     }
 

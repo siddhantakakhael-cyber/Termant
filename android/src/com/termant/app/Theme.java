@@ -5,8 +5,8 @@ import android.content.SharedPreferences;
 
 /**
  * Two palettes: dark (default) and light. Picked from Settings → Theme.
- * Colours are read at draw time, so a theme switch takes effect next time a
- * screen is built (app restart is the simplest way to rebuild everything).
+ * Screens read the colours when they are built, so the activity rebuilds
+ * itself after a switch.
  */
 final class Theme {
     private Theme() {
@@ -22,6 +22,8 @@ final class Theme {
             0xff1b0d05, // ON_ACCENT
             0xffffa198, // ERROR
             0xffc9d1d9, // KEY_TEXT
+            0xff79c0ff, // CODE
+            0x40ffffff, // RIPPLE
     };
     static final int[] LIGHT = {
             0xfff6f8fa, // BG
@@ -33,11 +35,13 @@ final class Theme {
             0xfffafafa, // ON_ACCENT
             0xffcb2431, // ERROR
             0xff57606a, // KEY_TEXT
+            0xff0550ae, // CODE
+            0x30000000, // RIPPLE
     };
 
     static final int IDX_BG = 0, IDX_SURFACE = 1, IDX_SURFACE_HIGH = 2,
             IDX_TEXT = 3, IDX_MUTED = 4, IDX_ACCENT = 5, IDX_ON_ACCENT = 6,
-            IDX_ERROR = 7, IDX_KEY_TEXT = 8;
+            IDX_ERROR = 7, IDX_KEY_TEXT = 8, IDX_CODE = 9, IDX_RIPPLE = 10;
 
     private static int[] current = DARK;
 
@@ -57,6 +61,23 @@ final class Theme {
         c.getSharedPreferences("termant", Context.MODE_PRIVATE)
                 .edit().putString("theme", name).apply();
         apply(c);
+    }
+
+    static boolean isLight() {
+        return current == LIGHT;
+    }
+
+    /** The terminal keeps its dark background in both themes: programs print light text. */
+    static int terminalBg() {
+        return DARK[IDX_BG];
+    }
+
+    static int code() {
+        return current[IDX_CODE];
+    }
+
+    static int ripple() {
+        return current[IDX_RIPPLE];
     }
 
     static int bg() {

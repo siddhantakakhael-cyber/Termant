@@ -128,7 +128,7 @@ final class Installer {
     private static void install(Context c) throws Exception {
         String arch = Ubuntu.arch(c);
         if (arch == null) {
-            throw new IOException(c.getString(R.string.unsupported_device, Ubuntu.abiName(c)));
+            throw new IOException(Lang.of(c).getString(R.string.unsupported_device, Ubuntu.abiName(c)));
         }
         if (!Ubuntu.proot(c).isFile()) {
             throw new IOException("The app is not installed correctly (PRoot is missing). Reinstall the APK.");
@@ -139,16 +139,16 @@ final class Installer {
         Ubuntu.marker(c).delete();
         deleteTree(root);
 
-        progress(c.getString(R.string.step_find), -1);
+        progress(Lang.of(c).getString(R.string.step_find), -1);
         String[] image = findImage(arch); // {file name, sha256}
 
         File tarball = new File(c.getCacheDir(), "ubuntu-base.tar.gz");
         download(c, BASE_URL + image[0], tarball, image[1]);
 
-        progress(c.getString(R.string.step_extract), 0);
+        progress(Lang.of(c).getString(R.string.step_extract), 0);
         if (!root.mkdirs()) throw new IOException("Cannot create " + root);
         final long total = tarball.length();
-        final String status = c.getString(R.string.step_extract);
+        final String status = Lang.of(c).getString(R.string.step_extract);
         try (CountingStream counted = new CountingStream(new FileInputStream(tarball)) {
             int shown = 0;
 
@@ -165,7 +165,7 @@ final class Installer {
         }
         tarball.delete();
 
-        progress(c.getString(R.string.step_configure), -1);
+        progress(Lang.of(c).getString(R.string.step_configure), -1);
         configure(c, root);
         runSetup(c);
 
@@ -237,7 +237,7 @@ final class Installer {
                 if (mb != shown) {
                     shown = mb;
                     int totalMb = (int) Math.max(1, (total + (1 << 20) - 1) >> 20);
-                    progress(c.getString(R.string.step_download, mb, totalMb),
+                    progress(Lang.of(c).getString(R.string.step_download, mb, totalMb),
                             total > 0 ? (int) (done * 100 / total) : -1);
                 }
             }

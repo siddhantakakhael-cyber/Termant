@@ -43,10 +43,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         void onOpenArena();
     }
 
-    private static final int BG = Theme.bg(), SURFACE = Theme.surface(),
+    private final int BG = Theme.bg(), SURFACE = Theme.surface(),
             SURFACE_HIGH = Theme.surfaceHigh(), TEXT = Theme.text(), MUTED = Theme.muted(),
             ACCENT = Theme.accent(), ON_ACCENT = Theme.onAccent(), ERROR = Theme.error();
-    private static final int CODE = 0xff79c0ff;
     private static final Pattern INLINE = Pattern.compile("\\*\\*(.+?)\\*\\*|`([^`\n]+)`");
 
     private final Host host;
@@ -56,7 +55,11 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private final EditText input;
     private final TextView send;
     private final TextView workspaceChip, modelChip;
+    private final TextView mic;
     private Chat chat;
+    /** The text of the reply being written, and what the list looked like when it was built. */
+    private TextView writing;
+    private String shape = "";
 
     ChatView(Context context, Host host) {
         super(context);
@@ -194,7 +197,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         input.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         pill.addView(input, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView mic = button("\uD83C\uDFA4", context.getString(R.string.ask_voice));
+        mic = button("\uD83C\uDFA4", context.getString(R.string.ask_voice));
         mic.setTextSize(17);
         mic.setPadding(0, 0, 0, 0);
         mic.setBackground(pressable(0x00000000, 21));
@@ -257,6 +260,18 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         return v;
     }
 
+    String draft() {
+        return input.getText().toString();
+    }
+
+    /** Shows that the microphone is listening: the button lights up and the box says so. */
+    void setListening(boolean listening) {
+        Context c = getContext();
+        mic.setBackground(pressable(listening ? ACCENT : 0x00000000, 21));
+        mic.setContentDescription(c.getString(listening ? R.string.voice_stop : R.string.ask_voice));
+        input.setHint(listening ? R.string.voice_listening : R.string.ask_hint);
+    }
+
     /** Puts dictated text in the box, so it can be corrected before sending. */
     void setDraft(String text) {
         input.setText(text);
@@ -283,12 +298,32 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         send.setTextSize(busy ? 15 : 20);
         send.setContentDescription(getContext().getString(busy ? R.string.chat_stop : R.string.ask_send));
 
+        int last = chat.messages.size() - 1;
+        // While a reply is being written only its words change, many times a
+        // second: put them in the bubble that is there instead of rebuilding
+        // the whole list, and follow them only if the reader is at the end.
+        String now = shape(busy);
+        if (busy && writing != null && now.equals(shape)) {
+            boolean atEnd = scroll.getScrollY() + scroll.getHeight() >= list.getBottom() - dp(96);
+            writing.setText(format(chat.messages.get(last).text));
+            if (atEnd) {
+                scroll.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        scroll.scrollTo(0, Math.max(0, list.getBottom() - scroll.getHeight()));
+                    }
+                });
+            }
+            return;
+        }
+        shape = now;
+        writing = null;
+
         list.removeAllViews();
         if (chat.messages.isEmpty()) {
             addWelcome();
             return;
         }
-        int last = chat.messages.size() - 1;
         for (int i = 0; i <= last; i++) {
             Chat.Message m = chat.messages.get(i);
             if (m.user) addMine(m);
@@ -300,6 +335,15 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 scroll.fullScroll(View.FOCUS_DOWN);
             }
         });
+    }
+
+    /** Everything about the list except the words of the last reply; the list is rebuilt when this changes. */
+    private String shape(boolean busy) {
+        int last = chat.messages.size() - 1;
+        if (last < 0) return "";
+        Chat.Message m = chat.messages.get(last);
+        return last + "|" + busy + "|" + m.user + "|" + m.failed + "|" + m.text.isEmpty() + "|" + m.note
+                + "|" + chat.status + "|" + m.steps;
     }
 
     private void addWelcome() {
@@ -504,6 +548,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             text.setLineSpacing(dp(2), 1);
             text.setTextIsSelectable(true);
             bubble.addView(text);
+            if (working) writing = text;
         }
         if (!m.note.isEmpty()) {
             TextView note = new TextView(c);
@@ -568,7 +613,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
     private static void mono(SpannableStringBuilder out, int from) {
         out.setSpan(new TypefaceSpan("monospace"), from, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        out.setSpan(new ForegroundColorSpan(CODE), from, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        out.setSpan(new ForegroundColorSpan(Theme.code()), from, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     /**
@@ -593,9 +638,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             this.lines = lines;
             this.startedAt = startedAt;
             this.density = density;
-            text.setColor(TEXT);
+            text.setColor(Theme.text());
             text.setTextSize(14 * getResources().getDisplayMetrics().scaledDensity);
-            time.setColor(MUTED);
+            time.setColor(Theme.muted());
             time.setTextSize(12 * getResources().getDisplayMetrics().scaledDensity);
         }
 
@@ -677,7 +722,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     }
 
     private Drawable pressable(int color, float radiusDp) {
-        return new RippleDrawable(ColorStateList.valueOf(0x40ffffff),
+        return new RippleDrawable(ColorStateList.valueOf(Theme.ripple()),
                 rounded(color, radiusDp), rounded(0xffffffff, radiusDp));
     }
 

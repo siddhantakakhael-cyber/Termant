@@ -313,7 +313,7 @@ final class Rules {
             Notification.Builder b = Build.VERSION.SDK_INT >= 26
                     ? new Notification.Builder(service, "rules") : new Notification.Builder(service);
             b.setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle(service.getString(R.string.rule_failed, describe(r.trigger)))
+                    .setContentTitle(Lang.of(service).getString(R.string.rule_failed, describe(r.trigger)))
                     .setContentText(output.isEmpty() ? r.command : output)
                     .setStyle(new Notification.BigTextStyle().bigText(r.command + "\n" + output))
                     .setAutoCancel(true);

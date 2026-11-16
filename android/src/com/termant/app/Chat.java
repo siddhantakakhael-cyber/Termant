@@ -43,15 +43,19 @@ final class Chat {
     private static final int SETUP_FAILED = 97;
     private static final String SESSION_MARKER = "@@TERMANT-SESSION@@";
     private static final Pattern SESSION_ID = Pattern.compile("\\bses_[A-Za-z0-9]+");
+    /** Where the stream plugin copies the model's words while they arrive, as seen from inside Ubuntu. */
+    private static final String STREAM_FILE = "/root/.cache/termant/stream.jsonl";
     /**
      * Runs inside Ubuntu; $1 message, $2 "--continue", "--session ID" or empty, $3 workspace folder,
-     * $4 model or empty, $5 non-empty to also print which OpenCode session the reply belongs to.
+     * $4 model or empty, $5 non-empty to also print which OpenCode session the reply belongs to,
+     * $6 the file the reply is copied to word by word.
      */
     private static final String SCRIPT =
             "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
                     + "mkdir -p \"$3\" && cd \"$3\" || exit " + SETUP_FAILED + "\n"
+                    + "export TERMANT_STREAM=\"$6\"\n"
                     + "echo " + MARKER + "\n"
                     + "if [ -n \"$4\" ]; then opencode run --standalone --auto $2 --model \"$4\" \"$1\" </dev/null\n"
                     + "else opencode run --standalone --auto $2 \"$1\" </dev/null; fi\n"
@@ -149,6 +153,11 @@ final class Chat {
     private String workspace = "";
     /** When the reply now being awaited was asked for (elapsed-realtime clock). */
     long startedAt;
+    /**
+     * The words the model is writing right now, before OpenCode prints the
+     * finished paragraph; empty when nothing is being written.
+     */
+    private volatile String live = "";
     /** Finished and unfinished conversations, one file each. */
     private final File archive;
 
@@ -247,7 +256,7 @@ final class Chat {
         if (process != null) process.destroy();
         process = null;
         Message last = messages.get(messages.size() - 1);
-        if (last.text.isEmpty()) last.text = context.getString(R.string.chat_stopped);
+        if (last.text.isEmpty()) last.text = Lang.of(context).getString(R.string.chat_stopped);
         save();
         changed();
     }
@@ -286,11 +295,14 @@ final class Chat {
                     int exit = -1;
                     boolean stuck = false;
                     final StringBuilder out = new StringBuilder();
+                    live = "";
+                    final Stream stream = new Stream(id, reply);
                     try {
                         Ubuntu.prepareHost(context);
+                        stream.start();
                         ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
                                 "/bin/bash", "-c", SCRIPT, "termant-chat", request, cont,
-                                workspace, model, wantSession));
+                                workspace, model, wantSession, STREAM_FILE));
                         Map<String, String> env = pb.environment();
                         env.clear();
                         for (String e : Ubuntu.hostEnvironment(context)) {
@@ -329,6 +341,8 @@ final class Chat {
                         if (stuck) exit = STUCK;
                     } catch (Exception e) {
                         out.append('\n').append(e);
+                    } finally {
+                        stream.finish();
                     }
                     if (id != Chat.this.run) return; // stopped by the user
                     if (attempt + 1 < models.size() && modelGaveUp(out.toString(), exit)) {
@@ -339,8 +353,8 @@ final class Chat {
                             public void run() {
                                 if (id != Chat.this.run) return;
                                 reply.text = "";
-                                reply.note = context.getString(R.string.chat_switched, shortName(next),
-                                        model.isEmpty() ? context.getString(R.string.model_auto) : shortName(model));
+                                reply.note = Lang.of(context).getString(R.string.chat_switched, shortName(next),
+                                        model.isEmpty() ? Lang.of(context).getString(R.string.model_auto) : shortName(model));
                                 changed();
                             }
                         });
@@ -352,7 +366,7 @@ final class Chat {
                         main.post(new Runnable() {
                             @Override
                             public void run() {
-                                reply.note = context.getString(R.string.chat_all_failed);
+                                reply.note = Lang.of(context).getString(R.string.chat_all_failed);
                             }
                         });
                     }
@@ -457,7 +471,7 @@ final class Chat {
             status = lines[lines.length - 1].trim();
             if (exit != null) {
                 reply.failed = true;
-                reply.text = context.getString(R.string.chat_setup_failed) + tail(output);
+                reply.text = Lang.of(context).getString(R.string.chat_setup_failed) + tail(output);
             }
             return;
         }
@@ -468,13 +482,122 @@ final class Chat {
         reply.steps.clear();
         reply.steps.addAll(parsed.steps);
         reply.text = parsed.text;
+        // While the agent works, the paragraph still being written is newer than anything printed.
+        String writing = live;
+        if (exit == null && !writing.isEmpty()) reply.text = writing;
         if (exit != null && reply.text.isEmpty()) {
             reply.failed = exit != 0;
             String rest = output.substring(start + MARKER.length());
             reply.text = exit == 0 && !reply.steps.isEmpty()
-                    ? context.getString(R.string.chat_done)
+                    ? Lang.of(context).getString(R.string.chat_done)
                     : context.getString(rest.contains("Provider returned error")
                     ? R.string.chat_provider_error : R.string.chat_no_answer) + tail(rest);
+        }
+    }
+
+    /**
+     * Reads the file that the stream plugin (see Config.writeOpencodeConfig)
+     * fills while the model answers: one line when a paragraph starts, one for
+     * each few words that arrive. OpenCode itself prints a paragraph only
+     * once it is complete, so this is what lets the chat show it being written.
+     * If the plugin is missing or silent, the reply just appears when it is done.
+     */
+    private final class Stream extends Thread {
+        private final int id;
+        private final Message reply;
+        private final File file = new File(Ubuntu.rootfs(context), STREAM_FILE.substring(1));
+        private final long began = android.os.SystemClock.elapsedRealtime();
+        private volatile boolean done;
+        private final StringBuilder text = new StringBuilder();
+        private String part = "";
+        private int pieces;
+        private long firstAfter = -1;
+
+        Stream(int id, Message reply) {
+            super("termant-stream");
+            this.id = id;
+            this.reply = reply;
+            try {
+                Installer.write(file, ""); // nothing left over from the reply before
+            } catch (Exception e) {
+                android.util.Log.e("Termant", "cannot prepare the stream file", e);
+            }
+        }
+
+        void finish() {
+            done = true;
+            interrupt();
+            android.util.Log.i("Termant", "stream: " + pieces + " pieces"
+                    + (firstAfter < 0 ? "" : ", first after " + firstAfter + " ms")
+                    + ", reply after " + (android.os.SystemClock.elapsedRealtime() - began) + " ms");
+        }
+
+        @Override
+        public void run() {
+            long offset = 0;
+            java.io.ByteArrayOutputStream line = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            while (!done) {
+                boolean changed = false;
+                try (java.io.RandomAccessFile in = new java.io.RandomAccessFile(file, "r")) {
+                    if (in.length() > offset) {
+                        in.seek(offset);
+                        int n;
+                        while ((n = in.read(buf)) > 0) {
+                            offset += n;
+                            for (int i = 0; i < n; i++) {
+                                if (buf[i] != '\n') {
+                                    line.write(buf[i]);
+                                    continue;
+                                }
+                                changed |= take(new String(line.toByteArray(), StandardCharsets.UTF_8));
+                                line.reset();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // not there yet, or being written: look again in a moment
+                }
+                if (changed) show(text.toString());
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }
+
+        /** One line from the plugin: {"part":id} starts a paragraph, {"part":id,"delta":words} adds to it. */
+        private boolean take(String json) {
+            try {
+                JSONObject o = new JSONObject(json);
+                String of = o.optString("part");
+                if (!of.equals(part)) {
+                    part = of;
+                    text.setLength(0);
+                }
+                String delta = o.optString("delta");
+                if (delta.isEmpty()) return true;
+                text.append(delta);
+                pieces++;
+                if (firstAfter < 0) firstAfter = android.os.SystemClock.elapsedRealtime() - began;
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        private void show(final String soFar) {
+            main.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (id != Chat.this.run || done) return;
+                    live = soFar.trim().isEmpty() ? "" : soFar.replaceFirst("^\\s+", "");
+                    if (live.isEmpty()) return; // keep the paragraph before, until the next one has words
+                    reply.text = live;
+                    changed();
+                }
+            });
         }
     }
 
@@ -576,7 +699,7 @@ final class Chat {
                 JSONArray steps = j.optJSONArray("steps");
                 for (int k = 0; steps != null && k < steps.length(); k++) m.steps.add(steps.getString(k));
                 // a reply that was cut off when the app was closed
-                if (!m.user && m.text.isEmpty()) m.text = context.getString(R.string.chat_stopped);
+                if (!m.user && m.text.isEmpty()) m.text = Lang.of(context).getString(R.string.chat_stopped);
                 loaded.add(m);
             }
             messages.clear();
