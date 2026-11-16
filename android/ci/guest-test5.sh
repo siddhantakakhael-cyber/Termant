@@ -13,6 +13,8 @@ echo "== open another app"
 phone app Settings > /root/screen2.txt 2>&1; echo "app-exit=$?"; head -n 30 /root/screen2.txt
 grep -q 'com.android.settings' /root/screen2.txt && echo "app-opened=yes"
 echo "== swipe"; phone swipe up > /root/screen3.txt 2>&1; echo "swipe-exit=$?"; head -n 14 /root/screen3.txt
+# the list must be the scrolled one, not the one remembered from before
+[ "$(grep '^[0-9]' /root/screen2.txt)" != "$(grep '^[0-9]' /root/screen3.txt)" ] && echo "swipe-moved=yes"
 phone swipe down > /dev/null 2>&1
 echo "== tap by its words"
 label=$(phone screen | sed -n 's/^[0-9]*\. \[[a-z, ]*\] "\([^"]*\)".*/\1/p' | sed -n 2p)

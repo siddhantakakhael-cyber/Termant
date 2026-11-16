@@ -123,11 +123,64 @@ public final class ScreenService extends AccessibilityService {
     }
 
     /**
+     * Android hands out what it remembers of a screen, and it only forgets
+     * when it is told about changes, which this service does not listen to
+     * (it watches nothing). So ask it to forget before every look, or a page
+     * that was scrolled would be described as it was before.
+     */
+    private void forget() {
+        try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                clearCache();
+            } else {
+                android.accessibilityservice.AccessibilityServiceInfo info = getServiceInfo();
+                if (info != null) setServiceInfo(info); // sending the settings again empties the memory too
+            }
+        } catch (Exception e) {
+            // then the look may be a little old
+        }
+    }
+
+    /** The window in front: the active one, else (a dialog of another app, say) the front-most app window. */
+    private AccessibilityNodeInfo front() {
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root != null) return root;
+        try {
+            AccessibilityNodeInfo other = null;
+            for (android.view.accessibility.AccessibilityWindowInfo w : getWindows()) { // front to back
+                if (w.getType() != android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) continue;
+                AccessibilityNodeInfo r = w.getRoot();
+                if (r == null) continue;
+                if (w.isActive() || w.isFocused()) return r;
+                if (other == null) other = r;
+            }
+            return other;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** The same, waiting a moment when a screen is just changing over. */
+    private AccessibilityNodeInfo root() {
+        forget();
+        for (int i = 0; i < 6; i++) {
+            AccessibilityNodeInfo root = front();
+            if (root != null) return root;
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
      * What is on the screen, one numbered line per thing that can be read
      * or used: its kind, its words and where its middle is.
      */
     synchronized String describe(int limit) {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
+        AccessibilityNodeInfo root = root();
         items.clear();
         labels.clear();
         if (root == null) {
@@ -256,7 +309,7 @@ public final class ScreenService extends AccessibilityService {
     }
 
     private AccessibilityNodeInfo inputBox() throws Exception {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
+        AccessibilityNodeInfo root = root();
         AccessibilityNodeInfo box = root == null ? null : root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
         if (box == null || !box.isEditable()) box = firstEditable(root, 0);
         if (box == null) throw new PhoneBridge.Refused("There is no text box on the screen. Tap one first.");
@@ -362,7 +415,7 @@ public final class ScreenService extends AccessibilityService {
     void waitForApp(String pkg, long ms) throws InterruptedException {
         long until = android.os.SystemClock.elapsedRealtime() + ms;
         while (android.os.SystemClock.elapsedRealtime() < until) {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
+            AccessibilityNodeInfo root = front();
             if (root != null && pkg.contentEquals(root.getPackageName() == null ? "" : root.getPackageName())) break;
             Thread.sleep(250);
         }

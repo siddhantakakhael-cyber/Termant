@@ -805,6 +805,7 @@ public class MainActivity extends Activity
     private void showSettings() {
         hideKeyboard();
         settingsPanel.refresh();
+        settingsPanel.toTop();
         chatPanel.setVisibility(View.GONE);
         settingsPanel.setVisibility(View.VISIBLE);
     }

@@ -30,6 +30,7 @@ import java.util.Map;
 
 /** Settings: model, workspace, the user's own API keys, and the automation rules. */
 final class SettingsView extends LinearLayout implements Rules.Listener {
+    private final ScrollView scroll;
     interface Host {
         void onCloseSettings();
 
@@ -97,7 +98,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         content = new LinearLayout(context);
         content.setOrientation(VERTICAL);
         content.setPadding(dp(14), 0, dp(14), dp(24));
-        ScrollView scroll = new ScrollView(context);
+        scroll = new ScrollView(context);
         scroll.addView(content);
         addView(scroll, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
     }
@@ -116,6 +117,11 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
     @Override
     public void onRulesChanged() {
         refresh();
+    }
+
+    /** Settings open at their start, not where they were left the last time. */
+    void toTop() {
+        scroll.scrollTo(0, 0);
     }
 
     void refresh() {
