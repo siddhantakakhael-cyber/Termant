@@ -316,7 +316,11 @@ sleep 2
 shot 23-stream-done
 adb logcat -d -s Termant:I | grep 'stream:' > "$OUT/stream.txt"
 cat "$OUT/stream.txt"
-run_as ls -la files/rootfs/root/.config/opencode files/rootfs/root/.config/opencode/plugin > "$OUT/opencode-dir.txt" 2>&1
+feed=files/rootfs/root/.cache/termant/events.txt
+run_as cat "$feed.log" 2>&1 | tail -n 60 > "$OUT/stream-server-log.txt"
+run_as cat "$feed" 2>/dev/null | grep -o '"type":"[^"]*"' | sort | uniq -c > "$OUT/stream-event-types.txt"
+run_as cat "$feed" 2>/dev/null | grep -m 3 'session.text.delta' | cut -c 1-600 > "$OUT/stream-sample.txt"
+cat "$OUT/stream-event-types.txt"
 grep -q 'stream: [1-9][0-9]* pieces' "$OUT/stream.txt" || finish "FAIL streaming: no reply arrived piece by piece"
 
 echo "Voice button: this emulator has no speech service, so only that nothing breaks"
@@ -373,7 +377,7 @@ tap_on 'content-desc="Language"' || finish "FAIL Language row not found"
 sleep 5
 shot 29-settings-hindi
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
-adb shell "grep -q 'Bhasha' /sdcard/ui.xml" || finish "FAIL Settings are not in Hindi after choosing it"
+adb shell "grep -q 'Bhasha aur rang' /sdcard/ui.xml" || finish "FAIL Settings are not in Hindi after choosing it"
 tap_on 'content-desc="Chat par wapas jayein"' || finish "FAIL Hindi back button not found"
 sleep 2
 shot 30-chat-hindi

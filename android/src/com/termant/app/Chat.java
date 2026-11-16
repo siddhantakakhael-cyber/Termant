@@ -43,8 +43,8 @@ final class Chat {
     private static final int SETUP_FAILED = 97;
     private static final String SESSION_MARKER = "@@TERMANT-SESSION@@";
     private static final Pattern SESSION_ID = Pattern.compile("\\bses_[A-Za-z0-9]+");
-    /** Where the stream plugin copies the model's words while they arrive, as seen from inside Ubuntu. */
-    private static final String STREAM_FILE = "/root/.cache/termant/stream.jsonl";
+    /** Where the agent script copies OpenCode's event feed while a reply is written, as seen from inside Ubuntu. */
+    private static final String STREAM_FILE = "/root/.cache/termant/events.txt";
     /**
      * Runs inside Ubuntu; $1 message, $2 "--continue", "--session ID" or empty, $3 workspace folder,
      * $4 model or empty, $5 non-empty to also print which OpenCode session the reply belongs to,
@@ -55,16 +55,43 @@ final class Chat {
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
                     + "mkdir -p \"$3\" && cd \"$3\" || exit " + SETUP_FAILED + "\n"
-                    + "export TERMANT_STREAM=\"$6\"\n"
+                    // OpenCode prints a paragraph only when it is complete. To show the words while
+                    // they are written, start its server here and copy the server's event feed to $6.
+                    // If any of that fails, OpenCode starts its own server as before.
+                    + "where=--standalone; srv=; feed=\n"
+                    + "if [ -n \"$6\" ] && command -v curl >/dev/null 2>&1 && mkdir -p \"$(dirname \"$6\")\"; then\n"
+                    + "  export OPENCODE_PASSWORD=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \\n')\n"
+                    + "  : > \"$6.server\"\n"
+                    // the server stops when its input closes, which is when this script is gone
+                    + "  ( while kill -0 $$ 2>/dev/null; do sleep 2; done ) 2>/dev/null"
+                    + " | opencode serve --stdio --port 0 > \"$6.server\" 2> \"$6.log\" &\n"
+                    + "  srv=$!; url=; i=0\n"
+                    + "  while [ $i -lt 600 ] && [ -z \"$url\" ] && kill -0 $srv 2>/dev/null; do\n"
+                    + "    url=$(sed -n 's/.*\"url\":\"\\([^\"]*\\)\".*/\\1/p' \"$6.server\" 2>/dev/null | head -n 1)\n"
+                    + "    [ -n \"$url\" ] || sleep 0.1; i=$((i+1))\n"
+                    + "  done\n"
+                    + "  if [ -n \"$url\" ]; then\n"
+                    + "    curl -sN -u \"opencode:$OPENCODE_PASSWORD\" \"$url/api/event\" > \"$6\" 2>/dev/null &\n"
+                    + "    feed=$!; i=0\n"
+                    // the feed must be open before the question is asked, or the first words are lost
+                    + "    while [ $i -lt 50 ] && [ ! -s \"$6\" ] && kill -0 $feed 2>/dev/null; do sleep 0.1; i=$((i+1)); done\n"
+                    + "    where=\"--server $url\"\n"
+                    + "  else\n"
+                    + "    kill $srv 2>/dev/null; srv=; unset OPENCODE_PASSWORD\n"
+                    + "  fi\n"
+                    + "fi\n"
                     + "echo " + MARKER + "\n"
-                    + "if [ -n \"$4\" ]; then opencode run --standalone --auto $2 --model \"$4\" \"$1\" </dev/null\n"
-                    + "else opencode run --standalone --auto $2 \"$1\" </dev/null; fi\n"
+                    + "if [ -n \"$4\" ]; then opencode run $where --auto $2 --model \"$4\" \"$1\" </dev/null\n"
+                    + "else opencode run $where --auto $2 \"$1\" </dev/null; fi\n"
                     + "code=$?\n"
                     + "if [ $code -eq 0 ] && [ -n \"$5\" ]; then\n"
                     + "  echo; echo " + SESSION_MARKER + "\n"
-                    + "  { opencode session list --standalone --max-count 1 --format json 2>/dev/null </dev/null"
-                    + " || opencode session list --max-count 1 --format json 2>/dev/null </dev/null; } | head -c 3000\n"
+                    + "  { opencode session list $where --max-count 1 --format json 2>/dev/null </dev/null ||\n"
+                    + "    opencode session list --standalone --max-count 1 --format json 2>/dev/null </dev/null ||\n"
+                    + "    opencode session list --max-count 1 --format json 2>/dev/null </dev/null; } | head -c 3000\n"
                     + "fi\n"
+                    + "[ -n \"$feed\" ] && kill $feed 2>/dev/null\n"
+                    + "[ -n \"$srv\" ] && kill $srv 2>/dev/null\n"
                     + "exit $code\n";
     /** Prints the models that can be used, one "provider/model" per line; exit 3 if the agent is not downloaded yet. */
     private static final String MODELS_SCRIPT =
@@ -496,11 +523,10 @@ final class Chat {
     }
 
     /**
-     * Reads the file that the stream plugin (see Config.writeOpencodeConfig)
-     * fills while the model answers: one line when a paragraph starts, one for
-     * each few words that arrive. OpenCode itself prints a paragraph only
-     * once it is complete, so this is what lets the chat show it being written.
-     * If the plugin is missing or silent, the reply just appears when it is done.
+     * Reads the copy of OpenCode's event feed that the agent script keeps
+     * while the model answers, and shows the paragraph being written.
+     * OpenCode itself prints a paragraph only once it is complete. If the
+     * feed is missing or silent, the reply just appears when it is done.
      */
     private final class Stream extends Thread {
         private final int id;
@@ -510,6 +536,7 @@ final class Chat {
         private volatile boolean done;
         private final StringBuilder text = new StringBuilder();
         private String part = "";
+        private String session;
         private int pieces;
         private long firstAfter = -1;
 
@@ -567,16 +594,32 @@ final class Chat {
             }
         }
 
-        /** One line from the plugin: {"part":id} starts a paragraph, {"part":id,"delta":words} adds to it. */
-        private boolean take(String json) {
+        /**
+         * One line of the event feed: "data: {type, data: {sessionID, ...}}".
+         * Only the words of the conversation asked here count: the first
+         * session in the feed is that one, later ones belong to sub-agents.
+         */
+        private boolean take(String line) {
+            if (!line.startsWith("data:")) return false;
+            boolean words = line.contains("\"session.text.");
+            if (!words && session != null) return false;
+            if (!line.contains("\"sessionID\"")) return false;
             try {
-                JSONObject o = new JSONObject(json);
-                String of = o.optString("part");
-                if (!of.equals(part)) {
-                    part = of;
+                JSONObject o = new JSONObject(line.substring(5));
+                JSONObject d = o.optJSONObject("data");
+                if (d == null) return false;
+                String of = d.optString("sessionID");
+                if (of.isEmpty()) return false;
+                String type = o.optString("type");
+                if (session == null && type.startsWith("session.")) session = of;
+                if (!words || !of.equals(session)) return false;
+                if (!type.equals("session.text.started") && !type.equals("session.text.delta")) return false;
+                String id = d.optString("assistantMessageID") + ":" + d.optInt("ordinal");
+                if (!id.equals(part)) {
+                    part = id;
                     text.setLength(0);
                 }
-                String delta = o.optString("delta");
+                String delta = d.optString("delta");
                 if (delta.isEmpty()) return true;
                 text.append(delta);
                 pieces++;

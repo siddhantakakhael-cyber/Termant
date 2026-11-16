@@ -1,12 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
   // The agent may use the phone controls without asking each time.
-  "permission": {
-    "bash": { "phone *": "allow", "date *": "allow" }
-  }
+  "permissions": [
+    { "action": "shell", "resource": "phone *", "effect": "allow" },
+    { "action": "shell", "resource": "date *", "effect": "allow" }
+  ]
   // Termant writes this file again before each chat message, from its
   // Settings: MCP servers added there appear here as, for example,
   // "mcp": {
-  //   "filesystem": { "type": "local", "command": ["/bin/bash", "-lc", "npx -y @modelcontextprotocol/server-filesystem /sdcard"] }
+  //   "servers": {
+  //     "filesystem": { "type": "local", "command": ["/bin/bash", "-lc", "npx -y @modelcontextprotocol/server-filesystem /sdcard"] }
+  //   }
   // }
 }

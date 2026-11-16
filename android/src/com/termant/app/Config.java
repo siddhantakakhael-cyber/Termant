@@ -255,51 +255,6 @@ final class Config {
         prefs(c).edit().putString("mcp_servers", o.toString()).apply();
     }
 
-    /**
-     * An OpenCode plugin. OpenCode prints a paragraph of the model's answer
-     * only once it is complete; this copies the words to the file named in
-     * TERMANT_STREAM as they arrive, so the chat can show the answer while it
-     * is being written. Without that variable (the terminal) it does nothing.
-     */
-    private static final String STREAM_PLUGIN =
-            "// Written by Termant before every chat message; changes are overwritten.\n"
-                    + "// Copies the model's words to a file as they arrive, for the chat screen.\n"
-                    + "import { appendFileSync } from \"node:fs\"\n"
-                    + "\n"
-                    + "export const TermantStream = async () => {\n"
-                    + "  const file = process.env.TERMANT_STREAM\n"
-                    + "  if (!file) return {}\n"
-                    + "  const kinds = new Map()\n"
-                    + "  let session\n"
-                    + "  const write = (line) => {\n"
-                    + "    try { appendFileSync(file, JSON.stringify(line) + \"\\n\") } catch {}\n"
-                    + "  }\n"
-                    + "  return {\n"
-                    + "    event: async ({ event }) => {\n"
-                    + "      try {\n"
-                    + "        const p = event && event.properties\n"
-                    + "        if (!p) return\n"
-                    + "        if (event.type === \"message.part.updated\" && p.part) {\n"
-                    + "          const part = p.part\n"
-                    + "          if (!session) session = part.sessionID\n"
-                    + "          if (part.sessionID !== session) return // a sub-agent's words\n"
-                    + "          if (!kinds.has(part.id)) {\n"
-                    + "            kinds.set(part.id, part.type)\n"
-                    + "            if (part.type === \"text\") write({ part: part.id })\n"
-                    + "          }\n"
-                    + "          // older OpenCode sends the new words along with the part\n"
-                    + "          if (part.type === \"text\" && typeof p.delta === \"string\" && p.delta) {\n"
-                    + "            write({ part: part.id, delta: p.delta })\n"
-                    + "          }\n"
-                    + "        } else if (event.type === \"message.part.delta\" && p.field === \"text\"\n"
-                    + "            && typeof p.delta === \"string\" && kinds.get(p.partID) === \"text\") {\n"
-                    + "          write({ part: p.partID, delta: p.delta })\n"
-                    + "        }\n"
-                    + "      } catch {}\n"
-                    + "    },\n"
-                    + "  }\n"
-                    + "}\n";
-
     /** Writes opencode.jsonc (the phone-control permissions plus the user's MCP
      *  servers) into Ubuntu's OpenCode config dir, so the agent picks the MCP
      *  servers up on its next run. A no-op until Ubuntu is installed. */
@@ -312,22 +267,23 @@ final class Config {
             JSONObject o = new JSONObject();
             o.put("$schema", "https://opencode.ai/config.json");
             // phone controls never ask first, also in the terminal's agent
-            o.put("permission", new JSONObject().put("bash",
-                    new JSONObject().put("phone *", "allow").put("date *", "allow")));
-            JSONObject mcp = new JSONObject();
+            JSONArray perms = new JSONArray();
+            perms.put(new JSONObject().put("action", "shell").put("resource", "phone *").put("effect", "allow"));
+            perms.put(new JSONObject().put("action", "shell").put("resource", "date *").put("effect", "allow"));
+            o.put("permissions", perms);
+            JSONObject servers = new JSONObject();
             for (Map.Entry<String, String> e : mcpServers(c).entrySet()) {
                 // the command line as typed, run by the shell so that quotes and pipes work
                 JSONObject s = new JSONObject();
                 s.put("type", "local");
                 s.put("command", new JSONArray().put("/bin/bash").put("-lc").put(e.getValue()));
-                s.put("enabled", true);
-                s.put("timeout", 120000); // "npx -y ..." downloads the server on its first start
-                mcp.put(e.getKey(), s);
+                // "npx -y ..." downloads the server on its first start
+                s.put("timeout", new JSONObject().put("startup", 120000));
+                servers.put(e.getKey(), s);
             }
-            if (mcp.length() > 0) o.put("mcp", mcp);
+            if (servers.length() > 0) o.put("mcp", new JSONObject().put("servers", servers));
             Installer.write(conf, o.toString(2) + "\n");
             try { Os.chmod(conf.getPath(), 0644); } catch (Exception ignored) {}
-            Installer.write(new File(dir, "plugin/termant-stream.js"), STREAM_PLUGIN);
         } catch (Exception e) {
             // Ubuntu not installed yet: the first agent run copies the template instead
             Log.e("Termant", "cannot write MCP config", e);
