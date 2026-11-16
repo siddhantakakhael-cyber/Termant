@@ -69,9 +69,17 @@ dictation inside the app when the phone has a speech service (Google's, on
 most phones); what you say lands in the message box so you can correct it
 before sending.
 
+**What it is doing:** while the agent works, the bubble names the current
+step and what it is about: *Thinking* (with the sentence being thought, when
+the model shows it), *Running a command* with the command, *Reading a file*
+with its path, *Searching the web* with the search words, *Working on the
+screen*, *Working with Git / GitHub*, *Installing*, *Writing the answer*, and
+so on, with the time waited. While there is nothing to add it shows a tip.
+
 **Language and look:** the app's own buttons and messages are in Hindi
 (Hinglish) by default. Settings → *Bhasha (Language)* switches to English and
-back, and *Theme* switches between dark and light. Both apply at once.
+back, and *Theme* switches between dark and light, the terminal included. Both
+apply at once.
 
 Earlier chats are kept: they are listed on the new-chat screen and under the
 **☰** button, and opening one continues it where it stopped (it carries on in
@@ -132,6 +140,48 @@ terminal, for example `npx -y @modelcontextprotocol/server-filesystem /sdcard`
 (that one needs `apt install nodejs npm` first). The automated test checks
 that OpenCode starts such a server and asks it for its tools; no published
 MCP server has been tried on a real phone yet.
+
+## Tools for the agent: GitHub, web search, screen control
+
+All three are in Settings → *Tools for the agent*.
+
+**GitHub.** Paste a personal access token (the dialog links to the GitHub page
+that makes one; tick `repo`, and `workflow` if the agent should change
+workflow files). Termant asks GitHub whose token it is, refuses one that
+GitHub rejects, and shows the account name. From then on `git clone`, `pull`
+and `push` to `https://github.com/…` work in the chat and in the terminal,
+private repos included, and `gh` (`apt install gh`) is signed in. The token is
+stored only on the phone, in `~/.config/termant/keys.env` inside Ubuntu, as
+`GH_TOKEN`; git gets it through a credential helper that answers for
+github.com only. Commits use the account's name and its GitHub no-reply
+address unless git already has settings. Use https addresses: there is no SSH
+key.
+
+**Web search.** On by default. The agent uses OpenCode's `websearch` and
+`webfetch` tools for anything recent and names its source. Searches go to Exa,
+which needs no key; with your own Exa or Tavily key (optional rows in Settings)
+that service is used with your account. Turning the row off removes the tool.
+
+**Screen control.** Off until you turn it on in Android's Accessibility
+settings (the row takes you there; Android 13 and newer may first want *Allow
+restricted settings* in Termant's App info, as the dialog explains). With it
+on, the agent can open any app, read what it shows and tap, type and swipe
+there:
+
+```
+phone apps                    phone app YouTube         phone screen
+phone tap 7 | "Search" | X Y  phone type "lofi music"   phone swipe up|down|left|right
+phone key back|home|recents|notifications|enter
+```
+
+`phone screen` lists what is on the screen as numbered lines, and every action
+answers with the new screen. It acts only when a `phone` command asks it to,
+keeps no record, and refuses to type into password boxes. The agent is told to
+ask before anything that spends money, sends a message, deletes something or
+changes an account. Limits: games and other screens drawn as one picture have
+nothing to read; Android's own permission questions ("Allow … to send
+notifications?") could not be read in the automated test, so answer those
+yourself; `phone key enter` needs Android 11 or newer.
 
 ## Phone control
 
