@@ -191,6 +191,11 @@ final class Chat {
      * finished paragraph; empty when nothing is being written.
      */
     private volatile String live = "";
+
+    /** The paragraph of the answer that is being written right now. */
+    String writing() {
+        return live;
+    }
     /** Finished and unfinished conversations, one file each. */
     private final File archive;
 

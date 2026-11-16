@@ -427,6 +427,16 @@ wait_log() { # <text in the app's log> <how many such lines there must be> <trie
   done
   return 1
 }
+count_log() { adb logcat -d -s Termant:I | grep -c "$1"; }
+ask_and_leave() { # <text with %s for spaces>: sends it and goes to the home screen at once, as someone who does not wait would
+  tap_on 'class="android.widget.EditText"' || return 1
+  sleep 2
+  adb shell input text "$1"
+  sleep 1
+  tap_on 'content-desc="Send"' || return 1
+  adb shell input keyevent 3
+}
+last_overlay_line() { adb logcat -d -s Termant:I | grep 'overlay:' | tail -n 1; }
 adb shell appops set "$PKG" SYSTEM_ALERT_WINDOW allow
 tap_on 'content-desc="Start a new chat"'
 sleep 2
@@ -451,6 +461,63 @@ adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
 sleep 3
 wait_for_reply 20 || finish "FAIL the chat did not end after the card's stop button"
 shot 43b-after-stop
+
+echo "Over other apps: the answer stays for 10 seconds, takes the next message, and can be swiped away"
+tap_on 'content-desc="Start a new chat"'
+sleep 2
+results=$(count_log 'overlay: result shown')
+ask_and_leave 'Reply%sonly%swith%sthe%sword%sOK' || finish "FAIL could not send the request for the answer card"
+wait_log 'overlay: result shown' $((results + 1)) 80 >/dev/null || { shot 48-no-result; finish "FAIL the answer did not appear over the other app"; }
+sleep 2
+shot 48-result-card
+sleep 12
+adb logcat -d -s Termant:I | grep 'overlay:' > "$OUT/overlay-result.txt"
+python3 - "$OUT/overlay-result.txt" <<'PY' || finish "FAIL the answer did not stay for about 10 seconds"
+import datetime, sys
+lines = open(sys.argv[1]).read().splitlines()
+at = lambda line: datetime.datetime.strptime(line[:18], "%m-%d %H:%M:%S.%f")
+shown = max(i for i, line in enumerate(lines) if "overlay: result shown" in line)
+gone = [line for line in lines[shown + 1:] if "overlay: hidden" in line]
+if not gone:
+    print("the answer card is still there after 14 seconds")
+    sys.exit(1)
+stayed = (at(gone[0]) - at(lines[shown])).total_seconds()
+print("the answer stayed for %.1f seconds" % stayed)
+sys.exit(0 if 9.5 <= stayed <= 12 else 1)
+PY
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 3
+results=$(count_log 'overlay: result shown'); replies=$(count_log 'overlay: reply at')
+boxes=$(count_log 'overlay: box at'); sends=$(count_log 'overlay: send at')
+ask_and_leave 'Reply%sonly%swith%sthe%sword%sYES' || finish "FAIL could not send the second request for the answer card"
+wait_log 'overlay: result shown' $((results + 1)) 80 >/dev/null || finish "FAIL the second answer did not appear over the other app"
+at=$(wait_log 'overlay: reply at' $((replies + 1)) 5) || finish "FAIL the answer card has no place to type the next message"
+adb shell input tap $at
+at=$(wait_log 'overlay: box at' $((boxes + 1)) 10) || { shot 49-no-box; finish "FAIL the box for the next message did not open on the card"; }
+adb shell input tap $at
+sleep 1
+adb shell input text 'Reply%sonly%swith%sthe%sword%sBYE'
+sleep 12 # longer than the 10 seconds: a card someone is typing on must stay
+shot 49-result-typing
+last_overlay_line | grep -q 'overlay: hidden' && finish "FAIL the card went away while a message was being typed on it"
+at=$(wait_log 'overlay: send at' $((sends + 1)) 5) || finish "FAIL no send button on the answer card"
+adb shell input tap $at
+wait_log 'overlay: sent from the card' 1 10 >/dev/null || finish "FAIL the message typed on the card was not sent"
+wait_log 'overlay: result shown' $((results + 2)) 80 >/dev/null || { shot 50-no-answer; finish "FAIL no answer came to the message typed on the card"; }
+sleep 1
+shot 50-result-after-card-message
+at=$(wait_log 'overlay: reply at' $((replies + 2)) 5) || finish "FAIL the last answer card was not laid out"
+set -- $at
+adb shell input swipe "$1" "$2" "$1" $(( $2 > 130 ? $2 - 120 : 5 )) 150
+wait_log 'overlay: swiped away' 1 5 >/dev/null || { shot 51-not-swiped; finish "FAIL swiping the card up did not take it away"; }
+sleep 1
+shot 51-after-swipe
+last_overlay_line | grep -q 'overlay: hidden' || finish "FAIL the card is still there after the swipe"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 3
+run_as cat files/chat.json > "$OUT/chat-card.json" 2>/dev/null
+grep -q 'only with the word BYE' "$OUT/chat-card.json" || finish "FAIL the message typed on the card is not in the chat"
+shot 52-chat-after-card
 tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button not found for the screen control test"
 sleep 3
 # What the user does by hand in Android's Accessibility settings.
@@ -488,21 +555,23 @@ grep -q '"websearch"' "$OUT/result5.txt" || finish "FAIL web search is not in th
 grep -q '"provider": *"exa"' "$OUT/result5.txt" || finish "FAIL web search has no search service chosen"
 
 echo "Questions from the agent: over another app, then inside Termant"
+choices=$(count_log 'overlay: choice 1 at'); boxes=$(count_log 'overlay: box at')
+sends=$(count_log 'overlay: send at'); closes=$(count_log 'overlay: close at')
 type_line 'sh%st6.sh'
-at=$(wait_log 'overlay: choice 1 at' 1 40) || { shot 44-no-question; finish "FAIL the question did not appear over the other app"; }
+at=$(wait_log 'overlay: choice 1 at' $((choices + 1)) 40) || { shot 44-no-question; finish "FAIL the question did not appear over the other app"; }
 sleep 1
 shot 44-question-choices
 adb shell input tap $at
-at=$(wait_log 'overlay: box at' 1 30) || { shot 45-no-box; finish "FAIL the question with a box to type in did not appear"; }
+at=$(wait_log 'overlay: box at' $((boxes + 1)) 30) || { shot 45-no-box; finish "FAIL the question with a box to type in did not appear"; }
 sleep 1
 adb shell input tap $at
 sleep 1
 adb shell input text 'hello'
 sleep 1
 shot 45-question-typing
-at=$(wait_log 'overlay: send at' 1 5) || finish "FAIL no send button on the question"
+at=$(wait_log 'overlay: send at' $((sends + 1)) 5) || finish "FAIL no send button on the question"
 adb shell input tap $at
-at=$(wait_log 'overlay: close at' 3 30) || { shot 46-no-third; finish "FAIL the third question did not appear"; }
+at=$(wait_log 'overlay: close at' $((closes + 3)) 30) || { shot 46-no-third; finish "FAIL the third question did not appear"; }
 sleep 1
 shot 46-question-to-skip
 adb shell input tap $at

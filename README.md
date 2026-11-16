@@ -204,6 +204,14 @@ The command waits up to 4 minutes and prints the answer. Inside Termant the
 same question comes as a dialog. The agent is told to use this for the yes it
 needs before sending, paying, deleting or changing an account.
 
+When the agent is done, the card shows the answer and stays for 10 seconds (a
+line on it runs out with the time). *Type the next message here* on that card
+opens a box and the keyboard, so the conversation can go on without opening
+Termant; a card you are typing on stays until the message is sent or the card
+is closed. While the answer is being written, the card shows its latest words.
+Swiping any card up sends it away: the working card for that turn, the answer
+at once, and a question to a notification (it is still waiting).
+
 The card needs one of two things: Screen control (it then comes along, with
 nothing else to allow), or Settings → *Show over other apps*, which opens
 Android's "display over other apps" page for Termant. With neither, a

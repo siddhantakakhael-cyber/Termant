@@ -663,6 +663,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         private String shownTitle = "", described = "";
         private long shownAt;
 
+        /** Whether the line under the title follows the answer while it is being written. */
+        boolean followWriting;
+
         Working(Context c, Chat chat, float density) {
             super(c);
             this.chat = chat;
@@ -736,12 +739,20 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             int kind = Math.max(0, Math.min(titles.length - 1, chat.activity));
             String name = status.isEmpty() ? titles[kind] : setupTitle;
             String detail = status.isEmpty() ? chat.activityDetail : status;
+            boolean writing = false;
+            if (followWriting && status.isEmpty() && kind == Chat.ACT_WRITE && detail.isEmpty()) {
+                // over another app the answer itself is not on screen: show its latest words
+                String words = chat.writing();
+                if (words.length() > 240) words = words.substring(words.length() - 240);
+                detail = words.replaceAll("\\s+", " ").trim();
+                writing = !detail.isEmpty();
+            }
             String glyph = status.isEmpty() ? ICONS[Math.min(kind, ICONS.length - 1)] : SETUP_ICON;
             if (!name.equals(shownTitle)) {
                 shownTitle = name;
                 shownAt = now;
             }
-            String say = detail.isEmpty() ? name : name + ": " + detail;
+            String say = detail.isEmpty() || writing ? name : name + ": " + detail;
             if (!say.equals(described)) {
                 described = say;
                 setContentDescription(say);
@@ -796,7 +807,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             float line2 = 6 * dp + 20 * sp + 18 * sp * 0.7f;
             if (!detail.isEmpty()) {
                 // thoughts are followed at their end, everything else is read from its start
-                boolean thinking = status.isEmpty() && kind == Chat.ACT_THINK;
+                boolean thinking = writing || (status.isEmpty() && kind == Chat.ACT_THINK);
                 CharSequence what = android.text.TextUtils.ellipsize((thinking ? "" : "\u203a ") + detail, about,
                         w - left, thinking ? android.text.TextUtils.TruncateAt.START : android.text.TextUtils.TruncateAt.END);
                 about.setAlpha((int) (255 * arrive));

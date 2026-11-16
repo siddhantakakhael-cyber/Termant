@@ -228,7 +228,10 @@
     <string name="ask_channel">Questions from the agent</string>
     <string name="ask_notification">The agent has a question for you</string>
     <string name="overlay_title">Show over other apps</string>
-    <string name="overlay_note">While the agent works and you are in another app, a small card at the top says what it is doing, lets you stop it, and shows its questions with buttons to choose or a box to type in. Screen control brings this along; without it, allow it here.</string>
+    <string name="overlay_note">While the agent works and you are in another app, a small card at the top says what it is doing, lets you stop it, shows its questions with buttons to choose or a box to type in, and keeps the answer up for 10 seconds with a box for your next message. Swipe the card up to send it away. Screen control brings this along; without it, allow it here.</string>
     <string name="overlay_with_screen">On (with Screen control)</string>
     <string name="overlay_no_settings">Open Android Settings → Apps → Termant → Display over other apps yourself.</string>
+    <string name="result_done">✓ Termant: done</string>
+    <string name="result_failed">⚠ Termant: it did not work</string>
+    <string name="result_reply">Type the next message here</string>
 </resources>
