@@ -99,6 +99,13 @@ public class TermService extends Service implements TerminalSessionClient {
         }
         startForeground(NOTIFICATION_ID, buildNotification());
         chat = new Chat(this);
+        chat.setWatcher(new Runnable() {
+            @Override
+            public void run() {
+                surfacesChanged();
+            }
+        });
+        instance = this;
         rules = new Rules(this);
         rules.start();
         bridge = new PhoneBridge(this);
@@ -166,6 +173,9 @@ public class TermService extends Service implements TerminalSessionClient {
 
     @Override
     public void onDestroy() {
+        instance = null;
+        Ask.close(Ask.pending());
+        Overlay.hide();
         killAll();
         setWakeLock(false);
         stopRinging();
@@ -176,6 +186,74 @@ public class TermService extends Service implements TerminalSessionClient {
 
     void setScreen(Screen s) {
         screen = s;
+    }
+
+    // ------------------------------------------------------------ over other apps
+
+    private static volatile TermService instance;
+    private static final String QUESTION_CHANNEL = "questions";
+    private static final int QUESTION_NOTIFICATION_ID = 3;
+    private Ask.Question notified;
+    private final Runnable surfaces = new Runnable() {
+        @Override
+        public void run() {
+            Overlay.sync(TermService.this);
+            MainActivity.showQuestion();
+            notifyQuestion();
+        }
+    };
+
+    /** The running service, or null. */
+    static TermService get() {
+        return instance;
+    }
+
+    /**
+     * Something changed that decides what is shown where: the agent started
+     * or finished, it has a question, Termant came to the screen or left it,
+     * or Screen control was turned on or off. May be called from any thread.
+     */
+    void surfacesChanged() {
+        handler.removeCallbacks(surfaces);
+        handler.post(surfaces);
+    }
+
+    static void pokeSurfaces() {
+        TermService running = instance;
+        if (running != null) running.surfacesChanged();
+    }
+
+    /** A question nobody can see (Termant not on screen, no card over other apps) becomes a notification. */
+    private void notifyQuestion() {
+        Ask.Question q = Ask.pending();
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        boolean unseen = q != null && !MainActivity.isOnScreen() && !Overlay.isShown();
+        if (!unseen) {
+            if (notified != null) nm.cancel(QUESTION_NOTIFICATION_ID);
+            notified = null;
+            return;
+        }
+        if (q == notified) return;
+        notified = q;
+        Context words = Lang.of(this);
+        if (Build.VERSION.SDK_INT >= 26) {
+            nm.createNotificationChannel(new NotificationChannel(
+                    QUESTION_CHANNEL, words.getString(R.string.ask_channel), NotificationManager.IMPORTANCE_HIGH));
+        }
+        int immutable = Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0;
+        PendingIntent open = PendingIntent.getActivity(this, 3,
+                new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), immutable);
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26
+                ? new Notification.Builder(this, QUESTION_CHANNEL) : new Notification.Builder(this);
+        b.setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(words.getString(R.string.ask_notification))
+                .setContentText(q.text)
+                .setStyle(new Notification.BigTextStyle().bigText(q.text))
+                .setContentIntent(open)
+                .setAutoCancel(true);
+        if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH);
+        nm.notify(QUESTION_NOTIFICATION_ID, b.build());
+        android.util.Log.i("Termant", "ask: shown as a notification");
     }
 
     // ------------------------------------------------------------ sessions

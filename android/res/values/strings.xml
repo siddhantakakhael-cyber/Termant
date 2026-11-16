@@ -172,6 +172,7 @@
         <item>Using a tool</item>
         <item>The model is busy, trying again</item>
         <item>Looking at the result</item>
+        <item>Waiting for your answer</item>
     </string-array>
     <string name="activity_setup">Installing the AI agent (once only)</string>
     <string-array name="tips">
@@ -219,4 +220,15 @@
     <string name="screen_no_settings">Open Android Settings → Accessibility yourself.</string>
     <string name="screen_service_label">Termant screen control</string>
     <string name="screen_service_description">Lets Termant’s AI agent read what is on the screen and tap, type and swipe in other apps when you ask it to in the chat. It does nothing on its own, records nothing, and never types into password boxes.</string>
+    <!-- Over other apps: what the agent is doing, and its questions. -->
+    <string name="ask_from">Termant asks</string>
+    <string name="ask_close">Skip</string>
+    <string name="ask_write">Type something else</string>
+    <string name="answer_hint">Type your answer</string>
+    <string name="ask_channel">Questions from the agent</string>
+    <string name="ask_notification">The agent has a question for you</string>
+    <string name="overlay_title">Show over other apps</string>
+    <string name="overlay_note">While the agent works and you are in another app, a small card at the top says what it is doing, lets you stop it, and shows its questions with buttons to choose or a box to type in. Screen control brings this along; without it, allow it here.</string>
+    <string name="overlay_with_screen">On (with Screen control)</string>
+    <string name="overlay_no_settings">Open Android Settings → Apps → Termant → Display over other apps yourself.</string>
 </resources>

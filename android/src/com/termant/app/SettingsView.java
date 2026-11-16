@@ -51,6 +51,9 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         void onOpenScreenSettings();
 
         void onOpenLink(String url);
+
+        /** Opens Android's "display over other apps" page for Termant. */
+        void onOpenOverlaySettings();
     }
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
@@ -230,6 +233,17 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                     @Override
                     public void onClick(View v) {
                         askScreenControl(screenOn);
+                    }
+                });
+
+        // The card over other apps: Screen control brings it along; without, Android has to allow it.
+        final boolean overApps = Overlay.allowed(c);
+        row(c.getString(R.string.overlay_title),
+                c.getString(overApps ? R.string.on : screenOn ? R.string.overlay_with_screen : R.string.off),
+                c.getString(R.string.overlay_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        host.onOpenOverlaySettings();
                     }
                 });
 

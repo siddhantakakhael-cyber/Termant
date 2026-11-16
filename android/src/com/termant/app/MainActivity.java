@@ -239,6 +239,16 @@ public class MainActivity extends Activity
             }
 
             @Override
+            public void onOpenOverlaySettings() {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            android.net.Uri.parse("package:" + getPackageName())));
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, R.string.overlay_no_settings, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
             public void onOpenLink(String url) {
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)));
@@ -273,6 +283,7 @@ public class MainActivity extends Activity
         visible = this;
         // back from Android's settings: Screen control may have been turned on or off there
         if (settingsPanel != null) settingsPanel.refresh();
+        TermService.pokeSurfaces(); // the card over other apps goes away, a waiting question comes here
     }
 
     @Override
@@ -280,11 +291,99 @@ public class MainActivity extends Activity
         if (voice != null) voice.cancel(); // never listen from the background
         onScreen = false;
         if (visible == this) visible = null;
+        TermService.pokeSurfaces(); // the agent's work and questions now show over the other app
         super.onStop();
+    }
+
+    // ------------------------------------------------------------ a question from the agent
+
+    private android.app.AlertDialog questionDialog;
+    private Ask.Question questionShown;
+
+    /** Shows the question that is waiting (or takes an answered one away) if Termant is on screen. */
+    static void showQuestion() {
+        MainActivity here = visible;
+        if (here != null) here.syncQuestion();
+    }
+
+    private void syncQuestion() {
+        final Ask.Question q = Ask.pending();
+        if (q == questionShown && (q == null || questionDialog != null)) return;
+        if (questionDialog != null) {
+            questionDialog.setOnCancelListener(null);
+            questionDialog.dismiss();
+            questionDialog = null;
+        }
+        questionShown = q;
+        if (q == null || isFinishing()) return;
+
+        android.app.AlertDialog.Builder b = new android.app.AlertDialog.Builder(this);
+        Context c = b.getContext();
+        float density = getResources().getDisplayMetrics().density;
+        int gap = Math.round(8 * density);
+        android.widget.LinearLayout box = new android.widget.LinearLayout(c);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(3 * gap, gap, 3 * gap, 0);
+        TextView text = new TextView(c);
+        text.setText(q.text);
+        text.setTextSize(16);
+        text.setPadding(0, 0, 0, gap);
+        box.addView(text);
+        for (final String choice : q.choices) {
+            android.widget.Button option = new android.widget.Button(c);
+            option.setText(choice);
+            option.setAllCaps(false);
+            option.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Ask.answer(q, choice);
+                }
+            });
+            box.addView(option);
+        }
+        final android.widget.EditText input = new android.widget.EditText(c);
+        input.setHint(q.choices.isEmpty() ? R.string.answer_hint : R.string.ask_write);
+        input.setMaxLines(3);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        box.addView(input);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(c);
+        scroll.addView(box);
+        b.setTitle(R.string.ask_from)
+                .setView(scroll)
+                .setPositiveButton(R.string.ask_send, null)
+                .setNegativeButton(R.string.ask_close, new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        Ask.close(q);
+                    }
+                })
+                .setOnCancelListener(new android.content.DialogInterface.OnCancelListener() {
+                    @Override
+                    public void onCancel(android.content.DialogInterface dialog) {
+                        Ask.close(q);
+                    }
+                });
+        questionDialog = b.create();
+        questionDialog.setCanceledOnTouchOutside(false);
+        questionDialog.show();
+        // "Send" keeps the dialog open while the box is empty
+        questionDialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Ask.answer(q, input.getText().toString());
+            }
+        });
+        android.util.Log.i("Termant", "ask: shown in Termant");
     }
 
     @Override
     protected void onDestroy() {
+        if (questionDialog != null) {
+            questionDialog.setOnCancelListener(null);
+            questionDialog.dismiss();
+            questionDialog = null;
+        }
         if (voice != null) voice.destroy();
         Installer.detach(this);
         chatPanel.detach();

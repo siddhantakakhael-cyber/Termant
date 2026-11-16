@@ -63,12 +63,14 @@ public final class ScreenService extends AccessibilityService {
     protected void onServiceConnected() {
         instance = this;
         android.util.Log.i("Termant", "screen control: on");
+        TermService.pokeSurfaces();
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         instance = null;
         android.util.Log.i("Termant", "screen control: off");
+        TermService.pokeSurfaces();
         return super.onUnbind(intent);
     }
 
@@ -144,13 +146,13 @@ public final class ScreenService extends AccessibilityService {
     /** The window in front: the active one, else (a dialog of another app, say) the front-most app window. */
     private AccessibilityNodeInfo front() {
         AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root != null) return root;
+        if (root != null && !isCard(root)) return root;
         try {
             AccessibilityNodeInfo other = null;
             for (android.view.accessibility.AccessibilityWindowInfo w : getWindows()) { // front to back
                 if (w.getType() != android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) continue;
                 AccessibilityNodeInfo r = w.getRoot();
-                if (r == null) continue;
+                if (r == null || isCard(r)) continue;
                 if (w.isActive() || w.isFocused()) return r;
                 if (other == null) other = r;
             }
@@ -158,6 +160,12 @@ public final class ScreenService extends AccessibilityService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /** Termant's own card over another app is not part of that app's screen. */
+    private boolean isCard(AccessibilityNodeInfo root) {
+        return Overlay.isShown() && !MainActivity.isOnScreen()
+                && getPackageName().contentEquals(root.getPackageName() == null ? "" : root.getPackageName());
     }
 
     /** The same, waiting a moment when a screen is just changing over. */
@@ -224,7 +232,30 @@ public final class ScreenService extends AccessibilityService {
 
     // ------------------------------------------------------------ acting
 
+    private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    /** Termant's card over the app must not catch the agent's own taps: they are meant for what is under it. */
     private boolean gesture(Path path, long ms) throws InterruptedException {
+        if (!Overlay.isShown()) return touch(path, ms);
+        setCardAside(true);
+        Thread.sleep(150); // until Android has taken note
+        try {
+            return touch(path, ms);
+        } finally {
+            setCardAside(false);
+        }
+    }
+
+    private void setCardAside(final boolean aside) {
+        main.post(new Runnable() {
+            @Override
+            public void run() {
+                Overlay.letThrough(aside);
+            }
+        });
+    }
+
+    private boolean touch(Path path, long ms) throws InterruptedException {
         GestureDescription g = new GestureDescription.Builder()
                 .addStroke(new GestureDescription.StrokeDescription(path, 0, ms)).build();
         final CountDownLatch done = new CountDownLatch(1);

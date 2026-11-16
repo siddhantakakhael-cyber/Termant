@@ -162,6 +162,7 @@
         <item>Tool chala raha hoon</item>
         <item>Model busy hai, dobara koshish kar raha hoon</item>
         <item>Nateeja dekh raha hoon</item>
+        <item>Aapke jawab ka intezaar hai</item>
     </string-array>
     <string name="activity_setup">AI agent install ho raha hai (sirf ek baar)</string>
     <string-array name="tips">
@@ -217,4 +218,15 @@
         <item>Aaj ki badi khabrein web par dhoondh kar batao</item>
         <item>Python script likho aur chalao jo pehle 20 prime number dikhaye</item>
     </string-array>
+    <!-- Over other apps: what the agent is doing, and its questions. -->
+    <string name="ask_from">Termant pooch raha hai</string>
+    <string name="ask_close">Chhodein</string>
+    <string name="ask_write">Kuch aur likhein</string>
+    <string name="answer_hint">Apna jawab likhein</string>
+    <string name="ask_channel">Agent ke sawaal</string>
+    <string name="ask_notification">Agent aapse kuch poochna chahta hai</string>
+    <string name="overlay_title">Doosre apps ke upar dikhayein</string>
+    <string name="overlay_note">Jab agent kaam kar raha ho aur aap kisi doosre app mein hon, to upar ek chhota card batata hai ki woh kya kar raha hai, use rokne ka button deta hai, aur uske sawaal dikhata hai: chunne ke buttons ya likhne ka box. Screen control ke saath yeh apne aap milta hai; uske bina yahan se ijazat dein.</string>
+    <string name="overlay_with_screen">Chalu (Screen control ke saath)</string>
+    <string name="overlay_no_settings">Android Settings → Apps → Termant → Display over other apps khud kholein.</string>
 </resources>

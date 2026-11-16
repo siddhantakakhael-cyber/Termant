@@ -632,13 +632,13 @@ final class ChatView extends LinearLayout implements Chat.Listener {
      * with a comet at the bottom. It reads the chat's state on every frame,
      * so the list need not be rebuilt when the work changes.
      */
-    private static final class Working extends View {
+    static final class Working extends View {
         private static final int[] RING = {0xffff7a45, 0xffd2a8ff, 0xff79c0ff, 0xff56d364, 0xffff7a45};
         private static final String[] ICONS = {
                 "\uD83D\uDE80", "\uD83D\uDCE1", "\uD83E\uDDE0", "\u270D\uFE0F", "\uD83D\uDCBB", "\uD83D\uDCE6",
                 "\uD83D\uDCF1", "\uD83D\uDC46", "\uD83D\uDC19", "\uD83D\uDCC4", "\u270F\uFE0F", "\uD83D\uDD0E",
                 "\uD83C\uDF10", "\uD83D\uDD17", "\uD83D\uDDD2\uFE0F", "\uD83E\uDD1D", "\uD83E\uDDE9", "\u23F3",
-                "\uD83D\uDC40"};
+                "\uD83D\uDC40", "\u2753"};
         private static final String SETUP_ICON = "\u2B07\uFE0F";
         private static final long TIP_MS = 5200, FADE_MS = 380, TIPS_AFTER_MS = 3500;
 

@@ -173,6 +173,7 @@ final class Chat {
     private final File store;
     private final Handler main = new Handler(Looper.getMainLooper());
     private Listener listener;
+    private Runnable watcher;
     private Process process;
     private int run; // identifies the current request; stale threads are ignored
     private boolean busy;
@@ -195,7 +196,7 @@ final class Chat {
     static final int ACT_START = 0, ACT_ASK = 1, ACT_THINK = 2, ACT_WRITE = 3, ACT_SHELL = 4,
             ACT_INSTALL = 5, ACT_PHONE = 6, ACT_SCREEN = 7, ACT_GITHUB = 8, ACT_READ = 9,
             ACT_EDIT = 10, ACT_FIND = 11, ACT_SEARCH = 12, ACT_FETCH = 13, ACT_PLAN = 14,
-            ACT_HELPER = 15, ACT_TOOL = 16, ACT_RETRY = 17, ACT_RESULT = 18;
+            ACT_HELPER = 15, ACT_TOOL = 16, ACT_RETRY = 17, ACT_RESULT = 18, ACT_WAIT = 19;
     /** One of the ACT_ values, the command, file or search it is about, and when it began. */
     volatile int activity = ACT_START;
     volatile String activityDetail = "";
@@ -203,7 +204,7 @@ final class Chat {
 
     private static final String[] ACT_NAMES = {"start", "ask", "think", "write", "shell", "install", "phone",
             "screen", "github", "read", "edit", "find", "search", "fetch", "plan", "helper", "tool", "retry",
-            "result"};
+            "result", "wait"};
     /** The kinds of work of the current request in order, for the log. */
     private final StringBuilder trail = new StringBuilder();
 
@@ -245,6 +246,7 @@ final class Chat {
             case "shell":
             case "bash": {
                 String command = input == null ? "" : oneLine(input.optString("command"));
+                if (command.startsWith("phone ask ")) return ACT_WAIT;
                 if (SCREEN_USE.matcher(command).matches()) return ACT_SCREEN;
                 if (command.startsWith("phone ") || command.equals("phone")) return ACT_PHONE;
                 if (INSTALLS.matcher(command).matches()) return ACT_INSTALL;
@@ -360,6 +362,11 @@ final class Chat {
         listener = l;
     }
 
+    /** Told about every change as well; stays for as long as the service does (the listener is the screen). */
+    void setWatcher(Runnable r) {
+        watcher = r;
+    }
+
     boolean isBusy() {
         return busy;
     }
@@ -378,6 +385,7 @@ final class Chat {
 
     void stop() {
         if (!busy) return;
+        Ask.close(Ask.pending()); // nobody is waiting for that answer any more
         run++;
         busy = false;
         status = "";
@@ -845,6 +853,7 @@ final class Chat {
 
     private void changed() {
         if (listener != null) listener.onChatChanged();
+        if (watcher != null) watcher.run();
     }
 
     // ------------------------------------------------------------ storage

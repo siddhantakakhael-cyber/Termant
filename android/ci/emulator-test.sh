@@ -93,6 +93,7 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t2.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t3.sh'" < android/ci/guest-test3.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest-test4.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest-test5.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -414,6 +415,42 @@ tap_on 'text="Cancel"' || tap_on 'text="CANCEL"' || adb shell input keyevent 4
 sleep 1
 tap_on 'content-desc="Back to the chat"' || finish "FAIL Back arrow not found after the tools rows"
 sleep 2
+
+echo "Over other apps: a card says what the agent is doing while Termant is not on screen"
+wait_log() { # <text in the app's log> <how many such lines there must be> <tries of 1 s>: prints "X Y" from the last one
+  for _ in $(seq 1 "$3"); do
+    if [ "$(adb logcat -d -s Termant:I | grep -c "$1")" -ge "$2" ]; then
+      adb logcat -d -s Termant:I | grep "$1" | tail -n 1 | grep -o '[0-9]*,[0-9]*$' | tr ',' ' '
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+adb shell appops set "$PKG" SYSTEM_ALERT_WINDOW allow
+tap_on 'content-desc="Start a new chat"'
+sleep 2
+tap_on 'class="android.widget.EditText"' || finish "FAIL message box not found for the card test"
+sleep 2
+adb shell input text 'Write%sa%sstory%sof%sabout%s400%swords%sabout%sa%sriver.%sDo%snot%srun%sany%scommand'
+sleep 1
+tap_on 'content-desc="Send"' || finish "FAIL Send button not found for the card test"
+adb shell input keyevent 3 # Home: the user goes elsewhere while the agent works
+sleep 3
+shot 42-card-over-home
+adb logcat -d -s Termant:I | grep 'overlay:' > "$OUT/overlay.txt"
+grep -q 'overlay: over other apps' "$OUT/overlay.txt" || finish "FAIL no card over other apps while the agent works"
+grep -q 'overlay: status shown' "$OUT/overlay.txt" || finish "FAIL the card does not show what the agent is doing"
+if stop=$(wait_log 'overlay: stop at' 1 5); then adb shell input tap $stop; fi
+sleep 3
+shot 43-card-stopped
+adb logcat -d -s Termant:I | grep 'overlay:' > "$OUT/overlay.txt"
+if grep -q 'overlay: stopped by the user' "$OUT/overlay.txt"; then echo "stop button on the card: worked"; else echo "stop button on the card: not reached (the reply may have ended first)"; fi | tee "$OUT/overlay-stop.txt"
+grep -q 'overlay: hidden' "$OUT/overlay.txt" || finish "FAIL the card stayed after the agent had stopped"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 3
+wait_for_reply 20 || finish "FAIL the chat did not end after the card's stop button"
+shot 43b-after-stop
 tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button not found for the screen control test"
 sleep 3
 # What the user does by hand in Android's Accessibility settings.
@@ -449,6 +486,45 @@ grep -q '^other: password=ci-token-not-real' "$OUT/result5.txt" && finish "FAIL 
 grep -q '^git-name=ci-user' "$OUT/result5.txt" || finish "FAIL git did not get the account's name for commits"
 grep -q '"websearch"' "$OUT/result5.txt" || finish "FAIL web search is not in the agent's settings"
 grep -q '"provider": *"exa"' "$OUT/result5.txt" || finish "FAIL web search has no search service chosen"
+
+echo "Questions from the agent: over another app, then inside Termant"
+type_line 'sh%st6.sh'
+at=$(wait_log 'overlay: choice 1 at' 1 40) || { shot 44-no-question; finish "FAIL the question did not appear over the other app"; }
+sleep 1
+shot 44-question-choices
+adb shell input tap $at
+at=$(wait_log 'overlay: box at' 1 30) || { shot 45-no-box; finish "FAIL the question with a box to type in did not appear"; }
+sleep 1
+adb shell input tap $at
+sleep 1
+adb shell input text 'hello'
+sleep 1
+shot 45-question-typing
+at=$(wait_log 'overlay: send at' 1 5) || finish "FAIL no send button on the question"
+adb shell input tap $at
+at=$(wait_log 'overlay: close at' 3 30) || { shot 46-no-third; finish "FAIL the third question did not appear"; }
+sleep 1
+shot 46-question-to-skip
+adb shell input tap $at
+# the last question is asked with Termant on screen: a dialog there
+answered=
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  sleep 2
+  if tap_on 'text="One"'; then answered=1; break; fi
+done
+shot 47-question-in-termant
+[ -n "$answered" ] || finish "FAIL the question did not appear inside Termant"
+wait_for_end files/rootfs/root/result6.txt 20 || { run_as cat files/rootfs/root/result6.txt > "$OUT/result6.txt"; finish "FAIL the questions test did not finish"; }
+run_as cat files/rootfs/root/result6.txt > "$OUT/result6.txt"
+cat "$OUT/result6.txt"
+adb logcat -d -s Termant:I | grep 'overlay:\|ask:' > "$OUT/overlay.txt"
+grep -q 'overlay: with screen control' "$OUT/overlay.txt" || finish "FAIL the card was not shown through screen control"
+grep -q '^ask1-exit=0 answer=Alpha$' "$OUT/result6.txt" || finish "FAIL the chosen answer did not come back"
+grep -q '^ask2-exit=0 answer=hello$' "$OUT/result6.txt" || finish "FAIL the typed answer did not come back"
+grep -q '^ask3-exit=1' "$OUT/result6.txt" || finish "FAIL a skipped question still gave an answer"
+grep -q '^ask-usage-exit=1' "$OUT/result6.txt" || finish "FAIL phone ask without a question was accepted"
+grep -q '^ask-many-exit=1' "$OUT/result6.txt" || finish "FAIL phone ask accepted too many choices"
+grep -q '^ask4-exit=0 answer=One$' "$OUT/result6.txt" || finish "FAIL the answer given inside Termant did not come back"
 adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
 sleep 3
 tap_on 'content-desc="Settings"' || { tap_on 'content-desc="Back to the chat"'; sleep 2; tap_on 'content-desc="Settings"'; }

@@ -183,6 +183,34 @@ nothing to read; Android's own permission questions ("Allow … to send
 notifications?") could not be read in the automated test, so answer those
 yourself; `phone key enter` needs Android 11 or newer.
 
+## Over other apps: what the agent is doing, and its questions
+
+When the agent is at work and Termant is not on the screen (the agent opened
+another app, or you went elsewhere), a small card at the top of the screen
+says what it is doing, the same words as in the chat, with a **■** button
+that stops it. A tap on the card brings Termant back.
+
+When the agent needs something from you to go on, it asks right there
+instead of stopping:
+
+```
+phone ask "Kaunsa size order karoon?" "Small" "Medium" "Large"    buttons to choose from
+phone ask "Kis naam se save karoon?"                               a box to type in
+```
+
+With choices you tap one (or *Type something else*); without, you type. **✕**
+skips the question, and the agent is told not to do the step it asked about.
+The command waits up to 4 minutes and prints the answer. Inside Termant the
+same question comes as a dialog. The agent is told to use this for the yes it
+needs before sending, paying, deleting or changing an account.
+
+The card needs one of two things: Screen control (it then comes along, with
+nothing else to allow), or Settings → *Show over other apps*, which opens
+Android's "display over other apps" page for Termant. With neither, a
+question arrives as a notification that opens Termant. While the agent itself
+taps or swipes, the card lets the touch through to the app under it, and
+`phone screen` leaves the card out.
+
 ## Phone control
 
 The agent can use the phone, not only write code. In the chat, type (or

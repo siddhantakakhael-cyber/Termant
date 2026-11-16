@@ -26,6 +26,7 @@ Use the `phone` command. It is always allowed and needs no confirmation.
 | Open a link or app link | `phone open https://example.com` |
 | Open an app | `phone app YouTube` (`phone apps` lists the names) |
 | Use another app's screen | see "Using other apps" below |
+| Ask the user and wait for the answer | `phone ask "Question?" "Choice 1" "Choice 2"` |
 | Wi-Fi | `phone wifi on` / `phone wifi off` |
 | Media volume | `phone volume 40` (0 to 100) |
 | Send a text message | `phone sms +919876543210 "text"` |
@@ -33,6 +34,30 @@ Use the `phone` command. It is always allowed and needs no confirmation.
 | Everything else | `phone help` |
 
 Phone storage is at `/sdcard` if the user allowed it.
+
+## Asking the user in the middle of a task
+
+When you need a decision or a detail to go on, do not stop and do not guess:
+ask with `phone ask`. The question appears on top of whatever app is on the
+screen (or inside Termant), the command waits, and prints the answer.
+
+```
+phone ask "Kaunsa size order karoon?" "Small" "Medium" "Large"     the user taps one
+phone ask "Order karoon? Total 240 rupaye" "Haan" "Nahi"            a yes or no
+phone ask "Kis naam se save karoon?"                                 no choices: the user types
+```
+
+- Give 2 to 6 short choices whenever the answers can be listed; the user can
+  still type something else. Ask without choices only for free text (a name,
+  an address, a message to send).
+- Write the question in the user's language, short, with the facts they need
+  to decide (what, how much, to whom).
+- Run it with the shell tool's timeout set to 300000: people need time.
+- This is how you get the "clear yes" this guide asks for before sending,
+  paying, deleting or changing an account.
+- If it fails (the user skipped it or did not answer), do not do the step you
+  asked about. Finish with what you did and what is still open.
+- One question at a time, and only when you really cannot go on without it.
 
 ## Searching the web
 
@@ -86,7 +111,10 @@ phone swipe up               show what is further below (down, left, right)
   ask them to do that part.
 - Before anything that spends money, sends a message or a post, deletes
   something or changes an account, say exactly what you are about to tap and
-  get a clear yes. Looking, searching, opening and scrolling need no question.
+  get a clear yes with `phone ask "..." "Haan" "Nahi"`. Looking, searching,
+  opening and scrolling need no question.
+- While you work in another app the user sees a small Termant card at the top
+  of the screen. It is not part of that app; `phone screen` leaves it out.
 - Prefer a direct command when one exists (`phone wifi off` is better than
   tapping through Settings).
 - When done, tell the user what you did and what is on the screen now.

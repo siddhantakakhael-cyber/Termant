@@ -71,6 +71,8 @@ final class PhoneBridge {
                     + "  phone battery               charge level\n"
                     + "  phone clipboard get|set TEXT\n"
                     + "  phone open URL              open a link\n"
+                    + "  phone ask QUESTION [CHOICE...]   ask the user and wait: with choices they pick one, without they type;\n"
+                    + "                              shown over whatever app is on screen; prints the answer\n"
                     + "  phone app NAME              open an app by its name (phone apps lists them)\n"
                     + "  phone screen                what is on the screen now, as a numbered list\n"
                     + "  phone tap N | TEXT | X Y    tap item N of that list, the item with these words, or a point\n"
@@ -315,6 +317,9 @@ final class PhoneBridge {
                 return clipboard(args);
             case "open":
                 return open(rest(args, 1));
+            case "ask":
+                return Ask.ask(service, args.size() > 1 ? args.get(1) : "",
+                        args.size() > 2 ? args.subList(2, args.size()) : new ArrayList<String>());
             case "apps":
                 return ScreenService.apps(service);
             case "app": {
