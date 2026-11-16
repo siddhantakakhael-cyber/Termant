@@ -3,6 +3,10 @@ package com.termant.app;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.system.Os;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -223,5 +227,61 @@ final class Config {
         // a key changes which models exist
         prefs(c).edit().remove("models").apply();
         return true;
+    }
+
+    // ------------------------------------------------------------ MCP servers
+
+    /** Name to command, for the MCP servers OpenCode may connect to as tools. */
+    static Map<String, String> mcpServers(Context c) {
+        try {
+            JSONObject o = new JSONObject(prefs(c).getString("mcp_servers", "{}"));
+            Map<String, String> servers = new LinkedHashMap<>();
+            java.util.Iterator<String> names = o.keys();
+            while (names.hasNext()) {
+                String name = names.next();
+                servers.put(name, o.getString(name));
+            }
+            return servers;
+        } catch (Exception e) {
+            return new LinkedHashMap<>();
+        }
+    }
+
+    static void setMcpServers(Context c, Map<String, String> servers) {
+        JSONObject o = new JSONObject();
+        for (Map.Entry<String, String> e : servers.entrySet()) {
+            try { o.put(e.getKey(), e.getValue()); } catch (Exception ignored) {}
+        }
+        prefs(c).edit().putString("mcp_servers", o.toString()).apply();
+    }
+
+    /** Writes opencode.jsonc (the phone-control permissions plus the user's MCP
+     *  servers) into Ubuntu's OpenCode config dir, so the agent picks the MCP
+     *  servers up on its next run. A no-op until Ubuntu is installed. */
+    static void writeOpencodeConfig(Context c) {
+        try {
+            File root = Ubuntu.rootfs(c);
+            File dir = new File(root, "root/.config/opencode");
+            dir.mkdirs();
+            File conf = new File(dir, "opencode.jsonc");
+            JSONObject o = new JSONObject();
+            o.put("$schema", "https://opencode.ai/config.json");
+            JSONArray perms = new JSONArray();
+            perms.put(new JSONObject().put("action", "shell").put("resource", "phone *").put("effect", "allow"));
+            perms.put(new JSONObject().put("action", "shell").put("resource", "date *").put("effect", "allow"));
+            o.put("permissions", perms);
+            JSONObject mcp = new JSONObject();
+            for (Map.Entry<String, String> e : mcpServers(c).entrySet()) {
+                JSONObject s = new JSONObject();
+                s.put("command", e.getValue());
+                mcp.put(e.getKey(), s);
+            }
+            o.put("mcpServers", mcp);
+            Installer.write(conf, o.toString(2) + "\n");
+            try { Os.chmod(conf.getPath(), 0644); } catch (Exception ignored) {}
+        } catch (Exception e) {
+            // Ubuntu not installed yet: the first agent run copies the template instead
+            Log.e("Termant", "cannot write MCP config", e);
+        }
     }
 }

@@ -5,5 +5,10 @@
   "permissions": [
     { "action": "shell", "resource": "phone *", "effect": "allow" },
     { "action": "shell", "resource": "date *", "effect": "allow" }
-  ]
+  ],
+  // MCP servers the agent can connect to and use as tools.
+  // Add your own in Termant's Settings → MCP servers, for example:
+  // "mcpServers": {
+  //   "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/sdcard"] }
+  // }
 }

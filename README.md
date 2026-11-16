@@ -113,6 +113,13 @@ DeepSeek, Cerebras, Mistral). With a key, that provider's models appear in the m
 billed to your account; without one, free models are used. Keys are stored only
 on the phone, in Ubuntu at `~/.config/termant/keys.env`.
 
+**MCP servers:** in Settings → MCP servers you can add servers (name + command)
+that OpenCode connects to and uses as tools, for example a filesystem server
+so the agent can read files in phone storage. Termant writes them to
+`~/.config/opencode/opencode.jsonc` inside Ubuntu before each agent run. You
+need an actual MCP server and internet for it to work; this is not tested on a
+real phone yet.
+
 ## Phone control
 
 The agent can use the phone, not only write code. In the chat, type (or

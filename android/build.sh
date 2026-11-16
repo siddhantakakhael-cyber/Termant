@@ -74,3 +74,5 @@ package Termant-debug --debug-mode
 ls -l Termant.apk Termant-debug.apk
 # 0.6.0
 # 0.7.0
+
+# 0.9.0

@@ -24,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -168,6 +169,26 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                     });
         }
 
+        heading(R.string.mcp_title, R.string.mcp_note);
+        Map<String, String> servers = Config.mcpServers(c);
+        if (servers.isEmpty()) {
+            TextView none = new TextView(c);
+            none.setText(R.string.mcp_none);
+            none.setTextColor(MUTED);
+            none.setTextSize(15);
+            none.setPadding(dp(4), dp(4), 0, dp(4));
+            content.addView(none);
+        }
+        for (final Map.Entry<String, String> e : servers.entrySet()) {
+            content.addView(mcpCard(e.getKey(), e.getValue()), cardSize());
+        }
+        row(c.getString(R.string.mcp_add), "+", null, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                addMcpServer(null, null);
+            }
+        });
+
         heading(R.string.settings_rules, R.string.settings_rules_note);
         if (rules == null || rules.rules.isEmpty()) {
             TextView none = new TextView(c);
@@ -246,6 +267,91 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
             Toast.makeText(c, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
         }
         refresh();
+    }
+
+    private void addMcpServer(final String existingName, final String existingCommand) {
+        final Context c = getContext();
+        LinearLayout wrap = new LinearLayout(c);
+        wrap.setOrientation(VERTICAL);
+        wrap.setPadding(dp(12), dp(8), dp(12), 0);
+        final EditText nameBox = new EditText(c);
+        nameBox.setHint(R.string.mcp_name_hint);
+        nameBox.setSingleLine(true);
+        if (existingName != null) nameBox.setText(existingName);
+        final EditText cmdBox = new EditText(c);
+        cmdBox.setHint(R.string.mcp_command_hint);
+        cmdBox.setSingleLine(true);
+        if (existingCommand != null) cmdBox.setText(existingCommand);
+        wrap.addView(nameBox);
+        wrap.addView(cmdBox);
+        new AlertDialog.Builder(c)
+                .setTitle(existingName == null ? R.string.mcp_add : R.string.mcp_edit)
+                .setView(wrap)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String name = nameBox.getText().toString().trim();
+                        String command = cmdBox.getText().toString().trim();
+                        if (name.isEmpty() || command.isEmpty()) {
+                            Toast.makeText(c, R.string.mcp_bad, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        Map<String, String> servers = new LinkedHashMap<>(Config.mcpServers(c));
+                        if (existingName != null && !existingName.equals(name)) servers.remove(existingName);
+                        servers.put(name, command);
+                        Config.setMcpServers(c, servers);
+                        Config.writeOpencodeConfig(c);
+                        refresh();
+                        Toast.makeText(c, R.string.mcp_saved, Toast.LENGTH_LONG).show();
+                    }
+                }).show();
+    }
+
+    private View mcpCard(final String name, final String command) {
+        final Context c = getContext();
+        LinearLayout card = new LinearLayout(c);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(16), dp(12), dp(6), dp(12));
+        card.setBackground(rounded(SURFACE, 14));
+
+        LinearLayout text = new LinearLayout(c);
+        text.setOrientation(VERTICAL);
+        TextView n = new TextView(c);
+        n.setText(name);
+        n.setTextColor(TEXT);
+        n.setTextSize(16);
+        text.addView(n);
+        TextView cmd = new TextView(c);
+        cmd.setText(command);
+        cmd.setTypeface(Typeface.MONOSPACE);
+        cmd.setTextColor(MUTED);
+        cmd.setTextSize(12);
+        cmd.setMaxLines(2);
+        cmd.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        text.addView(cmd);
+        card.addView(text, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView delete = new TextView(c);
+        delete.setText("\\u2715");
+        delete.setContentDescription(c.getString(R.string.mcp_remove));
+        delete.setTextColor(MUTED);
+        delete.setTextSize(16);
+        delete.setGravity(Gravity.CENTER);
+        delete.setBackground(pressable(0x00000000, 20));
+        delete.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Map<String, String> servers = new LinkedHashMap<>(Config.mcpServers(c));
+                servers.remove(name);
+                Config.setMcpServers(c, servers);
+                Config.writeOpencodeConfig(c);
+                refresh();
+                Toast.makeText(c, R.string.mcp_saved, Toast.LENGTH_LONG).show();
+            }
+        });
+        card.addView(delete, new LayoutParams(dp(40), dp(40)));
+        return card;
     }
 
     // ------------------------------------------------------------ pieces

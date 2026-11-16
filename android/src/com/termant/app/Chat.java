@@ -279,6 +279,8 @@ final class Chat {
         new Thread("termant-chat") {
             @Override
             public void run() {
+                // Make the user's MCP servers available to OpenCode this run.
+                Config.writeOpencodeConfig(context);
                 for (int attempt = 0; ; attempt++) {
                     final String model = models.get(attempt);
                     int exit = -1;
