@@ -76,3 +76,4 @@ ls -l Termant.apk Termant-debug.apk
 # 0.7.0
 
 # 0.9.0
+# 0.9.1

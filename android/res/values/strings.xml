@@ -5,98 +5,103 @@
     <!-- used by the vendored terminal view -->
     <string name="paste_text">Paste</string>
     <string name="copy_text">Copy</string>
-    <string name="text_selection_more">More…</string>
+    <string name="text_selection_more">Zyada…</string>
 
-    <string name="setup_title">Setting up Ubuntu 24.04</string>
-    <string name="setup_note">One-time download of about 30 MB. After this, Ubuntu and everything you install stay on your phone.</string>
-    <string name="setup_failed">Setup did not finish</string>
-    <string name="retry">Try again</string>
-    <string name="unsupported_device">This phone\'s processor type (%1$s) is not supported. Termant needs ARM or x86-64.</string>
+    <string name="setup_title">Ubuntu 24.04 setup ho raha hai</string>
+    <string name="setup_note">Ek baar download karna hoga (lagbhag 30 MB). Iske baad Ubuntu aur jo bhi install karein, woh phone mein rahega.</string>
+    <string name="setup_failed">Setup poora nahi hua</string>
+    <string name="retry">Dobara koshish karein</string>
+    <string name="unsupported_device">Yeh phone\'s processor type (%1$s) is supported nahi. Termant ko ARM ya x86-64 chahiye.</string>
 
-    <string name="step_find">Finding the Ubuntu image…</string>
-    <string name="step_download">Downloading Ubuntu… %1$d of %2$d MB</string>
-    <string name="step_extract">Unpacking Ubuntu…</string>
-    <string name="step_configure">Finishing setup…</string>
+    <string name="step_find">Ubuntu image dhoonda raha hai…</string>
+    <string name="step_download">Ubuntu download ho raha hai… %1$d of %2$d MB</string>
+    <string name="step_extract">Ubuntu unpack ho raha hai…</string>
+    <string name="step_configure">Setup finish ho raha hai…</string>
 
     <string name="notification_channel">Terminal sessions</string>
-    <string name="notification_text_one">1 session running</string>
-    <string name="notification_text_many">%1$d sessions running</string>
-    <string name="notification_exit">Exit</string>
+    <string name="notification_text_one">1 session chal raha hai</string>
+    <string name="notification_text_many">%1$d sessions chal rahe hain</string>
+    <string name="notification_exit">Band karein</string>
 
-    <string name="alarm_ringing">Tap to stop</string>
-    <string name="alarm_stop">Stop</string>
-    <string name="ask_hint">Ask in Hindi or English…</string>
-    <string name="ask_send">Send</string>
-    <string name="ask_voice">Speak</string>
-    <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>
-    <string name="rule_failed">Rule failed: %1$s</string>
+    <string name="alarm_ringing">Band karne ke liye tap karein</string>
+    <string name="alarm_stop">Band karein</string>
+    <string name="ask_hint">Hindi ya English mein poochein…</string>
+    <string name="ask_send">Bhejein</string>
+    <string name="ask_voice">Boliye</string>
+    <string name="voice_missing">Yeh phone mein voice typing app nahi hai. Keyboard ki microphone key ka istemal karein.</string>
+    <string name="rule_failed">Rule fail hua: %1$s</string>
     <string name="model_auto">Auto</string>
     <string name="model_title">Model</string>
-    <string name="model_auto_long">Automatic (a free model)</string>
-    <string name="model_refresh">↻ Refresh the list</string>
-    <string name="model_loading">Loading the model list…</string>
-    <string name="model_not_ready">The model list appears after the agent is downloaded. Send one chat message first.</string>
-    <string name="model_failed">The model list could not be loaded. Check your internet connection.</string>
+    <string name="model_auto_long">Automatic (ek free model)</string>
+    <string name="model_refresh">↻ List refresh karein</string>
+    <string name="model_loading">Model list load ho rahi hai…</string>
+    <string name="model_not_ready">Model list agent download hone ke baad dikhegi. Pehle ek chat message bhejein.</string>
+    <string name="model_failed">Model list load nahi hui. Internet connection check karein.</string>
     <string name="workspace_title">Workspace folder</string>
-    <string name="workspace_new">＋ New folder…</string>
-    <string name="workspace_new_hint">Folder name, e.g. my-website</string>
-    <string name="workspace_bad_name">Use only letters, numbers, dot, dash and underscore.</string>
+    <string name="workspace_new">＋ Naya folder…</string>
+    <string name="workspace_new_hint">Folder ka naam, jaise: my-website</string>
+    <string name="workspace_bad_name">Sirf letters, numbers, dot, dash aur underscore use karein.</string>
     <string name="workspace_storage">Phone storage (/sdcard)</string>
     <string name="settings">Settings</string>
     <string name="settings_agent">Agent</string>
-    <string name="settings_model_note">Which AI model answers in the chat.</string>
-    <string name="settings_workspace_note">The folder in Ubuntu where the agent keeps and runs its files.</string>
-    <string name="settings_keys">Your own API key</string>
-    <string name="settings_keys_note">Optional. Without a key, free models are used. With a key, that company\'s models appear in the model list and are billed to your account. Keys stay on this phone, in Ubuntu at ~/.config/termant/keys.env.</string>
-    <string name="key_not_set">Not set</string>
-    <string name="key_hint">Paste the API key</string>
-    <string name="key_bad">That does not look like an API key (no spaces or quotes).</string>
-    <string name="key_saved">Saved. Pick a model from this provider in the model list.</string>
-    <string name="key_remove">Remove</string>
-    <string name="save">Save</string>
+    <string name="settings_model_note">Chat mein kaunsa AI model jawab degi.</string>
+    <string name="settings_workspace_note">Ubuntu mein woh folder jahan agent files rakhta aur run karta hai.</string>
+    <string name="theme_title">Theme</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_note">Dark ya light mode chunein. Badlav ke liye app ek baar band karke kholein.</string>
+    <string name="theme_restart">Theme change karne ke liye app restart karein.</string>
+    <string name="settings_keys">Apna API key</string>
+    <string name="settings_keys_note">Optional. Bina key ke, free models use hote hain. Key ke saath, company\'s models appear in the model list aur billed hote hain aapke account par. Keys sirf phone par rahein, Ubuntu ke ~/.config/termant/keys.env mein.</string>
+    <string name="key_not_set">Set nahi hai</string>
+    <string name="key_hint">API key paste karein</string>
+    <string name="key_bad">Yeh API key jaisa nahi lagta (spaces ya quotes nahi hone chahiye).</string>
+    <string name="key_saved">Save ho gaya. Model list mein is provider ka model chunein.</string>
+    <string name="key_remove">Hataein</string>
+    <string name="save">Save karein</string>
     <string name="mcp_title">MCP servers</string>
-    <string name="mcp_note">Servers the AI agent can connect to and use as tools, for example to read files or run commands. OpenCode connects to them itself.</string>
-    <string name="mcp_add">Add MCP server</string>
-    <string name="mcp_edit">Edit MCP server</string>
-    <string name="mcp_name">Server name</string>
-    <string name="mcp_name_hint">e.g. filesystem</string>
+    <string name="mcp_note">Woh servers jinse AI agent connect ho kar tools ke taur par use kar sakta hai, jaise files padhna ya commands chalana. OpenCode khud unse connect hota hai.</string>
+    <string name="mcp_add">MCP server add karein</string>
+    <string name="mcp_edit">MCP server edit karein</string>
+    <string name="mcp_name">Server ka naam</string>
+    <string name="mcp_name_hint">Jaise: filesystem</string>
     <string name="mcp_command">Command</string>
     <string name="mcp_command_hint">npx -y @modelcontextprotocol/server-filesystem /sdcard</string>
-    <string name="mcp_remove">Remove</string>
-    <string name="mcp_none">No MCP servers yet.</string>
-    <string name="mcp_saved">MCP servers saved.</string>
-    <string name="mcp_bad">Give both a name and a command.</string>
+    <string name="mcp_remove">Hataein</string>
+    <string name="mcp_none">Abhi koi MCP server nahi hai.</string>
+    <string name="mcp_saved">MCP servers save ho gaye.</string>
+    <string name="mcp_bad">Naam aur command dono dein.</string>
     <string name="settings_rules">Automation rules</string>
-    <string name="settings_rules_note">Rules run by themselves, also after the phone restarts, as long as Termant is not force-stopped. Create one by asking in the chat, for example: \"roz raat 11 baje WiFi band karo\" or \"jab charging lage toh backup chalao\".</string>
-    <string name="rules_none">No rules yet.</string>
-    <string name="rule_delete">Delete rule</string>
-    <string name="rule_never">not run yet</string>
-    <string name="rule_last_ok">last run %1$s, worked</string>
-    <string name="rule_last_failed">last run %1$s, failed</string>
-    <string name="sms_allow">Allow SMS</string>
-    <string name="sms_note">Needed only for rules or requests that send a text message.</string>
-    <string name="chat_provider_error">The model\'s provider refused the request. With an OpenRouter key this usually means: the model is not free and the account has no credit, the free daily limit is used up, or free models are blocked in OpenRouter\'s privacy settings. Pick a model whose name ends in :free, or another provider.</string>
-    <string name="chat_switched">Switched to %1$s: %2$s did not answer (limit reached or not available).</string>
-    <string name="chat_all_failed">Other models were tried too; none answered.</string>
-    <string name="model_switched_now">%1$s (switched automatically)</string>
+    <string name="settings_rules_note">Rules khud chal rahe hain, phone restart ke baad bhi, jab tak Termant force-stop nahi hua. Chat mein pooche kar banayein, jaise: "roz raat 11 baje WiFi band karo" ya "jab charging lage toh backup chalao".</string>
+    <string name="rules_none">Abhi koi rule nahi hai.</string>
+    <string name="rule_delete">Rule hataein</string>
+    <string name="rule_never">Abhi tak nahi chala</string>
+    <string name="rule_last_ok">%1$s pe last run, kaam kiya</string>
+    <string name="rule_last_failed">%1$s pe last run, fail hua</string>
+    <string name="sms_allow">SMS allow karein</string>
+    <string name="sms_note">Sirf un rules ya requests ke liye jo text message bhejte hain.</string>
+    <string name="chat_provider_error">Model\'s provider ne request refuse ki. OpenRouter key ke saath yeh aam taur par matlab: model free nahi hai aur account mein credit nahi hai, free daily limit khatam ho gaya, ya OpenRouter ki privacy settings mein free models block hain. :free naam wala model ya koi doosra provider chunein.</string>
+    <string name="chat_switched">%1$s par switch ho gaya: %2$s jawab nahi diya (limit khatam ya available nahi).</string>
+    <string name="chat_all_failed">Doosre models bhi try kiye gaye; koi jawab nahi diya.</string>
+    <string name="model_switched_now">%1$s (automatic switch hua)</string>
     <string name="on">On</string>
     <string name="off">Off</string>
     <string name="switch_title">Auto-switch</string>
-    <string name="switch_note">When a model stops answering, usually because its free limit is used up, try the next backup model by itself. It stays on the model that worked for 3 hours.</string>
+    <string name="switch_note">Jab model jawab dena band kar de, aam taur par free limit khatam hone ki wajah se, app khud agla backup model try karegi. Woh model 3 ghante tak chalu rahega jo kaam kiya.</string>
     <string name="backups_title">Backup models</string>
-    <string name="backups_all_free">All free</string>
-    <string name="backups_note">Models to switch to, tried from the top of the list. Tick none to use all free models. Models from a provider with your key may cost money unless that key is on a free plan.</string>
+    <string name="backups_all_free">Sab free</string>
+    <string name="backups_note">Models jin par switch kiya ja sakta hai, list ke upar se neeche try kiye jayenge. Koi tick na karein sab free models use karne ke liye. Jiske paas aapki key hai us provider ke models paise le sakte hain jab tak wo free plan par na ho.</string>
     <string name="arena_title">Arena.ai</string>
-    <string name="arena_description">Open Arena.ai in the browser</string>
-    <string name="arena_note">Opens the arena.ai website in your browser, where you sign in and use it. It is separate from this chat: it cannot control the phone or Ubuntu.</string>
-    <string name="arena_no_browser">No browser app was found on this phone.</string>
-    <string name="chat_new">New chat</string>
-    <string name="chat_new_description">Start a new chat</string>
+    <string name="arena_description">Browser mein Arena.ai kholein</string>
+    <string name="arena_note">Browser mein arena.ai website kholta hai, jahan sign in karke use karein. Ye chat se alag hai: ye phone ya Ubuntu control nahi kar sakta.</string>
+    <string name="arena_no_browser">Yeh phone par koi browser app nahi mila.</string>
+    <string name="chat_new">Nayi chat</string>
+    <string name="chat_new_description">Nayi chat shuru karein</string>
     <string name="chat_terminal">Terminal</string>
-    <string name="chat_terminal_description">Open the Ubuntu terminal</string>
+    <string name="chat_terminal_description">Ubuntu terminal kholein</string>
     <string name="chat_back">Chat</string>
-    <string name="chat_back_description">Back to the chat</string>
-    <string name="chat_stop">Stop</string>
+    <string name="chat_back_description">Chat par wapas jayein</string>
+    <string name="chat_stop">Band karein</string>
     <string-array name="thinking">
         <item>Soch raha hoon…</item>
         <item>Dimaag laga raha hoon 💡</item>
@@ -115,18 +120,18 @@
         <item>Bas thoda aur…</item>
     </string-array>
     <string name="history_title">Chat history</string>
-    <string name="chat_try">Try asking</string>
-    <string name="history_recent">Recent chats</string>
-    <string name="history_all">All %1$d chats</string>
-    <string name="history_none">No earlier chats yet.</string>
+    <string name="chat_try">Poochne ki koshish karein</string>
+    <string name="history_recent">Purani chats</string>
+    <string name="history_all">Sab %1$d chats</string>
+    <string name="history_none">Abhi tak koi purani chat nahi hai.</string>
     <string name="history_untitled">Chat</string>
-    <string name="history_delete">Delete chat</string>
-    <string name="chat_stopped">Stopped.</string>
-    <string name="chat_done">Done.</string>
-    <string name="chat_no_answer">The agent gave no answer. Check your internet connection and try again.</string>
-    <string name="chat_setup_failed">The agent could not be set up. Check your internet connection and try again.</string>
-    <string name="chat_welcome">Namaste. What should I do?</string>
-    <string name="chat_welcome_text">Ask in Hindi or English. I can set alarms and timers, control the phone, and write and run code in Ubuntu. The first request downloads the agent (about 100 MB).</string>
+    <string name="history_delete">Chat delete karein</string>
+    <string name="chat_stopped">Band ho gaya.</string>
+    <string name="chat_done">Ho gaya.</string>
+    <string name="chat_no_answer">Agent ne koi jawab nahi diya. Internet connection check karein aur dobara koshish karein.</string>
+    <string name="chat_setup_failed">Agent setup nahi ho paya. Internet connection check karein aur dobara koshish karein.</string>
+    <string name="chat_welcome">Namaste. Kya karna chahte hain?</string>
+    <string name="chat_welcome_text">Hindi ya English mein poochein. Main alarm aur timer set kar sakta hoon, phone control kar sakta hoon, aur Ubuntu mein code likh kar chala sakta hoon. Pehli request mein agent download hoga (lagbhag 100 MB).</string>
     <string-array name="chat_ideas">
         <item>Mujhe subah 7 baje utha dena</item>
         <item>10 minute baad chai ka timer bajana</item>
@@ -134,24 +139,35 @@
         <item>Write and run a Python script that prints the first 20 prime numbers</item>
     </string-array>
     <string name="notification_text_none">Ready</string>
-    <string name="menu_new">New session</string>
+    <string name="menu_new">Nayi session</string>
     <string name="menu_agent">AI agent (OpenCode)</string>
-    <string name="menu_close">Close session</string>
+    <string name="menu_close">Session band karein</string>
     <string name="menu_paste">Paste</string>
-    <string name="menu_reset">Reset terminal</string>
-    <string name="menu_keep_on">Keep screen on</string>
-    <string name="menu_wake">Keep running in background</string>
-    <string name="menu_storage">Allow phone storage (/sdcard)</string>
-    <string name="menu_reinstall">Reinstall Ubuntu…</string>
+    <string name="menu_reset">Terminal reset karein</string>
+    <string name="menu_keep_on">Screen on rakhein</string>
+    <string name="menu_wake">Background mein chalne dein</string>
+    <string name="menu_storage">Phone storage allow karein (/sdcard)</string>
+    <string name="menu_reinstall">Ubuntu dobara install karein…</string>
     <string name="menu_about">About</string>
 
-    <string name="storage_granted">Phone storage is at /sdcard in new sessions.</string>
-    <string name="storage_denied">Storage permission was not granted.</string>
-    <string name="max_sessions">Close a session before opening another.</string>
-    <string name="reinstall_title">Reinstall Ubuntu?</string>
-    <string name="reinstall_text">This erases Ubuntu, every installed package and every file in it, then downloads a fresh copy. Phone storage is not touched.</string>
-    <string name="reinstall_confirm">Erase and reinstall</string>
+    <string name="storage_granted">Nayi sessions mein phone storage /sdcard par hai.</string>
+    <string name="storage_denied">Storage permission mila nahi.</string>
+    <string name="max_sessions">Ek session band karein pehle, phir doosra kholein.</string>
+    <string name="reinstall_title">Ubuntu dobara install karna hai?</string>
+    <string name="reinstall_text">Yeh Ubuntu, har installed package aur usmein ki gayi har file ko delete kar dega, phir fresh copy download karega. Phone storage ko chhua nahi jayega.</string>
+    <string name="reinstall_confirm">Delete karke reinstall karein</string>
     <string name="cancel">Cancel</string>
-    <string name="close">Close</string>
-    <string name="about_text">Termant %1$s\n\nA real Ubuntu 24.04 userland on your phone, without root. Install software with:\n\n    apt update\n    apt install &lt;package&gt;\n\nTap AI for OpenCode, an AI coding agent that can write and run code for you.\n\nPinch to change text size. Long-press to select and copy.\n\nOpen source (GPLv3). Terminal by Termux, userland by PRoot, system by Ubuntu, agent by OpenCode.</string>
+    <string name="close">Band karein</string>
+    <string name="about_text">Termant %1$s
+
+Ek asli Ubuntu 24.04 userland aapke phone par, bina root ke. Software install karein:
+
+    apt update
+    apt install &lt;package&gt;
+
+AI ke liye tap karein OpenCode, ek AI coding agent jo aapke liye code likh kar chala sakta hai.
+
+Text size change karne ke liye pinch karein. Select aur copy karne ke liye long-press karein.
+
+Open source (GPLv3). Terminal Termunk dwara, userland PRoot dwara, system Ubuntu dwara, agent OpenCode dwara.</string>
 </resources>

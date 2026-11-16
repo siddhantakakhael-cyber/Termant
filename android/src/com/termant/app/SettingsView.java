@@ -44,9 +44,9 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         void onPickBackups();
     }
 
-    private static final int BG = MainActivity.BG, SURFACE = MainActivity.SURFACE,
-            SURFACE_HIGH = MainActivity.SURFACE_HIGH, TEXT = MainActivity.TEXT, MUTED = MainActivity.MUTED,
-            ACCENT = MainActivity.ACCENT, ERROR = MainActivity.ERROR;
+    private static final int BG = Theme.bg(), SURFACE = Theme.surface(),
+            SURFACE_HIGH = Theme.surfaceHigh(), TEXT = Theme.text(), MUTED = Theme.muted(),
+            ACCENT = Theme.accent(), ERROR = Theme.error();
 
     private final Host host;
     private final float density;
@@ -153,6 +153,18 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
             @Override
             public void onClick(View v) {
                 host.onOpenArena();
+            }
+        });
+
+        row(c.getString(R.string.theme_title),
+                c.getString(Theme.currentName(c).equals("light") ? R.string.theme_light : R.string.theme_dark),
+                c.getString(R.string.theme_note), new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String next = Theme.currentName(c).equals("light") ? "dark" : "light";
+                Theme.set(c, next);
+                refresh();
+                Toast.makeText(c, R.string.theme_restart, Toast.LENGTH_SHORT).show();
             }
         });
 

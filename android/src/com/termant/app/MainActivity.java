@@ -56,16 +56,42 @@ public class MainActivity extends Activity
     private static final int REQUEST_VOICE = 2;
     private static final int REQUEST_SMS = 3;
 
-    // One palette for the whole app; the terminal colours in TermService match it.
-    static final int BG = 0xff0d1117;
-    static final int SURFACE = 0xff161b22;
-    static final int SURFACE_HIGH = 0xff262c36;
-    static final int TEXT = 0xffe6edf3;
-    static final int MUTED = 0xff8b949e;
-    static final int ACCENT = 0xffff7a45;
-    static final int ON_ACCENT = 0xff1b0d05;
-    static final int ERROR = 0xffffa198;
-    private static final int KEY_TEXT = 0xffc9d1d9;
+    // Colours come from Theme (dark/light). These methods keep old call sites working.
+    static int bg() {
+        return Theme.bg();
+    }
+
+    static int surface() {
+        return Theme.surface();
+    }
+
+    static int surfaceHigh() {
+        return Theme.surfaceHigh();
+    }
+
+    static int text() {
+        return Theme.text();
+    }
+
+    static int muted() {
+        return Theme.muted();
+    }
+
+    static int accent() {
+        return Theme.accent();
+    }
+
+    static int onAccent() {
+        return Theme.onAccent();
+    }
+
+    static int error() {
+        return Theme.error();
+    }
+
+    static int keyText() {
+        return Theme.keyText();
+    }
 
     private static boolean onScreen;
 
@@ -100,6 +126,7 @@ public class MainActivity extends Activity
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        Theme.apply(this);
         prefs = getSharedPreferences("termant", MODE_PRIVATE);
 
         float density = getResources().getDisplayMetrics().density;
@@ -284,43 +311,43 @@ public class MainActivity extends Activity
         mark.setText(">_");
         mark.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         mark.setTextSize(22);
-        mark.setTextColor(ON_ACCENT);
+        mark.setTextColor(onAccent());
         mark.setGravity(Gravity.CENTER);
-        mark.setBackground(rounded(ACCENT, 16));
+        mark.setBackground(rounded(accent(), 16));
         box.addView(mark, new LinearLayout.LayoutParams(dp(64), dp(64)));
 
         TextView title = new TextView(this);
         title.setText(R.string.setup_title);
         title.setTextSize(24);
         title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setTextColor(TEXT);
+        title.setTextColor(text());
         title.setPadding(0, dp(24), 0, 0);
         box.addView(title);
 
         setupStatus = new TextView(this);
         setupStatus.setTextSize(15);
-        setupStatus.setTextColor(TEXT);
+        setupStatus.setTextColor(text());
         setupStatus.setPadding(0, dp(20), 0, dp(10));
         box.addView(setupStatus);
 
         setupBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         setupBar.setMax(100);
-        setupBar.setProgressTintList(ColorStateList.valueOf(ACCENT));
-        setupBar.setIndeterminateTintList(ColorStateList.valueOf(ACCENT));
-        setupBar.setProgressBackgroundTintList(ColorStateList.valueOf(SURFACE_HIGH));
+        setupBar.setProgressTintList(ColorStateList.valueOf(accent()));
+        setupBar.setIndeterminateTintList(ColorStateList.valueOf(accent()));
+        setupBar.setProgressBackgroundTintList(ColorStateList.valueOf(surfaceHigh()));
         box.addView(setupBar, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView note = new TextView(this);
         note.setText(R.string.setup_note);
         note.setTextSize(13);
-        note.setTextColor(MUTED);
+        note.setTextColor(muted());
         note.setPadding(0, dp(20), 0, 0);
         box.addView(note);
 
         setupError = new TextView(this);
         setupError.setTextSize(14);
-        setupError.setTextColor(ERROR);
+        setupError.setTextColor(error());
         setupError.setPadding(0, dp(20), 0, dp(16));
         setupError.setTextIsSelectable(true);
         setupError.setVisibility(View.GONE);
@@ -330,8 +357,8 @@ public class MainActivity extends Activity
         retryButton.setText(R.string.retry);
         retryButton.setAllCaps(false);
         retryButton.setTextSize(16);
-        retryButton.setTextColor(ON_ACCENT);
-        retryButton.setBackground(pressable(ACCENT, 26));
+        retryButton.setTextColor(onAccent());
+        retryButton.setBackground(pressable(accent(), 26));
         retryButton.setVisibility(View.GONE);
         retryButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -344,7 +371,7 @@ public class MainActivity extends Activity
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(BG);
+        scroll.setBackgroundColor(bg());
         scroll.addView(box);
         return scroll;
     }
@@ -390,7 +417,7 @@ public class MainActivity extends Activity
     private View buildTerminalPanel() {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setBackgroundColor(BG);
+        panel.setBackgroundColor(bg());
 
         // top bar: session tabs, AI, new session, menu
         LinearLayout bar = new LinearLayout(this);
@@ -406,8 +433,8 @@ public class MainActivity extends Activity
         TextView ai = label("\u2726 " + getString(R.string.chat_back), getString(R.string.chat_back_description));
         ai.setTextSize(14);
         ai.setTypeface(Typeface.DEFAULT_BOLD);
-        ai.setTextColor(ON_ACCENT);
-        ai.setBackground(pressable(ACCENT, 18));
+        ai.setTextColor(onAccent());
+        ai.setBackground(pressable(accent(), 18));
         ai.setPadding(dp(14), 0, dp(14), 0);
         ai.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -449,7 +476,7 @@ public class MainActivity extends Activity
         terminal.setTypeface(Typeface.MONOSPACE);
         terminal.setFocusable(true);
         terminal.setFocusableInTouchMode(true);
-        terminal.setBackgroundColor(BG);
+        terminal.setBackgroundColor(bg());
         FrameLayout terminalFrame = new FrameLayout(this);
         terminalFrame.setPadding(dp(6), 0, dp(6), 0);
         terminalFrame.addView(terminal, match());
@@ -480,13 +507,13 @@ public class MainActivity extends Activity
     private View buildAskBar() {
         LinearLayout pill = new LinearLayout(this);
         pill.setGravity(Gravity.CENTER_VERTICAL);
-        pill.setBackground(rounded(SURFACE, 24));
+        pill.setBackground(rounded(surface(), 24));
         pill.setPadding(dp(16), 0, dp(4), 0);
 
         askInput = new EditText(this);
         askInput.setHint(R.string.ask_hint);
-        askInput.setHintTextColor(MUTED);
-        askInput.setTextColor(TEXT);
+        askInput.setHintTextColor(muted());
+        askInput.setTextColor(text());
         askInput.setTextSize(15);
         askInput.setBackground(null);
         askInput.setPadding(0, dp(10), 0, dp(10));
@@ -517,8 +544,8 @@ public class MainActivity extends Activity
         TextView send = label("\u2191", getString(R.string.ask_send));
         send.setTextSize(20);
         send.setTypeface(Typeface.DEFAULT_BOLD);
-        send.setTextColor(ON_ACCENT);
-        send.setBackground(pressable(ACCENT, 20));
+        send.setTextColor(onAccent());
+        send.setBackground(pressable(accent(), 20));
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -580,7 +607,7 @@ public class MainActivity extends Activity
         v.setText(text);
         v.setContentDescription(description);
         v.setGravity(Gravity.CENTER);
-        v.setTextColor(KEY_TEXT);
+        v.setTextColor(keyText());
         v.setClickable(true);
         v.setFocusable(false);
         v.setSingleLine(true);
@@ -593,7 +620,7 @@ public class MainActivity extends Activity
             final TextView v = label((String) key[0], (String) key[0]);
             v.setTextSize(12);
             v.setTypeface(Typeface.DEFAULT_BOLD);
-            v.setBackground(pressable(SURFACE, 8));
+            v.setBackground(pressable(surface(), 8));
             if ("ctrl".equals(key[1])) ctrlKey = v;
             if ("alt".equals(key[1])) altKey = v;
             v.setOnClickListener(new View.OnClickListener() {
@@ -634,10 +661,10 @@ public class MainActivity extends Activity
     }
 
     private void showModifiers() {
-        ctrlKey.setTextColor(ctrl ? ON_ACCENT : KEY_TEXT);
-        ctrlKey.setBackground(pressable(ctrl ? ACCENT : SURFACE, 8));
-        altKey.setTextColor(alt ? ON_ACCENT : KEY_TEXT);
-        altKey.setBackground(pressable(alt ? ACCENT : SURFACE, 8));
+        ctrlKey.setTextColor(ctrl ? onAccent() : keyText());
+        ctrlKey.setBackground(pressable(ctrl ? accent() : surface(), 8));
+        altKey.setTextColor(alt ? onAccent() : keyText());
+        altKey.setBackground(pressable(alt ? accent() : surface(), 8));
     }
 
     /** Ubuntu is installed: bring its helper files up to date and show the chat (or the terminal, if that was open). */
@@ -926,11 +953,11 @@ public class MainActivity extends Activity
             tab.setTextSize(13);
             tab.setPadding(dp(14), 0, dp(14), 0);
             if (s == current) {
-                tab.setTextColor(TEXT);
+                tab.setTextColor(text());
                 tab.setTypeface(Typeface.DEFAULT_BOLD);
-                tab.setBackground(pressable(SURFACE_HIGH, 18));
+                tab.setBackground(pressable(surfaceHigh(), 18));
             } else {
-                tab.setTextColor(MUTED);
+                tab.setTextColor(muted());
                 tab.setBackground(pressable(0x00000000, 18));
             }
             tab.setOnClickListener(new View.OnClickListener() {

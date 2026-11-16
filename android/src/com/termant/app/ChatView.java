@@ -43,9 +43,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         void onOpenArena();
     }
 
-    private static final int BG = MainActivity.BG, SURFACE = MainActivity.SURFACE,
-            SURFACE_HIGH = MainActivity.SURFACE_HIGH, TEXT = MainActivity.TEXT, MUTED = MainActivity.MUTED,
-            ACCENT = MainActivity.ACCENT, ON_ACCENT = MainActivity.ON_ACCENT, ERROR = MainActivity.ERROR;
+    private static final int BG = Theme.bg(), SURFACE = Theme.surface(),
+            SURFACE_HIGH = Theme.surfaceHigh(), TEXT = Theme.text(), MUTED = Theme.muted(),
+            ACCENT = Theme.accent(), ON_ACCENT = Theme.onAccent(), ERROR = Theme.error();
     private static final int CODE = 0xff79c0ff;
     private static final Pattern INLINE = Pattern.compile("\\*\\*(.+?)\\*\\*|`([^`\n]+)`");
 
