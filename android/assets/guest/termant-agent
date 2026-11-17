@@ -33,6 +33,10 @@ if [ ! -e "$conf/opencode.json" ] && [ ! -e "$conf/opencode.jsonc" ]; then
   cp /usr/local/lib/termant/opencode.jsonc "$conf/opencode.jsonc"
 fi
 
+# What the agent learned in earlier chats (notes, own tools) is read by
+# OpenCode from one file; write it again from what is saved now.
+learn refresh >/dev/null 2>&1
+
 if [ "$1" = --install-only ]; then exit 0; fi
 # The agent reads and edits files in its folder, so give it one of its own.
 if [ "$PWD" = "$HOME" ]; then mkdir -p "$HOME/workspace" && cd "$HOME/workspace"; fi

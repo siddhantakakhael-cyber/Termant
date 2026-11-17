@@ -111,6 +111,41 @@ restart they come back by themselves. Some phones kill background apps
 aggressively: exclude Termant from battery optimisation there. Sending SMS
 needs the SMS permission, which Android asks for the first time.
 
+## The agent learns: notes and its own tools
+
+The agent keeps two things from one chat to the next, both inside Ubuntu on
+the phone:
+
+- **Notes**: short sentences about you and about what works on this phone
+  ("The user wants short answers in Hinglish", "The Clock app cannot be read
+  through Screen control; use `phone alarm`"). It saves one when you tell it
+  something lasting ("yaad rakho ...", "hamesha ..."), when you correct it, or
+  when it finds out how something works here.
+- **Its own tools**: when a job of several steps comes up again, or you say
+  "iska tool bana lo", it writes a script, tests it and keeps it as a command
+  (in `/usr/local/bin`), which also works in the terminal and in rules.
+
+Both are written into one file (`~/.config/termant/learned.md`) that OpenCode
+reads at the start of every chat, so a new chat knows them. The agent does
+this with the `learn` command, and you can use it in the terminal too:
+
+```
+learn note "One short sentence."        learn notes        learn forget N
+learn tool NAME "what it does" FILE     learn tools        learn drop NAME
+```
+
+**Settings → What the agent has learned** (at the bottom) lists the notes and
+tools, removes one with ✕, and turns learning off; then nothing is saved and
+the agent is not given what it had learned (tools stay usable as commands).
+
+Limits: at most 40 notes of 240 letters and 30 tools. A note that contains one
+of your saved keys is refused, and the agent is told never to save passwords,
+PINs or OTPs, but nothing can check every sentence: look at the list now and
+then. Notes stay on the phone, yet they are sent to the model's service with
+each message, like the message itself. Whether something gets saved is the
+model's decision; weaker free models may need to be told ("yaad rakho"). This
+does not change the app itself: the app only changes with a new version.
+
 ## Settings: model, workspace, your own API key
 
 **Auto-switch** (on by default): when a model ends with an error or says

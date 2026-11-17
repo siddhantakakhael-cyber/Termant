@@ -234,4 +234,13 @@
     <string name="result_done">✓ Termant: ho gaya</string>
     <string name="result_failed">⚠ Termant: kaam nahi bana</string>
     <string name="result_reply">Agla message yahin likhein</string>
+    <string name="settings_learn">Agent ne kya seekha</string>
+    <string name="settings_learn_note">Agent aapke baare mein aur is phone par kya chalta hai, iski chhoti baatein yaad rakhta hai, aur baar-baar aane wale kaam ke liye chhote auzaar bana leta hai. Har nayi chat mein yeh dono uske paas hote hain. Sikhane ke liye kahein \"yaad rakho …\" ya \"iska tool bana lo\". Sab kuch isi phone par rehta hai, lekin yaad rakhi baatein har message ke saath model ki service ko jaati hain, jaise message khud jaata hai. ✕ se ek hata sakte hain.</string>
+    <string name="learn_title">Istemal se seekhna</string>
+    <string name="learn_notes">Yaad rakhi baatein</string>
+    <string name="learn_notes_none">Abhi kuch yaad nahi rakha.</string>
+    <string name="learn_tools">Khud banaye auzaar</string>
+    <string name="learn_tools_none">Abhi koi auzaar nahi bana.</string>
+    <string name="learn_forget">Baat %1$d hatayein</string>
+    <string name="learn_drop">Auzaar %1$s hatayein</string>
 </resources>

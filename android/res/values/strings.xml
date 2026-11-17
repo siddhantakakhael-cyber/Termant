@@ -236,4 +236,13 @@
     <string name="result_done">✓ Termant: done</string>
     <string name="result_failed">⚠ Termant: it did not work</string>
     <string name="result_reply">Type the next message here</string>
+    <string name="settings_learn">What the agent has learned</string>
+    <string name="settings_learn_note">The agent keeps short notes about you and about what works on this phone, and makes small tools for jobs that come up again. It has both in every new chat. Say \"yaad rakho …\" or \"iska tool bana lo\" to teach it. Everything stays on this phone, but the notes are sent to the model\'s service with each message, like the message itself. ✕ removes one.</string>
+    <string name="learn_title">Learn from use</string>
+    <string name="learn_notes">Notes</string>
+    <string name="learn_notes_none">Nothing noted yet.</string>
+    <string name="learn_tools">Tools it made</string>
+    <string name="learn_tools_none">No tools yet.</string>
+    <string name="learn_forget">Remove note %1$d</string>
+    <string name="learn_drop">Remove tool %1$s</string>
 </resources>

@@ -94,6 +94,7 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t3.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest-test4.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest-test5.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -447,6 +448,87 @@ m = json.load(open(sys.argv[1]))["messages"]
 print("reopened chat:", len(m), "messages; last:", m[-1]["text"])
 sys.exit(0 if len(m) == 4 and "mango" in m[-1]["text"].lower() else 1)
 PY
+
+echo "Learning: notes and own tools are kept across chats"
+NOTES=files/rootfs/root/.config/termant/learned/notes.txt
+tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL learning: Terminal button not found"
+sleep 4
+type_line 'sh%st7.sh'
+wait_for_end files/rootfs/root/result7.txt 24 || { run_as cat files/rootfs/root/result7.txt > "$OUT/result7.txt"; finish "FAIL learning: the test script did not finish"; }
+run_as cat files/rootfs/root/result7.txt > "$OUT/result7.txt"
+tap_on 'content-desc="Back to the chat"' || finish "FAIL learning: Chat button not found"
+sleep 2
+for want in note-exit=0 again-exit=0 papaya-notes=1 long-exit=1 forget-exit=0 forgotten=yes tool-exit=0 \
+    tool-says=hello-from-tool-42 clash-exit=1 badname-exit=1 syntax-exit=1 bad-kept=no guide-note=1 guide-tool=1 \
+    off-exit=1 off-guide=gone on-guide=there; do
+  grep -q "^$want\$" "$OUT/result7.txt" || finish "FAIL learning: the learn command ($want expected)"
+done
+last_reply() { # <python condition on the last message "m">
+  python3 - "$OUT/chat.json" "$1" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+print("learning: reply:", {"text": m["text"][:200], "steps": m["steps"], "failed": m["failed"]})
+sys.exit(0 if eval(sys.argv[2]) else 1)
+PY
+}
+# A note saved before this chat began must be known in it.
+tap_on 'content-desc="Start a new chat"' || finish "FAIL learning: New chat button not found"
+sleep 2
+ask 'What%sis%smy%ssecret%sfruit?%sAnswer%swith%sone%sword' || finish "FAIL learning: could not ask about the note"
+wait_for_reply 80 || finish "FAIL learning: no reply about the note"
+run_as cat files/rootfs/root/.config/opencode/opencode.jsonc > "$OUT/opencode-learn.jsonc"
+grep -q 'learned.md' "$OUT/opencode-learn.jsonc" || finish "FAIL learning: OpenCode is not told to read what was learned"
+last_reply '"papaya" in m["text"].lower()' || finish "FAIL learning: a note from before was not known in a new chat"
+# Told to remember something, the agent must save it by itself.
+ask 'Remember%sfor%sall%sfuture%schats:%smy%sfavourite%scolour%sis%steal' || finish "FAIL learning: could not ask to remember"
+wait_for_reply 80 || finish "FAIL learning: no reply to the request to remember"
+sleep 2
+shot 21b-learn-note
+last_reply 'True'
+run_as cat "$NOTES" > "$OUT/learn-notes.txt"
+grep -qi 'teal' "$OUT/learn-notes.txt" || finish "FAIL learning: the agent did not save what it was told to remember"
+# A tool saved before must be usable by name.
+tap_on 'content-desc="Start a new chat"'
+sleep 2
+ask 'Use%syour%sown%stool%sci-hello%sand%stell%sme%sexactly%swhat%sit%sprints' || finish "FAIL learning: could not ask for the tool"
+wait_for_reply 80 || finish "FAIL learning: no reply about the tool"
+last_reply '"hello-from-tool-42" in m["text"]' || finish "FAIL learning: the agent did not use its own tool"
+# Making a tool by itself needs more from the model: reported, does not fail the test.
+ask 'Make%syourself%sa%stool%snamed%sci-sum%sthat%sprints%sthe%ssum%sof%sthe%stwo%snumbers%sgiven%sto%sit.%sKeep%sit%sfor%slater' \
+  && wait_for_reply 80
+sleep 2
+last_reply 'True'
+if run_as head -n 3 files/rootfs/usr/local/bin/ci-sum 2>/dev/null | grep -q '^# termant-tool:'; then
+  echo "the agent made the tool ci-sum by itself: yes" | tee "$OUT/learn.txt"
+  run_as cat files/rootfs/usr/local/bin/ci-sum >> "$OUT/learn.txt"
+else
+  echo "the agent made the tool ci-sum by itself: NO" | tee "$OUT/learn.txt"
+fi
+run_as cat files/rootfs/root/.config/termant/learned.md > "$OUT/learned.md"
+# Settings shows what was learned, and takes a note away.
+run_as cat "$NOTES" > "$OUT/learn-notes.txt"
+at=$(cut -f 2- "$OUT/learn-notes.txt" | grep -n papaya | head -n 1 | cut -d: -f1)
+[ -n "$at" ] || finish "FAIL learning: the first note is gone"
+tap_on 'content-desc="Settings"' || finish "FAIL learning: Settings button not found"
+sleep 2
+found=
+for _ in $(seq 1 45); do
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  if adb shell "grep -q 'content-desc=.Remove note $at.' /sdcard/ui.xml"; then found=1; break; fi
+  adb shell input swipe 160 500 160 200 300; sleep 1
+done
+[ -n "$found" ] || { shot 21c-learn-settings; finish "FAIL learning: Settings does not show the notes"; }
+adb shell input swipe 160 400 160 300 300; sleep 1 # away from the screen's edge
+shot 21c-learn-settings
+adb shell "grep -q 'Remove tool ci-hello' /sdcard/ui.xml" || { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb shell "grep -q 'Remove tool ci-hello' /sdcard/ui.xml"; } \
+  || echo "learning: the tool is further down in Settings than this screen"
+tap_on "content-desc=\"Remove note $at\"" || finish "FAIL learning: the remove button of a note was not found"
+sleep 2
+run_as cat "$NOTES" > "$OUT/learn-notes-after.txt"
+grep -q papaya "$OUT/learn-notes-after.txt" && finish "FAIL learning: Settings did not remove the note"
+grep -qi teal "$OUT/learn-notes-after.txt" || finish "FAIL learning: Settings removed the wrong note"
+tap_on 'content-desc="Back to the chat"' || finish "FAIL learning: Back arrow not found in Settings"
+sleep 2
 
 echo "Streaming: the words of a reply show up while it is being written"
 tap_on 'content-desc="Start a new chat"'

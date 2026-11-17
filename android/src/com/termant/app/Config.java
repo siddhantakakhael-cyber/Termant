@@ -51,6 +51,8 @@ final class Config {
     /** How long the app stays on a model it switched to before trying the chosen one again. */
     private static final long SWITCH_LASTS_MS = 3 * 60 * 60 * 1000;
     static final int MAX_ATTEMPTS = 5;
+    /** Path inside Ubuntu of the file with the agent's notes and own tools, which OpenCode reads in every chat. */
+    static final String LEARNED_FILE = "/root/.config/termant/learned.md";
     static final String DEFAULT_WORKSPACE = "/root/workspace";
     /** Path inside Ubuntu of the file with the keys; the chat and login shells read it. */
     static final String KEYS_FILE = "/root/.config/termant/keys.env";
@@ -407,6 +409,9 @@ final class Config {
             JSONArray perms = new JSONArray();
             perms.put(new JSONObject().put("action", "shell").put("resource", "phone *").put("effect", "allow"));
             perms.put(new JSONObject().put("action", "shell").put("resource", "date *").put("effect", "allow"));
+            perms.put(new JSONObject().put("action", "shell").put("resource", "learn *").put("effect", "allow"));
+            // What the agent learned in earlier chats (notes, own tools); "learn refresh" writes the file.
+            o.put("instructions", new JSONArray().put(LEARNED_FILE));
             // Without a search service named here OpenCode asks which one to use, and in a chat nobody can answer.
             if (webSearch(c)) {
                 perms.put(new JSONObject().put("action", "websearch").put("resource", "*").put("effect", "allow"));

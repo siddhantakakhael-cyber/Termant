@@ -25,6 +25,7 @@ import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -299,6 +300,108 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                 }
             });
         }
+
+        // What the agent keeps across chats: its notes and the tools it made.
+        heading(R.string.settings_learn, R.string.settings_learn_note);
+        final boolean learning = Learned.on(c);
+        row(c.getString(R.string.learn_title), c.getString(learning ? R.string.on : R.string.off), null,
+                new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        try {
+                            Learned.setOn(c, !learning);
+                        } catch (Exception e) {
+                            Toast.makeText(c, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
+                        }
+                        refresh();
+                    }
+                });
+        label(R.string.learn_notes);
+        final List<String> notes = Learned.notes(c);
+        if (notes.isEmpty()) label(R.string.learn_notes_none);
+        for (int i = 0; i < notes.size(); i++) {
+            final int at = i;
+            content.addView(learnedCard(notes.get(i), null, c.getString(R.string.learn_forget, i + 1), new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // only if the list is still the one shown: the agent may have changed it meanwhile
+                        if (Learned.notes(c).equals(notes)) Learned.forget(c, at);
+                    } catch (Exception e) {
+                        Toast.makeText(c, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
+                    }
+                    refresh();
+                }
+            }), cardSize());
+        }
+        label(R.string.learn_tools);
+        List<String[]> tools = Learned.tools(c);
+        if (tools.isEmpty()) label(R.string.learn_tools_none);
+        for (final String[] tool : tools) {
+            content.addView(learnedCard(tool[1], tool[0], c.getString(R.string.learn_drop, tool[0]), new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Learned.drop(c, tool[0]);
+                    } catch (Exception e) {
+                        Toast.makeText(c, String.valueOf(e.getMessage()), Toast.LENGTH_LONG).show();
+                    }
+                    refresh();
+                }
+            }), cardSize());
+        }
+    }
+
+    /** A small line of text inside a section. */
+    private void label(int text) {
+        TextView t = new TextView(getContext());
+        t.setText(text);
+        t.setTextColor(MUTED);
+        t.setTextSize(13);
+        t.setPadding(dp(4), dp(10), dp(4), dp(2));
+        content.addView(t);
+    }
+
+    /** One thing the agent learned: its text, the command name for a tool, and a button that removes it. */
+    private View learnedCard(String text, String command, String removeLabel, final Runnable remove) {
+        Context c = getContext();
+        LinearLayout card = new LinearLayout(c);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(16), dp(10), dp(6), dp(10));
+        card.setBackground(rounded(SURFACE, 14));
+
+        LinearLayout lines = new LinearLayout(c);
+        lines.setOrientation(VERTICAL);
+        if (command != null) {
+            TextView name = new TextView(c);
+            name.setText(command);
+            name.setTypeface(Typeface.MONOSPACE);
+            name.setTextColor(TEXT);
+            name.setTextSize(15);
+            lines.addView(name);
+        }
+        TextView t = new TextView(c);
+        t.setText(text);
+        t.setTextColor(command == null ? TEXT : MUTED);
+        t.setTextSize(command == null ? 15 : 13);
+        lines.addView(t);
+        card.addView(lines, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView delete = new TextView(c);
+        delete.setText("\u2715");
+        delete.setContentDescription(removeLabel);
+        delete.setTextColor(MUTED);
+        delete.setTextSize(16);
+        delete.setGravity(Gravity.CENTER);
+        delete.setBackground(pressable(0x00000000, 20));
+        delete.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                remove.run();
+            }
+        });
+        card.addView(delete, new LayoutParams(dp(40), dp(40)));
+        return card;
     }
 
     private static String modelText(Context c) {

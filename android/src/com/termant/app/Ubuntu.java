@@ -179,6 +179,7 @@ final class Ubuntu {
             {"profile.sh", "etc/profile.d/termant.sh", ""},
             {"phone", "usr/local/bin/phone", "x"},
             {"termant-agent", "usr/local/bin/termant-agent", "x"},
+            {"learn", "usr/local/bin/learn", "x"},
             {"AGENTS.md", "usr/local/lib/termant/AGENTS.md", ""},
             {"opencode.jsonc", "usr/local/lib/termant/opencode.jsonc", ""},
             {"github.sh", "usr/local/lib/termant/github.sh", ""},
