@@ -83,6 +83,8 @@ final class Care {
     private Chat.Message asking;
     /** The user answered from the notification and the agent's reply to that is awaited. */
     private boolean answering;
+    /** The check-in being written was asked for in Settings: if it fails, the user is told. */
+    private boolean byHand;
     /** The message that is in the notification now, or null. */
     private Chat.Message shown;
     private PowerManager.WakeLock awake;
@@ -343,6 +345,12 @@ final class Care {
                     && (asked == null || last == asked);
             if (asked != null) {
                 android.util.Log.i("Termant", good ? "care: asked: " + oneLine(last.text) : "care: nothing was asked");
+                // a check-in of the agent's own fails without a word; one the user asked for must not
+                if (!good && byHand) {
+                    android.widget.Toast.makeText(service, Lang.of(service).getString(R.string.care_now_failed),
+                            android.widget.Toast.LENGTH_LONG).show();
+                }
+                byHand = false;
             }
             if (good && !onScreen) {
                 show(last);
@@ -543,7 +551,8 @@ final class Care {
 
     /** Starts a check-in from Settings. False if the agent is busy. */
     boolean now() {
-        return Ubuntu.isInstalled(service) && begin(null);
+        byHand = Ubuntu.isInstalled(service) && begin(null);
+        return byHand;
     }
 
     private static String topic(String typed, boolean needed) throws PhoneBridge.Refused {

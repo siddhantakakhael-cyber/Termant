@@ -265,4 +265,5 @@
     <string name="care_channel">Check-ins from the agent</string>
     <string name="care_reply">Reply</string>
     <string name="care_reply_hint">Write your answer</string>
+    <string name="care_now_failed">The agent could not write just now: the model did not answer (no network, or its limit is used up). Send a normal message to see why.</string>
 </resources>

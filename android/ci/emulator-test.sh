@@ -636,7 +636,13 @@ sleep 2
 tap_on 'content-desc="Back to the chat"' || finish "FAIL care: Back arrow not found in Settings"
 sleep 2
 shot 21h-care-writing
-care_wait 'care: asked:' $((asked + 1)) 60 || { care_log; cat "$OUT/care-log.txt"; finish "FAIL care: Ask me now brought no message"; }
+if ! care_wait 'care: asked:' $((asked + 1)) 60; then
+  care_log; cat "$OUT/care-log.txt"
+  # not a fault of the app: OpenCode counts free use per network, and this runner's share can be used up
+  adb logcat -d -s Termant:I | grep -q "free limit: OpenCode refused 'opencode/" \
+    && finish "FAIL care: OpenCode's real free limit was reached on this runner, no model answers any more (run it again later)"
+  finish "FAIL care: Ask me now brought no message"
+fi
 sleep 2
 shot 21i-care-now
 run_as cat files/chat.json > "$OUT/chat.json"

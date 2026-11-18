@@ -263,4 +263,5 @@
     <string name="care_channel">Agent ke apne sawal</string>
     <string name="care_reply">Jawab dein</string>
     <string name="care_reply_hint">Apna jawab likhein</string>
+    <string name="care_now_failed">Agent abhi likh nahi paya: model ne jawab nahi diya (network nahi hai, ya uski limit khatam hai). Wajah dekhne ke liye ek aam message bhejein.</string>
 </resources>
