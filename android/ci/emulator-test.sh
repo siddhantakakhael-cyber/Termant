@@ -127,6 +127,14 @@ wait_for_end files/rootfs/root/result3.txt 420 || { run_as cat files/rootfs/root
 run_as cat files/rootfs/root/result3.txt > "$OUT/result3.txt"
 grep -q '^version-exit=0' "$OUT/result3.txt" || finish "FAIL OpenCode did not install or start"
 
+if [ -e android/ci/diag.sh ]; then # temporary: a short run that only asks OpenCode a few things
+  adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/diag.sh'" < android/ci/diag.sh
+  type_line 'bash%sdiag.sh'
+  wait_for_end files/rootfs/root/result-diag.txt 240
+  run_as cat files/rootfs/root/result-diag.txt > "$OUT/result-diag.txt"
+  finish "FAIL diagnostic run only"
+fi
+
 echo "Phone control"
 adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
 grep -q '^battery-exit=0' "$OUT/result3.txt" || finish "FAIL phone battery"
