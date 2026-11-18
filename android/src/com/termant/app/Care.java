@@ -285,7 +285,7 @@ final class Care {
         awake = null;
     }
 
-    /** What the agent is told; the user never sees this. */
+    /** What the agent is told to make it write first; not shown in the chat. */
     private String prompt(String topic) {
         StringBuilder facts = new StringBuilder();
         facts.append("- Now: ").append(new SimpleDateFormat("EEEE d MMMM yyyy, HH:mm", Locale.US).format(new Date())).append('\n');
@@ -308,8 +308,10 @@ final class Care {
         }
         facts.append("- Language of the app: ").append(Lang.HINDI.equals(Lang.current(service))
                 ? "Hindi written in Latin letters (Hinglish)" : "English").append('\n');
-        return "[Written by the Termant app, not by the user. The user does not see this text.]\n\n"
-                + "You look after the user the way a caring friend does, and this time you speak first: "
+        // No line saying that an app wrote this or that the user cannot see it: OpenCode's free
+        // models answered such a prompt once and then refused every later message of that
+        // conversation ("Free usage limit reached", 429), while the same text without it was fine.
+        return "You look after the user the way a caring friend does, and this time you speak first: "
                 + "the user has not asked anything. "
                 + (topic == null
                 ? "It is one of the times of day at which you check in on them."

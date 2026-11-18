@@ -127,14 +127,6 @@ wait_for_end files/rootfs/root/result3.txt 420 || { run_as cat files/rootfs/root
 run_as cat files/rootfs/root/result3.txt > "$OUT/result3.txt"
 grep -q '^version-exit=0' "$OUT/result3.txt" || finish "FAIL OpenCode did not install or start"
 
-if [ -e android/ci/diag.sh ]; then # temporary: a short run that only asks OpenCode a few things
-  adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/diag.sh'" < android/ci/diag.sh
-  type_line 'bash%sdiag.sh'
-  wait_for_end files/rootfs/root/result-diag.txt 240
-  run_as cat files/rootfs/root/result-diag.txt > "$OUT/result-diag.txt"
-  finish "FAIL diagnostic run only"
-fi
-
 echo "Phone control"
 adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
 grep -q '^battery-exit=0' "$OUT/result3.txt" || finish "FAIL phone battery"
@@ -600,7 +592,7 @@ import json, sys
 ms = json.load(open(sys.argv[1]))["messages"]
 print("care: chat:", [{"user": m["user"], "first": m.get("first"), "text": m["text"][:240], "steps": m["steps"]} for m in ms])
 m = ms[-1]
-ok = len(ms) == 1 and not m["user"] and m.get("first") and not m["failed"] and m["text"].strip() and "Written by the Termant app" not in m["text"]
+ok = len(ms) == 1 and not m["user"] and m.get("first") and not m["failed"] and m["text"].strip() and "this time you speak first" not in m["text"]
 print("care: mentions the colour it has a note on:", "yes" if "teal" in m["text"].lower() else "NO")
 print("care: ends with a question:", "yes" if "?" in m["text"] else "NO")
 sys.exit(0 if ok else 1)
@@ -667,6 +659,12 @@ sleep 2
 shot 21i-care-now
 run_as cat files/chat.json > "$OUT/chat.json"
 last_reply 'not m["user"] and m.get("first") and not m["failed"] and m["text"].strip()' || finish "FAIL care: the message after Ask me now is not right"
+# The conversation the agent began must go on like any other when the user answers.
+ask 'I%sam%sfine,%sthank%syou.%sAnswer%sin%sone%sshort%ssentence' || finish "FAIL care: could not answer the check-in"
+wait_for_reply 80 || finish "FAIL care: no reply to the answer to a check-in"
+sleep 2
+shot 21i2-care-answered
+last_reply 'not m["failed"] and m["text"].strip()' || finish "FAIL care: the answer to a check-in got no proper reply"
 tap_on 'content-desc="Settings"' || finish "FAIL care: Settings button not found the second time"
 sleep 2
 care_row 'Ask me by itself' || finish "FAIL care: the switch is not in Settings"
