@@ -84,6 +84,7 @@ final class PhoneBridge {
                     + "  phone volume 0-100          media volume\n"
                     + "  phone sms NUMBER TEXT       send a text message (costs what an SMS costs)\n"
                     + "  phone rule ...              automation: run a command when something happens (phone rule help)\n"
+                    + "  phone care ...              write to the user first, now or later (phone care help)\n"
                     + "  phone wake on|off           keep running with the screen off\n"
                     + "  phone info                  phone model and Android version\n";
 
@@ -303,6 +304,13 @@ final class PhoneBridge {
                     @Override
                     public String run() throws Exception {
                         return service.rules.command(args);
+                    }
+                });
+            case "care":
+                return onMain(new Action() {
+                    @Override
+                    public String run() throws Exception {
+                        return service.care.command(args);
                     }
                 });
             case "wifi":

@@ -48,7 +48,8 @@ import android.widget.TextView;
 final class Overlay {
     private static final int NONE = 0, STATUS = 1, QUESTION = 2, RESULT = 3;
     /** How long the answer stays on screen after the agent is done. */
-    static final long RESULT_STAYS_MS = 10_000;
+    static final long RESULT_STAYS_MS = 10_000, CHECK_IN_STAYS_MS = 30_000;
+    private static long resultStays = RESULT_STAYS_MS;
 
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final Runnable look = new Runnable() {
@@ -101,8 +102,12 @@ final class Overlay {
 
     private static boolean hasAnswer(Chat chat) {
         if (chat.messages.isEmpty()) return false;
-        Chat.Message last = chat.messages.get(chat.messages.size() - 1);
+        Chat.Message last = last(chat);
         return !last.user && !last.text.trim().isEmpty();
+    }
+
+    private static Chat.Message last(Chat chat) {
+        return chat.messages.get(chat.messages.size() - 1);
     }
 
     /** Shows, changes or removes the card to match what is going on. */
@@ -119,9 +124,11 @@ final class Overlay {
         }
         if (!busy && wasBusy && !onScreen && !stoppedHere && hasAnswer(service.chat)) {
             // the agent is done and nobody is looking at Termant: the answer stays up for a while
-            resultUntil = now + RESULT_STAYS_MS;
+            // something the agent asked of its own accord gets more time than an awaited answer
+            resultStays = last(service.chat).first ? CHECK_IN_STAYS_MS : RESULT_STAYS_MS;
+            resultUntil = now + resultStays;
             main.removeCallbacks(look);
-            main.postDelayed(look, RESULT_STAYS_MS + 60);
+            main.postDelayed(look, resultStays + 60);
         }
         wasBusy = busy;
         if (onScreen) {
@@ -132,7 +139,8 @@ final class Overlay {
 
         int mode = onScreen ? NONE
                 : q != null ? (q == questionSwiped ? NONE : QUESTION)
-                : busy ? (statusSwiped == turn ? NONE : STATUS)
+                // no "working" card for a check-in nobody asked for: only its message is shown
+                : busy ? (statusSwiped == turn || service.chat.quiet() ? NONE : STATUS)
                 : replying || now < resultUntil ? RESULT : NONE;
         Context host = mode == NONE ? null
                 : ScreenService.get() != null ? ScreenService.get() : allowed(service) ? service : null;
@@ -478,7 +486,8 @@ final class Overlay {
     private void addResult() {
         Chat.Message answer = service.chat.messages.get(service.chat.messages.size() - 1);
         LinearLayout box = box();
-        addHead(box, context.getString(answer.failed ? R.string.result_failed : R.string.result_done),
+        addHead(box, context.getString(answer.failed ? R.string.result_failed
+                        : answer.first ? R.string.care_card : R.string.result_done),
                 answer.failed ? Theme.error() : Theme.accent(), new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -518,7 +527,7 @@ final class Overlay {
             View time = new View(context);
             time.setBackground(pill(Theme.accent(), 1));
             time.setPivotX(0);
-            time.setScaleX(left / (float) RESULT_STAYS_MS);
+            time.setScaleX(left / (float) resultStays);
             time.animate().scaleX(0).setDuration(left).setInterpolator(new LinearInterpolator());
             LinearLayout.LayoutParams timeSize = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, px(2)));

@@ -146,6 +146,48 @@ each message, like the message itself. Whether something gets saved is the
 model's decision; weaker free models may need to be told ("yaad rakho"). This
 does not change the app itself: the app only changes with a new version.
 
+## Looking after you: the agent asks first
+
+Termant does not only wait for a message. Like a friend who asks how you are,
+the agent writes to you by itself:
+
+- **At fixed times of day** (09:00 and 21:00 unless changed in Settings).
+- **When it wants to come back to something.** Tell it "kal mera exam hai" and
+  it plans its own moment (`phone care in 22h "how the exam went"`) and asks
+  the next day.
+- **On an event**, through a rule:
+  `phone rule add battery-below 15 -- phone care now "battery is low"`.
+
+What it asks is written by the model at that moment, from what it has learned
+about you (see above) and from the chat so far, so it is not the same
+sentence every day. The message lands in the chat, marked "Termant asked by
+itself", and when Termant is not on screen it comes as a notification that
+can be answered right there ("Reply"); the agent's answer to that comes as a
+notification too. With "display over other apps" allowed, a card with a text
+box shows for 30 seconds as well.
+
+Limits, so that it stays pleasant: at most 6 check-ins a day, at least 30
+minutes apart, none within 3 minutes of a message of yours (it waits), and a
+moment the agent planned more than an hour ahead that falls into the night
+(23:00 to 07:00) waits for the morning. After three daily check-ins in a row without an
+answer it stops until you write again. If the model cannot be reached,
+nothing is shown, not an error.
+
+Settings → **Looking after you**: turn it off, choose the times of day, try
+it with "Ask me now", and remove moments the agent planned. Each check-in is
+one request to the model, so it counts towards a free limit like a message
+of yours. After a restart of the phone Termant starts by itself so that the
+times keep working.
+
+```
+phone care                        what is planned
+phone care in 20h "topic"         also: at HH:MM "topic"
+phone care cancel ID
+phone care now ["topic"]
+phone care times 08:00 22:00      or: none
+phone care on | off
+```
+
 ## Settings: model, workspace, your own API key
 
 **Auto-switch** (on by default): when a model ends with an error or says

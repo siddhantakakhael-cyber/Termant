@@ -33,6 +33,8 @@ final class Chat {
         boolean failed;
         /** Set when the app moved to another model to get this reply. */
         String note = "";
+        /** The agent spoke first: a check-in nobody asked for (see Care). */
+        boolean first;
     }
 
     interface Listener {
@@ -194,6 +196,8 @@ final class Chat {
     private String id = newId();
     private String session = "";
     private String workspace = "";
+    /** The reply being awaited is a check-in the agent started by itself. Main thread. */
+    private boolean quiet;
     /** When the reply now being awaited was asked for (elapsed-realtime clock). */
     long startedAt;
     /**
@@ -430,19 +434,52 @@ final class Chat {
         if (process != null) process.destroy();
         process = null;
         Message last = messages.get(messages.size() - 1);
-        if (last.text.isEmpty()) last.text = Lang.of(context).getString(R.string.chat_stopped);
+        if (last.first && quiet) messages.remove(last); // a check-in that was cut off leaves nothing behind
+        else if (last.text.isEmpty()) last.text = Lang.of(context).getString(R.string.chat_stopped);
+        quiet = false;
         save();
         changed();
     }
 
+    /** Whether the agent is writing a check-in of its own right now, which nobody asked for. */
+    boolean quiet() {
+        return busy && quiet;
+    }
+
+    /** When the user last wrote to the agent (clock time), or 0. */
+    static long lastWrote(Context c) {
+        return c.getSharedPreferences("termant", Context.MODE_PRIVATE).getLong("last_user_message", 0);
+    }
+
     void send(String text) {
+        begin(text, false);
+    }
+
+    /**
+     * The agent speaks first: "prompt" tells it why and is not shown; its
+     * message appears in this chat with no message of the user before it.
+     * If the model cannot be reached, nothing is left in the chat.
+     */
+    Message checkIn(String prompt) {
+        if (busy || prompt.trim().isEmpty()) return null;
+        begin(prompt, true);
+        return messages.get(messages.size() - 1);
+    }
+
+    private void begin(String text, final boolean hidden) {
         final String request = text.trim();
         if (request.isEmpty() || busy) return;
-        Message mine = new Message();
-        mine.user = true;
-        mine.text = request;
-        messages.add(mine);
+        if (!hidden) {
+            Message mine = new Message();
+            mine.user = true;
+            mine.text = request;
+            messages.add(mine);
+            context.getSharedPreferences("termant", Context.MODE_PRIVATE).edit()
+                    .putLong("last_user_message", System.currentTimeMillis()).apply();
+        }
         final Message reply = new Message();
+        reply.first = hidden;
+        quiet = hidden;
         messages.add(reply);
         busy = true;
         status = "";
@@ -717,6 +754,12 @@ final class Chat {
                     busy = false;
                     process = null;
                     status = "";
+                    if (reply.first && quiet && (exit != 0 || reply.failed || reply.text.trim().isEmpty())) {
+                        // a check-in that did not work out is not worth an error in the chat
+                        android.util.Log.i("Termant", "care: no check-in, the model gave no message (exit " + exit + ")");
+                        messages.remove(reply);
+                    }
+                    quiet = false;
                     if (exit == 0) {
                         continues = true;
                         Config.setLastChat(context, Chat.this.id);
@@ -759,7 +802,7 @@ final class Chat {
         // While the agent works, the paragraph still being written is newer than anything printed.
         String writing = live;
         if (exit == null && !writing.isEmpty()) reply.text = writing;
-        if (exit != null && reply.text.isEmpty()) {
+        if (exit != null && reply.text.isEmpty() && !(reply.first && quiet)) {
             reply.failed = exit != 0;
             String rest = output.substring(start + MARKER.length());
             reply.text = exit == 0 && !reply.steps.isEmpty()
@@ -1063,8 +1106,13 @@ final class Chat {
             String title = "";
             for (Message m : messages) {
                 if (title.isEmpty() && m.user) title = m.text.length() > 80 ? m.text.substring(0, 80) : m.text;
-                list.put(new JSONObject().put("user", m.user).put("text", m.text)
+                list.put(new JSONObject().put("user", m.user).put("text", m.text).put("first", m.first)
                         .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps)));
+            }
+            // a chat the agent began: named after what it asked
+            if (title.isEmpty() && !messages.isEmpty()) {
+                String began = messages.get(0).text.replaceAll("\\s+", " ").trim();
+                title = began.length() > 80 ? began.substring(0, 80) : began;
             }
             String json = new JSONObject().put("id", id).put("title", title)
                     .put("updated", System.currentTimeMillis()).put("session", session)
@@ -1099,9 +1147,11 @@ final class Chat {
                 m.text = j.optString("text");
                 m.failed = j.optBoolean("failed");
                 m.note = j.optString("note");
+                m.first = j.optBoolean("first");
                 JSONArray steps = j.optJSONArray("steps");
                 for (int k = 0; steps != null && k < steps.length(); k++) m.steps.add(steps.getString(k));
                 // a reply that was cut off when the app was closed
+                if (m.first && m.text.isEmpty()) continue;
                 if (!m.user && m.text.isEmpty()) m.text = Lang.of(context).getString(R.string.chat_stopped);
                 loaded.add(m);
             }

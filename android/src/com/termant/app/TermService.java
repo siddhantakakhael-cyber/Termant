@@ -38,6 +38,8 @@ public class TermService extends Service implements TerminalSessionClient {
     static final String ACTION_RING = "com.termant.app.RING";
     static final String ACTION_RULE = "com.termant.app.RULE";
     static final String ACTION_BOOT = "com.termant.app.BOOT";
+    static final String ACTION_CARE = "com.termant.app.CARE";
+    static final String ACTION_CARE_REPLY = "com.termant.app.CARE_REPLY";
     static final String ACTION_STOP_RING = "com.termant.app.STOP_RING";
     static final String EXTRA_LABEL = "label";
     private static final String ALARM_CHANNEL = "alarm";
@@ -73,6 +75,8 @@ public class TermService extends Service implements TerminalSessionClient {
     boolean terminalShown;
     /** Automation rules; they keep running as long as this service does. */
     Rules rules;
+    /** Check-ins the agent starts by itself. */
+    Care care;
     private PhoneBridge bridge;
     private MediaPlayer ringer;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -108,6 +112,8 @@ public class TermService extends Service implements TerminalSessionClient {
         instance = this;
         rules = new Rules(this);
         rules.start();
+        care = new Care(this);
+        care.start();
         bridge = new PhoneBridge(this);
         bridge.start();
     }
@@ -161,6 +167,10 @@ public class TermService extends Service implements TerminalSessionClient {
             }
         } else if (ACTION_BOOT.equals(action)) {
             rules.fire("boot");
+        } else if (ACTION_CARE.equals(action) && intent.getData() != null) {
+            care.onAlarm(intent.getData());
+        } else if (ACTION_CARE_REPLY.equals(action)) {
+            care.onReply(intent);
         }
         // Restarted by Android if it is ever killed, so rules keep working.
         return START_STICKY;
@@ -200,6 +210,7 @@ public class TermService extends Service implements TerminalSessionClient {
             Overlay.sync(TermService.this);
             MainActivity.showQuestion();
             notifyQuestion();
+            if (care != null) care.sync();
         }
     };
 

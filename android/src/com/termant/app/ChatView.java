@@ -523,6 +523,15 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         bubble.setPadding(dp(14), dp(10), dp(14), dp(10));
         bubble.setBackground(rounded(SURFACE, 18));
 
+        if (m.first) {
+            // nobody asked: the agent wrote this of its own accord
+            TextView own = new TextView(c);
+            own.setText("\u2661 " + c.getString(R.string.care_own));
+            own.setTextColor(ACCENT);
+            own.setTextSize(12);
+            own.setPadding(0, 0, 0, dp(4));
+            bubble.addView(own);
+        }
         if (!m.steps.isEmpty()) {
             // what the agent did, so the answer can be checked
             SpannableStringBuilder steps = new SpannableStringBuilder();

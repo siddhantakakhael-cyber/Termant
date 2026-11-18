@@ -243,4 +243,24 @@
     <string name="learn_tools_none">Abhi koi auzaar nahi bana.</string>
     <string name="learn_forget">Baat %1$d hatayein</string>
     <string name="learn_drop">Auzaar %1$s hatayein</string>
+    <string name="settings_care">Aapka khayal</string>
+    <string name="settings_care_note">Agent khud aapse baat shuru karta hai, jaise koi apna haal poochta hai. Jo usne aapke baare mein seekha hai uska istemal karta hai, aur aapki batayi baaton par baad mein wapas aata hai.</string>
+    <string name="care_title">Khud se mujhse poochhe</string>
+    <string name="care_times">Roz is samay</string>
+    <string name="care_times_none">Koi tay samay nahi</string>
+    <string name="care_times_note">Inke alawa agent kisi baat par wapas aane ka samay khud chunta hai. Din mein 6 baar se zyada nahi, aur raat ko nahi.</string>
+    <string name="care_times_hint">09:00, 21:00</string>
+    <string name="care_times_help">Din ke 4 samay tak, jaise 09:00, 21:00. Koi tay samay nahi chahiye to khali chhod dein.</string>
+    <string name="care_times_wrong">Yeh samay samajh nahi aaya. Aise likhein: 09:00, 21:00.</string>
+    <string name="care_now">Abhi poochho</string>
+    <string name="care_now_note">Dekhne ke liye ki yeh kaisa hai.</string>
+    <string name="care_now_started">Agent aapko likh raha hai. Uska message abhi chat mein aayega.</string>
+    <string name="care_now_busy">Agent abhi kaam mein hai. Thodi der mein phir koshish karein.</string>
+    <string name="care_planned">In baaton par wapas aana chahta hai</string>
+    <string name="care_drop">Tay sawal %1$d hatayein</string>
+    <string name="care_own">Termant ne khud poochha</string>
+    <string name="care_card">Termant ko aapka khayal aaya</string>
+    <string name="care_channel">Agent ke apne sawal</string>
+    <string name="care_reply">Jawab dein</string>
+    <string name="care_reply_hint">Apna jawab likhein</string>
 </resources>

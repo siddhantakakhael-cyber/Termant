@@ -62,9 +62,11 @@ sleep 20
 adb install -g android/Termant-debug.apk || finish "FAIL install"
 adb logcat -c
 # The app's texts are in Hindi unless Settings say otherwise; this test reads
-# the English ones, and switches to Hindi itself at the end.
+# the English ones, and switches to Hindi itself at the end. Check-ins of the
+# agent's own are off except in their own part: they would write into the
+# chats of the other parts.
 adb shell "run-as $PKG mkdir -p shared_prefs"
-printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" '<map>' '    <string name="lang">en</string>' '</map>' \
+printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" '<map>' '    <string name="lang">en</string>' '    <boolean name="care_on" value="false" />' '</map>' \
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/termant.xml'"
 run_as cat shared_prefs/termant.xml | grep -q 'name="lang">en<' || finish "FAIL could not choose English for the test"
 adb shell am start -W -n "$PKG/.MainActivity"
@@ -95,6 +97,7 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest-test5.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -528,6 +531,128 @@ run_as cat "$NOTES" > "$OUT/learn-notes-after.txt"
 grep -q papaya "$OUT/learn-notes-after.txt" && finish "FAIL learning: Settings did not remove the note"
 grep -qi teal "$OUT/learn-notes-after.txt" || finish "FAIL learning: Settings removed the wrong note"
 tap_on 'content-desc="Back to the chat"' || finish "FAIL learning: Back arrow not found in Settings"
+sleep 2
+
+echo "Looking after the user: the agent writes first, nobody asked"
+care_log() { adb logcat -d -s Termant:I | grep 'care:' > "$OUT/care-log.txt"; }
+care_wait() { # <text in the app's log> <how many such lines> <tries of 3 s>
+  for _ in $(seq 1 "$3"); do
+    [ "$(adb logcat -d -s Termant:I | grep -c "$1")" -ge "$2" ] && return 0
+    sleep 3
+  done
+  return 1
+}
+tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL care: Terminal button not found"
+sleep 4
+type_line 'sh%st8.sh'
+wait_for_end files/rootfs/root/result8.txt 24 || { run_as cat files/rootfs/root/result8.txt > "$OUT/result8.txt"; finish "FAIL care: the test script did not finish"; }
+run_as cat files/rootfs/root/result8.txt > "$OUT/result8.txt"
+for want in off-exit=1 off-now-exit=1 badtime-exit=1 manytimes-exit=1 times-exit=0 on-exit=0 times-kept=1 plan-exit=0 \
+    twice-exit=1 listed=1 cancel-exit=0 cancel-again-exit=1 left=0 zero-exit=1 notopic-exit=1 badwhen-exit=1 \
+    at-exit=0 at-cancel-exit=0 soon-exit=0; do
+  grep -q "^$want\$" "$OUT/result8.txt" || finish "FAIL care: the phone care command ($want expected)"
+done
+tap_on 'content-desc="Back to the chat"' || finish "FAIL care: Chat button not found"
+sleep 2
+tap_on 'content-desc="Start a new chat"' || finish "FAIL care: New chat button not found"
+sleep 2
+# The user is elsewhere when the planned moment comes: the message must arrive as a notification,
+# and as a card over the other app when that is allowed. No "working" card: nobody is waiting.
+adb shell appops set "$PKG" SYSTEM_ALERT_WINDOW allow
+adb shell input keyevent 3
+care_cards() { adb logcat -d -s Termant:I | grep -c "overlay: $1"; }
+working=$(care_cards 'status shown'); results=$(care_cards 'result shown')
+if ! care_wait 'care: asked:' 1 130; then
+  care_log; cat "$OUT/care-log.txt"; shot 21d-care-nothing
+  finish "FAIL care: the agent did not write at the moment it had planned"
+fi
+sleep 3
+shot 21c-care-card
+care_log; cat "$OUT/care-log.txt"
+adb logcat -d -s Termant:I | grep 'overlay:' | tail -n 6
+[ "$(care_cards 'result shown')" -gt "$results" ] || finish "FAIL care: no card over the other app with the agent's message"
+[ "$(care_cards 'status shown')" -eq "$working" ] || finish "FAIL care: a working card was shown for a check-in nobody asked for"
+adb shell appops set "$PKG" SYSTEM_ALERT_WINDOW default
+grep -q 'care: check-in started about: which colour' "$OUT/care-log.txt" || finish "FAIL care: the check-in was not about what was planned"
+grep -q 'care: shown as a notification' "$OUT/care-log.txt" || finish "FAIL care: no notification while Termant was not on screen"
+adb shell dumpsys notification --noredact > "$OUT/care-notification.txt" 2>&1
+grep -qE "channel=care|mChannelId=care|mId='care'" "$OUT/care-notification.txt" \
+  || finish "FAIL care: Android does not show the check-in's notification"
+adb shell cmd statusbar expand-notifications; sleep 3
+shot 21d-care-notification
+adb shell cmd statusbar collapse; sleep 2
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 4
+shot 21e-care-chat
+run_as cat files/chat.json > "$OUT/chat.json"
+cp "$OUT/chat.json" "$OUT/chat-care.json"
+python3 - "$OUT/chat.json" <<'PY' || finish "FAIL care: the agent's own message is not in the chat as it should be"
+import json, sys
+ms = json.load(open(sys.argv[1]))["messages"]
+print("care: chat:", [{"user": m["user"], "first": m.get("first"), "text": m["text"][:240], "steps": m["steps"]} for m in ms])
+m = ms[-1]
+ok = len(ms) == 1 and not m["user"] and m.get("first") and not m["failed"] and m["text"].strip() and "Written by the Termant app" not in m["text"]
+print("care: mentions the colour it has a note on:", "yes" if "teal" in m["text"].lower() else "NO")
+print("care: ends with a question:", "yes" if "?" in m["text"] else "NO")
+sys.exit(0 if ok else 1)
+PY
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'Termant asked by itself' /sdcard/ui.xml" || finish "FAIL care: the chat does not mark the message as the agent's own"
+run_as cat files/care.json > "$OUT/care-after.json"
+grep -q 'which colour' "$OUT/care-after.json" && finish "FAIL care: the planned moment is still planned after it came"
+# The user answers in the chat, and mentions something a friend would ask about later (reported, does not fail the test).
+ask 'It%sis%steal,%syes.%sTomorrow%sat%s10%sin%sthe%smorning%sI%shave%smy%sdriving%stest' && wait_for_reply 80
+sleep 2
+shot 21f-care-answer
+last_reply 'True'
+run_as cat files/care.json > "$OUT/care-planned.json"
+if grep -q '"topic"' "$OUT/care-planned.json"; then
+  echo "the agent planned by itself to come back to the driving test: yes" | tee "$OUT/care.txt"
+else
+  echo "the agent planned by itself to come back to the driving test: NO" | tee "$OUT/care.txt"
+fi
+cat "$OUT/care-planned.json" >> "$OUT/care.txt"; echo >> "$OUT/care.txt"
+# Settings: "Ask me now" starts a check-in, and the switch turns all of it off.
+care_row() { # <text of the row>: scrolls Settings until it shows
+  for _ in $(seq 1 45); do
+    adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+    if adb shell "grep -q 'text=.$1.' /sdcard/ui.xml"; then
+      adb shell input swipe 160 400 160 300 300; sleep 1 # away from the screen's edge
+      return 0
+    fi
+    adb shell input swipe 160 500 160 200 300; sleep 1
+  done
+  return 1
+}
+tap_on 'content-desc="Start a new chat"'
+sleep 2
+tap_on 'content-desc="Settings"' || finish "FAIL care: Settings button not found"
+sleep 2
+care_row 'Ask me now' || { shot 21g-care-settings; finish "FAIL care: Settings does not show the check-ins"; }
+shot 21g-care-settings
+asked=$(adb logcat -d -s Termant:I | grep -c 'care: asked:')
+tap_on 'text="Ask me now"' || finish "FAIL care: the Ask me now row was not found"
+sleep 2
+tap_on 'content-desc="Back to the chat"' || finish "FAIL care: Back arrow not found in Settings"
+sleep 2
+shot 21h-care-writing
+care_wait 'care: asked:' $((asked + 1)) 60 || { care_log; cat "$OUT/care-log.txt"; finish "FAIL care: Ask me now brought no message"; }
+sleep 2
+shot 21i-care-now
+run_as cat files/chat.json > "$OUT/chat.json"
+last_reply 'not m["user"] and m.get("first") and not m["failed"] and m["text"].strip()' || finish "FAIL care: the message after Ask me now is not right"
+tap_on 'content-desc="Settings"' || finish "FAIL care: Settings button not found the second time"
+sleep 2
+care_row 'Ask me by itself' || finish "FAIL care: the switch is not in Settings"
+tap_on 'text="Ask me by itself"' || finish "FAIL care: the switch was not found"
+sleep 2
+shot 21j-care-off
+run_as cat shared_prefs/termant.xml > "$OUT/prefs-care.xml"
+grep -q 'name="care_on" value="false"' "$OUT/prefs-care.xml" || finish "FAIL care: the switch in Settings did not turn the check-ins off"
+adb shell dumpsys alarm > "$OUT/dumpsys-alarm-care.txt" 2>&1
+grep -q 'termant://care' "$OUT/dumpsys-alarm-care.txt" && echo "care: alarms are still set after turning off" | tee -a "$OUT/care.txt"
+care_log
+tap_on 'content-desc="Back to the chat"' || finish "FAIL care: Back arrow not found in Settings the second time"
 sleep 2
 
 echo "Streaming: the words of a reply show up while it is being written"

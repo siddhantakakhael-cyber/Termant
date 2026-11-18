@@ -301,6 +301,48 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
             });
         }
 
+        // The agent writes first: at these times of day, and when it planned to come back to something.
+        heading(R.string.settings_care, R.string.settings_care_note);
+        final TermService running = TermService.get();
+        final Care care = running == null ? null : running.care;
+        final boolean caring = Care.on(c);
+        row(c.getString(R.string.care_title), c.getString(caring ? R.string.on : R.string.off), null,
+                new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (care != null) care.setOn(!caring);
+                        refresh();
+                    }
+                });
+        if (caring && care != null) {
+            String times = Care.timesText(c).trim().replace(" ", ", ");
+            row(c.getString(R.string.care_times), times.isEmpty() ? c.getString(R.string.care_times_none) : times,
+                    c.getString(R.string.care_times_note), new OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            editCareTimes(care);
+                        }
+                    });
+            row(c.getString(R.string.care_now), "", c.getString(R.string.care_now_note), new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Toast.makeText(c, care.now() ? R.string.care_now_started : R.string.care_now_busy,
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+            List<Care.FollowUp> planned = care.planned();
+            if (!planned.isEmpty()) label(R.string.care_planned);
+            for (final Care.FollowUp f : planned) {
+                content.addView(learnedCard(f.topic, Care.when(f.when), c.getString(R.string.care_drop, f.id), new Runnable() {
+                    @Override
+                    public void run() {
+                        if (care.followUps.contains(f)) care.remove(f);
+                        refresh();
+                    }
+                }), cardSize());
+            }
+        }
+
         // What the agent keeps across chats: its notes and the tools it made.
         heading(R.string.settings_learn, R.string.settings_learn_note);
         final boolean learning = Learned.on(c);
@@ -402,6 +444,33 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         });
         card.addView(delete, new LayoutParams(dp(40), dp(40)));
         return card;
+    }
+
+    private void editCareTimes(final Care care) {
+        final Context c = getContext();
+        final EditText box = new EditText(c);
+        box.setHint(R.string.care_times_hint);
+        box.setSingleLine(true);
+        box.setText(Care.timesText(c).trim().replace(" ", ", "));
+        box.setSelection(box.length());
+        FrameLayout wrap = new FrameLayout(c);
+        wrap.setPadding(dp(20), dp(8), dp(20), 0);
+        wrap.addView(box);
+        new AlertDialog.Builder(c)
+                .setTitle(R.string.care_times)
+                .setMessage(R.string.care_times_help)
+                .setView(wrap)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (!care.setTimes(box.getText().toString())) {
+                            Toast.makeText(c, R.string.care_times_wrong, Toast.LENGTH_LONG).show();
+                        }
+                        refresh();
+                    }
+                })
+                .show();
     }
 
     private static String modelText(Context c) {

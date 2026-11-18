@@ -245,4 +245,24 @@
     <string name="learn_tools_none">No tools yet.</string>
     <string name="learn_forget">Remove note %1$d</string>
     <string name="learn_drop">Remove tool %1$s</string>
+    <string name="settings_care">Looking after you</string>
+    <string name="settings_care_note">The agent writes to you first, like a friend who asks how you are. It uses what it has learned about you, and comes back to things you told it about.</string>
+    <string name="care_title">Ask me by itself</string>
+    <string name="care_times">Every day at</string>
+    <string name="care_times_none">No fixed times</string>
+    <string name="care_times_note">Besides these, the agent picks its own moments to come back to something. Never more than 6 times a day, and not at night.</string>
+    <string name="care_times_hint">09:00, 21:00</string>
+    <string name="care_times_help">Up to 4 times of day, such as 09:00, 21:00. Leave it empty for no fixed times.</string>
+    <string name="care_times_wrong">That is not a time of day. Write it like 09:00, 21:00.</string>
+    <string name="care_now">Ask me now</string>
+    <string name="care_now_note">To see what it is like.</string>
+    <string name="care_now_started">The agent is writing to you. Its message comes in the chat in a moment.</string>
+    <string name="care_now_busy">The agent is busy right now. Try again in a moment.</string>
+    <string name="care_planned">It wants to come back to</string>
+    <string name="care_drop">Remove planned question %1$d</string>
+    <string name="care_own">Termant asked by itself</string>
+    <string name="care_card">Termant is thinking of you</string>
+    <string name="care_channel">Check-ins from the agent</string>
+    <string name="care_reply">Reply</string>
+    <string name="care_reply_hint">Write your answer</string>
 </resources>
