@@ -98,6 +98,7 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t9.sh'" < android/ci/guest-test9.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -605,6 +606,17 @@ ask 'It%sis%steal,%syes.%sTomorrow%sat%s10%sin%sthe%smorning%sI%shave%smy%sdrivi
 sleep 2
 shot 21f-care-answer
 last_reply 'True'
+if ! last_reply 'not m["failed"]' >/dev/null && run_as cat shared_prefs/termant.xml | grep -q 'name="free_limit_until"'; then
+  # OpenCode refused the answer to a check-in with its free limit. Find out whether it refuses everything now
+  # (this runner's share is used up) or only the conversation that the agent began.
+  tap_on 'content-desc="Open the Ubuntu terminal"' && sleep 4 && type_line 'sh%st9.sh' && wait_for_end files/rootfs/root/result9.txt 40
+  run_as cat files/rootfs/root/result9.txt > "$OUT/result9.txt"
+  tail -n 12 "$OUT/result9.txt"
+  if grep -q '^fresh-exit=0' "$OUT/result9.txt"; then
+    finish "FAIL care: OpenCode refused the answer to a check-in with its free limit, but answers a new conversation"
+  fi
+  finish "FAIL care: OpenCode's real free limit was reached on this runner, no model answers any more (run it again later)"
+fi
 run_as cat files/care.json > "$OUT/care-planned.json"
 if grep -q '"topic"' "$OUT/care-planned.json"; then
   echo "the agent planned by itself to come back to the driving test: yes" | tee "$OUT/care.txt"
@@ -639,7 +651,7 @@ shot 21h-care-writing
 if ! care_wait 'care: asked:' $((asked + 1)) 60; then
   care_log; cat "$OUT/care-log.txt"
   # not a fault of the app: OpenCode counts free use per network, and this runner's share can be used up
-  adb logcat -d -s Termant:I | grep -q "free limit: OpenCode refused 'opencode/" \
+  run_as cat shared_prefs/termant.xml | grep -q 'name="free_limit_until"' \
     && finish "FAIL care: OpenCode's real free limit was reached on this runner, no model answers any more (run it again later)"
   finish "FAIL care: Ask me now brought no message"
 fi
