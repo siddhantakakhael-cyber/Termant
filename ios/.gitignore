@@ -1,0 +1,7 @@
+Termant.xcodeproj/
+Termant/Info.plist
+build/
+out/
+*.ipa
+.derived*/
+ci-out/

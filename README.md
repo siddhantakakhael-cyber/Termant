@@ -4,6 +4,8 @@ Ubuntu in a terminal, two ways:
 
 - **[Android app](#android-app)**: a real Ubuntu 24.04 system on your phone, no root, no server.
 - **[Web terminal](#web-terminal)**: an Ubuntu terminal in the browser, hosted on your own server.
+- **[iPhone app](#iphone-app)**: the agent as a chat on iOS, with its notes, its check-ins and the
+  web terminal of your own server. No Ubuntu on the phone itself: iOS does not allow that.
 
 ## Android app
 
@@ -347,6 +349,57 @@ the time and rings, and to run it; that only works while Termant stays running.
 Limits: an alarm kept by Termant itself is lost if the phone restarts or the
 app is force-stopped; alarms in the Clock app are not. The request is sent to
 OpenCode's free model service, so it needs internet.
+
+## iPhone app
+
+Download **Termant.ipa** from the [releases](../../releases) (the ones named `ios-v…`).
+Source in [`ios/`](ios); iOS 15 or newer, iPhone and iPad.
+
+An iPhone does not let an app run Linux programs, show itself over other apps or
+operate the phone, so this is not the Android app again. It has the parts that
+iOS allows:
+
+- **Chat with the agent**, in Hindi, Hinglish or English, through **your own API key**:
+  OpenRouter (which has free models), Groq, Google Gemini, OpenAI, Anthropic, DeepSeek,
+  Cerebras, Mistral, or any service that speaks the OpenAI "chat completions" protocol.
+  The key is kept in the iPhone's Keychain and sent only to that service. With a free
+  model that stops answering, the app moves to another free one and says so.
+- **It learns about you.** Say "yaad rakho …" or just mention things; the agent keeps
+  short notes for every later chat. Settings lists them; swipe one away to delete it.
+- **It asks first.** Every day at the times you choose (09:00 and 21:00 unless changed),
+  and at moments it plans itself ("kal exam hai" leads to "exam kaisa raha?" the day
+  after). The limits are those of the Android app: at most 6 a day, half an hour apart,
+  what the agent plans for the night moves to 07:00, and the daily ones stop after 3
+  without an answer.
+  You can answer inside the notification.
+- **Reminders**: "subah 7 baje yaad dilana" becomes a notification with a sound. It is
+  not the Clock's alarm; iOS gives no app access to that.
+- **Terminal of your own server**: the `>_` button opens the [web terminal](#web-terminal)
+  running on your computer or server, logged in with the password saved in Settings.
+
+How the check-ins work on iOS, and their limit: an app cannot wake up at a time of its
+own choosing there. So the agent writes its next messages ahead of time, whenever you
+use the app, and hands them to iOS as notifications for their moments. They arrive with
+the app closed, but they were written with what the agent knew when you last opened it.
+
+### Install with SideStore
+
+The IPA is not signed; it cannot be, without a paid Apple developer account. SideStore
+signs it on the phone with your own Apple ID:
+
+1. Set up [SideStore](https://sidestore.io) once (its site has the steps; the first
+   install needs a computer).
+2. On the iPhone, download `Termant.ipa`, then in SideStore: **My Apps → + →** choose the file.
+3. Open Termant, then **Settings**: choose the service, paste its key and **Save**.
+
+With a free Apple ID, an app installed this way works for 7 days; SideStore renews it
+when you open it and press **Refresh**. AltStore and Sideloadly take the same file.
+
+### Build it yourself
+
+On a Mac with Xcode 16: `brew install xcodegen`, then `cd ios && xcodegen generate && open Termant.xcodeproj`.
+`ios/ci/test.sh` runs the tests on a simulator (after `npm ci` in the repository root),
+`ios/ci/package.sh` builds the unsigned IPA.
 
 ## Web terminal
 

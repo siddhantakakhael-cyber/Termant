@@ -1,0 +1,75 @@
+name: iOS IPA
+
+on:
+  push:
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app
+          xcodebuild -version
+          mkdir -p ci-out
+          curl -fsSL -o /tmp/xcodegen.zip https://github.com/yonaskolb/XcodeGen/releases/download/2.47.0/xcodegen.zip \
+            && unzip -q /tmp/xcodegen.zip -d /tmp && echo "/tmp/xcodegen/bin" >> "$GITHUB_PATH" \
+            || brew install xcodegen
+          npm ci --omit=dev --no-audit --no-fund
+
+      - name: Project
+        run: cd ios && xcodegen generate
+
+      - name: Build the IPA (unsigned)
+        run: |
+          set -o pipefail
+          ios/ci/package.sh ci-out 2>&1 | tee ci-out/package.log
+
+      - name: Test on an iPhone simulator
+        if: success() || failure()
+        run: |
+          set -o pipefail
+          ios/ci/test.sh ci-out 2>&1 | tee ci-out/test.log
+
+      # The output is also pushed to a hidden ref so it can be read with git.
+      - name: Publish logs
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p ci-out && cd ci-out
+          echo "${GITHUB_SHA} run ${GITHUB_RUN_ID}" > commit.txt
+          git init -q
+          git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "iOS CI output for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:refs/ci/termant-ios
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Termant-ipa
+          path: |
+            ios/Termant.ipa
+            ci-out
+
+      - name: Release
+        if: success() && (github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[release]'))
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="ios-v$(grep -o 'MARKETING_VERSION: "[^"]*"' ios/project.yml | cut -d'"' -f2)"
+          if gh release view "$version" >/dev/null 2>&1; then
+            gh release upload "$version" ios/Termant.ipa --clobber
+          else
+            gh release create "$version" ios/Termant.ipa --target "$GITHUB_SHA" --latest=false \
+              --title "Termant for iPhone $version" \
+              --notes "Termant for iPhone and iPad (iOS 15+): chat with a model through your own key, notes it keeps about you, check-ins it sends by itself, and the terminal of your own Termant server. The IPA is not signed: install it with SideStore, AltStore or Sideloadly, which sign it with your Apple ID. See the README, section iPhone."
+          fi

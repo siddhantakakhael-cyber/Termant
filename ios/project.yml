@@ -1,0 +1,85 @@
+# The Xcode project is generated from this file (XcodeGen), in CI and on a Mac alike:
+#   xcodegen generate && open Termant.xcodeproj
+name: Termant
+options:
+  bundleIdPrefix: com.termant
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+targets:
+  Termant:
+    type: application
+    platform: iOS
+    sources:
+      - path: Termant
+    info:
+      path: Termant/Info.plist
+      properties:
+        CFBundleDisplayName: Termant
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        # The terminal of your own server is often plain http on the home network.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSLocalNetworkUsageDescription: Termant connects to the terminal server you name in Settings.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.termant.app
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  TermantTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: TermantTests
+    dependencies:
+      - target: Termant
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.termant.app.tests
+  TermantUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: TermantUITests
+    dependencies:
+      - target: Termant
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.termant.app.uitests
+schemes:
+  Termant:
+    build:
+      targets:
+        Termant: all
+        TermantTests: [test]
+        TermantUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - TermantTests
+        - TermantUITests
+    archive:
+      config: Release
