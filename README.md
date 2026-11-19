@@ -1,370 +1,143 @@
-# Termant
+<div align="center">
 
-Ubuntu in a terminal, two ways:
+<img src="docs/banner.png" alt="Termant: an AI agent and a real Ubuntu terminal on your Android phone" width="840">
 
-- **[Android app](#android-app)**: a real Ubuntu 24.04 system on your phone, no root, no server.
-- **[Web terminal](#web-terminal)**: an Ubuntu terminal in the browser, hosted on your own server.
+<br>
 
-## Android app
+[![Release](https://img.shields.io/github/v/release/siddhantakakhael-cyber/Termant?label=release&color=ff7a45)](https://github.com/siddhantakakhael-cyber/Termant/releases/latest)
+[![Android APK](https://github.com/siddhantakakhael-cyber/Termant/actions/workflows/android.yml/badge.svg)](https://github.com/siddhantakakhael-cyber/Termant/actions/workflows/android.yml)
+![Android 7.0+](https://img.shields.io/badge/Android-7.0%2B-3ddc84?logo=android&logoColor=white)
+![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04-e95420?logo=ubuntu&logoColor=white)
+![Licence](https://img.shields.io/badge/licence-GPL--3.0%20app%20%C2%B7%20MIT%20web-blue)
 
-**Download:** [Termant.apk](https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk) (Android 7.0 or newer, under 1 MB)
+<br>
 
-Open the APK on your phone and allow the install. The first start downloads
-the official Ubuntu base image from Canonical (about 30 MB) and checks its
-checksum. After that you are `root` in Ubuntu:
+<a href="https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk"><img src="https://img.shields.io/badge/Download-Termant.apk-ff7a45?style=for-the-badge&logo=android&logoColor=white" alt="Download Termant.apk" height="44"></a>
+
+<sub>Android 7.0 or newer · under 1 MB · no account, no API key</sub>
+
+<br>
+
+[Features](#features) · [Install](#install) · [Things to say](#things-to-say) · [Web terminal](#web-terminal) · [Documentation](#documentation) · [Build](#build-from-source)
+
+</div>
+
+---
+
+## What is Termant?
+
+Termant puts a real **Ubuntu 24.04** system on an Android phone, without root
+and without a server, and makes an **AI agent** its home screen. You say what
+you want in Hindi, Hinglish or English; the agent writes and runs the code,
+installs what it needs with `apt`, and can use the phone itself: alarms, the
+torch, other apps, rules that run on their own.
+
+The same repository holds a **web terminal**: an Ubuntu terminal in the
+browser, hosted on your own server with Docker.
+
+## Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**An agent, not only a terminal**
+
+- Chat is the home screen: type or dictate, the answer appears word by word, and the commands the agent ran are listed above it.
+- Powered by [OpenCode](https://github.com/sst/opencode) with free models, so it works without an account. Your own key for Anthropic, OpenAI, Gemini, OpenRouter, Groq, DeepSeek, Cerebras or Mistral is optional.
+- When a model stops answering, Termant moves to a backup model and carries on where the work stopped.
+- Web search, GitHub (clone, commit, push, pull requests) and your own MCP servers.
+
+</td>
+<td width="50%" valign="top">
+
+**Real Ubuntu in your pocket**
+
+- Ubuntu 24.04 with `apt`: Python, Git, Node.js, the same packages as on a PC.
+- Packages and files stay installed across restarts and app updates.
+- Up to 8 terminal tabs that keep running in the background.
+- Extra keys (Esc, Tab, Ctrl, Alt, arrows), pinch to resize, copy and paste, phone storage at `/sdcard`.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+**It can use the phone**
+
+- Alarms, timers, torch, notifications, speech, clipboard, battery.
+- With Screen control turned on: opens any app, reads the screen, taps, types and swipes.
+- A small card over other apps shows what the agent is doing, with a stop button, and asks you when it needs a decision.
+
+</td>
+<td width="50%" valign="top">
+
+**It works on its own**
+
+- Rules: "every night at 11 turn Wi-Fi off", "when charging starts, run the backup".
+- It learns: short notes about you and scripts it keeps as its own tools, across chats.
+- It checks in: asks how the exam went the next day, by notification you can answer.
+- Hindi (Hinglish) or English interface, dark or light theme.
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/web-search.png" width="150" alt="The agent searches the web and names its source"></td>
+<td align="center"><img src="docs/screenshots/screen-control.png" width="150" alt="The agent opened the Clock app and read its screen"></td>
+<td align="center"><img src="docs/screenshots/check-in.png" width="150" alt="The agent asked by itself and planned to ask again"></td>
+<td align="center"><img src="docs/screenshots/question.png" width="150" alt="A question from the agent over another app"></td>
+<td align="center"><img src="docs/screenshots/hindi-light.png" width="150" alt="The Hindi interface in the light theme"></td>
+</tr>
+<tr>
+<td align="center"><sub>Web search</sub></td>
+<td align="center"><sub>Screen control</sub></td>
+<td align="center"><sub>Check-ins</sub></td>
+<td align="center"><sub>Questions over other apps</sub></td>
+<td align="center"><sub>Hindi, light theme</sub></td>
+</tr>
+</table>
+<sub>Screenshots are taken by the automated test of each build, on an Android 14 emulator.</sub>
+</div>
+
+## Install
+
+1. Download **[Termant.apk](https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk)** on the phone (Android 7.0 or newer).
+2. Open it and allow the install.
+3. Start Termant. The first start downloads the official Ubuntu base image from Canonical (about 30 MB) and checks its checksum.
+4. Send a message. The first one downloads the agent (OpenCode, about 100 MB).
+
+The terminal is one tap away (**>_** at the top), and there you are `root` in Ubuntu:
 
 ```sh
 apt update
 apt install python3 git nano
 ```
 
-- **AI agent chat is the home screen.** It uses [OpenCode](https://github.com/sst/opencode), an open-source agent that writes, edits and runs code for you. It comes with free models, so it works without an account or API key. First use downloads it (about 100 MB).
-- **Real Ubuntu with apt.** The same packages as on a PC, for ARM64, 32-bit ARM and x86-64 phones.
-- **Everything stays installed.** Ubuntu lives in the app's storage. Packages and files survive closing the app, reboots and app updates. Only uninstalling the app, clearing its data, or "Reinstall Ubuntu" removes them.
-- **Sessions keep running** in the background (see the notification), up to 8 tabs.
-- **Extra keys:** ESC, TAB, CTRL, ALT, arrows, HOME, END, PGUP, PGDN.
-- **Pinch** to resize text, **long-press** to select, copy and paste.
-- **Phone storage** appears at `/sdcard` after you allow it from the menu.
+Older versions and release notes are on the [Releases page](https://github.com/siddhantakakhael-cyber/Termant/releases).
 
-### AI agent
-
-The chat screen talks to the agent for you. For the full OpenCode interface, open the terminal and choose **AI agent (OpenCode)** in the menu (or run `termant-agent` in any tab). The agent works in `~/workspace`;
-`cd` to another folder first to use it there. Inside OpenCode, `/models` switches model and
-`/connect` adds your own provider key if you want a paid model.
-
-- The free models are run by OpenCode, not by Termant. Your prompts and the files the agent reads are sent to their service, and the list of free models changes over time.
-- The agent runs as root inside Ubuntu and can change or delete anything there, and in `/sdcard` if you allowed storage. It cannot touch the rest of the phone.
-- OpenCode has no 32-bit build, so the agent needs a 64-bit phone.
-
-### Limits
-
-- No root means no `systemd`, no `mount`, no Docker, and ports below 1024 cannot be opened. Start services directly (for example `nginx` on port 8080, `sshd -p 8022`).
-- Programs run through [PRoot](https://proot-me.github.io/), which is slower than native, mostly for work with many small files.
-- Android 12 and newer may stop background programs that use many processes ("signal 9"). This is an Android limit that also affects Termux.
-- Every build is tested automatically on an Android 14 x86-64 emulator (set up Ubuntu, `apt install`, restart, package still there, install OpenCode and get a reply from a free model). ARM phones use the same code with ARM builds of the same components, but are not covered by that automatic test.
-
-### How it works
-
-| Part | From |
-| --- | --- |
-| Terminal emulator and view | [Termux](https://github.com/termux/termux-app) `terminal-emulator` / `terminal-view`, vendored in `android/vendor/termux` |
-| Running Linux programs without root | Termux's build of PRoot, fetched and checksum-verified at build time |
-| AI agent | [OpenCode](https://github.com/sst/opencode), installed inside Ubuntu on first use with its official installer |
-| The system | Ubuntu Base 24.04 from `cdimage.ubuntu.com`, downloaded by the app |
-
-Build it yourself with `android/build.sh` (Android SDK + NDK, JDK 17; no Gradle), or let the
-**Android APK** GitHub workflow do it. The app is licensed GPLv3 (`android/LICENSE`).
-Release APKs are signed with a public test key (`android/keystore/README.md`), so only
-install APKs from this repository's Releases page.
-
-## Chat first
-
-Termant opens as a chat, not a terminal. Type or speak what you want in Hindi,
-Hinglish or English; the agent answers in a chat bubble and lists the commands
-it ran above its answer. **New chat** starts a fresh conversation.
-
-The answer appears while it is being written, word by word, instead of all at
-once at the end. The microphone button next to the message box takes
-dictation inside the app when the phone has a speech service (Google's, on
-most phones); what you say lands in the message box so you can correct it
-before sending.
-
-**What it is doing:** while the agent works, the bubble names the current
-step and what it is about: *Thinking* (with the sentence being thought, when
-the model shows it), *Running a command* with the command, *Reading a file*
-with its path, *Searching the web* with the search words, *Working on the
-screen*, *Working with Git / GitHub*, *Installing*, *Writing the answer*, and
-so on, with the time waited. While there is nothing to add it shows a tip.
-
-**Language and look:** the app's own buttons and messages are in Hindi
-(Hinglish) by default. Settings → *Bhasha (Language)* switches to English and
-back, and *Theme* switches between dark and light, the terminal included. Both
-apply at once.
-
-Earlier chats are kept: they are listed on the new-chat screen and under the
-**☰** button, and opening one continues it where it stopped (it carries on in
-the same OpenCode session, so the agent still knows what was said).
-
-The real Ubuntu terminal is one tap away: **>_** at the top. **Chat**
-(or Back) in the terminal returns to the chat. The first chat message downloads
-the agent (OpenCode, about 100 MB).
-
-## Automation rules
-
-Ask once, and the app keeps doing it by itself:
-
-| You say | Rule the agent creates |
-| --- | --- |
-| `roz raat 11 baje WiFi band karo` | `phone rule add at 23:00 -- phone wifi off` |
-| `jab charging lage toh backup chalao` | `phone rule add charging -- bash /root/backup.sh` |
-| `WiFi se judte hi mummy ko message bhejo` | `phone rule add wifi-connected -- phone sms +91… "…"` |
-
-Triggers: `at HH:MM` (every day), `charging`, `unplugged`, `battery-below N`,
-`wifi-connected`, `wifi-lost`, `boot`. The action is any command in Ubuntu.
-Rules are listed in **Settings** (switch off or delete there) and with
-`phone rule list`. A rule that fails shows a notification.
-
-Limits: there is no trigger for a place, a weekday or a date; "when I reach
-home" can only be approximated by `wifi-connected`, which fires on any Wi-Fi.
-Rules stop if Termant is force-stopped or closed with **Exit**; after a phone
-restart they come back by themselves. Some phones kill background apps
-aggressively: exclude Termant from battery optimisation there. Sending SMS
-needs the SMS permission, which Android asks for the first time.
-
-## The agent learns: notes and its own tools
-
-The agent keeps two things from one chat to the next, both inside Ubuntu on
-the phone:
-
-- **Notes**: short sentences about you and about what works on this phone
-  ("The user wants short answers in Hinglish", "The Clock app cannot be read
-  through Screen control; use `phone alarm`"). It saves one when you tell it
-  something lasting ("yaad rakho ...", "hamesha ..."), when you correct it, or
-  when it finds out how something works here.
-- **Its own tools**: when a job of several steps comes up again, or you say
-  "iska tool bana lo", it writes a script, tests it and keeps it as a command
-  (in `/usr/local/bin`), which also works in the terminal and in rules.
-
-Both are written into one file (`~/.config/termant/learned.md`) that OpenCode
-reads at the start of every chat, so a new chat knows them. The agent does
-this with the `learn` command, and you can use it in the terminal too:
-
-```
-learn note "One short sentence."        learn notes        learn forget N
-learn tool NAME "what it does" FILE     learn tools        learn drop NAME
-```
-
-**Settings → What the agent has learned** (at the bottom) lists the notes and
-tools, removes one with ✕, and turns learning off; then nothing is saved and
-the agent is not given what it had learned (tools stay usable as commands).
-
-Limits: at most 40 notes of 240 letters and 30 tools. A note that contains one
-of your saved keys is refused, and the agent is told never to save passwords,
-PINs or OTPs, but nothing can check every sentence: look at the list now and
-then. Notes stay on the phone, yet they are sent to the model's service with
-each message, like the message itself. Whether something gets saved is the
-model's decision; weaker free models may need to be told ("yaad rakho"). This
-does not change the app itself: the app only changes with a new version.
-
-## Looking after you: the agent asks first
-
-Termant does not only wait for a message. Like a friend who asks how you are,
-the agent writes to you by itself:
-
-- **At fixed times of day** (09:00 and 21:00 unless changed in Settings).
-- **When it wants to come back to something.** Tell it "kal mera exam hai" and
-  it plans its own moment (`phone care in 22h "how the exam went"`) and asks
-  the next day.
-- **On an event**, through a rule:
-  `phone rule add battery-below 15 -- phone care now "battery is low"`.
-
-What it asks is written by the model at that moment, from what it has learned
-about you (see above) and from the chat so far, so it is not the same
-sentence every day. The message lands in the chat, marked "Termant asked by
-itself", and when Termant is not on screen it comes as a notification that
-can be answered right there ("Reply"); the agent's answer to that comes as a
-notification too. With "display over other apps" allowed, a card with a text
-box shows for 30 seconds as well.
-
-Limits, so that it stays pleasant: at most 6 check-ins a day, at least 30
-minutes apart, none within 3 minutes of a message of yours (it waits), and a
-moment the agent planned more than an hour ahead that falls into the night
-(23:00 to 07:00) waits for the morning. After three daily check-ins in a row without an
-answer it stops until you write again. If the model cannot be reached,
-nothing is shown, not an error.
-
-Settings → **Looking after you**: turn it off, choose the times of day, try
-it with "Ask me now", and remove moments the agent planned. Each check-in is
-one request to the model, so it counts towards a free limit like a message
-of yours. After a restart of the phone Termant starts by itself so that the
-times keep working.
-
-```
-phone care                        what is planned
-phone care in 20h "topic"         also: at HH:MM "topic"
-phone care cancel ID
-phone care now ["topic"]
-phone care times 08:00 22:00      or: none
-phone care on | off
-```
-
-## Settings: model, workspace, your own API key
-
-**Auto-switch** (on by default): when a model ends with an error or says
-nothing, usually because its free limit is used up, Termant tries the next
-backup model by itself (up to 5 per message) and says so under the reply. It
-stays on the model that worked for 3 hours. Backups are all free models unless
-you pick your own in Settings; with models of several services, they are tried
-in turn (one of each).
-
-If the model stops **in the middle of the work** (after it has already run
-commands), nothing is started again: the next model is put into the same
-OpenCode conversation, told that the one before stopped, and carries on from
-there. The steps of both models stay listed under the reply.
-
-**OpenCode's "Free usage limit reached".** OpenCode counts free use per
-network, for all of its free models (`opencode/...`) together, so another
-OpenCode model cannot help. Termant therefore
-
-- moves straight to a backup model of **another service**, and remembers until
-  when OpenCode's free use is paused (OpenCode says when; otherwise one hour).
-  Until then, new messages start with the other service, so the error does not
-  come up again;
-- if there is no model of another service, shows one message that says until
-  when the limit lasts and what to do, instead of trying every free model.
-
-So to keep working without a stop, save a key of a second service in Settings.
-OpenRouter has free models (names ending in `:free`), which are used as
-backups automatically; models of other services have to be ticked under
-"Backup models". Termant cannot see how much free use is left, so the switch
-happens at the moment OpenCode refuses, not earlier. Picking an OpenCode model
-by hand makes Termant try it again at once.
-
-The **Arena ↗** chip opens the arena.ai website in your browser, where you
-sign in and use it. Arena.ai offers no way for other apps to use its agent, so
-it is not connected to the chat and cannot control the phone or Ubuntu.
-
-Under the chat are two chips: the **workspace folder** the agent works in and
-the **model** that answers. The gear button opens Settings, where you can also
-enter your own API key (Anthropic, OpenAI, Google Gemini, OpenRouter, Groq,
-DeepSeek, Cerebras, Mistral). With a key, that provider's models appear in the model list and are
-billed to your account; without one, free models are used. Keys are stored only
-on the phone, in Ubuntu at `~/.config/termant/keys.env`.
-
-**MCP servers:** in Settings → MCP servers you can add servers (name + command)
-that OpenCode connects to and uses as tools, for example a filesystem server
-so the agent can read files in phone storage. Termant writes them to
-`~/.config/opencode/opencode.jsonc` inside Ubuntu before each agent run, under
-`mcp.servers`. The command is run by `bash -lc`, so it can be typed as in a
-terminal, for example `npx -y @modelcontextprotocol/server-filesystem /sdcard`
-(that one needs `apt install nodejs npm` first). The automated test checks
-that OpenCode starts such a server and asks it for its tools; no published
-MCP server has been tried on a real phone yet.
-
-## Tools for the agent: GitHub, web search, screen control
-
-All three are in Settings → *Tools for the agent*.
-
-**GitHub.** Paste a personal access token (the dialog links to the GitHub page
-that makes one; tick `repo`, and `workflow` if the agent should change
-workflow files). Termant asks GitHub whose token it is, refuses one that
-GitHub rejects, and shows the account name. From then on `git clone`, `pull`
-and `push` to `https://github.com/…` work in the chat and in the terminal,
-private repos included, and `gh` (`apt install gh`) is signed in. The token is
-stored only on the phone, in `~/.config/termant/keys.env` inside Ubuntu, as
-`GH_TOKEN`; git gets it through a credential helper that answers for
-github.com only. Commits use the account's name and its GitHub no-reply
-address unless git already has settings. Use https addresses: there is no SSH
-key.
-
-**Web search.** On by default. The agent uses OpenCode's `websearch` and
-`webfetch` tools for anything recent and names its source. Searches go to Exa,
-which needs no key; with your own Exa or Tavily key (optional rows in Settings)
-that service is used with your account. Turning the row off removes the tool.
-
-**Screen control.** Off until you turn it on in Android's Accessibility
-settings (the row takes you there; Android 13 and newer may first want *Allow
-restricted settings* in Termant's App info, as the dialog explains). With it
-on, the agent can open any app, read what it shows and tap, type and swipe
-there:
-
-```
-phone apps                    phone app YouTube         phone screen
-phone tap 7 | "Search" | X Y  phone type "lofi music"   phone swipe up|down|left|right
-phone key back|home|recents|notifications|enter
-```
-
-`phone screen` lists what is on the screen as numbered lines, and every action
-answers with the new screen. It acts only when a `phone` command asks it to,
-keeps no record, and refuses to type into password boxes. The agent is told to
-ask before anything that spends money, sends a message, deletes something or
-changes an account. Limits: games and other screens drawn as one picture have
-nothing to read; Android's own permission questions ("Allow … to send
-notifications?") could not be read in the automated test, so answer those
-yourself; `phone key enter` needs Android 11 or newer.
-
-## Over other apps: what the agent is doing, and its questions
-
-When the agent is at work and Termant is not on the screen (the agent opened
-another app, or you went elsewhere), a small card at the top of the screen
-says what it is doing, the same words as in the chat, with a **■** button
-that stops it. A tap on the card brings Termant back.
-
-When the agent needs something from you to go on, it asks right there
-instead of stopping:
-
-```
-phone ask "Kaunsa size order karoon?" "Small" "Medium" "Large"    buttons to choose from
-phone ask "Kis naam se save karoon?"                               a box to type in
-```
-
-With choices you tap one (or *Type something else*); without, you type. **✕**
-skips the question, and the agent is told not to do the step it asked about.
-The command waits up to 4 minutes and prints the answer. Inside Termant the
-same question comes as a dialog. The agent is told to use this for the yes it
-needs before sending, paying, deleting or changing an account.
-
-When the agent is done, the card shows the answer and stays for 10 seconds (a
-line on it runs out with the time). *Type the next message here* on that card
-opens a box and the keyboard, so the conversation can go on without opening
-Termant; a card you are typing on stays until the message is sent or the card
-is closed. While the answer is being written, the card shows its latest words.
-Swiping any card up sends it away: the working card for that turn, the answer
-at once, and a question to a notification (it is still waiting).
-
-The card needs one of two things: Screen control (it then comes along, with
-nothing else to allow), or Settings → *Show over other apps*, which opens
-Android's "display over other apps" page for Termant. With neither, a
-question arrives as a notification that opens Termant. While the agent itself
-taps or swipes, the card lets the touch through to the app under it, and
-`phone screen` leaves the card out.
-
-## Phone control
-
-The agent can use the phone, not only write code. In the chat, type (or
-tap the microphone and say) what you want in Hindi, Hinglish or English:
+## Things to say
 
 | You say | What happens |
 | --- | --- |
-| `mujhe subah 7 baje utha dena` | an alarm for 07:00 is set in the phone's Clock app |
-| `3 minute baad chai ka timer bajana` | Termant rings after 3 minutes |
-| `torch on karo` | the flashlight turns on |
-
-It does this with the `phone` command, which also works by hand in any tab:
-
-```
-phone alarm 07:00 Wake up     phone timer 10m Tea      phone ring / phone stop
-phone notify "Title" "Text"   phone say "hello"        phone torch on|off
-phone battery                 phone vibrate 500        phone clipboard get|set
-phone open https://…          phone wake on|off        phone help
-```
-
-If the Clock app cannot be used (for example Termant is not on screen),
-Termant sets its own alarm and rings itself. If `phone alarm` fails
-altogether, the agent is told to write a small Python script that waits until
-the time and rings, and to run it; that only works while Termant stays running.
-
-Limits: an alarm kept by Termant itself is lost if the phone restarts or the
-app is force-stopped; alarms in the Clock app are not. The request is sent to
-OpenCode's free model service, so it needs internet.
+| `mujhe subah 7 baje utha dena` | An alarm for 07:00 is set in the phone's Clock app |
+| `torch on karo` | The flashlight turns on |
+| `Write a Python script that prints 6 times 7 and run it` | The agent writes the file in Ubuntu, runs it and shows the output |
+| `roz raat 11 baje WiFi band karo` | A rule is saved that runs every day at 23:00 |
+| `jab charging lage toh backup chalao` | A rule is saved that runs your script when charging starts |
+| `kal mera exam hai` | The agent plans to ask the next day how it went |
+| `yaad rakho, mujhe chhote jawab pasand hain` | A note is kept for every later chat |
+| `Search the web for the newest stable Python version` | The agent searches and names its source |
 
 ## Web terminal
 
-A real Ubuntu terminal in your browser. Packages you install stay installed.
-
-- **Real Ubuntu 24.04** root shell: `apt`, `pip`, `git`, `vim`, `htop`, everything.
-- **Packages and files persist.** The whole system (`/usr`, `/etc`, `/var`, `/opt`,
-  `/root`, `/home`) lives on Docker volumes, so nothing is lost on restart,
-  rebuild or upgrade.
-- **Sessions persist.** Shells run on the server. Close the browser, come back
-  later from another device, and your running programs and screen are still there.
-- **Tabs**, full colour, resize, clickable links, copy/paste.
-- **Phone friendly:** extra key row with Esc, Tab, Ctrl, Alt and arrows.
-- **Password protected.**
-
-## Run it
-
-You need a machine with Docker (any VPS, or your own PC).
+A real Ubuntu 24.04 root shell in the browser, on your own machine. Packages,
+files and running sessions are kept on Docker volumes, so they survive
+restarts, rebuilds and closing the browser. It has tabs, a key row for phones
+and a password.
 
 ```sh
 git clone https://github.com/siddhantakakhael-cyber/Termant.git
@@ -373,47 +146,79 @@ echo "TERMANT_PASSWORD=choose-a-long-password" > .env
 docker compose up -d --build
 ```
 
-Open `http://<your-server>:3000` and log in.
+Open `http://<your-server>:3000` and log in. The password gives a root shell,
+so put it behind HTTPS before exposing it to the internet. Details:
+[docs/web-terminal.md](docs/web-terminal.md).
 
-Try it:
+## Documentation
 
-```sh
-apt update && apt install -y neofetch
-neofetch
+| Guide | What it covers |
+| --- | --- |
+| [Android app](docs/android.md) | Everything the app does, with its commands and limits |
+| ↳ [Chat first](docs/android.md#chat-first) | The chat screen, voice, language and theme, earlier chats |
+| ↳ [Phone control](docs/android.md#phone-control) | The `phone` command: alarms, timers, torch, notifications |
+| ↳ [Automation rules](docs/android.md#automation-rules) | Triggers by time, charging, battery, Wi-Fi and boot |
+| ↳ [Notes and tools](docs/android.md#the-agent-learns-notes-and-its-own-tools) | What the agent keeps from one chat to the next |
+| ↳ [Check-ins](docs/android.md#looking-after-you-the-agent-asks-first) | When the agent writes first, and how to limit it |
+| ↳ [Models and keys](docs/android.md#settings-model-workspace-your-own-api-key) | Auto-switch, free limits, your own API key, MCP servers |
+| ↳ [GitHub, web search, screen control](docs/android.md#tools-for-the-agent-github-web-search-screen-control) | The tools you can give the agent |
+| ↳ [Over other apps](docs/android.md#over-other-apps-what-the-agent-is-doing-and-its-questions) | The status card and the agent's questions |
+| [Web terminal](docs/web-terminal.md) | Running it, settings, security, what deletes your data |
+
+## Good to know
+
+- **Privacy.** The free models are run by OpenCode, not by Termant. Your messages, the files the agent reads and the notes it has learned are sent to that service. API keys are stored only on the phone.
+- **What the agent can touch.** It runs as root inside Ubuntu and can change or delete anything there, and in `/sdcard` if you allowed storage. It reaches the rest of the phone only through the `phone` command, and other apps only when you turn on Screen control.
+- **No root means limits.** No `systemd`, no Docker, no ports below 1024. Programs run through [PRoot](https://proot-me.github.io/), which is slower than native.
+- **64-bit phones for the agent.** Ubuntu runs on ARM64, 32-bit ARM and x86-64; OpenCode has no 32-bit build.
+- **Testing.** Every build is tested automatically on an Android 14 x86-64 emulator: Ubuntu is set up, `apt install` runs, the app restarts, and the agent gets a reply from a free model. ARM phones use the same code with ARM builds of the same components, but that test does not cover them.
+- **Signing.** Release APKs are signed with a public test key (`android/keystore/README.md`), so install only APKs from this repository's Releases page.
+
+## How it works
+
+| Part | From |
+| --- | --- |
+| Terminal emulator and view | [Termux](https://github.com/termux/termux-app) `terminal-emulator` / `terminal-view`, vendored in `android/vendor/termux` |
+| Linux programs without root | Termux's build of PRoot, fetched and checksum-verified at build time |
+| AI agent | [OpenCode](https://github.com/sst/opencode), installed inside Ubuntu on first use with its official installer |
+| The system | Ubuntu Base 24.04 from `cdimage.ubuntu.com`, downloaded by the app |
+| Web terminal | Node.js, [xterm.js](https://xtermjs.org/) and `node-pty` in a Docker image of Ubuntu 24.04 |
+
+```
+android/            the Android app (Java, no Gradle)
+  src/              the app's own code
+  vendor/termux/    terminal emulator and view from Termux
+  ci/               the emulator test that runs on every build
+server.js, public/  the web terminal
+Dockerfile, docker-compose.yml, docker/
+docs/               guides and screenshots
 ```
 
-Then run `docker compose down && docker compose up -d --build` and `neofetch` is still there.
+## Build from source
 
-### What deletes your data
+**Android app:** Android SDK and NDK, JDK 17.
 
-Only removing the volumes: `docker compose down -v` or `docker volume rm`.
-Never run those unless you want a fresh Ubuntu.
+```sh
+android/build.sh        # writes android/Termant.apk
+```
 
-Hosts without persistent disks (for example free tiers that give you a
-temporary filesystem) cannot keep packages, whatever software you run on them.
-Use a host where Docker volumes are stored on a real disk.
+Or let the **Android APK** workflow in GitHub Actions build and test it.
 
-## Security
-
-The password gives a **root shell**. Use a long password and put Termant behind
-HTTPS (Caddy, nginx, Cloudflare Tunnel) before exposing it to the internet;
-over plain HTTP the password and everything you type can be read on the network.
-
-## Settings
-
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `TERMANT_PASSWORD` | random, printed in the log | Login password |
-| `PORT` | `3000` | Port to listen on |
-| `TERMANT_SHELL` | `/bin/bash` | Shell to start |
-| `TERMANT_HOME` | `$HOME` | Starting directory |
-| `TERMANT_MAX_SESSIONS` | `8` | Maximum number of tabs |
-
-## Run without Docker
+**Web terminal without Docker:** Node.js 18 or newer.
 
 ```sh
 npm install
 TERMANT_PASSWORD=secret npm start
 ```
 
-This gives a shell on whatever system you run it on, as the user who started it.
+## Licence and credits
+
+The Android app is licensed under the **GNU GPL v3** ([`android/LICENSE`](android/LICENSE)),
+to stay compatible with Termux, whose terminal it includes
+([`android/vendor/termux`](android/vendor/termux/README.md)). The web terminal
+(`server.js`, `public/`) is **MIT**, as its `package.json` says.
+
+Termant stands on [Termux](https://github.com/termux/termux-app),
+[PRoot](https://proot-me.github.io/), [OpenCode](https://github.com/sst/opencode),
+[Ubuntu](https://ubuntu.com/) and [xterm.js](https://xtermjs.org/). It is not
+affiliated with any of them.
