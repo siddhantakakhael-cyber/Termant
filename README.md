@@ -386,7 +386,7 @@ the app closed, but they were written with what the agent knew when you last ope
 
 The IPA is not signed; it cannot be, without a paid Apple developer account. A sideloading
 tool signs it with your own Apple ID when it installs it. With **iloader** on a computer:
-connect the iPhone, sign in with your Apple ID, choose **Import IPA** and pick `Termant.ipa`.
+plug in the iPhone, sign in with your Apple ID, choose to import an IPA and pick `Termant.ipa`.
 With SideStore, on the phone itself:
 
 1. Set up [SideStore](https://sidestore.io) once (its site has the steps; the first
