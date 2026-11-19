@@ -1,0 +1,22 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // The agent may use the phone controls and the web without asking each time.
+  "permissions": [
+    { "action": "shell", "resource": "phone *", "effect": "allow" },
+    { "action": "shell", "resource": "date *", "effect": "allow" },
+    { "action": "shell", "resource": "learn *", "effect": "allow" },
+    { "action": "websearch", "resource": "*", "effect": "allow" },
+    { "action": "webfetch", "resource": "*", "effect": "allow" }
+  ],
+  // What the agent learned in earlier chats: its notes and the tools it made (see `learn help`).
+  "instructions": ["/root/.config/termant/learned.md"],
+  // Web search needs no key with Exa. Termant's Settings can turn it off.
+  "websearch": { "provider": "exa" }
+  // Termant writes this file again before each chat message, from its
+  // Settings: MCP servers added there appear here as, for example,
+  // "mcp": {
+  //   "servers": {
+  //     "filesystem": { "type": "local", "command": ["/bin/bash", "-lc", "npx -y @modelcontextprotocol/server-filesystem /sdcard"] }
+  //   }
+  // }
+}

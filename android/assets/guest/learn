@@ -1,0 +1,180 @@
+#!/bin/bash
+# What the agent has learned on this phone, kept across chats:
+#   notes  short facts about the user and about what works here
+#   tools  scripts the agent made for jobs that come up again; each is a command
+# Both are written into one file that OpenCode reads at the start of every
+# chat (Termant names it under "instructions" in OpenCode's config).
+dir="$HOME/.config/termant/learned"
+notes="$dir/notes.txt"
+guide="$HOME/.config/termant/learned.md"
+bin=/usr/local/bin
+mark='# termant-tool:'
+MAX_NOTES=40
+MAX_NOTE=240
+MAX_TOOLS=30
+MAX_ABOUT=160
+
+mkdir -p "$dir" && touch "$notes" || { echo "learn: cannot use $dir" >&2; exit 1; }
+
+fail() { echo "learn: $*" >&2; exit 1; }
+one_line() { printf '%s' "$1" | tr '\n\r\t' '   ' | sed 's/  */ /g; s/^ //; s/ $//'; }
+is_tool() { [ -f "$1" ] && head -n 3 "$1" 2>/dev/null | grep -aq "^$mark"; }
+must_be_on() {
+  [ -e "$dir/off" ] && fail "learning is turned off in Termant's Settings, so nothing was saved. Tell the user that."
+}
+
+tools() { # "name<TAB>what it does" for every tool
+  local f about
+  for f in "$bin"/*; do
+    is_tool "$f" || continue
+    about=$(head -n 3 "$f" | grep -a -m 1 "^$mark")
+    printf '%s\t%s\n' "${f##*/}" "$(one_line "${about#"$mark"}")"
+  done
+}
+
+refresh() {
+  if [ -e "$dir/off" ]; then rm -f "$guide"; return 0; fi
+  {
+    cat <<'EOF'
+<!-- Written by Termant from what the agent has learned. Change it with `learn`, or in Termant → Settings. -->
+# What you have learned on this phone
+
+You learn across chats. The notes and tools at the end of this file were saved
+by you in earlier chats: rely on them, and keep adding to them.
+
+- **Save a note** when the user tells you something lasting about themselves or
+  how they want things ("hamesha ...", "yaad rakho ...", "mera naam ...",
+  "always ...", "from now on ..."), when the user corrects you, or when you find
+  out how something works on this phone that you will need again (what failed
+  and what worked instead):
+  `learn note "One short sentence."`
+- **Make a tool** when a job of several steps comes up a second time, or the
+  user says they will want it again ("roz", "har baar", "iska tool bana lo"):
+  write the script to a file, run it once to test it, then
+  `learn tool NAME "what it does" FILE`. From then on `NAME` is a command.
+  Use a tool you already have instead of doing its steps by hand.
+- Never save passwords, PINs, OTPs, keys or card numbers. Do not save one-time
+  things (today's task, a single alarm).
+- A note that is wrong or old: `learn notes`, then `learn forget N`. A tool:
+  `learn tools`, `learn drop NAME`. To change a tool, save it again under the
+  same name.
+- After saving, tell the user in one short line what you saved.
+EOF
+    echo
+    echo "## Notes you saved in earlier chats"
+    echo
+    if [ -s "$notes" ]; then cut -f 2- "$notes" | nl -w 1 -s '. '; else echo "(none yet)"; fi
+    echo
+    echo "## Tools you made (each is a command)"
+    echo
+    local list name about
+    list=$(tools)
+    if [ -n "$list" ]; then
+      printf '%s\n' "$list" | while IFS=$'\t' read -r name about; do echo "- \`$name\`: $about"; done
+    else
+      echo "(none yet)"
+    fi
+  } > "$guide.tmp" && mv "$guide.tmp" "$guide"
+}
+
+case "$1" in
+  note)
+    shift
+    must_be_on
+    text=$(one_line "$*")
+    [ -n "$text" ] || fail 'say what to remember:  learn note "One short sentence."'
+    [ ${#text} -le $MAX_NOTE ] || fail "that is ${#text} letters; a note is one short sentence of at most $MAX_NOTE."
+    if [ -f "$HOME/.config/termant/keys.env" ]; then
+      while IFS= read -r secret; do
+        [ ${#secret} -ge 8 ] || continue
+        case "$text" in *"$secret"*) fail "that contains a saved key. Keys and passwords are never kept as notes." ;; esac
+      done < <(sed -n "s/^export [A-Z_]*\(KEY\|TOKEN\)='\(.*\)'\$/\2/p" "$HOME/.config/termant/keys.env")
+    fi
+    if cut -f 2- "$notes" | grep -qixF -- "$text"; then echo "Already known: $text"; exit 0; fi
+    [ "$(wc -l < "$notes")" -lt $MAX_NOTES ] \
+      || fail "there are already $MAX_NOTES notes. Remove one that is old or wrong first: learn notes, then learn forget N."
+    printf '%s\t%s\n' "$(date +%F)" "$text" >> "$notes"
+    refresh
+    echo "Saved. You will know this in every chat from now on: $text"
+    ;;
+  notes)
+    if [ -s "$notes" ]; then cut -f 2- "$notes" | nl -w 1 -s '. '; else echo "(no notes yet)"; fi
+    ;;
+  forget)
+    count=$(wc -l < "$notes")
+    case "$2" in ''|*[!0-9]*) fail "say which one by its number: learn notes, then learn forget N." ;; esac
+    [ "$2" -ge 1 ] && [ "$2" -le "$count" ] || fail "there is no note $2 (there are $count)."
+    gone=$(sed -n "${2}p" "$notes" | cut -f 2-)
+    sed -i "${2}d" "$notes"
+    refresh
+    echo "Forgotten: $gone"
+    ;;
+  tool)
+    must_be_on
+    [ $# -eq 4 ] || fail 'use:  learn tool NAME "what it does" FILE   (FILE is the script, already written and tested)'
+    name=$2
+    about=$(one_line "$3")
+    file=$4
+    [[ "$name" =~ ^[a-z][a-z0-9-]{1,29}$ ]] \
+      || fail "the name must be 2 to 30 small letters, digits or dashes, and start with a letter."
+    [ -n "$about" ] || fail "say in a few words what the tool does."
+    [ ${#about} -le $MAX_ABOUT ] || fail "describe it in at most $MAX_ABOUT letters."
+    [ -f "$file" ] || fail "there is no file $file. Write the script to a file first."
+    [ -s "$file" ] || fail "$file is empty."
+    [ "$(wc -c < "$file")" -le 200000 ] || fail "$file is too big for a tool."
+    target="$bin/$name"
+    if [ -e "$target" ]; then
+      is_tool "$target" || fail "'$name' is already a command on this system. Pick another name."
+    else
+      command -v -- "$name" >/dev/null 2>&1 && fail "'$name' is already a command on this system. Pick another name."
+      [ "$(tools | wc -l)" -lt $MAX_TOOLS ] || fail "there are already $MAX_TOOLS tools. Remove one first: learn tools, then learn drop NAME."
+    fi
+    first=$(head -n 1 "$file")
+    tmp="$dir/.new-tool"
+    case "$first" in
+      '#!'*) { printf '%s\n' "$first"; echo "$mark $about"; tail -n +2 "$file" | grep -av "^$mark"; } > "$tmp" ;;
+      *) { echo '#!/bin/bash'; echo "$mark $about"; grep -av "^$mark" "$file"; } > "$tmp"; first='#!/bin/bash' ;;
+    esac
+    case "$first" in
+      *python*) problem=$(python3 -c 'import ast,sys; ast.parse(open(sys.argv[1]).read())' "$tmp" 2>&1 | tail -n 3) ;;
+      *bash*|*/sh*) problem=$(bash -n "$tmp" 2>&1 | head -n 3) ;;
+      *) problem= ;;
+    esac
+    if [ -n "$problem" ]; then
+      rm -f "$tmp"
+      fail "the script has a mistake, so it was not saved. Fix it and save again:
+$problem"
+    fi
+    chmod 755 "$tmp" && mv "$tmp" "$target" || fail "could not write $target."
+    refresh
+    echo "Saved. '$name' is now a command: $about"
+    ;;
+  tools)
+    list=$(tools)
+    if [ -n "$list" ]; then printf '%s\n' "$list" | sed 's/\t/: /'; else echo "(no tools yet)"; fi
+    ;;
+  drop)
+    [ -n "$2" ] || fail "say which one: learn tools, then learn drop NAME."
+    case "$2" in */*) fail "give the tool's name only." ;; esac
+    is_tool "$bin/$2" || fail "'$2' is not one of your tools (see: learn tools)."
+    rm -f "$bin/$2"
+    refresh
+    echo "Removed the tool '$2'."
+    ;;
+  refresh)
+    refresh
+    ;;
+  *)
+    cat <<'EOF'
+learn: what the agent keeps across chats
+
+  learn note "One short sentence."      remember a fact or a preference
+  learn notes                           list the notes, numbered
+  learn forget N                        remove note N
+  learn tool NAME "what it does" FILE   keep the script FILE as the command NAME
+  learn tools                           list the tools
+  learn drop NAME                       remove a tool
+EOF
+    [ "$1" = help ] || [ "$1" = --help ] || [ -z "$1" ]
+    ;;
+esac

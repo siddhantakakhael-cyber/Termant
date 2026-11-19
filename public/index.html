@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#300a24">
+  <title>Termant</title>
+  <link rel="stylesheet" href="vendor/xterm.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <form id="login" hidden autocomplete="on">
+    <h1>Termant</h1>
+    <p>Ubuntu terminal</p>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Open terminal</button>
+    <div id="login-error" role="alert"></div>
+  </form>
+
+  <div id="app" hidden>
+    <header>
+      <div id="tabs" role="tablist"></div>
+      <button id="new-tab" type="button" title="New tab" aria-label="New tab">+</button>
+      <span id="status" title="Connection status"></span>
+      <button id="logout" type="button">Log out</button>
+    </header>
+    <main id="terminals"></main>
+    <div id="keys" aria-label="Extra keys">
+      <button type="button" data-seq="esc">Esc</button>
+      <button type="button" data-seq="tab">Tab</button>
+      <button type="button" data-mod="ctrl">Ctrl</button>
+      <button type="button" data-mod="alt">Alt</button>
+      <button type="button" data-seq="up" aria-label="Up">&#9650;</button>
+      <button type="button" data-seq="down" aria-label="Down">&#9660;</button>
+      <button type="button" data-seq="left" aria-label="Left">&#9664;</button>
+      <button type="button" data-seq="right" aria-label="Right">&#9654;</button>
+      <button type="button" data-text="/">/</button>
+      <button type="button" data-text="-">-</button>
+      <button type="button" data-text="|">|</button>
+      <button type="button" data-text="~">~</button>
+    </div>
+  </div>
+
+  <script src="vendor/xterm.js"></script>
+  <script src="vendor/addon-fit.js"></script>
+  <script src="vendor/addon-web-links.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

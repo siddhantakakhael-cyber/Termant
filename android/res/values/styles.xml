@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="aubergine">#300a24</color>
+    <color name="background">#0d1117</color>
+    <color name="accent">#ff7a45</color>
+    <color name="background_light">#f6f8fa</color>
+    <color name="accent_light">#d25a2e</color>
+
+    <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:colorAccent">@color/accent</item>
+    </style>
+
+    <!-- Settings → Theme → Light; MainActivity picks it before it builds the screen. -->
+    <style name="AppTheme.Light" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/background_light</item>
+        <item name="android:statusBarColor">@color/background_light</item>
+        <item name="android:navigationBarColor">@color/background_light</item>
+        <item name="android:colorAccent">@color/accent_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

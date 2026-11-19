@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi in Roman letters (Hinglish), the way it is typed on most phones.
+     Anything missing here falls back to the English text in values/. -->
+<resources>
+    <string name="text_selection_more">Aur…</string>
+
+    <string name="setup_title">Ubuntu 24.04 taiyaar ho raha hai</string>
+    <string name="setup_note">Sirf ek baar lagbhag 30 MB download hoga. Uske baad Ubuntu aur jo bhi aap install karein, sab phone mein hi rahega.</string>
+    <string name="setup_failed">Setup poora nahi hua</string>
+    <string name="retry">Dobara koshish karein</string>
+    <string name="unsupported_device">Is phone ka processor (%1$s) support nahi hota. Termant ko ARM ya x86-64 chahiye.</string>
+
+    <string name="step_find">Ubuntu image dhoondh rahe hain…</string>
+    <string name="step_download">Ubuntu download ho raha hai… %2$d mein se %1$d MB</string>
+    <string name="step_extract">Ubuntu khul raha hai…</string>
+    <string name="step_configure">Setup poora ho raha hai…</string>
+
+    <string name="notification_channel">Terminal sessions</string>
+    <string name="notification_text_one">1 session chal raha hai</string>
+    <string name="notification_text_many">%1$d sessions chal rahe hain</string>
+    <string name="notification_exit">Band karein</string>
+
+    <string name="alarm_ringing">Band karne ke liye tap karein</string>
+    <string name="alarm_stop">Band karein</string>
+    <string name="ask_hint">Hindi ya English mein poochein…</string>
+    <string name="ask_send">Bhejein</string>
+    <string name="ask_voice">Bolkar likhein</string>
+    <string name="voice_missing">Is phone mein voice typing app nahi hai. Keyboard ka microphone button istemal karein.</string>
+    <string name="rule_failed">Rule fail hua: %1$s</string>
+    <string name="model_auto">Auto</string>
+    <string name="model_title">AI model</string>
+    <string name="model_auto_long">Automatic (ek free model)</string>
+    <string name="model_refresh">↻ List refresh karein</string>
+    <string name="model_loading">Model list aa rahi hai…</string>
+    <string name="model_not_ready">Model list agent download hone ke baad dikhegi. Pehle chat mein ek message bhejein.</string>
+    <string name="model_failed">Model list nahi aa payi. Internet connection check karein.</string>
+    <string name="workspace_title">Kaam ka folder</string>
+    <string name="workspace_new">＋ Naya folder…</string>
+    <string name="workspace_new_hint">Folder ka naam, jaise my-website</string>
+    <string name="workspace_bad_name">Sirf letters, numbers, dot, dash aur underscore istemal karein.</string>
+    <string name="workspace_storage">Phone storage (/sdcard)</string>
+    <string name="settings">Settings</string>
+    <string name="settings_agent">AI agent</string>
+    <string name="settings_model_note">Chat mein kaunsa AI model jawab dega.</string>
+    <string name="settings_workspace_note">Ubuntu ka woh folder jahan agent apni files rakhta aur chalata hai.</string>
+    <string name="settings_keys">Aapki apni API key</string>
+    <string name="settings_keys_note">Zaroori nahi. Bina key ke free models chalte hain. Key daalne par us company ke models list mein aa jaate hain aur kharcha aapke account se katta hai. Keys isi phone mein rehti hain, Ubuntu ki ~/.config/termant/keys.env file mein.</string>
+    <string name="key_not_set">Nahi daali</string>
+    <string name="key_hint">API key yahan paste karein</string>
+    <string name="key_bad">Yeh API key jaisi nahi lag rahi (space ya quotes nahi hone chahiye).</string>
+    <string name="key_saved">Save ho gayi. Ab model list se is provider ka model chunein.</string>
+    <string name="key_remove">Hatayein</string>
+    <string name="save">Save karein</string>
+    <string name="mcp_title">MCP servers</string>
+    <string name="mcp_note">Woh servers jinse AI agent judkar unhe tools ki tarah istemal kar sakta hai, jaise files padhna ya commands chalana. OpenCode khud unse connect hota hai.</string>
+    <string name="mcp_add">MCP server jodein</string>
+    <string name="mcp_edit">MCP server badlein</string>
+    <string name="mcp_name">Server ka naam</string>
+    <string name="mcp_name_hint">jaise filesystem</string>
+    <string name="mcp_command">Command</string>
+    <string name="mcp_remove">Hatayein</string>
+    <string name="mcp_none">Abhi koi MCP server nahi hai.</string>
+    <string name="mcp_saved">MCP servers save ho gaye.</string>
+    <string name="mcp_bad">Naam aur command dono likhein.</string>
+    <string name="settings_rules">Apne aap chalne wale rules</string>
+    <string name="settings_rules_note">Rules apne aap chalte hain, phone restart hone ke baad bhi, jab tak Termant force-stop na kiya jaye. Banane ke liye chat mein bolein, jaise: \"roz raat 11 baje WiFi band karo\" ya \"jab charging lage toh backup chalao\".</string>
+    <string name="rules_none">Abhi koi rule nahi hai.</string>
+    <string name="rule_delete">Rule hatayein</string>
+    <string name="rule_never">abhi tak nahi chala</string>
+    <string name="rule_last_ok">pichhli baar %1$s ko chala, sahi raha</string>
+    <string name="rule_last_failed">pichhli baar %1$s ko chala, fail hua</string>
+    <string name="sms_allow">SMS ki ijazat dein</string>
+    <string name="sms_note">Sirf un rules ya requests ke liye chahiye jo text message bhejte hain.</string>
+    <string name="chat_provider_error">Model ke provider ne request mana kar di. OpenRouter key ke saath iska matlab aksar yeh hota hai: model free nahi hai aur account mein credit nahi hai, aaj ki free limit khatam ho gayi hai, ya OpenRouter ki privacy settings mein free models band hain. Aisa model chunein jiske naam ke aakhir mein :free ho, ya koi doosra provider.</string>
+    <string name="chat_switched">%1$s par switch kiya: %2$s ne jawab nahi diya (limit khatam ya model uplabdh nahi).</string>
+    <string name="chat_all_failed">Doosre models bhi try kiye; kisi ne jawab nahi diya.</string>
+    <string name="chat_switched_midway">Kaam ke beech mein %1$s par switch kiya: %2$s ki limit khatam ho gayi. Kaam wahin se aage badha.</string>
+    <string name="chat_free_limit">OpenCode ki free limit lagbhag %1$s tak khatam hai. Yeh limit OpenCode ke sabhi free models ki ek saath hoti hai, aur kisi doosri service ka model juda nahi hai jo kaam sambhal le. Bina ruke kaam chalta rahe, iske liye: Settings → kisi doosri service ki key jodein (OpenRouter par free models hain, unke naam ke aakhir mein :free hota hai). Phir app khud us par chala jayega, kaam ke beech mein bhi.</string>
+    <string name="model_switched_now">%1$s (apne aap switch hua)</string>
+    <string name="on">Chalu</string>
+    <string name="off">Band</string>
+    <string name="switch_title">Model apne aap badlein</string>
+    <string name="switch_note">Jab koi model jawab dena band kar de, aksar free limit khatam hone par, app khud agla backup model try karta hai. Kaam ke beech mein ho to agla model wahin se kaam aage badhata hai. Jo model chal jaye, 3 ghante tak wahi rehta hai. OpenCode ke sabhi free models ki limit ek hi hai: switch hone ke liye neeche kisi doosri service ki key jodein.</string>
+    <string name="backups_title">Backup ke models</string>
+    <string name="backups_all_free">Sabhi free</string>
+    <string name="backups_note">Jin models par switch karna hai; list mein upar se neeche try hote hain. Kuch bhi tick na karein to sabhi free models istemal honge. Jis provider ki key aapne daali hai uske models ka paisa lag sakta hai, agar woh key free plan par na ho.</string>
+    <string name="arena_title">Arena.ai</string>
+    <string name="arena_description">Arena.ai browser mein kholein</string>
+    <string name="arena_note">Aapke browser mein arena.ai website kholta hai, jahan sign in karke use karein. Yeh is chat se alag hai: yeh phone ya Ubuntu ko control nahi kar sakta.</string>
+    <string name="arena_no_browser">Is phone mein koi browser app nahi mila.</string>
+    <string name="chat_new">Nayi chat</string>
+    <string name="chat_new_description">Nayi chat shuru karein</string>
+    <string name="chat_terminal">Terminal</string>
+    <string name="chat_terminal_description">Ubuntu terminal kholein</string>
+    <string name="chat_back">Chat</string>
+    <string name="chat_back_description">Chat par wapas jayein</string>
+    <string name="chat_stop">Rokein</string>
+    <string name="history_title">Purani chats</string>
+    <string name="chat_try">Yeh poochkar dekhein</string>
+    <string name="history_recent">Haal ki chats</string>
+    <string name="history_all">Sabhi %1$d chats</string>
+    <string name="history_none">Abhi koi purani chat nahi hai.</string>
+    <string name="history_untitled">Chat</string>
+    <string name="history_delete">Chat delete karein</string>
+    <string name="chat_stopped">Rok diya.</string>
+    <string name="chat_done">Ho gaya.</string>
+    <string name="chat_no_answer">Agent ne koi jawab nahi diya. Internet connection check karke dobara koshish karein.</string>
+    <string name="chat_setup_failed">Agent setup nahi ho paya. Internet connection check karke dobara koshish karein.</string>
+    <string name="chat_welcome">Namaste. Kya karna hai?</string>
+    <string name="chat_welcome_text">Hindi ya English mein poochein. Main alarm aur timer laga sakta hoon, phone control kar sakta hoon, aur Ubuntu mein code likhkar chala sakta hoon. Pehli request par agent download hoga (lagbhag 100 MB).</string>
+    <string name="notification_text_none">Taiyaar</string>
+    <string name="menu_new">Naya session</string>
+    <string name="menu_agent">AI agent (OpenCode)</string>
+    <string name="menu_close">Session band karein</string>
+    <string name="menu_paste">Paste</string>
+    <string name="menu_reset">Terminal reset karein</string>
+    <string name="menu_keep_on">Screen chalu rakhein</string>
+    <string name="menu_wake">Background mein chalta rahe</string>
+    <string name="menu_storage">Phone storage ki ijazat dein (/sdcard)</string>
+    <string name="menu_reinstall">Ubuntu dobara install karein…</string>
+    <string name="menu_about">App ke baare mein</string>
+
+    <string name="storage_granted">Naye sessions mein phone storage /sdcard par milega.</string>
+    <string name="storage_denied">Storage ki ijazat nahi mili.</string>
+    <string name="max_sessions">Naya kholne se pehle ek session band karein.</string>
+    <string name="reinstall_title">Ubuntu dobara install karein?</string>
+    <string name="reinstall_text">Isse Ubuntu, usmein install kiya har package aur uski har file mit jayegi, phir nayi copy download hogi. Phone storage ko kuch nahi hoga.</string>
+    <string name="reinstall_confirm">Mitakar dobara install karein</string>
+    <string name="cancel">Rehne dein</string>
+    <string name="close">Band karein</string>
+    <string name="about_text">Termant %1$s\n\nAapke phone par asli Ubuntu 24.04, bina root ke. Software aise install karein:\n\n    apt update\n    apt install &lt;package&gt;\n\nAI dabane par OpenCode khulta hai, ek AI coding agent jo aapke liye code likhkar chala sakta hai.\n\nText chhota-bada karne ke liye pinch karein. Select aur copy karne ke liye der tak dabayein.\n\nOpen source (GPLv3). Terminal Termux ka, userland PRoot ka, system Ubuntu ka, agent OpenCode ka.</string>
+    <string name="settings_look">Bhasha aur rang</string>
+    <string name="theme_title">Rang (Theme)</string>
+    <string name="theme_dark">Andhera (Dark)</string>
+    <string name="theme_light">Ujala (Light)</string>
+    <string name="theme_note">Poore app ke liye dark ya light rang.</string>
+    <string name="lang_title">Bhasha (Language)</string>
+    <string name="lang_hindi">Hindi (Hinglish)</string>
+    <string name="lang_english">English</string>
+    <string name="lang_note">App ke buttons aur messages ki bhasha. Agent se aap dono mein se kisi bhi bhasha mein pooch sakte hain.</string>
+    <string name="voice_listening">Sun raha hoon… boliye</string>
+    <string name="voice_stop">Sunna band karein</string>
+    <string name="voice_denied">Microphone ki ijazat nahi mili, isliye bolkar likhna kaam nahi karega.</string>
+    <string name="voice_nothing">Samajh nahi aaya. Microphone dabakar dobara bolein.</string>
+    <string name="voice_failed">Voice input ruk gaya (%1$s). Internet connection check karke dobara koshish karein.</string>
+    <!-- What the agent is doing right now; same order as Chat.ACT_*. -->
+    <string-array name="activity_titles">
+        <item>Agent shuru ho raha hai</item>
+        <item>Model se pooch raha hoon</item>
+        <item>Soch raha hoon</item>
+        <item>Jawab likh raha hoon</item>
+        <item>Command chala raha hoon</item>
+        <item>Install kar raha hoon</item>
+        <item>Phone se kaam le raha hoon</item>
+        <item>Screen par kaam kar raha hoon</item>
+        <item>Git / GitHub par kaam kar raha hoon</item>
+        <item>File padh raha hoon</item>
+        <item>File badal raha hoon</item>
+        <item>Files mein dhoondh raha hoon</item>
+        <item>Web par khoj raha hoon</item>
+        <item>Web page padh raha hoon</item>
+        <item>Kaam ke steps bana raha hoon</item>
+        <item>Sahayak agent kaam kar raha hai</item>
+        <item>Tool chala raha hoon</item>
+        <item>Model busy hai, dobara koshish kar raha hoon</item>
+        <item>Nateeja dekh raha hoon</item>
+        <item>Aapke jawab ka intezaar hai</item>
+    </string-array>
+    <string name="activity_setup">AI agent install ho raha hai (sirf ek baar)</string>
+    <string-array name="tips">
+        <item>💡 Mic dabakar bol bhi sakte hain</item>
+        <item>☕ Chai pee lo tab tak</item>
+        <item>💡 ☰ button se purani chats wapas aati hain</item>
+        <item>💡 \"Roz raat 11 baje WiFi band karo\" bolkar rule banayein</item>
+        <item>💡 >_ se asli Ubuntu terminal khulta hai</item>
+        <item>💡 Settings mein GitHub jodein, code push kar dunga</item>
+        <item>💡 Taaza jaankari chahiye? Main web par khoj leta hoon</item>
+        <item>💡 Screen control chalu ho to doosre apps bhi chala sakta hoon</item>
+        <item>⏳ Free models busy time mein dheere hote hain</item>
+        <item>💡 ■ button se mujhe kabhi bhi rok sakte hain</item>
+    </string-array>
+    <string name="time_now">Abhi</string>
+    <string name="time_minutes">%1$d minute pehle</string>
+    <string name="time_hours">%1$d ghante pehle</string>
+    <string name="time_days">%1$d din pehle</string>
+    <!-- Tools: GitHub, web search, screen control. -->
+    <string name="settings_tools">Agent ke auzaar</string>
+    <string name="settings_tools_note">Ubuntu aur phone controls ke alawa agent kya-kya istemal kar sakta hai.</string>
+    <string name="github_title">GitHub</string>
+    <string name="github_off">Juda nahi hai</string>
+    <string name="github_unchecked">Token save hai (jaancha nahi gaya)</string>
+    <string name="github_note">Token dene par agent aapke private repo clone kar sakta hai, commit aur push kar sakta hai, issue aur pull request bana sakta hai.</string>
+    <string name="github_how">GitHub par ek token banayein (repo par tick karein), copy karke yahan paste karein. Yeh isi phone mein, Ubuntu ke andar rehta hai.</string>
+    <string name="github_make">github.com par token banayein ↗</string>
+    <string name="github_hint">ghp_… ya github_pat_…</string>
+    <string name="github_remove">Hata dein</string>
+    <string name="github_removed">GitHub hata diya gaya</string>
+    <string name="github_checking">GitHub se jaanch ho rahi hai…</string>
+    <string name="github_rejected">GitHub ne yeh token nahi maana. Dobara copy karein ya naya banayein.</string>
+    <string name="github_saved">GitHub se jud gaya: @%1$s</string>
+    <string name="github_saved_unchecked">Token save ho gaya. Jaanch ke liye GitHub tak pahunch nahi hui.</string>
+    <string name="search_title">Web par khoj</string>
+    <string name="search_note">Taaza jaankari chahiye ho to agent internet par dhoondh leta hai. Muft, koi key nahi chahiye.</string>
+    <string name="search_key">%1$s search key (zaroori nahi)</string>
+    <string name="search_key_none">Zaroorat nahi</string>
+    <string name="screen_title">Screen control</string>
+    <string name="screen_note">Agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai, jaise aap karte hain.</string>
+    <string name="screen_ask_text">Ise chalu karne par agent koi bhi app khol sakta hai, usme jo dikh raha hai padh sakta hai, aur aapke liye tap, type aur swipe kar sakta hai.\n\n• Yeh tabhi kaam karta hai jab aap chat mein kahein.\n• Password wale box mein kabhi type nahi karta.\n• Jab chahein yahin se band kar dein.\n\nAgli screen par “Termant screen control” chunein (Installed ya Downloaded apps ke neeche) aur chalu karein.\n\nAgar Android “Restricted setting” kahe: Termant ki App info kholein, upar daayein ⋮ dabayein, “Allow restricted settings” chunein, phir yahan wapas aayein.</string>
+    <string name="screen_on_text">Screen control chalu hai. Aapke kehne par agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai.</string>
+    <string name="screen_open">Settings kholein</string>
+    <string name="screen_stop">Band karein</string>
+    <string name="screen_no_settings">Android Settings → Accessibility khud kholein.</string>
+    <string name="screen_service_label">Termant screen control</string>
+    <string name="screen_service_description">Aapke chat mein kehne par Termant ka AI agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai. Yeh apne aap kuch nahi karta, kuch record nahi karta, aur password wale box mein kabhi type nahi karta.</string>
+    <string name="paste_text">Paste karein</string>
+    <string name="copy_text">Copy karein</string>
+    <string-array name="chat_ideas">
+        <item>Mujhe subah 7 baje utha dena</item>
+        <item>10 minute baad chai ka timer bajana</item>
+        <item>Aaj ki badi khabrein web par dhoondh kar batao</item>
+        <item>Python script likho aur chalao jo pehle 20 prime number dikhaye</item>
+    </string-array>
+    <!-- Over other apps: what the agent is doing, and its questions. -->
+    <string name="ask_from">Termant pooch raha hai</string>
+    <string name="ask_close">Chhodein</string>
+    <string name="ask_write">Kuch aur likhein</string>
+    <string name="answer_hint">Apna jawab likhein</string>
+    <string name="ask_channel">Agent ke sawaal</string>
+    <string name="ask_notification">Agent aapse kuch poochna chahta hai</string>
+    <string name="overlay_title">Doosre apps ke upar dikhayein</string>
+    <string name="overlay_note">Jab agent kaam kar raha ho aur aap kisi doosre app mein hon, to upar ek chhota card batata hai ki woh kya kar raha hai, use rokne ka button deta hai, uske sawaal dikhata hai (chunne ke buttons ya likhne ka box), aur jawab aane par 10 second tak jawab aur agla message likhne ka box dikhata hai. Card ko upar swipe karke hata sakte hain. Screen control ke saath yeh apne aap milta hai; uske bina yahan se ijazat dein.</string>
+    <string name="overlay_with_screen">Chalu (Screen control ke saath)</string>
+    <string name="overlay_no_settings">Android Settings → Apps → Termant → Display over other apps khud kholein.</string>
+    <string name="result_done">✓ Termant: ho gaya</string>
+    <string name="result_failed">⚠ Termant: kaam nahi bana</string>
+    <string name="result_reply">Agla message yahin likhein</string>
+    <string name="settings_learn">Agent ne kya seekha</string>
+    <string name="settings_learn_note">Agent aapke baare mein aur is phone par kya chalta hai, iski chhoti baatein yaad rakhta hai, aur baar-baar aane wale kaam ke liye chhote auzaar bana leta hai. Har nayi chat mein yeh dono uske paas hote hain. Sikhane ke liye kahein \"yaad rakho …\" ya \"iska tool bana lo\". Sab kuch isi phone par rehta hai, lekin yaad rakhi baatein har message ke saath model ki service ko jaati hain, jaise message khud jaata hai. ✕ se ek hata sakte hain.</string>
+    <string name="learn_title">Istemal se seekhna</string>
+    <string name="learn_notes">Yaad rakhi baatein</string>
+    <string name="learn_notes_none">Abhi kuch yaad nahi rakha.</string>
+    <string name="learn_tools">Khud banaye auzaar</string>
+    <string name="learn_tools_none">Abhi koi auzaar nahi bana.</string>
+    <string name="learn_forget">Baat %1$d hatayein</string>
+    <string name="learn_drop">Auzaar %1$s hatayein</string>
+    <string name="settings_care">Aapka khayal</string>
+    <string name="settings_care_note">Agent khud aapse baat shuru karta hai, jaise koi apna haal poochta hai. Jo usne aapke baare mein seekha hai uska istemal karta hai, aur aapki batayi baaton par baad mein wapas aata hai.</string>
+    <string name="care_title">Khud se mujhse poochhe</string>
+    <string name="care_times">Roz is samay</string>
+    <string name="care_times_none">Koi tay samay nahi</string>
+    <string name="care_times_note">Inke alawa agent kisi baat par wapas aane ka samay khud chunta hai. Din mein 6 baar se zyada nahi, aur raat ko nahi.</string>
+    <string name="care_times_hint">09:00, 21:00</string>
+    <string name="care_times_help">Din ke 4 samay tak, jaise 09:00, 21:00. Koi tay samay nahi chahiye to khali chhod dein.</string>
+    <string name="care_times_wrong">Yeh samay samajh nahi aaya. Aise likhein: 09:00, 21:00.</string>
+    <string name="care_now">Abhi poochho</string>
+    <string name="care_now_note">Dekhne ke liye ki yeh kaisa hai.</string>
+    <string name="care_now_started">Agent aapko likh raha hai. Uska message abhi chat mein aayega.</string>
+    <string name="care_now_busy">Agent abhi kaam mein hai. Thodi der mein phir koshish karein.</string>
+    <string name="care_planned">In baaton par wapas aana chahta hai</string>
+    <string name="care_drop">Tay sawal %1$d hatayein</string>
+    <string name="care_own">Termant ne khud poochha</string>
+    <string name="care_card">Termant ko aapka khayal aaya</string>
+    <string name="care_channel">Agent ke apne sawal</string>
+    <string name="care_reply">Jawab dein</string>
+    <string name="care_reply_hint">Apna jawab likhein</string>
+    <string name="care_now_failed">Agent abhi likh nahi paya: model ne jawab nahi diya (network nahi hai, ya uski limit khatam hai). Wajah dekhne ke liye ek aam message bhejein.</string>
+</resources>

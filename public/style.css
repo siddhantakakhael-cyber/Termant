@@ -1,0 +1,146 @@
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #300a24;
+  color: #eee;
+  font-family: Ubuntu, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+[hidden] { display: none !important; }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* ---------- login ---------- */
+#login {
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 18vh 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#login h1 { margin: 0; font-size: 28px; font-weight: 500; }
+#login p { margin: 0 0 14px; color: #c9b3c2; }
+#login label { font-size: 13px; color: #c9b3c2; }
+#login input {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #6b4a61;
+  background: #1e0617;
+  color: #fff;
+}
+#login input:focus { outline: 2px solid #e95420; outline-offset: 1px; }
+#login button {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #e95420;
+  color: #fff;
+  font-weight: 500;
+}
+#login button:hover { background: #f26a3a; }
+#login-error { min-height: 20px; color: #ff9d85; font-size: 13px; }
+
+/* ---------- app ---------- */
+#app { height: 100%; display: flex; flex-direction: column; }
+
+header {
+  display: flex;
+  align-items: stretch;
+  background: #2b2b2b;
+  height: 36px;
+  flex: none;
+}
+
+#tabs { display: flex; overflow-x: auto; min-width: 0; scrollbar-width: none; }
+#tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 14px;
+  white-space: nowrap;
+  color: #aaa;
+  border-right: 1px solid #1d1d1d;
+  cursor: pointer;
+  user-select: none;
+}
+.tab:hover { color: #ddd; }
+.tab.active { background: #300a24; color: #fff; }
+.tab .close {
+  border: 0;
+  background: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  line-height: 1;
+  font-size: 16px;
+  color: inherit;
+  opacity: .6;
+}
+.tab .close:hover { background: rgba(255, 255, 255, .15); opacity: 1; }
+
+header > button {
+  border: 0;
+  background: none;
+  padding: 0 14px;
+  color: #bbb;
+  flex: none;
+}
+header > button:hover { background: #3a3a3a; color: #fff; }
+#new-tab { font-size: 20px; line-height: 1; }
+
+#status {
+  margin-left: auto;
+  align-self: center;
+  flex: none;
+  padding: 0 10px;
+  font-size: 12px;
+  color: #aaa;
+  white-space: nowrap;
+}
+#status::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: #e0a030;
+}
+#status.on::before { background: #4cc35b; }
+#status.off::before { background: #e0453a; }
+
+#terminals { flex: 1; min-height: 0; position: relative; }
+.term { position: absolute; inset: 0; padding: 6px 0 0 8px; }
+.term:not(.active) { visibility: hidden; }
+.xterm { height: 100%; }
+.xterm-viewport { scrollbar-color: #6b4a61 transparent; }
+
+/* ---------- extra keys for touch screens ---------- */
+#keys { display: none; flex: none; background: #2b2b2b; overflow-x: auto; }
+#keys button {
+  flex: 1 0 auto;
+  min-width: 44px;
+  height: 40px;
+  border: 0;
+  border-right: 1px solid #1d1d1d;
+  background: none;
+  color: #ddd;
+}
+#keys button:active { background: #444; }
+#keys button.on { background: #e95420; color: #fff; }
+
+@media (pointer: coarse) {
+  #keys { display: flex; }
+}
+@media (max-width: 520px) {
+  #logout { display: none; }
+  #status { font-size: 0; padding: 0 8px; }
+  #status::before { margin: 0; }
+}
