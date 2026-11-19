@@ -4,9 +4,11 @@
 // Licensed under the GNU GPL version 3; see ios/LICENSE.md.
 
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include "termant_shell.h"
 
@@ -44,6 +46,12 @@ static void ended(void *context, int status) {
     pthread_mutex_unlock(&t->lock);
 }
 
+static long long now_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (long long) t.tv_sec * 1000 + t.tv_nsec / 1000000;
+}
+
 static void *stop_soon(void *unused) {
     (void) unused;
     sleep(1);
@@ -76,6 +84,11 @@ int main(int argc, char **argv) {
         return 2;
     }
     setvbuf(stdout, NULL, _IOLBF, 0);
+    // An iPhone app does its work on threads that let no signal in, and a thread hands that on to the
+    // threads it starts. The engine needs one signal to wake its threads, so the test begins as the app does.
+    sigset_t all;
+    sigfillset(&all);
+    pthread_sigmask(SIG_BLOCK, &all, NULL);
     char root[4096], why[512] = "";
     snprintf(root, sizeof(root), "%s/root", argv[2]);
     static struct text t = {.lock = PTHREAD_MUTEX_INITIALIZER};
@@ -103,13 +116,19 @@ int main(int argc, char **argv) {
           && strcmp(t.bytes, "kept\n") == 0, "files can be written and linked", t.bytes);
     check(run("i=0; while [ $i -lt 2000 ]; do i=$((i+1)); done; echo $i; seq 1 3000 | wc -l", 60, &t, &status) == 0
           && strcmp(t.bytes, "2000\n3000\n") == 0, "loops and pipes work", t.bytes);
+    long long began = now_ms();
     check(run("echo before; sleep 30; echo after", 2, &t, &status) == 1 && strcmp(t.bytes, "before\n") == 0
           && status == 128 + 9, "a command that takes too long is stopped", t.bytes);
+    check(now_ms() - began < 2900, "and that at once, when its time is over", NULL);
     pthread_t stopper;
     pthread_create(&stopper, NULL, stop_soon, NULL);
+    began = now_ms();
     check(run("echo one; sleep 30; echo two", 60, &t, &status) == 2 && strcmp(t.bytes, "one\n") == 0,
           "the app can stop a command", t.bytes);
+    check(now_ms() - began < 1900, "and that at once", NULL);
     pthread_join(stopper, NULL);
+    check(run("pidof sleep; echo end", 20, &t, &status) == 0 && strcmp(t.bytes, "end\n") == 0,
+          "what a stopped command had started is gone as well", t.bytes);
     check(run("uname -n -v", 20, &t, &status) == 0 && strncmp(t.bytes, "termant Termant ", 16) == 0,
           "the computer is called termant", t.bytes);
     check(run("sleep 20 & echo started", 10, &t, &status) == 0 && status == 0 && strcmp(t.bytes, "started\n") == 0,

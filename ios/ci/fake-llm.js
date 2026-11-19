@@ -28,15 +28,16 @@ function reply(model, messages) {
     const topic = (text.match(/come back to this: "([^"]*)"/) || [])[1];
     return topic ? `Abhi poochh raha hoon: ${topic}?` : 'Namaste! Aaj aap kaise hain?';
   }
-  // the Linux shell: "chalao: <command>" has it run, and what it printed is told back
+  // the Linux shell: "chalao: <command>" has it run, and what it printed is told back.
+  // (After a command that was stopped, the user's next message follows its output in one message.)
+  const command = text.match(/(?:^|\n\n)chalao:\s*([\s\S]+)$/i);
+  if (command) return `Chalata hoon.\n[[run: ${command[1]}]]`;
   if (text.startsWith('Command output:')) {
     const lines = text.split('\n').slice(1).filter((line) => line && !line.startsWith('$ '));
     if (lines.includes('again')) return '[[run: echo again]]';
     if (lines.includes('step-one')) return 'Ek aur.\n[[run: echo step-two; exit 3]]';
     return 'Shell ne kaha: ' + lines.join(' / ');
   }
-  const command = text.match(/^chalao:\s*([\s\S]+)$/i);
-  if (command) return `Chalata hoon.\n[[run: ${command[1]}]]`;
   if (/yaad rakho/i.test(text)) return 'Theek hai, yaad rakhunga.\n[[note: The user is called Asha.]]';
   if (/exam/i.test(text)) return 'All the best for the exam!\n[[care: 1m | how the exam went]]';
   if (/doctor/i.test(text)) return 'Apna khayal rakhna. [[care: 20h | how the visit to the doctor went]]';

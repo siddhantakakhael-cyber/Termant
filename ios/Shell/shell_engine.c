@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <poll.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,6 +151,20 @@ static void process_ended(struct task *task, int code) {
 // ------------------------------------------------------------ starting
 
 // Writes a file inside Linux. `current` must be a process.
+// iSH wakes a thread that waits in the host's kernel by sending it the signal SIGUSR1: that is how Ctrl+C,
+// a kill and a timer reach a program that sleeps or reads. A thread gets its signal mask from the thread
+// that starts it, and the threads an iPhone app does its work on (Grand Central Dispatch) let no signal in.
+// So a program's first thread is started with that signal let in, whatever the mask of the caller is;
+// the threads of everything the program starts take it over from there.
+static void start_task(struct task *task) {
+    sigset_t wake, before;
+    sigemptyset(&wake);
+    sigaddset(&wake, SIGUSR1);
+    pthread_sigmask(SIG_UNBLOCK, &wake, &before);
+    task_start(task);
+    pthread_sigmask(SIG_SETMASK, &before, NULL);
+}
+
 static int put_file(const char *path, const char *text, int mode) {
     struct fd *fd = generic_open(path, O_WRONLY_ | O_CREAT_ | O_TRUNC_, mode);
     if (IS_ERR(fd))
@@ -260,7 +275,7 @@ int tsh_boot(const char *root, const char *motd, char *why, size_t why_size) {
         say(why, why_size, "cannot start /sbin/init (error %d)", err);
         goto out;
     }
-    task_start(current);
+    start_task(current);
     current = NULL;
     state = 1;
     result = 0;
@@ -365,7 +380,7 @@ int tsh_open(int columns, int rows, tsh_output_fn output, tsh_ended_fn ended, vo
         goto out;
     }
     t->pid = current->pid;
-    task_start(current);
+    start_task(current);
     current = NULL;
     result = number;
 out:
@@ -501,7 +516,7 @@ int tsh_run(const char *command, const char *folder, int seconds,
         }
     }
     pthread_mutex_unlock(&table_lock);
-    task_start(current);
+    start_task(current);
     current = NULL;
     started = 1;
 unlock:

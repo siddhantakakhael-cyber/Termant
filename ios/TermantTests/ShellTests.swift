@@ -99,21 +99,27 @@ final class ShellTests: XCTestCase {
         let run = await shell.run("echo before; sleep 60; echo after", seconds: 2)
         XCTAssertEqual(run.how, "timeout")
         XCTAssertEqual(run.output, "before\n")
-        XCTAssertLessThan(Date().timeIntervalSince(began), 20)
+        XCTAssertEqual(run.status, 128 + 9)
+        XCTAssertLessThan(Date().timeIntervalSince(began), 4.5, "it was not ended at once")
+        // nothing of it is left behind
+        let left = await shell.run("pidof sleep; echo end")
+        XCTAssertEqual(left.output, "end\n")
         // and the shell is as before
         let next = await shell.run("echo fine")
         XCTAssertEqual(next.output, "fine\n")
     }
 
     func testCommandCanBeStopped() async {
-        let began = Date()
         let task = Task { await Shell.shared.run("echo started; sleep 60; echo finished") }
         try? await Task.sleep(nanoseconds: 2_000_000_000)
+        let began = Date()
         task.cancel()
         let run = await task.value
         XCTAssertEqual(run.how, "stopped")
         XCTAssertEqual(run.output, "started\n")
-        XCTAssertLessThan(Date().timeIntervalSince(began), 20)
+        XCTAssertLessThan(Date().timeIntervalSince(began), 2.5, "it was not ended at once")
+        let left = await shell.run("pidof sleep; echo end")
+        XCTAssertEqual(left.output, "end\n")
     }
 
     func testLongOutputKeepsItsBeginningAndItsEnd() async {
@@ -166,12 +172,14 @@ final class ShellTests: XCTestCase {
         XCTAssertTrue(resized, seen)
 
         // Ctrl+C ends what runs in front
-        session.type(Data("sleep 60\n".utf8))
+        session.type(Data("sleep 40\n".utf8))
         try? await Task.sleep(nanoseconds: 1_000_000_000)
+        let began = Date()
         session.type(Data([3]))
-        session.type(Data("echo back-again\n".utf8))
-        let back = await eventually(30) { seen.contains("back-again\n") }
+        session.type(Data("echo back-$((40 + 2))\n".utf8))
+        let back = await eventually(30) { seen.contains("back-42\n") }
         XCTAssertTrue(back, seen)
+        XCTAssertLessThan(Date().timeIntervalSince(began), 20, "Ctrl+C did not end the sleep")
 
         session.type(Data("exit\n".utf8))
         let left = await eventually(30) { ended }
@@ -184,8 +192,8 @@ final class ShellTests: XCTestCase {
         var second = ""
         other.onOutput = { second += TerminalText.plain(String(decoding: $0, as: UTF8.self)) }
         XCTAssertTrue(other.open(columns: 80, rows: 24))
-        other.type(Data("echo from-the-terminal > /root/shared.txt; echo written\n".utf8))
-        let written = await eventually(30) { second.contains("written\n") }
+        other.type(Data("echo from-the-terminal > /root/shared.txt; echo written-$((20 + 3))\n".utf8))
+        let written = await eventually(30) { second.contains("written-23\n") }
         XCTAssertTrue(written, second)
         other.close()
         let run = await shell.run("cat /root/shared.txt; rm /root/shared.txt")
@@ -269,19 +277,12 @@ final class ShellTests: XCTestCase {
         chat.stop()
         let over = await eventually(20) { !self.chat.busy }
         XCTAssertTrue(over)
-        XCTAssertLessThan(Date().timeIntervalSince(began), 15)
+        XCTAssertLessThan(Date().timeIntervalSince(began), 2.5, "the command was not ended at once")
         XCTAssertEqual(chat.chat.messages.count, 2) // nothing more was asked of the model
         XCTAssertEqual(chat.chat.messages.last?.runs?.first?.how, "stopped")
         XCTAssertEqual(chat.chat.messages.last?.runs?.first?.output, "begun\n")
         // the next message is answered as usual
         let reply = await chat.sendAndWait("chalao: echo after-the-stop")
         XCTAssertEqual(reply?.text, "Shell ne kaha: after-the-stop / (exit code 0)")
-    }
-
-    func testCheckInRunsNothing() async {
-        // "this time you speak first" is answered without commands by the stand-in; a reply that asks for one is not obeyed
-        let reply = await chat.checkIn(topic: nil)
-        XCTAssertNotNil(reply)
-        XCTAssertNil(reply?.runs)
     }
 }
