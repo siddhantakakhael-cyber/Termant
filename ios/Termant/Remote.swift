@@ -18,6 +18,22 @@ enum Remote {
         return parts.url
     }
 
+    /// Nil when something answers at this address; otherwise why not.
+    static func unreachable(_ base: URL) async -> String? {
+        guard let url = URL(string: "healthz", relativeTo: base) else { return "bad address" }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 10
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        do {
+            _ = try await session.data(for: request)
+            return nil // any answer will do: a proxy in front may not pass this path on
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
     enum LoginResult: Equatable {
         case cookie(HTTPCookie)
         case wrongPassword
@@ -82,6 +98,11 @@ final class RemoteModel: NSObject, ObservableObject, WKNavigationDelegate {
         loading = true
         problem = ""
         Task {
+            if let why = await Remote.unreachable(base) {
+                loading = false
+                problem = L.t("remote_unreachable", why)
+                return
+            }
             if !password.isEmpty, case .cookie(let cookie) = await Remote.login(base: base, password: password) {
                 await web.configuration.websiteDataStore.httpCookieStore.setCookie(cookie)
             }

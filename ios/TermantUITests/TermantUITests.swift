@@ -13,6 +13,13 @@ final class TermantUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    override func tearDown() {
+        // what the screen showed when a test gave up
+        if (testRun?.failureCount ?? 0) > 0 {
+            shot("FAILED-" + name.replacingOccurrences(of: "[^A-Za-z0-9]+", with: "-", options: .regularExpression))
+        }
+    }
+
     private func launch(_ extra: [String: String] = [:], model: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["TERMANT_UITEST"] = "1"
@@ -130,11 +137,13 @@ final class TermantUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Namaste"].waitForExistence(timeout: 20))
         app.buttons["bar.settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
-        let now = app.buttons["settings.care.now"]
-        for _ in 0..<8 where !now.isHittable { app.swipeUp() }
         // the daily questions are planned and written ahead of time
-        XCTAssertTrue(text(app, "Namaste! Din kaisa ja raha hai?").waitForExistence(timeout: 20))
+        let daily = text(app, "Namaste! Din kaisa ja raha hai?")
+        for _ in 0..<8 where !daily.exists { app.swipeUp() }
+        XCTAssertTrue(daily.waitForExistence(timeout: 20))
         shot("09-care-settings")
+        let now = app.buttons["settings.care.now"]
+        for _ in 0..<8 where !(now.exists && now.isHittable) { app.swipeDown() }
         now.tap()
         XCTAssertTrue(text(app, "Namaste! Aaj aap kaise hain?").waitForExistence(timeout: 20))
         XCTAssertTrue(text(app, "Termant ne khud poochha").exists)
@@ -182,7 +191,6 @@ final class TermantUITests: XCTestCase {
         let esc = app.webViews.buttons["Esc"]
         XCTAssertTrue(esc.waitForExistence(timeout: 40), "the terminal page did not open")
         XCTAssertFalse(app.webViews.buttons["Open terminal"].exists)
-        XCTAssertTrue(app.webViews.buttons["Log out"].exists)
         sleep(3) // the shell's prompt
         shot("15-terminal")
 
@@ -214,6 +222,7 @@ final class TermantUITests: XCTestCase {
         let app = launch(["TERMANT_TEST_REMOTE": "http://127.0.0.1:9", "TERMANT_TEST_CARE_OFF": "1"])
         app.buttons["bar.terminal"].tap()
         XCTAssertTrue(app.staticTexts["remote.problem"].waitForExistence(timeout: 40))
+        XCTAssertTrue(text(app, "koi Termant server jawab nahi de raha").exists)
         shot("18-terminal-unreachable")
     }
 

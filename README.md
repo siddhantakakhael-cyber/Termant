@@ -382,10 +382,12 @@ own choosing there. So the agent writes its next messages ahead of time, wheneve
 use the app, and hands them to iOS as notifications for their moments. They arrive with
 the app closed, but they were written with what the agent knew when you last opened it.
 
-### Install with SideStore
+### Install with SideStore or iloader
 
-The IPA is not signed; it cannot be, without a paid Apple developer account. SideStore
-signs it on the phone with your own Apple ID:
+The IPA is not signed; it cannot be, without a paid Apple developer account. A sideloading
+tool signs it with your own Apple ID when it installs it. With **iloader** on a computer:
+connect the iPhone, sign in with your Apple ID, choose **Import IPA** and pick `Termant.ipa`.
+With SideStore, on the phone itself:
 
 1. Set up [SideStore](https://sidestore.io) once (its site has the steps; the first
    install needs a computer).
@@ -393,7 +395,8 @@ signs it on the phone with your own Apple ID:
 3. Open Termant, then **Settings**: choose the service, paste its key and **Save**.
 
 With a free Apple ID, an app installed this way works for 7 days; SideStore renews it
-when you open it and press **Refresh**. AltStore and Sideloadly take the same file.
+when you open it and press **Refresh**; with iloader, install the file again. AltStore and
+Sideloadly take the same file.
 
 ### Build it yourself
 

@@ -375,6 +375,10 @@ final class StoreTests: XCTestCase {
 
     func testServerThatIsNotThere() async throws {
         let base = try XCTUnwrap(Remote.normalize("127.0.0.1:9"))
+        let why = await Remote.unreachable(base)
+        XCTAssertNotNil(why)
+        let there = await Remote.unreachable(try XCTUnwrap(Remote.normalize(StoreTests.server)))
+        XCTAssertNil(there)
         guard case .failed = await Remote.login(base: base, password: "x") else {
             return XCTFail("a login to nothing did not fail")
         }
