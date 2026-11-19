@@ -7,6 +7,7 @@ struct ChatScreen: View {
     @State private var showSettings = false
     @State private var showHistory = false
     @State private var showRemote = false
+    @State private var showShell = false
     @FocusState private var typing: Bool
 
     private var colors: Palette { Theme.palette(prefs.theme) }
@@ -40,6 +41,17 @@ struct ChatScreen: View {
         .fullScreenCover(isPresented: $showRemote) {
             RemoteView().environmentObject(prefs)
         }
+        .fullScreenCover(isPresented: $showShell) {
+            ShellView(openServer: {
+                // one's own server, or Settings to name it
+                let named = Remote.normalize(prefs.remoteURL) != nil
+                showShell = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    if named { showRemote = true } else { showSettings = true }
+                }
+            })
+            .environmentObject(prefs)
+        }
     }
 
     private var bar: some View {
@@ -51,7 +63,8 @@ struct ChatScreen: View {
             icon("square.and.pencil", "new_chat", id: "bar.new") { chat.newChat() }
             icon("clock.arrow.circlepath", "history", id: "bar.history") { showHistory = true }
             icon("terminal", "terminal", id: "bar.terminal") {
-                if Remote.normalize(prefs.remoteURL) == nil { showSettings = true } else { showRemote = true }
+                typing = false
+                showShell = true
             }
             icon("gearshape", "settings", id: "bar.settings") { showSettings = true }
         }
@@ -117,6 +130,7 @@ struct ChatScreen: View {
             }
             .onTapGesture { typing = false }
             .onChange(of: chat.chat.messages.last?.text) { _ in proxy.scrollTo("end", anchor: .bottom) }
+            .onChange(of: chat.chat.messages.last?.runs) { _ in proxy.scrollTo("end", anchor: .bottom) }
             .onChange(of: chat.chat.messages.count) { _ in
                 withAnimation { proxy.scrollTo("end", anchor: .bottom) }
             }
@@ -199,7 +213,7 @@ struct Bubble: View {
                 }
                 if message.text.isEmpty && busy {
                     ProgressView()
-                } else {
+                } else if !message.text.isEmpty || (message.runs ?? []).isEmpty {
                     Text(message.user ? AttributedString(message.text) : Theme.rich(message.text))
                         .foregroundColor(message.failed ? colors.error : (message.user ? colors.onAccent : colors.text))
                         .textSelection(.enabled)
@@ -209,6 +223,9 @@ struct Bubble: View {
                     Label(action, systemImage: "checkmark.circle")
                         .font(.caption)
                         .foregroundColor(colors.muted)
+                }
+                ForEach(message.runs ?? []) { run in
+                    RunView(run: run, colors: colors)
                 }
             }
             .padding(.horizontal, 14)
@@ -226,6 +243,62 @@ struct Bubble: View {
             .accessibilityIdentifier(message.user ? "bubble.user" : "bubble.agent")
             if !message.user { Spacer(minLength: 40) }
         }
+    }
+}
+
+/// A command the agent ran in the shell, with what it printed.
+struct RunView: View {
+    let run: ShellRun
+    let colors: Palette
+    @State private var all = false
+
+    static let shownLines = 8
+
+    private var state: String {
+        switch run.how {
+        case "waiting": return L.t("run_waiting")
+        case "running": return L.t("run_running")
+        case "ended": return L.t("run_exit", String(run.status))
+        case "timeout": return L.t("run_timeout", String(ShellReport.minutes))
+        case "stopped": return L.t("run_stopped")
+        default: return L.t("run_failed")
+        }
+    }
+
+    var body: some View {
+        let output = run.output.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
+        let long = lines.count > RunView.shownLines || output.count > 600
+        let shown = all || !long ? output : String(lines.suffix(RunView.shownLines).joined(separator: "\n").suffix(600))
+        VStack(alignment: .leading, spacing: 4) {
+            Text("$ " + run.command)
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundColor(colors.accent)
+                .fixedSize(horizontal: false, vertical: true)
+            if !shown.isEmpty {
+                Text(shown)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(run.how == "failed" ? colors.error : colors.text)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 8) {
+                if run.how == "running" { ProgressView().scaleEffect(0.7) }
+                Text(state)
+                    .font(.caption2)
+                    .foregroundColor(run.how == "ended" && run.status == 0 ? colors.muted : colors.error)
+                if long {
+                    Spacer()
+                    Button(L.t(all ? "run_less" : "run_more")) { all.toggle() }
+                        .font(.caption2)
+                }
+            }
+        }
+        .textSelection(.enabled)
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(colors.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .accessibilityIdentifier("run")
     }
 }
 

@@ -181,12 +181,84 @@ final class TermantUITests: XCTestCase {
         shot("14-check-in-in-chat")
     }
 
+    // ------------------------------------------------------------ the Linux inside the app
+
+    /// Waits until the terminal of the app's Linux has printed this.
+    private func shellShows(_ app: XCUIApplication, _ part: String, timeout: TimeInterval = 90) -> Bool {
+        let tail = app.staticTexts["shell.tail"]
+        guard tail.waitForExistence(timeout: 20) else { return false }
+        let shows = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", part), object: tail)
+        return XCTWaiter().wait(for: [shows], timeout: timeout) == .completed
+    }
+
+    func testLinuxTerminalAndTheAgentUsingIt() {
+        let app = launch(["TERMANT_TEST_CARE_OFF": "1"])
+        app.buttons["bar.terminal"].tap()
+        // Alpine is unpacked, Linux starts, and the shell greets with its prompt
+        XCTAssertTrue(shellShows(app, "termant:~#"), "no prompt: " + app.staticTexts["shell.tail"].label)
+        XCTAssertTrue(app.webViews.buttons["Esc"].waitForExistence(timeout: 20), "the keys of the terminal are missing")
+        shot("19-linux-terminal")
+
+        // typing reaches the shell
+        app.webViews.firstMatch.tap()
+        app.typeText("echo made-in-the-terminal > /root/proof.txt; uname -m\n")
+        XCTAssertTrue(shellShows(app, "i686"), "typed, but: " + app.staticTexts["shell.tail"].label)
+        shot("20-linux-typed")
+
+        // a key of the extra row: Tab completes the name of the file
+        app.typeText("cat /root/pro")
+        app.webViews.buttons["Tab"].tap()
+        app.typeText("\n")
+        XCTAssertTrue(shellShows(app, "cat /root/proof.txt"), "Tab did not complete: " + app.staticTexts["shell.tail"].label)
+
+        app.buttons["shell.close"].tap()
+        XCTAssertTrue(app.buttons["bar.terminal"].waitForExistence(timeout: 10))
+
+        // the agent works in the same Linux: it reads the file that was made in the terminal
+        say(app, "chalao: cat /root/proof.txt")
+        XCTAssertTrue(text(app, "Shell ne kaha: made-in-the-terminal").waitForExistence(timeout: 60))
+        XCTAssertTrue(text(app, "$ cat /root/proof.txt").exists)
+        shot("21-agent-ran-a-command")
+
+        // the terminal is as it was left
+        app.buttons["bar.terminal"].tap()
+        XCTAssertTrue(shellShows(app, "made-in-the-terminal", timeout: 20))
+        shot("22-linux-terminal-again")
+    }
+
+    func testAgentMayBeKeptOutOfTheShell() {
+        let app = launch(["TERMANT_TEST_CARE_OFF": "1"])
+        app.buttons["bar.settings"].tap()
+        let toggle = app.switches["settings.shell.agent"]
+        for _ in 0..<8 where !(toggle.exists && toggle.isHittable) { app.swipeUp() }
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        shot("23-settings-linux")
+        XCTAssertEqual(toggle.value as? String, "1")
+        // the switch itself, at the right end of the row
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        XCTAssertEqual(toggle.value as? String, "0")
+        for _ in 0..<8 where !app.buttons["settings.close"].isHittable { app.swipeDown() }
+        app.buttons["settings.close"].tap()
+        say(app, "chalao: echo nahi")
+        XCTAssertTrue(text(app, "Chalata hoon.").waitForExistence(timeout: 30))
+        XCTAssertTrue(text(app, "agent ke liye shell band hai").waitForExistence(timeout: 10))
+        XCTAssertFalse(text(app, "Shell ne kaha").exists)
+    }
+
     // ------------------------------------------------------------ the terminal of one's own server
+
+    /// The >_ button opens the Linux of the app; from there one button leads to one's own server.
+    private func openServerTerminal(_ app: XCUIApplication) {
+        app.buttons["bar.terminal"].tap()
+        let server = app.buttons["shell.server"]
+        XCTAssertTrue(server.waitForExistence(timeout: 10))
+        server.tap()
+    }
 
     func testTerminalOfOwnServer() {
         let app = launch(["TERMANT_TEST_REMOTE": server, "TERMANT_TEST_REMOTE_PASSWORD": serverPassword,
                           "TERMANT_TEST_CARE_OFF": "1"])
-        app.buttons["bar.terminal"].tap()
+        openServerTerminal(app)
         // logged in with the saved password: the terminal's own keys are there, the login form is not
         let esc = app.webViews.buttons["Esc"]
         XCTAssertTrue(esc.waitForExistence(timeout: 40), "the terminal page did not open")
@@ -213,22 +285,22 @@ final class TermantUITests: XCTestCase {
     func testTerminalWithWrongPasswordShowsTheLoginForm() {
         let app = launch(["TERMANT_TEST_REMOTE": server, "TERMANT_TEST_REMOTE_PASSWORD": "wrong",
                           "TERMANT_TEST_CARE_OFF": "1"])
-        app.buttons["bar.terminal"].tap()
+        openServerTerminal(app)
         XCTAssertTrue(app.webViews.buttons["Open terminal"].waitForExistence(timeout: 40))
         shot("17-terminal-login")
     }
 
     func testTerminalWithoutServerSaysSo() {
         let app = launch(["TERMANT_TEST_REMOTE": "http://127.0.0.1:9", "TERMANT_TEST_CARE_OFF": "1"])
-        app.buttons["bar.terminal"].tap()
+        openServerTerminal(app)
         XCTAssertTrue(app.staticTexts["remote.problem"].waitForExistence(timeout: 40))
         XCTAssertTrue(text(app, "koi Termant server jawab nahi de raha").exists)
         shot("18-terminal-unreachable")
     }
 
-    func testTerminalButtonLeadsToSettingsWhenNoServerIsNamed() {
+    func testServerButtonLeadsToSettingsWhenNoServerIsNamed() {
         let app = launch(["TERMANT_TEST_CARE_OFF": "1"])
-        app.buttons["bar.terminal"].tap()
+        openServerTerminal(app)
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
     }
 }

@@ -9,8 +9,10 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "0.2.0"
+    CURRENT_PROJECT_VERSION: "2"
+    # The shell's libraries (ios/ish/build.sh) are built for Apple silicon only.
+    "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
     DEVELOPMENT_TEAM: ""
 targets:
   Termant:
@@ -18,6 +20,23 @@ targets:
     platform: iOS
     sources:
       - path: Termant
+      # The Linux shell inside the app. Before the project is generated:
+      #   npm ci (in the repository root), ish/fetch.sh, ish/build.sh iphoneos, ish/build.sh iphonesimulator
+      - path: Shell
+        excludes:
+          - "*.c" # compiled by ish/build.sh together with iSH, whose headers they use
+      - path: ish/rootfs/alpine.tar.gz
+        buildPhase: resources
+      - path: ../node_modules/@xterm/xterm/lib/xterm.js
+        buildPhase: resources
+      - path: ../node_modules/@xterm/xterm/css/xterm.css
+        buildPhase: resources
+      - path: ../node_modules/@xterm/addon-fit/lib/addon-fit.js
+        buildPhase: resources
+      - path: LICENSE.md
+        buildPhase: resources
+      - path: COPYING
+        buildPhase: resources
     info:
       path: Termant/Info.plist
       properties:
@@ -45,6 +64,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.termant.app
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_OBJC_BRIDGING_HEADER: Shell/Termant-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: $(SRCROOT)/ish/lib/$(PLATFORM_NAME)
+        OTHER_LDFLAGS: -ltermantshell -lish -lish_emu -lfakefs -lsqlite3 -lz -lresolv
   TermantTests:
     type: bundle.unit-test
     platform: iOS

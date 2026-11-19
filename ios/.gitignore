@@ -5,3 +5,8 @@ out/
 *.ipa
 .derived*/
 ci-out/
+# the shell: fetched sources, the root file system and what is built from them (see ios/ish/versions.sh)
+ish/src/
+ish/rootfs/
+ish/work/
+ish/lib/

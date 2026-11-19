@@ -14,6 +14,8 @@ struct SettingsScreen: View {
     @State private var timesWrong = false
     @State private var remotePassword = ""
     @State private var remoteNote = ""
+    @State private var askReset = false
+    @State private var resetNote = ""
     @State private var reminders: [Reminder] = []
 
     var body: some View {
@@ -24,6 +26,7 @@ struct SettingsScreen: View {
                 caring
                 learned
                 if !reminders.isEmpty { reminding }
+                linux
                 remote
                 about
             }
@@ -234,6 +237,29 @@ struct SettingsScreen: View {
         }
     }
 
+    // ------------------------------------------------------------ the Linux inside the app
+
+    private var linux: some View {
+        Section(header: Text(L.t("shell_section")), footer: Text(L.t("shell_note"))) {
+            Toggle(L.t("shell_agent"), isOn: $prefs.shellAgent)
+                .accessibilityIdentifier("settings.shell.agent")
+            Stepper(L.t("shell_font", String(prefs.shellFont)), value: $prefs.shellFont, in: 9...24)
+                .accessibilityIdentifier("settings.shell.font")
+            Button(L.t("shell_reset"), role: .destructive) { askReset = true }
+                .accessibilityIdentifier("settings.shell.reset")
+                .confirmationDialog(L.t("shell_reset_ask"), isPresented: $askReset, titleVisibility: .visible) {
+                    Button(L.t("erase"), role: .destructive) {
+                        resetNote = L.t(Shell.shared.reset() ? "shell_reset_done" : "shell_reset_planned")
+                    }
+                    Button(L.t("cancel"), role: .cancel) {}
+                }
+            if !resetNote.isEmpty {
+                Text(resetNote).font(.footnote)
+                    .accessibilityIdentifier("settings.shell.note")
+            }
+        }
+    }
+
     // ------------------------------------------------------------ the terminal of one's own server
 
     private var remote: some View {
@@ -277,7 +303,34 @@ struct SettingsScreen: View {
             if let url = URL(string: "https://github.com/siddhantakakhael-cyber/Termant") {
                 Link("GitHub", destination: url)
             }
+            NavigationLink(L.t("licences")) { LicenceScreen() }
+                .accessibilityIdentifier("settings.licences")
         }
+    }
+}
+
+/// The licence of the app and of what it contains (ios/LICENSE.md and ios/COPYING, which travel in the app).
+struct LicenceScreen: View {
+    private static func file(_ name: String, _ ending: String?) -> String {
+        guard let url = Bundle.main.url(forResource: name, withExtension: ending),
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return "" }
+        return text
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text(LicenceScreen.file("LICENSE", "md"))
+                    .font(.footnote)
+                Text(LicenceScreen.file("COPYING", nil))
+                    .font(.system(size: 9, design: .monospaced))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .textSelection(.enabled)
+        }
+        .navigationTitle(L.t("licences"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

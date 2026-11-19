@@ -16,6 +16,8 @@ struct Message: Codable, Identifiable, Equatable {
     /// Set when the app moved to another model to get this reply.
     var note = ""
     var at = Date()
+    /// The commands this reply asked the shell to run, with what they printed. (Not in chats of version 0.1.)
+    var runs: [ShellRun]?
 }
 
 struct Conversation: Codable, Identifiable, Equatable {
@@ -74,19 +76,81 @@ final class ChatStore: ObservableObject {
         work?.cancel()
     }
 
+    /// How often in a row the agent may run commands and read their output before it has to answer.
+    static let maxRounds = 8
+    /// How many commands of one reply are run.
+    static let maxCommands = 4
+
     private func turn(prompt: String, hidden: Bool) async -> Message? {
         busy = true
-        let prefs = Prefs.shared
         if !hidden {
             chat.messages.append(Message(user: true, text: prompt, raw: prompt))
-            prefs.lastWrote = Date()
+            Prefs.shared.lastWrote = Date()
         }
-        let wire = Prompt.wire(chat.messages, extra: hidden ? prompt : nil)
+        var result: Message?
+        var round = 0
+        while true {
+            let (id, ok) = await reply(extra: hidden ? prompt : nil, hidden: hidden)
+            result = chat.messages.first { $0.id == id }
+            if hidden, let r = result, !ok || r.failed || r.text.isEmpty {
+                // a check-in that did not work out is not worth an error in the chat
+                chat.messages.removeAll { $0.id == id }
+                result = nil
+            }
+            // the agent asked for commands: run them, and let it go on with what they printed
+            guard ok, let runs = result?.runs, !runs.isEmpty else { break }
+            if round >= ChatStore.maxRounds {
+                change(id) { message in
+                    for i in (message.runs ?? []).indices {
+                        message.runs?[i].how = "failed"
+                        message.runs?[i].output = L.t("run_limit")
+                    }
+                }
+                break
+            }
+            round += 1
+            let finished = await runCommands(of: id)
+            result = chat.messages.first { $0.id == id }
+            save()
+            if !finished { break }
+        }
+        busy = false
+        save()
+        Care.shared.deliverDue() // one whose time came while the agent was writing
+        if !hidden { Care.shared.sync() } // the user answered: plan and write what comes next
+        return result
+    }
+
+    /// Runs the commands of one reply in the shell, one after another. False when the user stopped it.
+    private func runCommands(of id: UUID) async -> Bool {
+        let count = chat.messages.first(where: { $0.id == id })?.runs?.count ?? 0
+        for i in 0..<count {
+            guard let command = chat.messages.first(where: { $0.id == id })?.runs?[i].command else { break }
+            if Task.isCancelled {
+                change(id) { $0.runs?[i].how = "stopped" }
+                continue
+            }
+            change(id) { $0.runs?[i].how = "running" }
+            let done = await Shell.shared.run(command)
+            change(id) {
+                $0.runs?[i].output = done.output
+                $0.runs?[i].status = done.status
+                $0.runs?[i].how = done.how
+            }
+        }
+        return !Task.isCancelled
+    }
+
+    /// Asks the model for the next message of the chat and shows it while it is written.
+    /// Returns which message it became, and whether it arrived whole.
+    private func reply(extra: String?, hidden: Bool) async -> (UUID, Bool) {
+        let prefs = Prefs.shared
+        let wire = Prompt.wire(chat.messages, extra: extra)
         let reply = Message(user: false, first: hidden)
         let id = reply.id
         chat.messages.append(reply)
         save()
-        var cancelled = false
+        var ok = false
         do {
             let models = try await candidates()
             var attempt = 0
@@ -100,6 +164,7 @@ final class ChatStore: ObservableObject {
                     }
                     try Task.checkCancellation() // a stopped stream just ends: what came is kept, nothing is carried out
                     finish(id, raw: raw, hidden: hidden)
+                    ok = true
                     break
                 } catch let failure as LLM.Failure {
                     if raw.isEmpty && failure.anotherModelMayWork && attempt + 1 < models.count {
@@ -110,28 +175,19 @@ final class ChatStore: ObservableObject {
                     }
                     if raw.isEmpty { throw failure }
                     finish(id, raw: raw, hidden: hidden) // the connection broke off: what came is kept
+                    ok = true
                     break
                 }
             }
         } catch is CancellationError {
-            cancelled = true
             change(id) { if $0.text.isEmpty { $0.text = L.t("stopped") } }
         } catch let failure as LLM.Failure {
             change(id) { $0.failed = true; $0.text = ChatStore.explain(failure) }
         } catch {
             change(id) { $0.failed = true; $0.text = L.t("error_other", error.localizedDescription) }
         }
-        var result = chat.messages.first { $0.id == id }
-        if hidden, let r = result, cancelled || r.failed || r.text.isEmpty {
-            // a check-in that did not work out is not worth an error in the chat
-            chat.messages.removeAll { $0.id == id }
-            result = nil
-        }
-        busy = false
-        save()
-        Care.shared.deliverDue() // one whose time came while the agent was writing
-        if !hidden { Care.shared.sync() } // the user answered: plan and write what comes next
-        return result
+        if chat.messages.first(where: { $0.id == id })?.failed == true { ok = false }
+        return (id, ok)
     }
 
     /// The model to ask, followed by the ones to move to when it does not answer.
@@ -182,14 +238,25 @@ final class ChatStore: ObservableObject {
     private func finish(_ id: UUID, raw: String, hidden: Bool) {
         let parts = Directives.split(raw)
         var actions: [String] = []
+        var runs: [ShellRun] = []
         for directive in parts.found {
-            if let done = carryOut(directive, hidden: hidden) { actions.append(done) }
+            if directive.kind == "run" {
+                // a check-in runs nothing, and the user can switch the shell off for the agent
+                if hidden || !Prefs.shared.shellAgent {
+                    if !hidden && actions.last != L.t("did_run_off") { actions.append(L.t("did_run_off")) }
+                } else if runs.count < ChatStore.maxCommands {
+                    runs.append(ShellRun(command: directive.body))
+                }
+            } else if let done = carryOut(directive, hidden: hidden) {
+                actions.append(done)
+            }
         }
         change(id) {
             $0.raw = raw
             $0.actions = actions
+            $0.runs = runs.isEmpty ? nil : runs
             $0.text = parts.visible
-            if parts.visible.isEmpty {
+            if parts.visible.isEmpty && runs.isEmpty {
                 if actions.isEmpty {
                     $0.failed = true
                     $0.text = L.t("no_answer")
@@ -359,8 +426,9 @@ enum Prompt {
         Write such a line only when there is a reason, never explain or mention the brackets, and never say \
         you did something unless you wrote its line in the same reply.
 
-        You cannot run commands, browse the web, open or control other apps, or change the phone's settings \
-        from here; Apple does not allow an app that. Say so plainly when asked. (Termant's Android app can.)
+        You cannot open or control other apps, read the phone's messages, photos or files, or change the \
+        phone's settings; Apple does not allow an app that. Say so plainly when asked. (Termant's Android app can.)
+        \(shell())
 
         ## Looking after the user
 
@@ -384,6 +452,43 @@ enum Prompt {
         return s
     }
 
+    /// What the agent is told about the Linux inside the app.
+    static func shell() -> String {
+        guard Prefs.shared.shellAgent else {
+            return """
+
+            You cannot run commands either: the user has switched the app's Linux shell off for you \
+            (Settings, "\(L.t("shell_section"))").
+            """
+        }
+        return """
+
+        ## A Linux shell on this iPhone
+
+        The app has a small Linux computer inside it: Alpine Linux 3.19 for 32-bit x86, emulated by iSH. You \
+        are root in it, and /bin/sh is busybox ash. To run a command there, write a line of this form:
+
+        [[run: uname -a]]
+
+        The app runs it in /root (no keyboard input; at most \(ShellReport.minutes) minutes) and gives you what it printed in the \
+        next message, which starts with "Command output:". The user sees the command and its output under \
+        your reply. Then you go on: run something else, or answer.
+
+        - Use it when it gives a better answer than guessing: to calculate, to work with text or files, to \
+        try a piece of code, to fetch something from the internet (wget is there), to check a fact about \
+        the system. Do not use it for things you can simply say.
+        - At most \(ChatStore.maxCommands) run lines in one reply; they run one after another. A command may be several lines \
+        long (a script, a here-document).
+        - More programs: "apk add python3" (or git, curl, nodejs, vim ...). It is an emulated computer, about \
+        ten to a hundred times slower than a real one, so prefer small tools and small jobs.
+        - Nothing that waits for input (an editor, a prompt for a password) and nothing that never ends.
+        - Files stay in /root between commands and between chats. The user has the same Linux as a terminal \
+        behind the >_ button, so you can prepare files there for them, and read what they made.
+        - It is only this small Linux: it cannot see or change the iPhone, its apps, photos or settings.
+        - When you have the output, say what it means in plain words; do not paste all of it back.
+        """
+    }
+
     /// The conversation as the service wants it: roles taking turns, the newest 40 messages.
     static func wire(_ messages: [Message], extra: String?) -> [[String: String]] {
         var out: [[String: String]] = [["role": "system", "content": system()]]
@@ -399,6 +504,8 @@ enum Prompt {
             if content.isEmpty { continue }
             if m.first { add("user", checkInStandIn) }
             add(m.user ? "user" : "assistant", content)
+            // what its commands printed comes back to the model as the next message
+            if let runs = m.runs, !runs.isEmpty { add("user", ShellReport.text(runs)) }
         }
         if let extra = extra { add("user", extra) }
         return out

@@ -25,6 +25,16 @@ jobs:
             || brew install xcodegen
           npm ci --omit=dev --no-audit --no-fund
 
+      # The Linux shell inside the app: iSH and Alpine Linux, at the versions in ios/ish/versions.sh.
+      - name: Shell (iSH, Alpine Linux)
+        run: |
+          set -o pipefail
+          ios/ish/fetch.sh 2>&1 | tee ci-out/shell-fetch.log
+          ios/ish/build.sh iphonesimulator > ci-out/shell-simulator.log 2>&1 || { tail -60 ci-out/shell-simulator.log; exit 1; }
+          tail -8 ci-out/shell-simulator.log
+          ios/ish/build.sh iphoneos > ci-out/shell-iphone.log 2>&1 || { tail -60 ci-out/shell-iphone.log; exit 1; }
+          tail -8 ci-out/shell-iphone.log
+
       - name: Project
         run: cd ios && xcodegen generate
 
@@ -71,5 +81,5 @@ jobs:
           else
             gh release create "$version" ios/Termant.ipa --target "$GITHUB_SHA" --latest=false \
               --title "Termant for iPhone $version" \
-              --notes "Termant for iPhone and iPad (iOS 15+): chat with a model through your own key, notes it keeps about you, check-ins it sends by itself, and the terminal of your own Termant server. The IPA is not signed: install it with SideStore, AltStore or Sideloadly, which sign it with your Apple ID. See the README, section iPhone."
+              --notes "Termant for iPhone and iPad (iOS 15+): chat with a model through your own key, notes it keeps about you, check-ins it sends by itself, a Linux shell inside the app (Alpine Linux on the iSH engine) that you and the agent can use, and the terminal of your own Termant server. Licence: GPL-3.0, see ios/LICENSE.md. The IPA is not signed: install it with SideStore, AltStore or Sideloadly, which sign it with your Apple ID. See the README, section iPhone."
           fi

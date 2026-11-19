@@ -104,6 +104,112 @@ final class LogicTests: XCTestCase {
         XCTAssertEqual(Directives.split("[[shout: x]]").found, [])
     }
 
+    // ------------------------------------------------------------ commands for the shell
+
+    func testCommandIsTakenOutOfTheReply() {
+        let parts = Directives.split("Dekhta hoon.\n[[run: uname -a]]\nBas.")
+        XCTAssertEqual(parts.visible, "Dekhta hoon.\n\nBas.")
+        XCTAssertEqual(parts.found, [Directive(kind: "run", body: "uname -a")])
+    }
+
+    func testCommandMayHoldBracketsAndLines() {
+        XCTAssertEqual(Directives.split("[[run: if [[ -f x ]]; then echo y; fi]] ok").found,
+                       [Directive(kind: "run", body: "if [[ -f x ]]; then echo y; fi")])
+        XCTAssertEqual(Directives.split("[[run: if [[ -f x ]]; then echo y; fi]] ok").visible, "ok")
+        XCTAssertEqual(Directives.split("[[run: echo ${a[0]}]]").found, [Directive(kind: "run", body: "echo ${a[0]}")])
+        XCTAssertEqual(Directives.split("[[run: echo $a[0]]]").found, [Directive(kind: "run", body: "echo $a[0]")])
+        XCTAssertEqual(Directives.split("[[run: [[ a ]]]]").found, [Directive(kind: "run", body: "[[ a ]]")])
+        XCTAssertEqual(Directives.split("[[RUN:\ncat <<EOF\nhi\nEOF\n]]z").found, [Directive(kind: "run", body: "cat <<EOF\nhi\nEOF")])
+        XCTAssertEqual(Directives.split("[[RUN:\ncat <<EOF\nhi\nEOF\n]]z").visible, "z")
+    }
+
+    func testSeveralCommandsAndOtherLines() {
+        let parts = Directives.split("[[run: a]][[run: b]] [[note: Likes Linux.]] done [[run:  ]]")
+        XCTAssertEqual(parts.found, [Directive(kind: "note", body: "Likes Linux."),
+                                     Directive(kind: "run", body: "a"), Directive(kind: "run", body: "b")])
+        XCTAssertEqual(parts.visible, "done")
+    }
+
+    func testCommandStillBeingWrittenIsNotShown() {
+        XCTAssertEqual(Directives.split("Dekhta hoon. [[run: echo hi").visible, "Dekhta hoon.")
+        XCTAssertTrue(Directives.split("Dekhta hoon. [[run: echo hi").found.isEmpty)
+        XCTAssertEqual(Directives.split("Dekhta hoon. [[run: if [[ -f x ]]; then").visible, "Dekhta hoon.")
+        XCTAssertEqual(Directives.split("Dekhta hoon. [[ru").visible, "Dekhta hoon.")
+    }
+
+    func testTerminalTextAsPlainText() {
+        let raw = "termant:~# \u{1b}[6necho hi\r\nhi\r\n\u{1b}[1;32mgreen\u{1b}[0m \u{1b}]0;title\u{7}x ab\u{8} \u{8}\u{8} \u{8}c \u{1b}[?2004h\u{1b}(B\u{1b}="
+        XCTAssertEqual(TerminalText.plain(raw), "termant:~# echo hi\nhi\ngreen x c ")
+        XCTAssertEqual(TerminalText.plain("plain\ntext\n"), "plain\ntext\n")
+        XCTAssertEqual(TerminalText.tail("one\ntwo\nthree", 100), "one\ntwo\nthree")
+        XCTAssertEqual(TerminalText.tail("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ntwo\nthree", 12), "two\nthree")
+        XCTAssertEqual(TerminalText.tail("abcdefghijklmnopqrstuvwxyz", 5), "vwxyz")
+    }
+
+    func testWhatTheModelIsToldAboutItsCommands() {
+        var ended = ShellRun(command: "echo hi")
+        ended.output = "hi\n"
+        ended.status = 0
+        ended.how = "ended"
+        var silent = ShellRun(command: "true")
+        silent.status = 0
+        silent.how = "ended"
+        var slow = ShellRun(command: "sleep 500")
+        slow.output = "begun\n"
+        slow.status = 137
+        slow.how = "timeout"
+        var stopped = ShellRun(command: "sleep 9")
+        stopped.how = "stopped"
+        var failed = ShellRun(command: "ls")
+        failed.how = "failed"
+        failed.output = "no space left"
+        let never = ShellRun(command: "id")
+        XCTAssertEqual(ShellReport.text([ended]), "Command output:\n$ echo hi\nhi\n(exit code 0)")
+        XCTAssertEqual(ShellReport.text([silent, slow, stopped, failed, never]), """
+        Command output:
+        $ true
+        (it printed nothing)
+        (exit code 0)
+        $ sleep 500
+        begun
+        (stopped: it was still running after 5 minutes)
+        $ sleep 9
+        (stopped by the user)
+        $ ls
+        (not run: no space left)
+        $ id
+        (not run)
+        """)
+    }
+
+    func testLongOutputIsShortenedForTheModel() {
+        let long = String(repeating: "0123456789", count: 2000)
+        let short = ShellReport.shorten(long)
+        XCTAssertLessThan(short.count, ShellReport.headSize + ShellReport.tailSize + 100)
+        XCTAssertTrue(short.contains("[... 12000 letters left out ...]"))
+        XCTAssertEqual(ShellReport.shorten("short"), "short")
+    }
+
+    func testOutputOfACommandIsCollectedWithinLimits() {
+        let box = OutputBox()
+        box.add(Data("abc\r\n".utf8))
+        box.add(Data("\u{1b}[31mred\u{1b}[0m\n".utf8))
+        XCTAssertEqual(box.text, "abc\nred\n")
+        let big = OutputBox()
+        for i in 0..<5000 { big.add(Data("line \(i)\n".utf8)) }
+        XCTAssertTrue(big.text.hasPrefix("line 0\nline 1\n"))
+        XCTAssertTrue(big.text.hasSuffix("line 4998\nline 4999\n"))
+        XCTAssertTrue(big.text.contains("bytes left out"))
+        XCTAssertLessThan(big.text.count, OutputBox.headSize + OutputBox.tailSize + 100)
+    }
+
+    func testChatOfAnEarlierVersionIsStillRead() throws {
+        let old = #"{"id":"6D1E7B0C-1A0B-4E0B-9B0A-0D0C0B0A0908","user":false,"text":"Namaste","raw":"Namaste","failed":false,"first":false,"actions":[],"note":"","at":700000000}"#
+        let message = try JSONDecoder().decode(Message.self, from: Data(old.utf8))
+        XCTAssertEqual(message.text, "Namaste")
+        XCTAssertNil(message.runs)
+    }
+
     func testHalves() {
         XCTAssertEqual(Directives.halves("20h | how it went").when, "20h")
         XCTAssertEqual(Directives.halves("20h | how it went").text, "how it went")

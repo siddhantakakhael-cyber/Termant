@@ -4,8 +4,9 @@ Ubuntu in a terminal, two ways:
 
 - **[Android app](#android-app)**: a real Ubuntu 24.04 system on your phone, no root, no server.
 - **[Web terminal](#web-terminal)**: an Ubuntu terminal in the browser, hosted on your own server.
-- **[iPhone app](#iphone-app)**: the agent as a chat on iOS, with its notes, its check-ins and the
-  web terminal of your own server. No Ubuntu on the phone itself: iOS does not allow that.
+- **[iPhone app](#iphone-app)**: the agent as a chat on iOS, with its notes and its check-ins, and a
+  Linux shell inside the app (Alpine Linux, run by iSH) for you and for the agent. Not Ubuntu, and
+  slower: iOS only allows Linux programs to be imitated, not run directly.
 
 ## Android app
 
@@ -355,9 +356,15 @@ OpenCode's free model service, so it needs internet.
 Download **Termant.ipa** from the [releases](../../releases) (the ones named `ios-v…`).
 Source in [`ios/`](ios); iOS 15 or newer, iPhone and iPad.
 
-An iPhone does not let an app run Linux programs, show itself over other apps or
-operate the phone, so this is not the Android app again. It has the parts that
-iOS allows:
+An iPhone does not let an app show itself over other apps or operate the phone, so this
+is not the Android app again. It has the parts that iOS allows:
+
+- **A Linux shell inside the app.** The `>_` button opens a terminal of Alpine Linux that
+  runs on the iPhone itself, with no server: `sh`, `vi`, `wget`, `awk`, `sed`, and with
+  `apk add python3` (or `git`, `curl`, `nodejs` …) whatever Alpine offers. Files stay
+  between starts. The agent uses the same Linux: ask it to calculate, to try a piece of
+  code or to fetch a page, and it runs commands there, shows them with their output
+  under its reply, and goes on with what they printed. See [below](#the-linux-shell).
 
 - **Chat with the agent**, in Hindi, Hinglish or English, through **your own API key**:
   OpenRouter (which has free models), Groq, Google Gemini, OpenAI, Anthropic, DeepSeek,
@@ -374,13 +381,39 @@ iOS allows:
   You can answer inside the notification.
 - **Reminders**: "subah 7 baje yaad dilana" becomes a notification with a sound. It is
   not the Clock's alarm; iOS gives no app access to that.
-- **Terminal of your own server**: the `>_` button opens the [web terminal](#web-terminal)
-  running on your computer or server, logged in with the password saved in Settings.
+- **Terminal of your own server**: in the Linux terminal, the server button opens the
+  [web terminal](#web-terminal) running on your computer or server, logged in with the
+  password saved in Settings. That one is a full Ubuntu at the speed of your server.
 
 How the check-ins work on iOS, and their limit: an app cannot wake up at a time of its
 own choosing there. So the agent writes its next messages ahead of time, whenever you
 use the app, and hands them to iOS as notifications for their moments. They arrive with
 the app closed, but they were written with what the agent knew when you last opened it.
+
+### The Linux shell
+
+The shell is [iSH](https://ish.app): it imitates an x86 processor and answers the Linux
+programs' requests to the kernel itself, which is the one way to run Linux programs that
+iOS permits. The Linux in it is [Alpine](https://alpinelinux.org) 3.19 for 32-bit x86,
+unpacked into the app's own folder at the first start. What follows from that:
+
+- **It is slow**: several times to a hundred times slower than the same program on a
+  real computer, depending on what it does. Shell scripts and small tools are fine;
+  `apk add python3` takes minutes; compiling big programs is not what it is for.
+- **32-bit x86 only.** Programs come from Alpine's packages (`apk add …`) or are scripts.
+  Programs built for 64-bit or for ARM do not run, and neither does Docker or anything
+  else that needs a real Linux kernel.
+- **It is a small Linux, not the iPhone.** It cannot see other apps, photos or the
+  phone's settings. It does reach the network.
+- **It runs while the app is open.** iOS stops it soon after you leave the app, and goes
+  on where it was when you come back.
+- The agent's commands run without a keyboard, for at most 5 minutes each, at most 4 in
+  one reply; **Stop** ends a running one. Settings has a switch that keeps the agent out
+  of the shell, and a button that erases the Linux and starts with a fresh one.
+
+Because the app contains iSH, the iPhone app is distributed under the GNU GPL version 3;
+see [`ios/LICENSE.md`](ios/LICENSE.md), which also says where the sources of iSH and of
+Alpine Linux are.
 
 ### Install with SideStore or iloader
 
@@ -400,9 +433,19 @@ Sideloadly take the same file.
 
 ### Build it yourself
 
-On a Mac with Xcode 16: `brew install xcodegen`, then `cd ios && xcodegen generate && open Termant.xcodeproj`.
-`ios/ci/test.sh` runs the tests on a simulator (after `npm ci` in the repository root),
-`ios/ci/package.sh` builds the unsigned IPA.
+On a Mac with Xcode 16 (Apple silicon) and `brew install xcodegen`:
+
+```sh
+npm ci                               # in the repository root: xterm.js for the terminal's screen
+ios/ish/fetch.sh                     # iSH and Alpine Linux, at the versions in ios/ish/versions.sh
+ios/ish/build.sh iphonesimulator     # the shell's libraries for the simulator …
+ios/ish/build.sh iphoneos            # … and for an iPhone
+cd ios && xcodegen generate && open Termant.xcodeproj
+```
+
+`ios/ci/test.sh` runs the tests on a simulator, `ios/ci/package.sh` builds the unsigned IPA.
+The code between the app and iSH is in [`ios/Shell`](ios/Shell); `ios/ish/selftest.sh`
+tries it on a Linux computer, without an iPhone.
 
 ## Web terminal
 

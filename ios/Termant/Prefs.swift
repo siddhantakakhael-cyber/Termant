@@ -76,6 +76,7 @@ enum Bootstrap {
         for p in Provider.all { Secrets.set("key_" + p.id, "") }
         Secrets.set("remote_password", "")
         try? FileManager.default.removeItem(at: Files.chats)
+        try? FileManager.default.removeItem(at: Shell.folder)
         if let lang = environment["TERMANT_LANG"] { UserDefaults.standard.set(lang, forKey: "lang") }
     }()
 }
@@ -99,6 +100,10 @@ final class Prefs: ObservableObject {
     @Published var careTimes: String { didSet { d.set(careTimes, forKey: "care_times") } }
     @Published var learnOn: Bool { didSet { d.set(learnOn, forKey: "learn_on") } }
     @Published var remoteURL: String { didSet { d.set(remoteURL, forKey: "remote_url") } }
+    /// The agent may run commands in the app's Linux shell.
+    @Published var shellAgent: Bool { didSet { d.set(shellAgent, forKey: "shell_agent") } }
+    /// The size of the letters in the terminal.
+    @Published var shellFont: Int { didSet { d.set(shellFont, forKey: "shell_font") } }
     /// Counts up when a key changes, so screens showing it are drawn again.
     @Published var keysChanged = 0
 
@@ -117,6 +122,8 @@ final class Prefs: ObservableObject {
         careTimes = d.string(forKey: "care_times") ?? "09:00 21:00"
         learnOn = d.object(forKey: "learn_on") as? Bool ?? true
         remoteURL = d.string(forKey: "remote_url") ?? ""
+        shellAgent = d.object(forKey: "shell_agent") as? Bool ?? true
+        shellFont = min(24, max(9, d.object(forKey: "shell_font") as? Int ?? 13))
         L.lang = language
     }
 

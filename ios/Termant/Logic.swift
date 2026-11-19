@@ -104,6 +104,7 @@ struct Directive: Equatable {
 enum Directives {
     private static let pattern = try! NSRegularExpression(
         pattern: "\\[\\[\\s*(note|care|remind|forget)\\s*:\\s*([^\\]]*)\\]\\]", options: [.caseInsensitive])
+    private static let commandStart = try! NSRegularExpression(pattern: "\\[\\[\\s*run\\s*:", options: [.caseInsensitive])
     private static let thinking = try! NSRegularExpression(
         pattern: "<think>.*?</think>", options: [.caseInsensitive, .dotMatchesLineSeparators])
 
@@ -123,6 +124,9 @@ enum Directives {
                                    body: text[b].trimmingCharacters(in: .whitespacesAndNewlines)))
         }
         text = pattern.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "")
+        let taken = commands(in: text)
+        text = taken.rest
+        for command in taken.found { found.append(Directive(kind: "run", body: command)) }
         // one that has begun but not ended yet
         if let open = text.range(of: "[[", options: .backwards), !text[open.upperBound...].contains("]]") {
             text = String(text[..<open.lowerBound])
@@ -134,11 +138,124 @@ enum Directives {
         return (text.trimmingCharacters(in: .whitespacesAndNewlines), found)
     }
 
+    /// Takes the [[run: ...]] lines out of a text. A command for the shell may be several lines long and
+    /// hold brackets of its own, also "[[ -f x ]]". One that is still being written is left out with all after it.
+    static func commands(in text: String) -> (rest: String, found: [String]) {
+        var rest = ""
+        var found: [String] = []
+        var from = text.startIndex
+        while from < text.endIndex,
+              let m = commandStart.firstMatch(in: text, range: NSRange(from..<text.endIndex, in: text)),
+              let start = Range(m.range, in: text) {
+            rest.append(contentsOf: text[from..<start.lowerBound])
+            var depth = 1
+            var i = start.upperBound
+            var end: String.Index?
+            while i < text.endIndex {
+                let next = text.index(after: i)
+                if next < text.endIndex {
+                    let after = text.index(after: next)
+                    if text[i] == "[" && text[next] == "[" {
+                        depth += 1
+                        i = after
+                        continue
+                    }
+                    if text[i] == "]" && text[next] == "]" {
+                        // "x]]]": the first of the three belongs to the command
+                        if depth == 1 && after < text.endIndex && text[after] == "]" {
+                            i = next
+                            continue
+                        }
+                        depth -= 1
+                        if depth == 0 {
+                            end = i
+                            break
+                        }
+                        i = after
+                        continue
+                    }
+                }
+                i = next
+            }
+            guard let close = end else { return (rest, found) }
+            let body = text[start.upperBound..<close].trimmingCharacters(in: .whitespacesAndNewlines)
+            if !body.isEmpty { found.append(body) }
+            from = text.index(close, offsetBy: 2)
+        }
+        if from < text.endIndex { rest.append(contentsOf: text[from...]) }
+        return (rest, found)
+    }
+
     /// "20h | how the exam went" as its two halves; the text alone when there is no bar.
     static func halves(_ body: String) -> (when: String, text: String) {
         guard let bar = body.firstIndex(of: "|") else { return ("", body.trimmingCharacters(in: .whitespaces)) }
         return (body[..<bar].trimmingCharacters(in: .whitespaces),
                 body[body.index(after: bar)...].trimmingCharacters(in: .whitespaces))
+    }
+}
+
+/// What a terminal printed, as plain text.
+enum TerminalText {
+    private static let escapes = try! NSRegularExpression(
+        pattern: "\u{1b}\\[[0-9;?<=>]*[ -/]*[@-~]|\u{1b}\\][^\u{07}\u{1b}]*(\u{07}|\u{1b}\\\\)|\u{1b}[()][0-9A-Za-z]|\u{1b}[=>78DEHMNOZc]")
+
+    /// Without colours, cursor movements and the other control sequences; line ends as "\n".
+    static func plain(_ text: String) -> String {
+        var s = escapes.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "")
+        s = s.replacingOccurrences(of: "\r\n", with: "\n")
+        // what a shell prints to rub out the letter before the cursor
+        for _ in 0..<200 {
+            let shorter = s.replacingOccurrences(of: "[^\n\u{8}]\u{8} \u{8}", with: "", options: .regularExpression)
+            if shorter == s { break }
+            s = shorter
+        }
+        for junk in ["\r", "\u{8}", "\u{7}", "\u{0}"] { s = s.replacingOccurrences(of: junk, with: "") }
+        return s
+    }
+
+    /// The end of a long text, cut at a line where possible.
+    static func tail(_ text: String, _ limit: Int) -> String {
+        guard text.count > limit else { return text }
+        let cut = String(text.suffix(limit))
+        if let line = cut.firstIndex(of: "\n"), cut.distance(from: cut.startIndex, to: line) < limit / 4 {
+            return String(cut[cut.index(after: line)...])
+        }
+        return cut
+    }
+}
+
+/// What the model is told about the commands it ran.
+enum ShellReport {
+    static let headSize = 3_000, tailSize = 5_000
+    /// How long a command of the agent may run.
+    static let minutes = 5
+
+    /// Long output with its middle left out.
+    static func shorten(_ output: String) -> String {
+        guard output.count > headSize + tailSize + 200 else { return output }
+        let left = output.count - headSize - tailSize
+        return String(output.prefix(headSize)) + "\n[... \(left) letters left out ...]\n" + String(output.suffix(tailSize))
+    }
+
+    static func text(_ runs: [ShellRun]) -> String {
+        var s = "Command output:"
+        for run in runs {
+            s += "\n$ " + run.command + "\n"
+            let output = shorten(run.output).trimmingCharacters(in: .newlines)
+            switch run.how {
+            case "ended":
+                s += (output.isEmpty ? "(it printed nothing)" : output) + "\n(exit code \(run.status))"
+            case "timeout":
+                s += (output.isEmpty ? "" : output + "\n") + "(stopped: it was still running after \(minutes) minutes)"
+            case "stopped":
+                s += (output.isEmpty ? "" : output + "\n") + "(stopped by the user)"
+            case "waiting", "running":
+                s += "(not run)"
+            default:
+                s += "(not run: " + (output.isEmpty ? "the shell is not available" : output) + ")"
+            }
+        }
+        return s
     }
 }
 
