@@ -192,6 +192,9 @@ final class ShellTests: XCTestCase {
         var second = ""
         other.onOutput = { second += TerminalText.plain(String(decoding: $0, as: UTF8.self)) }
         XCTAssertTrue(other.open(columns: 80, rows: 24))
+        // (what is typed before the prompt is thrown away by "login", as on any Linux)
+        let greeted = await eventually(30) { second.contains("termant:~#") }
+        XCTAssertTrue(greeted, second)
         other.type(Data("echo from-the-terminal > /root/shared.txt; echo written-$((20 + 3))\n".utf8))
         let written = await eventually(30) { second.contains("written-23\n") }
         XCTAssertTrue(written, second)

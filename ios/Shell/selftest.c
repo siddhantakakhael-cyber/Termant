@@ -161,8 +161,14 @@ int main(int argc, char **argv) {
         usleep(50000);
     check(t.ended, "the app is told when the shell ends", NULL);
     tsh_close(terminal);
+    memset(t.bytes, 0, sizeof(t.bytes));
+    t.length = 0;
     int again = tsh_open(80, 24, collect, ended, &t);
     check(again >= 0, "a new terminal opens after the old one was closed", NULL);
+    // (what is typed before the prompt is thrown away by "login", as on any Linux)
+    check(shows(&t, "# ", 20), "and greets", t.bytes);
+    tsh_type(again, "echo again-$((1+1))\r", 20);
+    check(shows(&t, "again-2", 20), "and its shell works like the first", t.bytes);
     tsh_close(again);
     check(run("cat /root/note.txt", 20, &t, &status) == 0 && strcmp(t.bytes, "kept\n") == 0, "commands still run afterwards", t.bytes);
 
