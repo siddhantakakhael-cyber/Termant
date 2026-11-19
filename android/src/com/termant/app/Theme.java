@@ -14,8 +14,8 @@ final class Theme {
 
     static final int[] DARK = {
             0xff0d1117, // BG
-            0xff161b22, // SURFACE
-            0xff262c36, // SURFACE_HIGH
+            0xff151b23, // SURFACE
+            0xff212830, // SURFACE_HIGH
             0xffe6edf3, // TEXT
             0xff8b949e, // MUTED
             0xffff7a45, // ACCENT
@@ -23,25 +23,30 @@ final class Theme {
             0xffffa198, // ERROR
             0xffc9d1d9, // KEY_TEXT
             0xff79c0ff, // CODE
-            0x40ffffff, // RIPPLE
+            0x33ffffff, // RIPPLE
+            0xff2b323c, // OUTLINE
+            0x26ff7a45, // ACCENT_SOFT
     };
     static final int[] LIGHT = {
             0xfff6f8fa, // BG
             0xffffffff, // SURFACE
-            0xffe1e4e8, // SURFACE_HIGH
-            0xff24292e, // TEXT
-            0xff6e7681, // MUTED
+            0xffeaeef2, // SURFACE_HIGH
+            0xff1f2328, // TEXT
+            0xff656d76, // MUTED
             0xffd25a2e, // ACCENT
-            0xfffafafa, // ON_ACCENT
+            0xffffffff, // ON_ACCENT
             0xffcb2431, // ERROR
             0xff57606a, // KEY_TEXT
             0xff0550ae, // CODE
-            0x30000000, // RIPPLE
+            0x24000000, // RIPPLE
+            0xffd8dee4, // OUTLINE
+            0x1fd25a2e, // ACCENT_SOFT
     };
 
     static final int IDX_BG = 0, IDX_SURFACE = 1, IDX_SURFACE_HIGH = 2,
             IDX_TEXT = 3, IDX_MUTED = 4, IDX_ACCENT = 5, IDX_ON_ACCENT = 6,
-            IDX_ERROR = 7, IDX_KEY_TEXT = 8, IDX_CODE = 9, IDX_RIPPLE = 10;
+            IDX_ERROR = 7, IDX_KEY_TEXT = 8, IDX_CODE = 9, IDX_RIPPLE = 10, IDX_OUTLINE = 11,
+            IDX_ACCENT_SOFT = 12;
 
     private static int[] current = DARK;
 
@@ -78,6 +83,16 @@ final class Theme {
 
     static int ripple() {
         return current[IDX_RIPPLE];
+    }
+
+    /** Hairlines: the edge of a card, the line between two rows. */
+    static int outline() {
+        return current[IDX_OUTLINE];
+    }
+
+    /** The accent colour thinned out, as a background for something that is chosen or important. */
+    static int accentSoft() {
+        return current[IDX_ACCENT_SOFT];
     }
 
     static int bg() {
