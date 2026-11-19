@@ -690,11 +690,11 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             if (!m.text.isEmpty() || !m.note.isEmpty() || !m.steps.isEmpty()) stateSize.topMargin = dp(10);
             bubble.addView(state, stateSize);
         }
+        // as wide as the page: the words then wrap at the page's edge, whatever else the answer shows
         LayoutParams size = new LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        size.gravity = Gravity.START;
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         size.topMargin = dp(18);
-        size.rightMargin = dp(12);
+        size.rightMargin = dp(8);
         list.addView(bubble, size);
     }
 

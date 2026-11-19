@@ -913,7 +913,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         on.setThumbTintList(new ColorStateList(
                 new int[][]{{android.R.attr.state_checked}, {}}, new int[]{ACCENT, MUTED}));
         on.setTrackTintList(new ColorStateList(
-                new int[][]{{android.R.attr.state_checked}, {}}, new int[]{Theme.accentSoft(), Theme.outline()}));
+                new int[][]{{android.R.attr.state_checked}, {}}, new int[]{(ACCENT & 0x00ffffff) | 0x73000000, SURFACE_HIGH}));
         on.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton button, boolean checked) {
