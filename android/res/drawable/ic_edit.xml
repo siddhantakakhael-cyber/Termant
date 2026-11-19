@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Made by android/tools/icons.py; change the icon there. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M4 20 L5 16 L16 5 L19 8 L8 19 Z"
+        android:strokeColor="#ffffff" android:strokeWidth="1.9"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M13.5 7.5 L16.5 10.5"
+        android:strokeColor="#ffffff" android:strokeWidth="1.9"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

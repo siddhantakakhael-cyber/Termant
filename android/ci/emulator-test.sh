@@ -628,8 +628,11 @@ cat "$OUT/care-planned.json" >> "$OUT/care.txt"; echo >> "$OUT/care.txt"
 care_row() { # <text of the row>: scrolls Settings until it shows
   for _ in $(seq 1 45); do
     adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
-    if adb shell "grep -q 'text=.$1.' /sdcard/ui.xml"; then
-      adb shell input swipe 160 400 160 300 300; sleep 1 # away from the screen's edge
+    top=$(adb shell cat /sdcard/ui.xml | tr '>' '\n' | grep "text=\"$1\"" | head -1 \
+      | grep -o 'bounds="[^"]*"' | grep -o '[0-9]*' | sed -n 2p)
+    if [ -n "$top" ]; then
+      # low on the screen: bring it away from the edge (higher up, the same swipe would push it out of sight)
+      if [ "$top" -gt 380 ]; then adb shell input swipe 160 400 160 300 300; sleep 1; fi
       return 0
     fi
     adb shell input swipe 160 500 160 200 300; sleep 1

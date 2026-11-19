@@ -19,6 +19,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -45,7 +46,11 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
             SURFACE_HIGH = Theme.surfaceHigh(), TEXT = Theme.text(), MUTED = Theme.muted(),
-            ACCENT = Theme.accent(), ON_ACCENT = Theme.onAccent(), ERROR = Theme.error();
+            ACCENT = Theme.accent(), ON_ACCENT = Theme.onAccent(), ERROR = Theme.error(),
+            OUTLINE = Theme.outline();
+    /** The pictures of the four ideas on the first screen, in the order of R.array.chat_ideas. */
+    private static final int[] IDEA_ICONS = {
+            R.drawable.ic_bell, R.drawable.ic_timer, R.drawable.ic_battery, R.drawable.ic_code};
     private static final Pattern INLINE = Pattern.compile("\\*\\*(.+?)\\*\\*|`([^`\n]+)`");
 
     private final Host host;
@@ -53,9 +58,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private final LinearLayout list;
     private final ScrollView scroll;
     private final EditText input;
-    private final TextView send;
+    private final ImageView send;
     private final TextView workspaceChip, modelChip;
-    private final TextView mic;
+    private final ImageView mic;
     private Chat chat;
     /** The text of the reply being written, and what the list looked like when it was built. */
     private TextView writing;
@@ -68,63 +73,63 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         setOrientation(VERTICAL);
         setBackgroundColor(BG);
 
-        // top bar
+        // top bar: earlier chats, the name, a new chat, settings, the terminal
         LinearLayout bar = new LinearLayout(context);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(16), dp(8), dp(8), dp(8));
-        TextView title = new TextView(context);
-        title.setText("\u2726 Termant");
-        title.setTextColor(TEXT);
-        title.setTextSize(19);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
-        bar.addView(title, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        bar.setPadding(dp(6), dp(6), dp(10), dp(6));
 
-        TextView past = button("\u2630", context.getString(R.string.history_title));
-        past.setTextSize(18);
-        past.setPadding(0, 0, 0, 0);
-        past.setBackground(pressable(0x00000000, 18));
+        ImageView past = Ui.iconButton(context, R.drawable.ic_menu,
+                context.getString(R.string.history_title), TEXT, 40, 22);
         past.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 showHistory();
             }
         });
-        bar.addView(past, new LayoutParams(dp(40), dp(36)));
+        bar.addView(past, new LayoutParams(dp(40), dp(40)));
 
-        TextView fresh = button("\uff0b", context.getString(R.string.chat_new_description));
-        fresh.setTextSize(20);
-        fresh.setPadding(0, 0, 0, 0);
-        fresh.setBackground(pressable(0x00000000, 18));
+        TextView title = new TextView(context);
+        title.setText("Termant");
+        title.setTextColor(TEXT);
+        title.setTextSize(Ui.TITLE);
+        title.setTypeface(Ui.medium());
+        title.setSingleLine(true);
+        title.setGravity(Gravity.CENTER_VERTICAL);
+        title.setPadding(dp(6), 0, 0, 0);
+        Ui.leading(title, R.drawable.ic_sparkle, ACCENT, 17, 7);
+        bar.addView(title, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        ImageView fresh = Ui.iconButton(context, R.drawable.ic_compose,
+                context.getString(R.string.chat_new_description), TEXT, 40, 21);
         fresh.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (chat != null) chat.clear();
             }
         });
-        bar.addView(fresh, new LayoutParams(dp(40), dp(36)));
+        bar.addView(fresh, new LayoutParams(dp(40), dp(40)));
 
-        TextView gear = button("\u2699", context.getString(R.string.settings));
-        gear.setTextSize(20);
-        gear.setPadding(0, 0, 0, 0);
-        gear.setBackground(pressable(0x00000000, 18));
+        ImageView gear = Ui.iconButton(context, R.drawable.ic_settings,
+                context.getString(R.string.settings), TEXT, 40, 21);
         gear.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 ChatView.this.host.onSettings();
             }
         });
-        bar.addView(gear, new LayoutParams(dp(40), dp(36)));
+        bar.addView(gear, new LayoutParams(dp(40), dp(40)));
 
-        TextView terminal = button(">_", context.getString(R.string.chat_terminal_description));
-        terminal.setTypeface(Typeface.DEFAULT_BOLD);
-        terminal.setBackground(pressable(SURFACE_HIGH, 18));
+        ImageView terminal = Ui.iconButton(context, R.drawable.ic_terminal,
+                context.getString(R.string.chat_terminal_description), TEXT, 36, 20);
+        terminal.setPadding(dp(13), dp(8), dp(13), dp(8));
+        terminal.setBackground(Ui.chip(context, SURFACE_HIGH, 18));
         terminal.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 ChatView.this.host.onOpenTerminal();
             }
         });
-        LayoutParams terminalSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36));
+        LayoutParams terminalSize = new LayoutParams(dp(48), dp(36));
         terminalSize.leftMargin = dp(4);
         bar.addView(terminal, terminalSize);
         addView(bar);
@@ -132,7 +137,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         // messages
         list = new LinearLayout(context);
         list.setOrientation(VERTICAL);
-        list.setPadding(dp(12), dp(8), dp(12), dp(8));
+        list.setPadding(dp(14), dp(8), dp(14), dp(10));
         scroll = new ScrollView(context);
         scroll.setFillViewport(true);
         scroll.addView(list);
@@ -140,8 +145,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
         // where the agent works and which model answers
         LinearLayout chips = new LinearLayout(context);
-        chips.setPadding(dp(12), dp(2), dp(12), dp(2));
-        workspaceChip = chip(context.getString(R.string.workspace_title));
+        chips.setPadding(dp(12), dp(2), dp(12), dp(4));
+        workspaceChip = chip(context.getString(R.string.workspace_title), R.drawable.ic_folder, R.drawable.ic_chevron_down);
         workspaceChip.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -149,7 +154,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             }
         });
         chips.addView(workspaceChip, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30)));
-        modelChip = chip(context.getString(R.string.model_title));
+        modelChip = chip(context.getString(R.string.model_title), R.drawable.ic_sparkle, R.drawable.ic_chevron_down);
         modelChip.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -161,8 +166,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         chips.addView(modelChip, modelSize);
 
         // Arena.ai has no way for other apps to use its agent, so this opens its website.
-        TextView arena = chip(context.getString(R.string.arena_description));
-        arena.setText("Arena \u2197");
+        TextView arena = chip(context.getString(R.string.arena_description), 0, R.drawable.ic_external);
+        arena.setText("Arena");
         arena.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -182,8 +187,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         // message box
         LinearLayout pill = new LinearLayout(context);
         pill.setGravity(Gravity.BOTTOM);
-        pill.setBackground(rounded(SURFACE, 26));
-        pill.setPadding(dp(18), dp(4), dp(6), dp(4));
+        pill.setBackground(Ui.card(context, 26));
+        pill.setPadding(dp(18), dp(5), dp(5), dp(5));
         input = new EditText(context);
         input.setHint(R.string.ask_hint);
         input.setHintTextColor(MUTED);
@@ -197,10 +202,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         input.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         pill.addView(input, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        mic = button("\uD83C\uDFA4", context.getString(R.string.ask_voice));
-        mic.setTextSize(17);
-        mic.setPadding(0, 0, 0, 0);
-        mic.setBackground(pressable(0x00000000, 21));
+        mic = Ui.iconButton(context, R.drawable.ic_mic, context.getString(R.string.ask_voice), MUTED, 42, 22);
         mic.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -209,12 +211,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         pill.addView(mic, new LayoutParams(dp(42), dp(42)));
 
-        send = button("\u2191", context.getString(R.string.ask_send));
-        send.setTextSize(20);
-        send.setPadding(0, 0, 0, 0);
-        send.setTypeface(Typeface.DEFAULT_BOLD);
-        send.setTextColor(ON_ACCENT);
-        send.setBackground(pressable(ACCENT, 21));
+        send = Ui.iconButton(context, R.drawable.ic_arrow_up, context.getString(R.string.ask_send), ON_ACCENT, 42, 22);
+        send.setBackground(Ui.pressable(context, ACCENT, 21));
         send.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -223,7 +221,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 else submit(input.getText().toString());
             }
         });
-        pill.addView(send, new LayoutParams(dp(42), dp(42)));
+        LayoutParams sendSize = new LayoutParams(dp(42), dp(42));
+        sendSize.leftMargin = dp(2);
+        pill.addView(send, sendSize);
 
         FrameLayout wrap = new FrameLayout(context);
         wrap.setPadding(dp(10), dp(4), dp(10), dp(10));
@@ -245,18 +245,21 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
     /** Shows the chosen folder and model under the messages. */
     void refreshChips() {
-        workspaceChip.setText("\uD83D\uDCC1 " + Config.workspaceName(getContext()) + " \u25be");
-        modelChip.setText("\u2726 " + Config.modelName(getContext()) + " \u25be");
+        workspaceChip.setText(Config.workspaceName(getContext()));
+        modelChip.setText(Config.modelName(getContext()));
     }
 
-    private TextView chip(String description) {
+    /** A small button under the messages: an icon (0 for none), a name, and a mark after it. */
+    private TextView chip(String description, int icon, int after) {
         TextView v = button("", description);
-        v.setTextSize(12);
-        v.setTextColor(MUTED);
-        v.setMaxWidth(dp(120));
+        v.setTextSize(Ui.CAPTION);
+        v.setTextColor(TEXT);
+        v.setMaxWidth(dp(128));
         v.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-        v.setPadding(dp(10), 0, dp(10), 0);
-        v.setBackground(pressable(SURFACE, 15));
+        v.setPadding(dp(10), 0, dp(8), 0);
+        v.setBackground(Ui.chip(getContext(), SURFACE, 15));
+        if (icon != 0) Ui.leading(v, icon, ACCENT, 13, 5);
+        Ui.trailing(v, after, MUTED, 12, 4);
         return v;
     }
 
@@ -267,7 +270,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     /** Shows that the microphone is listening: the button lights up and the box says so. */
     void setListening(boolean listening) {
         Context c = getContext();
-        mic.setBackground(pressable(listening ? ACCENT : 0x00000000, 21));
+        mic.setBackground(Ui.pressable(c, listening ? ACCENT : 0x00000000, 21));
+        mic.setImageDrawable(Ui.icon(c, R.drawable.ic_mic, listening ? ON_ACCENT : MUTED));
         mic.setContentDescription(c.getString(listening ? R.string.voice_stop : R.string.ask_voice));
         input.setHint(listening ? R.string.voice_listening : R.string.ask_hint);
     }
@@ -294,8 +298,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         if (chat == null) return;
         refreshChips(); // auto-switch may have moved to another model
         boolean busy = chat.isBusy();
-        send.setText(busy ? "\u25a0" : "\u2191");
-        send.setTextSize(busy ? 15 : 20);
+        send.setImageDrawable(Ui.icon(getContext(), busy ? R.drawable.ic_stop : R.drawable.ic_arrow_up, ON_ACCENT));
         send.setContentDescription(getContext().getString(busy ? R.string.chat_stop : R.string.ask_send));
 
         int last = chat.messages.size() - 1;
@@ -350,69 +353,110 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         Context c = getContext();
         List<Chat.Summary> earlier = chat.history();
         list.setGravity(earlier.isEmpty() ? Gravity.CENTER_VERTICAL : Gravity.TOP);
+        if (earlier.isEmpty()) {
+            // first time: the mark of the app, and what this is
+            list.addView(Ui.badge(c, R.drawable.ic_sparkle, 52, 26), new LayoutParams(dp(52), dp(52)));
+        }
         TextView hello = new TextView(c);
         hello.setText(R.string.chat_welcome);
         hello.setTextColor(TEXT);
-        hello.setTextSize(earlier.isEmpty() ? 26 : 22);
+        hello.setTextSize(earlier.isEmpty() ? Ui.DISPLAY : 21);
         hello.setTypeface(Typeface.DEFAULT_BOLD);
-        hello.setPadding(dp(8), dp(8), dp(8), 0);
+        hello.setLetterSpacing(-0.01f);
+        hello.setPadding(dp(2), dp(earlier.isEmpty() ? 16 : 6), dp(2), 0);
         list.addView(hello);
         if (earlier.isEmpty()) {
-            // first time: say what this is
             TextView about = new TextView(c);
             about.setText(R.string.chat_welcome_text);
             about.setTextColor(MUTED);
-            about.setTextSize(15);
-            about.setPadding(dp(8), dp(8), dp(8), dp(12));
+            about.setTextSize(Ui.LABEL);
+            about.setLineSpacing(dp(2), 1);
+            about.setPadding(dp(2), dp(8), dp(2), 0);
             list.addView(about);
         } else {
             // earlier chats stay within reach when a new one is started
             list.addView(sectionTitle(R.string.history_recent));
+            LinearLayout recent = group();
             for (int i = 0; i < earlier.size() && i < 3; i++) {
-                list.addView(historyRow(earlier.get(i), null), rowSize());
+                if (i > 0) recent.addView(Ui.divider(c), dividerSize(50));
+                recent.addView(historyRow(earlier.get(i), null, null));
             }
+            list.addView(recent, rowSize());
             if (earlier.size() > 3) {
                 TextView all = new TextView(c);
                 all.setText(getResources().getString(R.string.history_all, earlier.size()));
                 all.setTextColor(ACCENT);
-                all.setTextSize(14);
-                all.setPadding(dp(16), dp(10), dp(16), dp(4));
-                all.setBackground(pressable(0x00000000, 14));
+                all.setTextSize(Ui.LABEL);
+                all.setTypeface(Ui.medium());
+                all.setGravity(Gravity.CENTER_VERTICAL);
+                all.setPadding(dp(12), dp(9), dp(8), dp(9));
+                all.setBackground(Ui.pressable(c, 0x00000000, Ui.R_ROW));
+                Ui.trailing(all, R.drawable.ic_chevron_right, ACCENT, 14, 2);
                 all.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         showHistory();
                     }
                 });
-                list.addView(all);
+                LayoutParams allSize = new LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                allSize.topMargin = dp(2);
+                list.addView(all, allSize);
             }
-            list.addView(sectionTitle(R.string.chat_try));
         }
-        for (final String idea : getResources().getStringArray(R.array.chat_ideas)) {
-            TextView chip = new TextView(c);
-            chip.setText(idea);
-            chip.setTextColor(TEXT);
-            chip.setTextSize(15);
-            chip.setPadding(dp(16), dp(13), dp(16), dp(13));
-            chip.setBackground(pressable(SURFACE, 14));
-            chip.setOnClickListener(new OnClickListener() {
+        list.addView(sectionTitle(R.string.chat_try));
+        LinearLayout ideas = group();
+        String[] texts = getResources().getStringArray(R.array.chat_ideas);
+        for (int i = 0; i < texts.length; i++) {
+            final String idea = texts[i];
+            if (i > 0) ideas.addView(Ui.divider(c), dividerSize(50));
+            LinearLayout row = new LinearLayout(c);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(14), dp(12), dp(10), dp(12));
+            row.setBackground(Ui.pressable(c, 0x00000000, 0));
+            row.addView(Ui.image(c, IDEA_ICONS[i % IDEA_ICONS.length], ACCENT), new LayoutParams(dp(20), dp(20)));
+            TextView words = new TextView(c);
+            words.setText(idea);
+            words.setTextColor(TEXT);
+            words.setTextSize(Ui.LABEL);
+            words.setPadding(dp(14), 0, dp(6), 0);
+            row.addView(words, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            row.addView(Ui.image(c, R.drawable.ic_chevron_right, MUTED), new LayoutParams(dp(16), dp(16)));
+            row.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (chat != null && !chat.isBusy()) chat.send(idea);
                 }
             });
-            list.addView(chip, rowSize());
+            ideas.addView(row);
         }
+        list.addView(ideas, rowSize());
     }
 
     private TextView sectionTitle(int text) {
         TextView heading = new TextView(getContext());
-        heading.setText(text);
+        heading.setText(getResources().getString(text).toUpperCase(java.util.Locale.ROOT));
         heading.setTextColor(MUTED);
-        heading.setTextSize(13);
-        heading.setTypeface(Typeface.DEFAULT_BOLD);
-        heading.setPadding(dp(8), dp(18), 0, 0);
+        heading.setTextSize(11);
+        heading.setTypeface(Ui.medium());
+        heading.setLetterSpacing(0.08f);
+        heading.setPadding(dp(4), dp(22), 0, 0);
         return heading;
+    }
+
+    /** A card that holds several rows, one under the other, with hairlines between them. */
+    private LinearLayout group() {
+        LinearLayout box = new LinearLayout(getContext());
+        box.setOrientation(VERTICAL);
+        box.setBackground(Ui.card(getContext(), Ui.R_CARD));
+        box.setClipToOutline(true);
+        return box;
+    }
+
+    private LayoutParams dividerSize(int leftDp) {
+        LayoutParams size = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1)));
+        size.leftMargin = dp(leftDp);
+        return size;
     }
 
     // ------------------------------------------------------------ earlier chats
@@ -423,13 +467,23 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         return size;
     }
 
-    /** One earlier chat: tap to open it; with a dialog given, it also gets a delete button. */
-    private View historyRow(final Chat.Summary s, final android.app.Dialog dialog) {
-        Context c = getContext();
+    /**
+     * One earlier chat: tap to open it. In the panel with all chats (a dialog
+     * and its list given) the row stands alone, shows which chat is open, and
+     * has a delete button.
+     */
+    private View historyRow(final Chat.Summary s, final android.app.Dialog dialog, final LinearLayout rows) {
+        final Context c = getContext();
+        boolean open = chat != null && s.id.equals(chat.id());
         LinearLayout row = new LinearLayout(c);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(16), dp(10), dp(dialog == null ? 16 : 4), dp(10));
-        row.setBackground(pressable(chat != null && s.id.equals(chat.id()) ? SURFACE_HIGH : SURFACE, 14));
+        if (dialog == null) {
+            row.setPadding(dp(14), dp(11), dp(12), dp(11));
+            row.setBackground(Ui.pressable(c, 0x00000000, 0));
+        } else {
+            row.setPadding(dp(12), dp(9), dp(2), dp(9));
+            row.setBackground(Ui.pressable(c, open ? Theme.accentSoft() : 0x00000000, Ui.R_ROW));
+        }
         row.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -437,66 +491,114 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 if (chat != null) chat.open(s.id);
             }
         });
+        row.addView(Ui.image(c, R.drawable.ic_chat, open && dialog != null ? ACCENT : MUTED),
+                new LayoutParams(dp(20), dp(20)));
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(VERTICAL);
+        text.setPadding(dp(dialog == null ? 14 : 12), 0, dp(4), 0);
         TextView title = new TextView(c);
         title.setText(s.title.isEmpty() ? c.getString(R.string.history_untitled) : s.title);
         title.setTextColor(TEXT);
-        title.setTextSize(15);
-        title.setMaxLines(2);
+        title.setTextSize(Ui.LABEL);
+        title.setMaxLines(dialog == null ? 1 : 2);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         text.addView(title);
         TextView when = new TextView(c);
         when.setText(ago(c, s.updated));
         when.setTextColor(MUTED);
-        when.setTextSize(12);
+        when.setTextSize(Ui.CAPTION);
+        when.setPadding(0, dp(1), 0, 0);
         text.addView(when);
         row.addView(text, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         if (dialog != null) {
-            TextView delete = new TextView(c);
-            delete.setText("\u2715");
-            delete.setContentDescription(c.getString(R.string.history_delete));
-            delete.setTextColor(MUTED);
-            delete.setTextSize(15);
-            delete.setGravity(Gravity.CENTER);
-            delete.setBackground(pressable(0x00000000, 20));
+            ImageView delete = Ui.iconButton(c, R.drawable.ic_trash, c.getString(R.string.history_delete), MUTED, 40, 18);
             delete.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    dialog.dismiss();
                     if (chat != null) chat.delete(s.id);
-                    showHistory();
+                    fillHistory(rows, dialog);
                 }
             });
             row.addView(delete, new LayoutParams(dp(40), dp(40)));
+        } else {
+            row.addView(Ui.image(c, R.drawable.ic_chevron_right, MUTED), new LayoutParams(dp(16), dp(16)));
         }
         return row;
     }
 
+    /** All earlier chats, in a panel that slides in from the left edge. */
     private void showHistory() {
         if (chat == null) return;
         Context c = getContext();
-        List<Chat.Summary> all = chat.history();
+        final android.app.Dialog dialog = new android.app.Dialog(c,
+                Theme.isLight() ? R.style.Drawer_Light : R.style.Drawer);
+
+        LinearLayout panel = new LinearLayout(c);
+        panel.setOrientation(VERTICAL);
+        android.graphics.drawable.GradientDrawable back = new android.graphics.drawable.GradientDrawable();
+        back.setColor(BG);
+        float r = dp(22);
+        back.setCornerRadii(new float[]{0, 0, r, r, r, r, 0, 0});
+        panel.setBackground(back);
+
+        LinearLayout head = new LinearLayout(c);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        head.setPadding(dp(20), dp(14), dp(8), dp(8));
+        TextView title = new TextView(c);
+        title.setText(R.string.history_title);
+        title.setTextColor(TEXT);
+        title.setTextSize(Ui.TITLE);
+        title.setTypeface(Ui.medium());
+        head.addView(title, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        ImageView close = Ui.iconButton(c, R.drawable.ic_close, c.getString(R.string.close), MUTED, 40, 20);
+        close.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+        head.addView(close, new LayoutParams(dp(40), dp(40)));
+        panel.addView(head);
+
         LinearLayout rows = new LinearLayout(c);
         rows.setOrientation(VERTICAL);
-        rows.setPadding(dp(12), dp(4), dp(12), dp(12));
+        rows.setPadding(dp(8), 0, dp(8), dp(12));
         ScrollView scroller = new ScrollView(c);
         scroller.addView(rows);
-        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(c)
-                .setTitle(R.string.history_title)
-                .setView(scroller)
-                .setNegativeButton(R.string.close, null)
-                .create();
+        panel.addView(scroller, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        fillHistory(rows, dialog);
+
+        dialog.setContentView(panel);
+        dialog.setCanceledOnTouchOutside(true);
+        android.view.Window window = dialog.getWindow();
+        if (window != null) {
+            int screen = getResources().getDisplayMetrics().widthPixels;
+            window.setGravity(Gravity.START | Gravity.TOP);
+            window.setLayout(Math.min(dp(320), Math.round(screen * 0.86f)), ViewGroup.LayoutParams.MATCH_PARENT);
+            window.setDimAmount(0.5f);
+        }
+        dialog.show();
+    }
+
+    private void fillHistory(LinearLayout rows, android.app.Dialog dialog) {
+        Context c = getContext();
+        rows.removeAllViews();
+        if (chat == null) return;
+        List<Chat.Summary> all = chat.history();
         if (all.isEmpty()) {
             TextView none = new TextView(c);
             none.setText(R.string.history_none);
             none.setTextColor(MUTED);
-            none.setTextSize(15);
+            none.setTextSize(Ui.LABEL);
             none.setPadding(dp(12), dp(12), dp(12), dp(12));
             rows.addView(none);
         }
-        for (Chat.Summary s : all) rows.addView(historyRow(s, dialog), rowSize());
-        dialog.show();
+        for (Chat.Summary s : all) {
+            LayoutParams size = new LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            size.topMargin = dp(2);
+            rows.addView(historyRow(s, dialog, rows), size);
+        }
     }
 
     private void addMine(Chat.Message m) {
@@ -504,34 +606,42 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         TextView bubble = new TextView(getContext());
         bubble.setText(m.text);
         bubble.setTextColor(ON_ACCENT);
-        bubble.setTextSize(16);
+        bubble.setTextSize(Ui.BODY);
+        bubble.setLineSpacing(dp(2), 1);
         bubble.setTextIsSelectable(true);
-        bubble.setPadding(dp(14), dp(10), dp(14), dp(10));
-        bubble.setBackground(rounded(ACCENT, 18));
+        bubble.setPadding(dp(14), dp(9), dp(14), dp(10));
+        // round, with one sharper corner where the bubble points at its writer
+        android.graphics.drawable.GradientDrawable back = new android.graphics.drawable.GradientDrawable();
+        back.setColor(ACCENT);
+        float r = dp(20), tip = dp(6);
+        back.setCornerRadii(new float[]{r, r, r, r, tip, tip, r, r});
+        bubble.setBackground(back);
         LayoutParams size = new LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         size.gravity = Gravity.END;
-        size.topMargin = dp(14);
+        size.topMargin = dp(18);
         size.leftMargin = dp(48);
         list.addView(bubble, size);
     }
 
+    /** An answer: no bubble, the words stand on the page under the name of who wrote them. */
     private void addReply(Chat.Message m, boolean working) {
         Context c = getContext();
         LinearLayout bubble = new LinearLayout(c);
         bubble.setOrientation(VERTICAL);
-        bubble.setPadding(dp(14), dp(10), dp(14), dp(10));
-        bubble.setBackground(rounded(SURFACE, 18));
+        bubble.setPadding(dp(2), 0, dp(2), 0);
 
-        if (m.first) {
-            // nobody asked: the agent wrote this of its own accord
-            TextView own = new TextView(c);
-            own.setText("\u2661 " + c.getString(R.string.care_own));
-            own.setTextColor(ACCENT);
-            own.setTextSize(12);
-            own.setPadding(0, 0, 0, dp(4));
-            bubble.addView(own);
-        }
+        // who speaks; when nobody asked, that the agent wrote this of its own accord
+        TextView who = new TextView(c);
+        who.setText(m.first ? c.getString(R.string.care_own) : "Termant");
+        who.setTextColor(m.first ? ACCENT : MUTED);
+        who.setTextSize(Ui.CAPTION);
+        who.setTypeface(Ui.medium());
+        who.setGravity(Gravity.CENTER_VERTICAL);
+        who.setPadding(0, 0, 0, dp(6));
+        Ui.leading(who, m.first ? R.drawable.ic_heart : R.drawable.ic_sparkle, ACCENT, 13, 6);
+        bubble.addView(who);
+
         if (!m.steps.isEmpty()) {
             // what the agent did, so the answer can be checked
             SpannableStringBuilder steps = new SpannableStringBuilder();
@@ -542,27 +652,34 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             TextView did = new TextView(c);
             did.setText(steps);
             did.setTypeface(Typeface.MONOSPACE);
-            did.setTextSize(12);
+            did.setTextSize(Ui.CAPTION);
             did.setTextColor(MUTED);
+            did.setLineSpacing(dp(2), 1);
             did.setTextIsSelectable(true);
-            did.setPadding(0, 0, 0, m.text.isEmpty() && !working ? 0 : dp(8));
-            bubble.addView(did);
+            did.setPadding(dp(12), dp(9), dp(12), dp(9));
+            did.setBackground(Ui.card(c, 12));
+            LayoutParams didSize = new LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            didSize.bottomMargin = m.text.isEmpty() && !working ? 0 : dp(10);
+            bubble.addView(did, didSize);
         }
         if (!m.text.isEmpty()) {
             TextView text = new TextView(c);
             text.setText(format(m.text));
             text.setTextColor(m.failed ? ERROR : TEXT);
-            text.setTextSize(16);
-            text.setLineSpacing(dp(2), 1);
+            text.setTextSize(Ui.BODY);
+            text.setLineSpacing(dp(3), 1);
             text.setTextIsSelectable(true);
             bubble.addView(text);
             if (working) writing = text;
         }
         if (!m.note.isEmpty()) {
             TextView note = new TextView(c);
-            note.setText("\u21bb " + m.note);
+            note.setText(m.note);
             note.setTextColor(MUTED);
-            note.setTextSize(12);
+            note.setTextSize(Ui.CAPTION);
+            note.setGravity(Gravity.CENTER_VERTICAL);
+            Ui.leading(note, R.drawable.ic_refresh, MUTED, 12, 6);
             if (!m.text.isEmpty() || !m.steps.isEmpty()) note.setPadding(0, dp(8), 0, 0);
             bubble.addView(note);
         }
@@ -573,11 +690,11 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             if (!m.text.isEmpty() || !m.note.isEmpty() || !m.steps.isEmpty()) stateSize.topMargin = dp(10);
             bubble.addView(state, stateSize);
         }
+        // as wide as the page: the words then wrap at the page's edge, whatever else the answer shows
         LayoutParams size = new LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        size.gravity = Gravity.START;
-        size.topMargin = dp(14);
-        size.rightMargin = dp(32);
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        size.topMargin = dp(18);
+        size.rightMargin = dp(8);
         list.addView(bubble, size);
     }
 
@@ -643,12 +760,13 @@ final class ChatView extends LinearLayout implements Chat.Listener {
      */
     static final class Working extends View {
         private static final int[] RING = {0xffff7a45, 0xffd2a8ff, 0xff79c0ff, 0xff56d364, 0xffff7a45};
-        private static final String[] ICONS = {
-                "\uD83D\uDE80", "\uD83D\uDCE1", "\uD83E\uDDE0", "\u270D\uFE0F", "\uD83D\uDCBB", "\uD83D\uDCE6",
-                "\uD83D\uDCF1", "\uD83D\uDC46", "\uD83D\uDC19", "\uD83D\uDCC4", "\u270F\uFE0F", "\uD83D\uDD0E",
-                "\uD83C\uDF10", "\uD83D\uDD17", "\uD83D\uDDD2\uFE0F", "\uD83E\uDD1D", "\uD83E\uDDE9", "\u23F3",
-                "\uD83D\uDC40", "\u2753"};
-        private static final String SETUP_ICON = "\u2B07\uFE0F";
+        /** One picture for each kind of work, in the order of R.array.activity_titles. */
+        private static final int[] ICONS = {
+                R.drawable.ic_bolt, R.drawable.ic_cloud, R.drawable.ic_bulb, R.drawable.ic_edit,
+                R.drawable.ic_terminal, R.drawable.ic_box, R.drawable.ic_phone, R.drawable.ic_layers,
+                R.drawable.ic_branch, R.drawable.ic_file, R.drawable.ic_edit, R.drawable.ic_search,
+                R.drawable.ic_globe, R.drawable.ic_external, R.drawable.ic_list, R.drawable.ic_chat,
+                R.drawable.ic_plug, R.drawable.ic_clock, R.drawable.ic_eye, R.drawable.ic_help};
         private static final long TIP_MS = 5200, FADE_MS = 380, TIPS_AFTER_MS = 3500;
 
         private final Chat chat;
@@ -658,7 +776,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         private final int textColor, mutedColor, accentColor, trackColor;
         private final android.graphics.Paint ring = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         private final android.graphics.Paint fill = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-        private final android.graphics.Paint icon = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final Drawable[] icons = new Drawable[ICONS.length];
+        private final Drawable setupIcon;
         private final android.text.TextPaint title = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         private final android.text.TextPaint about = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         private final android.text.TextPaint tip = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
@@ -690,8 +809,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             ring.setStyle(android.graphics.Paint.Style.STROKE);
             ring.setStrokeWidth(2.6f * dp);
             ring.setStrokeCap(android.graphics.Paint.Cap.ROUND);
-            icon.setTextSize(15 * sp);
-            icon.setTextAlign(android.graphics.Paint.Align.CENTER);
+            for (int i = 0; i < ICONS.length; i++) icons[i] = Ui.icon(c, ICONS[i], textColor);
+            setupIcon = Ui.icon(c, R.drawable.ic_download, textColor);
             title.setTextSize(15 * sp);
             title.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
             about.setTextSize(12 * sp);
@@ -756,7 +875,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 detail = words.replaceAll("\\s+", " ").trim();
                 writing = !detail.isEmpty();
             }
-            String glyph = status.isEmpty() ? ICONS[Math.min(kind, ICONS.length - 1)] : SETUP_ICON;
+            Drawable glyph = status.isEmpty() ? icons[Math.min(kind, icons.length - 1)] : setupIcon;
             if (!name.equals(shownTitle)) {
                 shownTitle = name;
                 shownAt = now;
@@ -788,12 +907,14 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             fill.setColor(RING[2]);
             canvas.drawCircle(cx + (float) Math.cos(back) * (r + 0.5f * dp), cy + (float) Math.sin(back) * (r + 0.5f * dp),
                     2.2f * dp, fill);
-            // the icon drops in when the work changes (always at one size: every new size of an
-            // emoji is a new picture for the phone to make)
-            icon.setAlpha((int) (255 * arrive));
+            // the icon drops in when the work changes
+            float half = 8 * dp, drop = (1 - arrive) * 9 * dp;
+            glyph.setBounds(Math.round(cx - half), Math.round(cy - half - drop),
+                    Math.round(cx + half), Math.round(cy + half - drop));
+            glyph.setAlpha((int) (255 * arrive));
             canvas.save();
             canvas.clipRect(cx - r, cy - r, cx + r, cy + r);
-            canvas.drawText(glyph, cx, cy - (icon.descent() + icon.ascent()) / 2 - (1 - arrive) * 9 * dp, icon);
+            glyph.draw(canvas);
             canvas.restore();
 
             // first line: the title, with a light running over it, and the time waited

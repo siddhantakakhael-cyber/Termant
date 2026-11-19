@@ -96,7 +96,7 @@ back, and *Theme* switches between dark and light, the terminal included. Both
 apply at once.
 
 Earlier chats are kept: they are listed on the new-chat screen and under the
-**☰** button, and opening one continues it where it stopped (it carries on in
+menu button at the top left (a panel slides in from the edge), and opening one continues it where it stopped (it carries on in
 the same OpenCode session, so the agent still knows what was said).
 
 The real Ubuntu terminal is one tap away: **>_** at the top. **Chat**
@@ -263,7 +263,7 @@ backups automatically; models of other services have to be ticked under
 happens at the moment OpenCode refuses, not earlier. Picking an OpenCode model
 by hand makes Termant try it again at once.
 
-The **Arena ↗** chip opens the arena.ai website in your browser, where you
+The **Arena** chip opens the arena.ai website in your browser, where you
 sign in and use it. Arena.ai offers no way for other apps to use its agent, so
 it is not connected to the chat and cannot control the phone or Ubuntu.
 

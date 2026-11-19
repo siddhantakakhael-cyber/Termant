@@ -75,27 +75,22 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
 
         LinearLayout bar = new LinearLayout(context);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(6), dp(8), dp(8), dp(8));
-        TextView back = new TextView(context);
-        back.setText("\u2190");
-        back.setContentDescription(context.getString(R.string.chat_back_description));
-        back.setTextColor(TEXT);
-        back.setTextSize(22);
-        back.setGravity(Gravity.CENTER);
-        back.setBackground(pressable(0x00000000, 20));
+        bar.setPadding(dp(6), dp(6), dp(8), dp(6));
+        android.widget.ImageView back = Ui.iconButton(context, R.drawable.ic_back,
+                context.getString(R.string.chat_back_description), TEXT, 40, 22);
         back.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 SettingsView.this.host.onCloseSettings();
             }
         });
-        bar.addView(back, new LayoutParams(dp(44), dp(40)));
+        bar.addView(back, new LayoutParams(dp(40), dp(40)));
         TextView title = new TextView(context);
         title.setText(R.string.settings);
         title.setTextColor(TEXT);
-        title.setTextSize(19);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setPadding(dp(6), 0, 0, 0);
+        title.setTextSize(Ui.TITLE);
+        title.setTypeface(Ui.medium());
+        title.setPadding(dp(8), 0, 0, 0);
         bar.addView(title);
         addView(bar);
 
@@ -429,13 +424,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         lines.addView(t);
         card.addView(lines, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView delete = new TextView(c);
-        delete.setText("\u2715");
-        delete.setContentDescription(removeLabel);
-        delete.setTextColor(MUTED);
-        delete.setTextSize(16);
-        delete.setGravity(Gravity.CENTER);
-        delete.setBackground(pressable(0x00000000, 20));
+        android.widget.ImageView delete = Ui.iconButton(c, R.drawable.ic_close, removeLabel, MUTED, 40, 18);
         delete.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -759,13 +748,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         text.addView(cmd);
         card.addView(text, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView delete = new TextView(c);
-        delete.setText("\u2715");
-        delete.setContentDescription(c.getString(R.string.mcp_remove));
-        delete.setTextColor(MUTED);
-        delete.setTextSize(16);
-        delete.setGravity(Gravity.CENTER);
-        delete.setBackground(pressable(0x00000000, 20));
+        android.widget.ImageView delete = Ui.iconButton(c, R.drawable.ic_close, c.getString(R.string.mcp_remove), MUTED, 40, 18);
         delete.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -783,20 +766,36 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
 
     // ------------------------------------------------------------ pieces
 
+    /** The picture that stands before the title of a part of the settings. */
+    private static int headingIcon(int title) {
+        if (title == R.string.settings_look) return R.drawable.ic_theme;
+        if (title == R.string.settings_agent) return R.drawable.ic_sparkle;
+        if (title == R.string.settings_tools) return R.drawable.ic_globe;
+        if (title == R.string.settings_keys) return R.drawable.ic_key;
+        if (title == R.string.mcp_title) return R.drawable.ic_plug;
+        if (title == R.string.settings_rules) return R.drawable.ic_bolt;
+        if (title == R.string.settings_care) return R.drawable.ic_heart;
+        if (title == R.string.settings_learn) return R.drawable.ic_bulb;
+        return R.drawable.ic_settings;
+    }
+
     private void heading(int title, int note) {
         Context c = getContext();
         TextView t = new TextView(c);
         t.setText(title);
-        t.setTextColor(ACCENT);
-        t.setTextSize(14);
+        t.setTextColor(TEXT);
+        t.setTextSize(Ui.BODY);
         t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setGravity(Gravity.CENTER_VERTICAL);
         t.setPadding(dp(4), dp(22), 0, dp(4));
+        Ui.leading(t, headingIcon(title), ACCENT, 16, 8);
         content.addView(t);
         if (note != 0) {
             TextView n = new TextView(c);
             n.setText(note);
             n.setTextColor(MUTED);
-            n.setTextSize(13);
+            n.setTextSize(Ui.SMALL);
+            n.setLineSpacing(dp(1), 1);
             n.setPadding(dp(4), 0, dp(4), dp(6));
             content.addView(n);
         }
@@ -808,12 +807,16 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         return size;
     }
 
+    /**
+     * One setting: its name, what it is set to, and a line about it. "On" and
+     * "Off" are shown as a small badge, everything else as words with an arrow.
+     */
     private void row(String title, String value, String note, OnClickListener click) {
         Context c = getContext();
         LinearLayout card = new LinearLayout(c);
         card.setOrientation(VERTICAL);
-        card.setPadding(dp(16), dp(12), dp(16), dp(12));
-        card.setBackground(pressable(SURFACE, 14));
+        card.setPadding(dp(16), dp(12), dp(12), dp(12));
+        card.setBackground(Ui.cardButton(c, Ui.R_ROW));
         card.setContentDescription(title);
         card.setOnClickListener(click);
 
@@ -822,25 +825,49 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         TextView t = new TextView(c);
         t.setText(title);
         t.setTextColor(TEXT);
-        t.setTextSize(16);
+        t.setTextSize(Ui.BODY);
         line.addView(t, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        TextView v = new TextView(c);
-        v.setText(value);
-        v.setTextColor(MUTED);
-        v.setTextSize(14);
-        v.setSingleLine(true);
-        v.setEllipsize(android.text.TextUtils.TruncateAt.START);
-        v.setGravity(Gravity.END);
-        v.setMaxWidth(dp(170));
-        v.setPadding(dp(10), 0, 0, 0);
-        line.addView(v);
+
+        boolean on = value.equals(c.getString(R.string.on)), off = value.equals(c.getString(R.string.off));
+        int mark = "\u2197".equals(value) ? R.drawable.ic_external
+                : "+".equals(value) ? R.drawable.ic_plus : R.drawable.ic_chevron_right;
+        boolean words = !value.isEmpty() && !"\u2197".equals(value) && !"+".equals(value);
+        if (words) {
+            TextView v = new TextView(c);
+            v.setText(value);
+            v.setSingleLine(true);
+            v.setEllipsize(android.text.TextUtils.TruncateAt.START);
+            v.setGravity(Gravity.END);
+            v.setMaxWidth(dp(160));
+            LayoutParams size = new LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            size.leftMargin = dp(10);
+            if (on || off) {
+                v.setTextSize(Ui.CAPTION);
+                v.setTypeface(Ui.medium());
+                v.setTextColor(on ? ACCENT : MUTED);
+                v.setPadding(dp(9), dp(2), dp(9), dp(3));
+                v.setBackground(Ui.rounded(c, on ? Theme.accentSoft() : SURFACE_HIGH, 10));
+                size.rightMargin = dp(4);
+            } else {
+                v.setTextSize(Ui.SMALL);
+                v.setTextColor(MUTED);
+            }
+            line.addView(v, size);
+        }
+        if (!on && !off) {
+            LayoutParams markSize = new LayoutParams(dp(16), dp(16));
+            markSize.leftMargin = dp(4);
+            line.addView(Ui.image(c, mark, MUTED), markSize);
+        }
         card.addView(line);
         if (note != null) {
             TextView n = new TextView(c);
             n.setText(note);
             n.setTextColor(MUTED);
-            n.setTextSize(13);
-            n.setPadding(0, dp(2), 0, 0);
+            n.setTextSize(Ui.SMALL);
+            n.setLineSpacing(dp(1), 1);
+            n.setPadding(0, dp(3), dp(4), 0);
             card.addView(n);
         }
         content.addView(card, cardSize());
@@ -885,7 +912,8 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         on.setContentDescription(Rules.describe(r.trigger));
         on.setThumbTintList(new ColorStateList(
                 new int[][]{{android.R.attr.state_checked}, {}}, new int[]{ACCENT, MUTED}));
-        on.setTrackTintList(ColorStateList.valueOf(SURFACE_HIGH));
+        on.setTrackTintList(new ColorStateList(
+                new int[][]{{android.R.attr.state_checked}, {}}, new int[]{(ACCENT & 0x00ffffff) | 0x73000000, SURFACE_HIGH}));
         on.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton button, boolean checked) {
@@ -894,13 +922,7 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
         });
         card.addView(on);
 
-        TextView delete = new TextView(c);
-        delete.setText("\u2715");
-        delete.setContentDescription(c.getString(R.string.rule_delete));
-        delete.setTextColor(MUTED);
-        delete.setTextSize(16);
-        delete.setGravity(Gravity.CENTER);
-        delete.setBackground(pressable(0x00000000, 20));
+        android.widget.ImageView delete = Ui.iconButton(c, R.drawable.ic_close, c.getString(R.string.rule_delete), MUTED, 40, 18);
         delete.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -912,6 +934,8 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
     }
 
     private Drawable rounded(int color, float radiusDp) {
+        // a card: the surface colour with a hairline around it
+        if (color == SURFACE) return Ui.card(getContext(), radiusDp);
         GradientDrawable d = new GradientDrawable();
         d.setColor(color);
         d.setCornerRadius(dp(radiusDp));

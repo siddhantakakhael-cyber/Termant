@@ -118,7 +118,8 @@ public class MainActivity extends Activity
     private LinearLayout tabs;
     private View askBar, keyRows;
     private EditText askInput;
-    private TextView ctrlKey, altKey, askMic;
+    private TextView ctrlKey, altKey;
+    private android.widget.ImageView askMic;
     /** Dictation: the listener, where its words go, and what was in the box before. */
     private Voice voice;
     private boolean voiceInChat;
@@ -455,60 +456,64 @@ public class MainActivity extends Activity
     private View buildSetupPanel() {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(28), dp(72), dp(28), dp(28));
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        box.setPadding(dp(28), dp(40), dp(28), dp(32));
 
-        TextView mark = new TextView(this);
-        mark.setText(">_");
-        mark.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-        mark.setTextSize(22);
-        mark.setTextColor(onAccent());
-        mark.setGravity(Gravity.CENTER);
-        mark.setBackground(rounded(accent(), 16));
-        box.addView(mark, new LinearLayout.LayoutParams(dp(64), dp(64)));
+        box.addView(Ui.badge(this, R.drawable.ic_terminal, 60, 30), new LinearLayout.LayoutParams(dp(60), dp(60)));
 
         TextView title = new TextView(this);
         title.setText(R.string.setup_title);
-        title.setTextSize(24);
+        title.setTextSize(Ui.DISPLAY);
         title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setLetterSpacing(-0.01f);
         title.setTextColor(text());
-        title.setPadding(0, dp(24), 0, 0);
+        title.setPadding(0, dp(22), 0, 0);
         box.addView(title);
 
+        // what is happening now, and how far it is
+        LinearLayout state = new LinearLayout(this);
+        state.setOrientation(LinearLayout.VERTICAL);
+        state.setPadding(dp(16), dp(14), dp(16), dp(14));
+        state.setBackground(Ui.card(this, Ui.R_CARD));
+
         setupStatus = new TextView(this);
-        setupStatus.setTextSize(15);
+        setupStatus.setTextSize(Ui.BODY);
+        setupStatus.setTypeface(Ui.medium());
         setupStatus.setTextColor(text());
-        setupStatus.setPadding(0, dp(20), 0, dp(10));
-        box.addView(setupStatus);
+        state.addView(setupStatus);
 
         setupBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         setupBar.setMax(100);
         setupBar.setProgressTintList(ColorStateList.valueOf(accent()));
         setupBar.setIndeterminateTintList(ColorStateList.valueOf(accent()));
-        setupBar.setProgressBackgroundTintList(ColorStateList.valueOf(surfaceHigh()));
-        box.addView(setupBar, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        TextView note = new TextView(this);
-        note.setText(R.string.setup_note);
-        note.setTextSize(13);
-        note.setTextColor(muted());
-        note.setPadding(0, dp(20), 0, 0);
-        box.addView(note);
+        setupBar.setProgressBackgroundTintList(ColorStateList.valueOf(Theme.outline()));
+        LinearLayout.LayoutParams barSize = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        barSize.topMargin = dp(8);
+        state.addView(setupBar, barSize);
 
         setupError = new TextView(this);
-        setupError.setTextSize(14);
+        setupError.setTextSize(Ui.SMALL);
         setupError.setTextColor(error());
-        setupError.setPadding(0, dp(20), 0, dp(16));
+        setupError.setLineSpacing(dp(2), 1);
+        setupError.setPadding(0, dp(8), 0, 0);
         setupError.setTextIsSelectable(true);
         setupError.setVisibility(View.GONE);
-        box.addView(setupError);
+        state.addView(setupError);
+
+        LinearLayout.LayoutParams stateSize = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        stateSize.topMargin = dp(22);
+        box.addView(state, stateSize);
 
         retryButton = new Button(this);
         retryButton.setText(R.string.retry);
         retryButton.setAllCaps(false);
-        retryButton.setTextSize(16);
+        retryButton.setTextSize(Ui.BODY);
+        retryButton.setTypeface(Ui.medium());
         retryButton.setTextColor(onAccent());
-        retryButton.setBackground(pressable(accent(), 26));
+        retryButton.setStateListAnimator(null);
+        retryButton.setBackground(pressable(accent(), 25));
         retryButton.setVisibility(View.GONE);
         retryButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -516,8 +521,18 @@ public class MainActivity extends Activity
                 startInstall();
             }
         });
-        box.addView(retryButton, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
+        LinearLayout.LayoutParams retrySize = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(50));
+        retrySize.topMargin = dp(14);
+        box.addView(retryButton, retrySize);
+
+        TextView note = new TextView(this);
+        note.setText(R.string.setup_note);
+        note.setTextSize(Ui.SMALL);
+        note.setTextColor(muted());
+        note.setLineSpacing(dp(2), 1);
+        note.setPadding(dp(2), dp(18), dp(2), 0);
+        box.addView(note);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -572,7 +587,7 @@ public class MainActivity extends Activity
         // top bar: session tabs, AI, new session, menu
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(6), dp(6), dp(2), dp(6));
+        bar.setPadding(dp(8), dp(6), dp(4), dp(6));
         tabs = new LinearLayout(this);
         tabs.setGravity(Gravity.CENTER_VERTICAL);
         HorizontalScrollView tabScroll = new HorizontalScrollView(this);
@@ -580,12 +595,13 @@ public class MainActivity extends Activity
         tabScroll.addView(tabs);
         bar.addView(tabScroll, new LinearLayout.LayoutParams(0, dp(36), 1));
 
-        TextView ai = label("\u2726 " + getString(R.string.chat_back), getString(R.string.chat_back_description));
-        ai.setTextSize(14);
-        ai.setTypeface(Typeface.DEFAULT_BOLD);
+        TextView ai = label(getString(R.string.chat_back), getString(R.string.chat_back_description));
+        ai.setTextSize(Ui.SMALL);
+        ai.setTypeface(Ui.medium());
         ai.setTextColor(onAccent());
         ai.setBackground(pressable(accent(), 18));
-        ai.setPadding(dp(14), 0, dp(14), 0);
+        ai.setPadding(dp(12), 0, dp(14), 0);
+        Ui.leading(ai, R.drawable.ic_sparkle, onAccent(), 14, 6);
         ai.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -597,27 +613,28 @@ public class MainActivity extends Activity
         aiSize.leftMargin = dp(6);
         bar.addView(ai, aiSize);
 
-        TextView plus = label("+", getString(R.string.menu_new));
-        plus.setTextSize(24);
-        plus.setBackground(pressable(0x00000000, 18));
+        android.widget.ImageView plus = Ui.iconButton(this, R.drawable.ic_plus, getString(R.string.menu_new),
+                keyText(), 38, 20);
+        plus.setFocusable(false);
         plus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 newSession();
             }
         });
-        bar.addView(plus, new LinearLayout.LayoutParams(dp(44), dp(36)));
+        LinearLayout.LayoutParams plusSize = new LinearLayout.LayoutParams(dp(38), dp(38));
+        plusSize.leftMargin = dp(2);
+        bar.addView(plus, plusSize);
 
-        final TextView more = label("\u22ee", "Menu");
-        more.setTextSize(20);
-        more.setBackground(pressable(0x00000000, 18));
+        final android.widget.ImageView more = Ui.iconButton(this, R.drawable.ic_more, "Menu", keyText(), 38, 20);
+        more.setFocusable(false);
         more.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showMenu(more);
             }
         });
-        bar.addView(more, new LinearLayout.LayoutParams(dp(40), dp(36)));
+        bar.addView(more, new LinearLayout.LayoutParams(dp(38), dp(38)));
         panel.addView(bar);
 
         terminal = new TerminalView(this, null);
@@ -657,8 +674,8 @@ public class MainActivity extends Activity
     private View buildAskBar() {
         LinearLayout pill = new LinearLayout(this);
         pill.setGravity(Gravity.CENTER_VERTICAL);
-        pill.setBackground(rounded(surface(), 24));
-        pill.setPadding(dp(16), 0, dp(4), 0);
+        pill.setBackground(Ui.card(this, 24));
+        pill.setPadding(dp(16), dp(3), dp(4), dp(3));
 
         askInput = new EditText(this);
         askInput.setHint(R.string.ask_hint);
@@ -680,9 +697,8 @@ public class MainActivity extends Activity
         });
         pill.addView(askInput, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        askMic = label("\uD83C\uDFA4", getString(R.string.ask_voice));
-        askMic.setTextSize(17);
-        askMic.setBackground(pressable(0x00000000, 20));
+        askMic = Ui.iconButton(this, R.drawable.ic_mic, getString(R.string.ask_voice), muted(), 40, 21);
+        askMic.setFocusable(false);
         askMic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -691,10 +707,9 @@ public class MainActivity extends Activity
         });
         pill.addView(askMic, new LinearLayout.LayoutParams(dp(40), dp(40)));
 
-        TextView send = label("\u2191", getString(R.string.ask_send));
-        send.setTextSize(20);
-        send.setTypeface(Typeface.DEFAULT_BOLD);
-        send.setTextColor(onAccent());
+        android.widget.ImageView send = Ui.iconButton(this, R.drawable.ic_arrow_up, getString(R.string.ask_send),
+                onAccent(), 40, 21);
+        send.setFocusable(false);
         send.setBackground(pressable(accent(), 20));
         send.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -757,6 +772,7 @@ public class MainActivity extends Activity
                     chatPanel.setListening(listening && voiceInChat);
                     boolean here = listening && !voiceInChat;
                     askMic.setBackground(pressable(here ? accent() : 0x00000000, 20));
+                    askMic.setImageDrawable(Ui.icon(MainActivity.this, R.drawable.ic_mic, here ? onAccent() : muted()));
                     askMic.setContentDescription(getString(here ? R.string.voice_stop : R.string.ask_voice));
                     askInput.setHint(here ? R.string.voice_listening : R.string.ask_hint);
                 }
@@ -823,9 +839,10 @@ public class MainActivity extends Activity
         LinearLayout row = new LinearLayout(this);
         for (final Object[] key : keys) {
             final TextView v = label((String) key[0], (String) key[0]);
-            v.setTextSize(12);
-            v.setTypeface(Typeface.DEFAULT_BOLD);
-            v.setBackground(pressable(surface(), 8));
+            v.setTextSize(11.5f);
+            v.setTypeface(Ui.medium());
+            v.setLetterSpacing(0.03f);
+            v.setBackground(Ui.chip(this, surface(), 9));
             if ("ctrl".equals(key[1])) ctrlKey = v;
             if ("alt".equals(key[1])) altKey = v;
             v.setOnClickListener(new View.OnClickListener() {
@@ -836,7 +853,7 @@ public class MainActivity extends Activity
                 }
             });
             LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(0, dp(36), 1);
-            size.setMargins(dp(2), dp(2), dp(2), dp(2));
+            size.setMargins(dp(2.5f), dp(2.5f), dp(2.5f), dp(2.5f));
             row.addView(v, size);
         }
         return row;
@@ -867,9 +884,9 @@ public class MainActivity extends Activity
 
     private void showModifiers() {
         ctrlKey.setTextColor(ctrl ? onAccent() : keyText());
-        ctrlKey.setBackground(pressable(ctrl ? accent() : surface(), 8));
+        ctrlKey.setBackground(ctrl ? pressable(accent(), 9) : Ui.chip(this, surface(), 9));
         altKey.setTextColor(alt ? onAccent() : keyText());
-        altKey.setBackground(pressable(alt ? accent() : surface(), 8));
+        altKey.setBackground(alt ? pressable(accent(), 9) : Ui.chip(this, surface(), 9));
     }
 
     /** Ubuntu is installed: bring its helper files up to date and show the chat (or the terminal, if that was open). */
@@ -1156,16 +1173,17 @@ public class MainActivity extends Activity
             i++;
             boolean agent = service.agentSessions.contains(s);
             String title = s.getTitle();
-            String name = agent ? "\u2726 Agent" : (title == null || title.isEmpty()) ? "Ubuntu" : title;
+            String name = agent ? "Agent" : (title == null || title.isEmpty()) ? "Ubuntu" : title;
             String text = i + "  " + name;
             if (text.length() > 20) text = text.substring(0, 19) + "\u2026";
             TextView tab = label(text, text);
-            tab.setTextSize(13);
-            tab.setPadding(dp(14), 0, dp(14), 0);
+            tab.setTextSize(Ui.SMALL);
+            tab.setPadding(dp(13), 0, dp(14), 0);
+            if (agent) Ui.leading(tab, R.drawable.ic_sparkle, accent(), 13, 6);
             if (s == current) {
                 tab.setTextColor(text());
-                tab.setTypeface(Typeface.DEFAULT_BOLD);
-                tab.setBackground(pressable(surfaceHigh(), 18));
+                tab.setTypeface(Ui.medium());
+                tab.setBackground(Ui.chip(this, surfaceHigh(), 18));
             } else {
                 tab.setTextColor(muted());
                 tab.setBackground(pressable(0x00000000, 18));

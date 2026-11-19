@@ -343,11 +343,8 @@ final class Overlay {
         from.setTextSize(12);
         from.setTypeface(Typeface.DEFAULT_BOLD);
         head.addView(from, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        TextView close = new TextView(context);
-        close.setText("\u2715");
-        close.setTextColor(Theme.muted());
-        close.setTextSize(15);
-        close.setGravity(Gravity.CENTER);
+        android.widget.ImageView close = Ui.image(context, R.drawable.ic_close, Theme.muted());
+        close.setPadding(px(10), px(8), px(10), px(8));
         close.setContentDescription(context.getString(R.string.ask_close));
         close.setOnClickListener(onClose);
         head.addView(close, new LinearLayout.LayoutParams(px(36), px(32)));
