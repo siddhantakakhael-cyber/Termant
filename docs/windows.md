@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **First version (0.1.0).** It is built and tested automatically on a Windows
+> **Early version (0.1.1).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.1/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -91,11 +91,45 @@ pc note add <text>          pc note list     pc note remove <number>
   the PC is awake. Turn on **Start with Windows** in Settings if you rely on them.
 - **Things that need administrator rights** (turning Wi-Fi off, some settings)
   fail unless Termant itself was started as administrator.
-- **Reading other windows.** `pc screen` gives the text of classic programs
-  (Notepad's text box, for example). On the test machine it could not list the
-  buttons and menus of a window, so for those the agent takes a screenshot and
-  looks at it, which needs a model that can read pictures. How well this works
-  on your PC is not yet known.
+- **Reading other windows.** `pc screen` first asks the program what it shows.
+  When the program names almost nothing (on the test machine Notepad gave only
+  its text box, no menus), Termant takes a picture of the window and reads the
+  writing in it with [Mirage](https://huggingface.co/Cactus-Compute/mirage), a
+  small vision model by Cactus Compute (Apache 2.0) that runs on your PC: the
+  picture is not sent anywhere. The agent gets each piece of writing with the
+  point to click.
+  - The first time, it downloads the model and its engine (23 MB) from Hugging
+    Face into Termant's data folder and checks them against fixed SHA-256 sums.
+    Without internet at that moment, reading from a picture does not work.
+  - It took 5 to 8 seconds for a 1024 x 768 window on the test machine. A
+    bigger screen is read in up to 8 parts, so it takes longer; that has not
+    been measured.
+  - The places are right, the letters not always. In the tests it read
+    "Ctrl- Shift+S" for "Ctrl+Shift+S" and "Ctrl+p" for "Ctrl+P", ran
+    "New Window" and its shortcut together, and once turned "Edit Format" in a
+    small window into nonsense. So the agent uses it to find where to click,
+    not to copy names or numbers.
+  - It reads Latin letters only: **no Hindi or other scripts**, and no icons
+    without a caption. For those the agent takes a screenshot and looks at it,
+    which needs a model that can read pictures.
+  - It needs 64-bit Windows on an Intel or AMD processor.
+  - Only Notepad has been tried. Dark windows, browsers and small or coloured
+    text are untested.
+
+  What it read from this window on the test machine (`pc screen ocr`), each
+  piece with its point:
+
+  <img src="screenshots/windows-mirage.png" width="560" alt="Notepad on the test machine with its File menu open">
+
+  ```
+  [Text] "File" @ 16,32            [Text] "Save" @ 51,121
+  [Text] "Edit" @ 52,31            [Text] "Ctrl+S" @ 194,121
+  [Text] "Format" @ 93,32          [Text] "Save As.." @ 61,143
+  [Text] "New" @ 51,55             [Text] "Ctrl- Shift+S" @ 179,143
+  [Text] "Ctrl+N" @ 193,55         [Text] "Page Setup..." @ 71,174
+  [Text] "Open..." @ 56,99         [Text] "Print..." @ 55,196
+  [Text] "Ctrl+O" @ 193,98         [Text] "Exit" @ 48,227
+  ```
 - **Brightness** can be set only on screens that Windows can control (laptops, usually not desktop monitors).
 - **Different from the Android app:** there is no Ubuntu inside the app (the
   terminal is the PC's own; Ubuntu appears if you have WSL), the agent's
@@ -111,6 +145,9 @@ Server 2025 machine with a real desktop:
 1. The `pc` command opens Notepad, brings it to the front, types into it, reads
    the text back, double-clicks a word, takes a screenshot and closes it; and
    checks the clipboard, the program list, system information and the error messages.
+   It also reads a picture of the Notepad window with Mirage, clicks the point
+   it gives for "File", and reads the opened menu the same way (New, Open, Save,
+   Print and Exit must be there).
 2. The installer is built, then run silently, as a user would install it; the
    test checks that the program and its shortcuts are there.
 3. The installed program tests itself: first-start notice, notifications,

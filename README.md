@@ -138,11 +138,13 @@ Older versions and release notes are on the [Releases page](https://github.com/s
 The same agent as a desktop program for Windows 10 and 11 (64-bit). It works on
 the PC itself: it opens programs, types, presses keys, clicks, takes
 screenshots, sets alarms and timers, keeps rules, and has PowerShell and
-Command Prompt tabs. This is its first version (0.1.0).
+Command Prompt tabs. Windows that do not say what is in them are read from a
+picture, on the PC itself, with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage)
+model. It is an early version (0.1.1).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.0/Termant-Setup.exe)** and open it.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.1/Termant-Setup.exe)** and open it.
 2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
 3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
 
