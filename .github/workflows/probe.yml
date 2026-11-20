@@ -25,6 +25,16 @@ jobs:
               echo "== the 32-bit ARM program on this machine"
               bash .github/probe/ci/mirage-check.sh libs/armeabi-v7a/libmirage.so "$PWD/work"; echo "check exit $?"
             fi
+            if [ "$(uname -m)" = aarch64 ]; then
+              echo "== 32-bit ARM, other ways to build it"
+              n=0
+              for stack in "" "-Wl,-z,stack-size=8388608"; do for cpu in "" "-mcpu=generic+v7a" "-mcpu=cortex_a53" "-mcpu=generic+v7a+neon+vfp4"; do
+                n=$((n+1))
+                PYTHONPATH=work/zig python3 -m ziglang c++ -target arm-linux-musleabihf $cpu -O2 -static -s $stack -x c .github/probe/mirage/reader.c -x none work/linux-armv7-libcactus.a -o work/v7-$n 2>&1 | head -5
+                work/v7-$n work/mirage.cact < work/question.req > work/v7-$n.txt 2> work/v7-$n.err; echo "[$stack] [$cpu] exit $? read $(grep -c Alpha work/v7-$n.txt) $(head -c 200 work/v7-$n.err)"
+              done; done
+              readelf -A work/linux-armv7-libcactus.a 2>/dev/null | head -30
+            fi
             echo "== three more times, for the time"
             for i in 1 2 3; do s=$(date +%s%N); libs/$abi/libmirage.so work/mirage.cact < work/question.req > /dev/null; echo "$(( ($(date +%s%N) - s) / 1000000 )) ms"; done
           } > probe-out/probe-$(uname -m).log 2>&1 || true

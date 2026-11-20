@@ -31,7 +31,8 @@ build() { # <android abi> <engine folder> <sha256 of its libcactus.a> <zig targe
   curl -sSL --fail --retry 3 -o "$lib" "$BASE/$platform/libcactus.a"
   echo "$sha  $lib" | sha256sum --check --quiet
   mkdir -p "$LIBS/$abi"
-  zig c++ -target "$target" "$@" -O2 -static -s -x c mirage/reader.c -x none "$lib" -o "$LIBS/$abi/libmirage.so"
+  # musl gives a thread 128 KB of stack unless told otherwise; the engine was built for 8 MB
+  zig c++ -target "$target" "$@" -O2 -static -s -Wl,-z,stack-size=8388608 -x c mirage/reader.c -x none "$lib" -o "$LIBS/$abi/libmirage.so"
   echo "mirage reader, $abi: $(wc -c < "$LIBS/$abi/libmirage.so") bytes"
 }
 build arm64-v8a   linux-arm64  31ee6ce7b0b1390fc8ffa6d242d2aa3cdae18b405d7d885d483cd79258016dd0 aarch64-linux-musl
