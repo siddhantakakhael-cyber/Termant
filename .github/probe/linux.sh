@@ -19,19 +19,20 @@ for p in linux-x86_64 linux-arm64 linux-armv7; do
   nm -u work/$p/libcactus.a 2>/dev/null | awk '{print $2}' | sort -u > "$out/undefined-$p.txt"
   wc -l < "$out/undefined-$p.txt"; grep -c '_ZNSt\|_ZSt\|__cxa\|__gxx' "$out/undefined-$p.txt"; grep -E 'dlopen|omp|GLIBC|pthread_create|__cxa_throw|_ZNSt3__1|_ZNSt7__cxx11' "$out/undefined-$p.txt" | head -12
 done
-echo "== build"
-sudo apt-get update -qq >/dev/null; sudo apt-get install -y -qq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf qemu-user-static >/dev/null 2>&1
-build() { # <platform> <compiler prefix>
-  local cc="${2}gcc" cxx="${2}g++"
-  for how in "$cc -O2 -static -o work/reader-$1 .github/probe/reader.c -Iwork/$1 work/$1/libcactus.a -lm -lpthread" \
-             "$cxx -O2 -static -x c .github/probe/reader.c -x none -Iwork/$1 work/$1/libcactus.a -o work/reader-$1 -lm -lpthread"; do
-    echo "\$ $how"
-    if $how 2> work/err.txt; then echo "built: $(stat -c %s work/reader-$1) bytes; $(file -b work/reader-$1)"; ${2}strip work/reader-$1; echo "stripped: $(stat -c %s work/reader-$1)"; return 0; fi
-    head -12 work/err.txt
-  done
-  return 1
+echo "== build (zig brings the C++ library the engine was built with, and a libc that needs nothing on the phone)"
+sudo apt-get update -qq >/dev/null; sudo apt-get install -y -qq qemu-user-static 2>&1 | tail -2
+pip install -q "ziglang==${ZIG:-0.17.1}" pillow; python3 -m ziglang version
+build() { # <platform> <zig target> [more flags]
+  local p="$1" t="$2"; shift 2
+  echo "\$ zig c++ -target $t $*"
+  if python3 -m ziglang c++ -target "$t" "$@" -O2 -static -s -x c .github/probe/reader.c -x none -Iwork/$p work/$p/libcactus.a -o work/reader-$p 2> work/err.txt; then
+    echo "built: $(stat -c %s work/reader-$p) bytes; $(file -b work/reader-$p)"
+  else head -20 work/err.txt | cut -c1-300; fi
 }
-build linux-x86_64 ""; build linux-arm64 aarch64-linux-gnu-; build linux-armv7 arm-linux-gnueabihf-
+build linux-x86_64 x86_64-linux-musl
+build linux-arm64 aarch64-linux-musl
+build linux-armv7 arm-linux-musleabihf -mcpu=generic+v7a
+[ -f work/reader-linux-armv7 ] || build linux-armv7 arm-linux-musleabihf
 echo "== read"
 pip install -q pillow
 python3 .github/probe/tiles.py work > work/names.txt
