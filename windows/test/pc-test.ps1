@@ -83,7 +83,8 @@ if ($m.Success) {
   Add-Content -Path (Join-Path $Out 'screen-ocr-menu.txt') -Value $r.out
   $items = @('New', 'Open', 'Save', 'Print', 'Exit') | Where-Object { $r.out -match "\[Text\] `"$_" }
   Check 'a click on that point opened the menu, and the picture gives its entries' ($items.Count -ge 4) "found: $($items -join ', ')" -Soft
-  Run key escape | Out-Null
+  # the first Escape closes the list but leaves the menu bar active; the second gives the keyboard back to the text
+  Run key escape escape | Out-Null
   Start-Sleep -Milliseconds 500
 }
 

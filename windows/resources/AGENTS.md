@@ -59,6 +59,8 @@ tray next to the clock) and the PC is awake.
      a file; for exact text select it and use `pc clipboard get`.
    - Only Latin letters are read: no Hindi, no icons without a caption.
    - If what you need is not there, take `pc screenshot file.png` and look at it.
+   - After a menu was opened with a click, `pc key escape escape` closes it fully
+     (one Escape leaves the menu bar active and it swallows the next keys).
 3. `pc click x y`, `pc type "..."`, `pc key ...`; read the screen again to check
    that it did what you wanted.
 
