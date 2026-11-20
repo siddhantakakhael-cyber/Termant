@@ -873,7 +873,7 @@ adb logcat -d -s Termant:I | grep 'screen control:' > "$OUT/screen-control.txt"
 cat "$OUT/screen-control.txt"
 grep -q 'screen control: on' "$OUT/screen-control.txt" || finish "FAIL Android did not start the screen control service"
 type_line 'sh%st5.sh'
-wait_for_end files/rootfs/root/result5.txt 40 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
+wait_for_end files/rootfs/root/result5.txt 80 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
 run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"
 cat "$OUT/result5.txt"
 sleep 2
@@ -883,6 +883,14 @@ grep -q '^App: ' "$OUT/result5.txt" || finish "FAIL phone screen did not describ
 grep -q '^apps-exit=0' "$OUT/result5.txt" || finish "FAIL phone apps"
 grep -q '^app-exit=0' "$OUT/result5.txt" || finish "FAIL phone app"
 grep -q '^app-opened=yes' "$OUT/result5.txt" || finish "FAIL phone app did not bring the Settings app to the screen"
+run_as cat files/rootfs/root/screen-ocr.txt > "$OUT/screen-ocr.txt" 2>/dev/null
+adb logcat -d -s Termant:I | grep 'mirage:' > "$OUT/mirage-log.txt"; cat "$OUT/mirage-log.txt"
+grep -q '^ocr-exit=0' "$OUT/result5.txt" || finish "FAIL phone screen ocr"
+grep -q '^Read from a picture of the screen by Mirage' "$OUT/screen-ocr.txt" || finish "FAIL phone screen ocr did not read a picture of the screen"
+grep -q '^ocr-item=[0-9]' "$OUT/result5.txt" || finish "FAIL the picture of Settings was read without its \"Network & internet\""
+grep -q '^ocr-tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap on an item seen in the picture"
+grep -q '^ocr-tap-opened=yes' "$OUT/result5.txt" || finish "FAIL the tap on \"Network & internet\" as seen in the picture did not open that page"
+grep -q '^ocr-again-exit=0' "$OUT/result5.txt" || finish "FAIL the second phone screen ocr"
 grep -q '^swipe-exit=0' "$OUT/result5.txt" || finish "FAIL phone swipe"
 grep -q '^swipe-moved=yes' "$OUT/result5.txt" || finish "FAIL after a swipe the screen was described as before it"
 grep -q '^tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap by words"

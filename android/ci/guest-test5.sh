@@ -12,6 +12,19 @@ echo "== apps"; phone apps > /root/apps.txt 2>&1; echo "apps-exit=$?"; head -n 4
 echo "== open another app"
 phone app Settings > /root/screen2.txt 2>&1; echo "app-exit=$?"; head -n 30 /root/screen2.txt
 grep -q 'com.android.settings' /root/screen2.txt && echo "app-opened=yes"
+echo "== read the screen from a picture (Mirage) and tap what was seen"
+phone screen ocr > /root/screen-ocr.txt 2>&1; echo "ocr-exit=$?"
+sed -n '/Read from a picture/,$p' /root/screen-ocr.txt | head -n 40
+grep -q 'could not be read' /root/screen-ocr.txt && grep 'could not be read' /root/screen-ocr.txt
+seen=$(sed -n 's/^\([0-9]*\)\. \[seen\] "Network & internet".*/\1/p' /root/screen-ocr.txt | head -n 1)
+echo "ocr-item=$seen"
+if [ -n "$seen" ]; then
+  phone tap "$seen" > /root/screen-ocr-tap.txt 2>&1; echo "ocr-tap-exit=$?"; head -n 12 /root/screen-ocr-tap.txt
+  grep -q 'Airplane mode\|Hotspot\|SIMs\|Calls & SMS' /root/screen-ocr-tap.txt && echo "ocr-tap-opened=yes"
+  phone key back > /dev/null 2>&1
+fi
+start=$(date +%s); phone screen ocr > /root/screen-ocr2.txt 2>&1; echo "ocr-again-exit=$? in $(( $(date +%s) - start )) s"
+grep 'Read from a picture' /root/screen-ocr2.txt
 echo "== swipe"; phone swipe up > /root/screen3.txt 2>&1; echo "swipe-exit=$?"; head -n 14 /root/screen3.txt
 # the list must be the scrolled one, not the one remembered from before
 [ "$(grep '^[0-9]' /root/screen2.txt)" != "$(grep '^[0-9]' /root/screen3.txt)" ] && echo "swipe-moved=yes"

@@ -4,7 +4,7 @@
 #
 #   build_mirage.sh <lib dir> [work dir]
 #
-# Writes <lib dir>/<android abi>/libmirage.so. The name is the one Android
+# Writes <lib dir>/<android abi>/libmirage.so for arm64-v8a, x86_64 and armeabi-v7a. The name is the one Android
 # accepts for bundled native files; it is a program, not a library.
 #
 # - The engine (Cactus 4.1.4, Apache 2.0) comes as a ready-built library from
@@ -35,6 +35,11 @@ build() { # <android abi> <engine folder> <sha256 of its libcactus.a> <zig targe
   zig c++ -target "$target" "$@" -O2 -static -s -Wl,-z,stack-size=8388608 -x c mirage/reader.c -x none "$lib" -o "$LIBS/$abi/libmirage.so"
   echo "mirage reader, $abi: $(wc -c < "$LIBS/$abi/libmirage.so") bytes"
 }
-build arm64-v8a   linux-arm64  31ee6ce7b0b1390fc8ffa6d242d2aa3cdae18b405d7d885d483cd79258016dd0 aarch64-linux-musl
-build armeabi-v7a linux-armv7  4e82a8939596c20f7ac36a0f55624f98d334982adc2581c13793c84f6f5489a5 arm-linux-musleabihf -mcpu=generic+v7a
-build x86_64      linux-x86_64 a977d506ed9545369628cfe9fbf87747d73ab766ac376d8c1c098146485327c4 x86_64-linux-musl
+build arm64-v8a linux-arm64  31ee6ce7b0b1390fc8ffa6d242d2aa3cdae18b405d7d885d483cd79258016dd0 aarch64-linux-musl
+build x86_64    linux-x86_64 a977d506ed9545369628cfe9fbf87747d73ab766ac376d8c1c098146485327c4 x86_64-linux-musl
+# 32-bit ARM: the engine's own 32-bit build crashes when linked this way (tried on an ARM machine), so a
+# phone with a 32-bit Android gets the 64-bit program. It runs there only if the phone's kernel is 64-bit;
+# otherwise the app says that this phone cannot run the reader.
+mkdir -p "$LIBS/armeabi-v7a"
+cp "$LIBS/arm64-v8a/libmirage.so" "$LIBS/armeabi-v7a/libmirage.so"
+echo "mirage reader, armeabi-v7a: the 64-bit program"

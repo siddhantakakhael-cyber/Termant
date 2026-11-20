@@ -96,6 +96,7 @@ read what an app shows), work the screen like a person:
 ```
 phone app NAME               open the app
 phone screen                 numbered list of what is on the screen
+phone screen ocr             the same, and what is read from a picture of the screen
 phone tap N                  tap item N of the last list
 phone tap "Some words"       tap the item with these words
 phone tap X Y                tap a point
@@ -106,6 +107,19 @@ phone swipe up               show what is further below (down, left, right)
 
 - Every action answers with the new screen, so read that before the next
   step; do not guess what happened. Item numbers change after every action.
+- Some apps tell Android nothing about what they show (games, drawings,
+  photos, some web pages). Then `phone screen` also takes a picture of the
+  screen and reads the writing in it with a small model on the phone (Mirage),
+  as numbered `[seen]` items. Ask for it yourself with `phone screen ocr`.
+  - Tap a `[seen]` item with `phone tap N` or its point `phone tap X Y` right
+    after that list. `phone tap "words"` does not look in the picture.
+  - The places are right, the letters not always: `O`/`0`, `l`/`1` and capitals
+    get mixed up. Never copy a name, number or address from `[seen]` items
+    into an answer; say that it is what the picture seems to show.
+  - Only Latin letters are read: no Hindi or other scripts, no icons without
+    words. The first use downloads 22 MB. It needs Android 11 or newer.
+  - After a tap the new list has no `[seen]` items; ask again with
+    `phone screen ocr`.
 - If a command says Screen control is off, stop and tell the user to turn it
   on in Termant → Settings → Screen control. There is no other way.
 - Passwords, PINs, OTPs and card numbers are for the user to type. Stop and

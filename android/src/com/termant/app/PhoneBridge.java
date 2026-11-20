@@ -75,6 +75,7 @@ final class PhoneBridge {
                     + "                              shown over whatever app is on screen; prints the answer\n"
                     + "  phone app NAME              open an app by its name (phone apps lists them)\n"
                     + "  phone screen                what is on the screen now, as a numbered list\n"
+                    + "  phone screen ocr            the same, and reads a picture of the screen too (for games, drawings, photos)\n"
                     + "  phone tap N | TEXT | X Y    tap item N of that list, the item with these words, or a point\n"
                     + "  phone type TEXT             type into the text box that has the cursor\n"
                     + "  phone swipe up|down|left|right   up shows what is further below\n"
@@ -342,8 +343,11 @@ final class PhoneBridge {
                 screen.waitForApp(opened[1], 8000);
                 return opened[0] + after(screen, 0);
             }
-            case "screen":
-                return screen().describe(250);
+            case "screen": {
+                String how = args.size() > 1 ? args.get(1) : "";
+                if (!how.isEmpty() && !how.equals("ocr")) throw new Refused("usage: phone screen [ocr]");
+                return screen().describe(250, how.equals("ocr") ? ScreenService.PICTURE : ScreenService.PICTURE_IF_NEEDED);
+            }
             case "tap": {
                 ScreenService screen = screen();
                 return screen.tap(args.subList(1, args.size())) + after(screen, 900);

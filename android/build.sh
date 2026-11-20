@@ -2,7 +2,7 @@
 # Builds the Termant APKs with plain Android SDK tools: no Gradle, no Maven.
 #
 # Needs: Android SDK (ANDROID_HOME) with build-tools, a platform and the NDK;
-#        JDK 17; python3; dpkg-deb; zip.
+#        JDK 17; python3 with pip; curl; dpkg-deb; zip.
 # Makes: Termant.apk        release build
 #        Termant-debug.apk  same code, debuggable (used by the emulator test)
 #
@@ -28,6 +28,9 @@ mkdir -p "$OUT/gen" "$OUT/classes" "$OUT/dex" "$OUT/apk/lib"
 echo "== proot (from Termux packages)"
 python3 tools/fetch_proot.py "$OUT/apk/lib"
 
+echo "== reader of pictures (Mirage; the Cactus engine from Hugging Face, linked with Zig)"
+tools/build_mirage.sh "$OUT/apk/lib" "$OUT/mirage"
+
 echo "== terminal pty helper (NDK)"
 "$NDK/ndk-build" -C "$OUT" \
   NDK_PROJECT_PATH="$OUT" \
@@ -36,7 +39,7 @@ echo "== terminal pty helper (NDK)"
   NDK_OUT="$OUT/obj" NDK_LIBS_OUT="$OUT/ndk-libs" >/dev/null
 for abi in $ABIS; do
   cp "$OUT/ndk-libs/$abi/libtermux.so" "$OUT/apk/lib/$abi/"
-  for f in libproot.so libproot-loader.so libtalloc.so libandroid-shmem.so libtermux.so; do
+  for f in libproot.so libproot-loader.so libtalloc.so libandroid-shmem.so libtermux.so libmirage.so; do
     [ -f "$OUT/apk/lib/$abi/$f" ] || { echo "missing lib/$abi/$f"; exit 1; }
   done
 done

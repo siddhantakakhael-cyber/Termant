@@ -211,7 +211,7 @@
     <string name="screen_stop">Band karein</string>
     <string name="screen_no_settings">Android Settings → Accessibility khud kholein.</string>
     <string name="screen_service_label">Termant screen control</string>
-    <string name="screen_service_description">Aapke chat mein kehne par Termant ka AI agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai. Yeh apne aap kuch nahi karta, kuch record nahi karta, aur password wale box mein kabhi type nahi karta.</string>
+    <string name="screen_service_description">Aapke chat mein kehne par Termant ka AI agent screen padh sakta hai aur doosre apps mein tap, type aur swipe kar sakta hai. Jahan koi app nahi batata ki usmein kya dikh raha hai, wahan Termant screen ki picture lekar uski likhawat phone par hi padhta hai; picture na rakhi jaati hai, na kahin bheji jaati hai. Yeh apne aap kuch nahi karta, kuch record nahi karta, aur password wale box mein kabhi type nahi karta.</string>
     <string name="paste_text">Paste karein</string>
     <string name="copy_text">Copy karein</string>
     <string-array name="chat_ideas">

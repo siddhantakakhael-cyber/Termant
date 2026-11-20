@@ -9,7 +9,20 @@ permissions:
   contents: write
 
 jobs:
+  # Phones have ARM processors and the emulator below does not, so the reader of
+  # pictures is also built and run on an ARM machine: it must read a real screenshot.
+  reader-on-arm:
+    name: Reader of pictures on an ARM machine
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          android/tools/build_mirage.sh "$PWD/libs" "$PWD/work"
+          bash android/ci/mirage-check.sh libs/arm64-v8a/libmirage.so "$PWD/work"
+
   build:
+    needs: reader-on-arm
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

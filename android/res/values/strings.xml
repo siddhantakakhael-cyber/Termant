@@ -221,7 +221,7 @@
     <string name="screen_stop">Turn off</string>
     <string name="screen_no_settings">Open Android Settings → Accessibility yourself.</string>
     <string name="screen_service_label">Termant screen control</string>
-    <string name="screen_service_description">Lets Termant’s AI agent read what is on the screen and tap, type and swipe in other apps when you ask it to in the chat. It does nothing on its own, records nothing, and never types into password boxes.</string>
+    <string name="screen_service_description">Lets Termant’s AI agent read what is on the screen and tap, type and swipe in other apps when you ask it to in the chat. Where an app does not say what it shows, Termant takes a picture of the screen and reads the writing in it on the phone itself; the picture is not kept or sent anywhere. It does nothing on its own, records nothing, and never types into password boxes.</string>
     <!-- Over other apps: what the agent is doing, and its questions. -->
     <string name="ask_from">Termant asks</string>
     <string name="ask_close">Skip</string>
