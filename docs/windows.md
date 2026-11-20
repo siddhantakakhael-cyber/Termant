@@ -64,6 +64,7 @@ pc processes [filter]                        pc kill <name | id>
 pc type <text>    pc key <enter | ctrl+s | alt+f4 | win+d ...>
 pc click <x> <y> [right|double]              pc move <x> <y>      pc scroll <lines>
 pc screen         what the window in front shows, with the point to click for each thing
+pc screen ocr     the same, and always reads a picture of the window too (pc screen ocr full: the whole screen)
 pc screenshot [file.png]
 
 pc volume [0-100] pc mute [on|off]           pc brightness [0-100]

@@ -22,6 +22,7 @@ Use the `pc` command. It works in every shell and needs no confirmation.
 | Type into the window in front | `pc type "Hello"` |
 | Press keys | `pc key enter` / `pc key ctrl+s` / `pc key alt+f4` / `pc key win+d` |
 | Read what the window in front shows | `pc screen` (each thing ends with `@ x,y`) |
+| Read it from a picture too | `pc screen ocr` (the window), `pc screen ocr full` (the whole screen) |
 | Click | `pc click 640 380` (also `right`, `double`) |
 | Screenshot to a file | `pc screenshot C:\path\shot.png` |
 | Volume / mute | `pc volume 40` / `pc mute on` / `pc mute off` |
@@ -47,8 +48,17 @@ tray next to the clock) and the PC is awake.
    then `pc focus Title`. Typing and keys go to the window in front, and that is
    Termant itself until you bring the other window forward.
 2. `pc screen` to read the window: buttons, fields and texts with their points.
-   If it says the window gives no readable text, take `pc screenshot file.png`
-   and look at the picture.
+   When the program names almost nothing, `pc screen` also reads a picture of
+   the window with a small model on this PC (Mirage) and lists the writing it
+   sees as `[Text] "..." @ x,y`. Ask for that yourself with `pc screen ocr`, or
+   `pc screen ocr full` for the whole screen (an open menu or list can hang
+   outside its window). It takes 5 to 30 seconds.
+   - The points are reliable; click them. The letters are not always: `O`/`0`,
+     `l`/`1`, capitals and `+`/`-` get mixed up, and two words can run together.
+     Never copy a name, number or address from `[Text]` lines into an answer or
+     a file; for exact text select it and use `pc clipboard get`.
+   - Only Latin letters are read: no Hindi, no icons without a caption.
+   - If what you need is not there, take `pc screenshot file.png` and look at it.
 3. `pc click x y`, `pc type "..."`, `pc key ...`; read the screen again to check
    that it did what you wanted.
 

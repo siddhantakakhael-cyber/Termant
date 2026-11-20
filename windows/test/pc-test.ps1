@@ -5,7 +5,8 @@ $ErrorActionPreference = 'Continue'
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $Out = (Resolve-Path $Out).Path
 $pc = Join-Path $PSScriptRoot '..\resources\pc.cmd'
-$env:TERMANT_DATA = Join-Path $Out 'no-app'   # no Termant app is running in this test
+# no Termant app is running in this test; its folder is outside the results (the reader's 23 MB land there)
+$env:TERMANT_DATA = Join-Path ([IO.Path]::GetTempPath()) 'termant-pc-test'
 $script:hard = 0; $script:soft = 0
 $log = Join-Path $Out 'pc-test.log'
 
@@ -63,6 +64,28 @@ Run key ctrl+c | Out-Null
 Start-Sleep -Milliseconds 500
 Run screenshot (Join-Path $Out 'desktop-double-click.png') | Out-Null
 Expect 'the double click selected the word under it' '^hello\s*$' clipboard get -Soft | Out-Null
+
+# ---- reading a picture of the window (Mirage): find the File menu by its writing, click there, read the menu
+Run key end | Out-Null
+Start-Sleep -Milliseconds 500
+$r = Run screen ocr
+Add-Content -Path (Join-Path $Out 'screen-ocr.txt') -Value $r.out
+Check 'screen ocr reads a picture of the window' (($r.code -eq 0) -and ($r.out -match 'Read from a picture')) "exit $($r.code): $(($r.out -split "`n" | Select-Object -First 4) -join ' | ')"
+Check 'the picture gives the window title' ($r.out -match '\[Text\] "[^"]*Notepad') ''
+Check 'the picture gives what was typed, letter for letter' ($r.out -match '\[Text\] "hello termant \(1\+1\)"') (($r.out -split "`n" | Where-Object { $_ -match 'termant' }) -join ' | ') -Soft
+$m = [regex]::Match($r.out, '\[Text\] "File" @ (\d+),(\d+)')
+Check 'the picture gives the File menu and its point' $m.Success (($r.out -split "`n" | Where-Object { $_ -match 'File|Edit' }) -join ' | ') -Soft
+if ($m.Success) {
+  Run click $m.Groups[1].Value $m.Groups[2].Value | Out-Null
+  Start-Sleep -Seconds 1
+  Run screenshot (Join-Path $Out 'desktop-menu.png') | Out-Null
+  $r = Run screen ocr
+  Add-Content -Path (Join-Path $Out 'screen-ocr-menu.txt') -Value $r.out
+  $items = @('New', 'Open', 'Save', 'Print', 'Exit') | Where-Object { $r.out -match "\[Text\] `"$_" }
+  Check 'a click on that point opened the menu, and the picture gives its entries' ($items.Count -ge 4) "found: $($items -join ', ')" -Soft
+  Run key escape | Out-Null
+  Start-Sleep -Milliseconds 500
+}
 
 Expect 'key' 'Pressed' key ctrl+a delete | Out-Null
 Start-Sleep -Milliseconds 600

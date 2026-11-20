@@ -138,8 +138,9 @@ function Focus($process, $quiet) {
 
 # ---------------------------------------------------------------- the app
 # Alarms, questions, rules and notes belong to the Termant app; it listens on this computer only.
+function Data-Dir { if ($env:TERMANT_DATA) { return $env:TERMANT_DATA }; return (Join-Path $env:APPDATA 'Termant') }
 function App($path, $body) {
-  $dir = if ($env:TERMANT_DATA) { $env:TERMANT_DATA } else { Join-Path $env:APPDATA 'Termant' }
+  $dir = Data-Dir
   try { $b = Get-Content -Raw -LiteralPath (Join-Path $dir 'bridge.json') | ConvertFrom-Json }
   catch { Fail 'Termant is not running. Start Termant and try again.' }
   $bytes = [Text.Encoding]::UTF8.GetBytes(($body | ConvertTo-Json -Compress -Depth 5))
@@ -149,6 +150,180 @@ function App($path, $body) {
   } catch { Fail "Termant did not answer ($($_.Exception.Message)). Is the app running?" }
   if (-not $r.ok) { Fail $r.error }
   if ($r.text) { Write-Output $r.text }
+}
+
+
+# ---------------------------------------------------------------- reading a picture of the screen
+# Mirage (Cactus Compute, Apache 2.0) is a small vision model that runs on this PC. Its text reader
+# finds the writing in a picture, with a box around each piece. Engine and model are fetched once,
+# from fixed versions, and checked against their SHA-256 sums.
+$MirageModel = @{
+  url = 'https://huggingface.co/Cactus-Compute/mirage/resolve/76c1e9e53381aca8fc3843c636216c96ff220122/mirage.cact'
+  sha = '4249a0f7515272ff76b9414bec17d7e7daf84b15b66c7fb4f17fce1e66f9f237'
+}
+$MirageEngine = @{
+  url = 'https://huggingface.co/Cactus-Compute/cactus/resolve/f4ab2741203a282c6e7b89983de2b5e5b2e805a8/releases/4.1.4/python/cactus_runtime-4.1.4-py3-none-win_amd64.whl'
+  sha = '76f21737d93a5246afe2bfee65a5a338df35217cb6258c7aa9cc747e6ea2bb73'
+}
+function Fetch($what, $target) {
+  $ProgressPreference = 'SilentlyContinue'
+  [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+  try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 300 -Uri $what.url -OutFile $target }
+  catch { throw "the download failed ($($_.Exception.Message)). It needs the internet once." }
+  if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -ne $what.sha) {
+    Remove-Item -LiteralPath $target -Force
+    throw 'the downloaded file is not the expected one'
+  }
+}
+function Vision {
+  if ('TermantVision' -as [type]) { return }
+  if ([IntPtr]::Size -ne 8) { throw 'it needs 64-bit Windows' }
+  $dir = Join-Path (Data-Dir) 'vision'
+  $dll = Join-Path $dir 'libcactus.dll'; $model = Join-Path $dir 'mirage.cact'
+  if (-not (Test-Path -LiteralPath $dll) -or -not (Test-Path -LiteralPath $model)) {
+    [Console]::Out.WriteLine('(Getting the Mirage reader, 23 MB, once.)')
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    if (-not (Test-Path -LiteralPath $model)) {
+      Fetch $MirageModel "$model.part"
+      Move-Item -LiteralPath "$model.part" -Destination $model -Force
+    }
+    if (-not (Test-Path -LiteralPath $dll)) {
+      Fetch $MirageEngine "$dll.zip"
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      $zip = [IO.Compression.ZipFile]::OpenRead("$dll.zip")
+      try {
+        $entry = $zip.Entries | Where-Object { $_.FullName -eq 'cactus/libcactus.dll' }
+        if (-not $entry) { throw 'the engine is not in the downloaded file' }
+        [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, "$dll.part", $true)
+      } finally { $zip.Dispose() }
+      Move-Item -LiteralPath "$dll.part" -Destination $dll -Force
+      Remove-Item -LiteralPath "$dll.zip" -Force
+    }
+  }
+  Add-Type -AssemblyName System.Drawing
+  Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+using System.Text;
+public class TermantVision {
+  [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] static extern IntPtr LoadLibrary(string path);
+  [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern int cactus_load(byte[] data, ulong size);
+  [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern int cactus_models();
+  [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern IntPtr cactus_last_error();
+  [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern int cactus_describe(byte[] rgb, int width, int height, byte[] options, byte[] language, byte[] keywords, byte[] output, int capacity);
+  static byte[] buffer = new byte[4 * 1024 * 1024];
+  static string Error() { IntPtr p = cactus_last_error(); return p == IntPtr.Zero ? "unknown error" : Marshal.PtrToStringAnsi(p); }
+  public static void Load(string dll, string model) {
+    if (LoadLibrary(dll) == IntPtr.Zero) throw new Exception("the engine did not load (Windows error " + Marshal.GetLastWin32Error() + ")");
+    byte[] data = System.IO.File.ReadAllBytes(model);
+    if (cactus_load(data, (ulong)data.Length) < 0) throw new Exception("the model did not load: " + Error());
+    if ((cactus_models() & 4) == 0) throw new Exception("the model file is not a vision model");
+  }
+  // The picture's pixels inside the rectangle, as packed RGB.
+  public static byte[] Rgb(Bitmap picture, Rectangle part) {
+    BitmapData data = picture.LockBits(part, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+    byte[] row = new byte[part.Width * 3], rgb = new byte[part.Width * part.Height * 3];
+    for (int y = 0, o = 0; y < part.Height; y++) {
+      Marshal.Copy(IntPtr.Add(data.Scan0, y * data.Stride), row, 0, row.Length);
+      for (int x = 0; x < row.Length; x += 3) { rgb[o++] = row[x + 2]; rgb[o++] = row[x + 1]; rgb[o++] = row[x]; }
+    }
+    picture.UnlockBits(data);
+    return rgb;
+  }
+  // True for a part that is one flat colour: nothing to read there.
+  public static bool Plain(byte[] rgb) {
+    int different = 0;
+    for (int i = 0; i + 2 < rgb.Length && different < 12; i += 3)
+      if (Math.Abs(rgb[i] - rgb[0]) + Math.Abs(rgb[i + 1] - rgb[1]) + Math.Abs(rgb[i + 2] - rgb[2]) > 40) different++;
+    return different < 12;
+  }
+  // The writing in the picture, as the engine's JSON.
+  public static string Read(byte[] rgb, int width, int height) {
+    int n = cactus_describe(rgb, width, height, Encoding.UTF8.GetBytes("{\"sections\":[\"text\"]}\0"), null, null, buffer, buffer.Length);
+    if (n < 0) throw new Exception(Error());
+    int end = Array.IndexOf(buffer, (byte)0);
+    return Encoding.UTF8.GetString(buffer, 0, end < 0 ? n : end);
+  }
+}
+'@
+  [TermantVision]::Load($dll, $model)
+}
+# Where the pieces of a length start when it is cut into overlapping parts of one size.
+function Cuts($length, $size) {
+  if ($length -le $size) { return ,@(0) }
+  $list = @(); $step = [int]($size * 0.9)
+  for ($p = 0; $p + $size -lt $length; $p += $step) { $list += $p }
+  $list += ($length - $size)
+  return ,$list
+}
+# Prints the writing seen in the window (or on the whole screen), one piece per line with its point.
+function Read-Picture($window, $whole) {
+  try {
+    Vision
+    Add-Type -AssemblyName System.Windows.Forms
+    $area = [System.Windows.Forms.SystemInformation]::VirtualScreen
+    if (-not $whole) {
+      $r = New-Object TermantWin+RECT
+      if ([TermantWin]::GetWindowRect($window, [ref]$r)) {
+        $w = [System.Drawing.Rectangle]::Intersect((New-Object System.Drawing.Rectangle $r.L, $r.T, ($r.R - $r.L), ($r.B - $r.T)), $area)
+        if ($w.Width -ge 40 -and $w.Height -ge 40) { $area = $w }
+      }
+    }
+    $started = Get-Date
+    $picture = New-Object System.Drawing.Bitmap $area.Width, $area.Height, ([System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
+    $g = [System.Drawing.Graphics]::FromImage($picture)
+    $g.CopyFromScreen($area.X, $area.Y, 0, 0, $picture.Size)
+    $scale = [Math]::Max(1.0, $g.DpiX / 96.0)
+    $g.Dispose()
+    # The reader does best on parts of about 640 x 480 at normal text size. Each part takes a few seconds,
+    # so a very big window is cut into bigger parts, at most 8.
+    $tw = [int](640 * $scale); $th = [int](480 * $scale)
+    while ((Cuts $area.Width $tw).Count * (Cuts $area.Height $th).Count -gt 8) { $tw = [int]($tw * 1.2); $th = [int]($th * 1.2) }
+    $found = New-Object System.Collections.ArrayList
+    $parts = 0
+    foreach ($y in (Cuts $area.Height $th)) {
+      foreach ($x in (Cuts $area.Width $tw)) {
+        $pw = [Math]::Min($tw, $area.Width); $ph = [Math]::Min($th, $area.Height)
+        $rgb = [TermantVision]::Rgb($picture, (New-Object System.Drawing.Rectangle $x, $y, $pw, $ph))
+        if ([TermantVision]::Plain($rgb)) { continue }
+        $parts++
+        foreach ($t in @((ConvertFrom-Json ([TermantVision]::Read($rgb, $pw, $ph))).text)) {
+          if (-not $t) { continue }
+          $text = ([string]$t.string).Trim()
+          if (-not $text -or ($text.Length -lt 2 -and $t.score -lt 0.5)) { continue }
+          # Writing that touches an inner edge of its part is probably cut off there: the next part has it whole.
+          $cut = (($t.bbox[0] -lt 8 -and $x -gt 0) -or ($t.bbox[1] -lt 8 -and $y -gt 0) -or
+                  ($t.bbox[2] -gt 992 -and $x + $pw -lt $area.Width) -or ($t.bbox[3] -gt 992 -and $y + $ph -lt $area.Height))
+          [void]$found.Add([pscustomobject]@{
+            text = $text; score = [double]$t.score; whole = [int](-not $cut)
+            x1 = $area.X + $x + $t.bbox[0] * $pw / 1000.0; y1 = $area.Y + $y + $t.bbox[1] * $ph / 1000.0
+            x2 = $area.X + $x + $t.bbox[2] * $pw / 1000.0; y2 = $area.Y + $y + $t.bbox[3] * $ph / 1000.0
+          })
+        }
+      }
+    }
+    $picture.Dispose()
+    # The parts overlap, so some writing was read twice: of two boxes on the same spot the surer one stays.
+    $kept = New-Object System.Collections.ArrayList
+    foreach ($c in ($found | Sort-Object -Property whole, score -Descending)) {
+      $twice = $false
+      foreach ($k in $kept) {
+        $ix = [Math]::Min($c.x2, $k.x2) - [Math]::Max($c.x1, $k.x1); $iy = [Math]::Min($c.y2, $k.y2) - [Math]::Max($c.y1, $k.y1)
+        if ($ix -le 0 -or $iy -le 0) { continue }
+        $smaller = [Math]::Min(($c.x2 - $c.x1) * ($c.y2 - $c.y1), ($k.x2 - $k.x1) * ($k.y2 - $k.y1))
+        if ($ix * $iy -gt 0.5 * $smaller) { $twice = $true; break }
+      }
+      if (-not $twice) { [void]$kept.Add($c) }
+    }
+    $seconds = [int]((Get-Date) - $started).TotalSeconds
+    if ($kept.Count -eq 0) { Write-Output "(A picture of it was read too, in $seconds s: no writing found.)"; return }
+    Write-Output "Read from a picture by Mirage ($parts parts, $seconds s). Letters can be wrong (O/0, l/1, capitals) and only Latin script is read; the points are right:"
+    $kept | Sort-Object -Property @{ Expression = { [int](($_.y1 + $_.y2) / 24) } }, x1 | Select-Object -First 220 | ForEach-Object {
+      Write-Output "[Text] `"$($_.text)`" @ $([int](($_.x1 + $_.x2) / 2)),$([int](($_.y1 + $_.y2) / 2))"
+    }
+  } catch { Write-Output "(A picture of it could not be read: $($_.Exception.Message))" }
 }
 
 switch ($cmd) {
@@ -247,8 +422,12 @@ switch ($cmd) {
   }
   'screen' {
     # What the window in front shows: its buttons, fields and texts, each with the point to click.
+    #   pc screen            asks the program; reads a picture of the window too when that gives nothing
+    #   pc screen ocr        always reads the picture too      pc screen ocr full   ...of the whole screen
     Native
     Add-Type -AssemblyName WindowsBase, UIAutomationClient, UIAutomationTypes
+    $picture = ($rest.Count -gt 0 -and $rest[0] -eq 'ocr')
+    $whole = ($rest.Count -gt 1 -and $rest[1] -eq 'full')
     $h = [TermantWin]::GetForegroundWindow()
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
     Write-Output "Window: $($root.Current.Name)"
@@ -288,6 +467,7 @@ switch ($cmd) {
       } catch {}
     }
     if ($lines.Count -eq 0) { $lines = $hiddenLines }
+    $named = $lines.Count
     if ($lines.Count -eq 0) {
       # Nothing that way: read the classic controls of the window (text boxes, buttons) directly.
       foreach ($row in ([TermantWin]::Controls($h) -split "`n")) {
@@ -297,13 +477,11 @@ switch ($cmd) {
         [void]$lines.Add("[$($f[0])] = `"$v`" @ $($f[2])")
       }
     }
-    if ($lines.Count -eq 0) {
-      Write-Output "(This window gives no readable text: $($all.Count) parts, none with a name.)"
-      Write-Output 'Take a picture instead and look at it: pc screenshot <file.png>'
-    } else {
-      $lines | Select-Object -First 160 | ForEach-Object { Write-Output $_ }
-      if ($lines.Count -gt 160) { Write-Output "... ($($lines.Count - 160) more not shown)" }
-    }
+    $lines | Select-Object -First 160 | ForEach-Object { Write-Output $_ }
+    if ($lines.Count -gt 160) { Write-Output "... ($($lines.Count - 160) more not shown)" }
+    # A program that names fewer than three of its parts is read from a picture of its window as well.
+    if ($picture -or $named -lt 3) { Read-Picture $h $whole }
+    elseif ($lines.Count -eq 0) { Write-Output '(This window gives no readable text. Try: pc screen ocr)' }
   }
   'screenshot' {
     Native
@@ -464,6 +642,7 @@ Keyboard, mouse, screen
   pc type <text>    pc key <enter | ctrl+s | alt+f4 | win+d ...>
   pc click <x> <y> [right|double]              pc move <x> <y>      pc scroll <lines>
   pc screen         what the window in front shows, with the point to click for each thing
+  pc screen ocr     the same, and always reads a picture of the window too (pc screen ocr full: the whole screen)
   pc screenshot [file.png]
 
 Sound, display, power
