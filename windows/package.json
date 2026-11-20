@@ -1,0 +1,45 @@
+{
+  "name": "termant",
+  "productName": "Termant",
+  "version": "0.1.0",
+  "description": "An AI agent that controls this PC, with a terminal",
+  "main": "main.js",
+  "author": "Termant",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64 --publish never"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "1.1.0",
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/xterm": "5.5.0"
+  },
+  "devDependencies": {
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "app.termant.windows",
+    "productName": "Termant",
+    "directories": { "output": "dist", "buildResources": "assets" },
+    "files": ["main.js", "preload.js", "src/**", "ui/**", "test/**", "assets/icon.png", "package.json"],
+    "extraResources": [{ "from": "resources", "to": "pc" }],
+    "asarUnpack": ["node_modules/@lydell/**"],
+    "npmRebuild": false,
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico",
+      "artifactName": "Termant-Setup.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Termant",
+      "runAfterFinish": true
+    }
+  }
+}
