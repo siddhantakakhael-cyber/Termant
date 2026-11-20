@@ -43,8 +43,12 @@ tray next to the clock) and the PC is awake.
 
 ## Using another program's window
 
-1. `pc app Name` or `pc focus Title`, then wait a second (`Start-Sleep 1` or `sleep 1`).
+1. `pc open program` or `pc app Name`, wait a second (`Start-Sleep 1` or `sleep 1`),
+   then `pc focus Title`. Typing and keys go to the window in front, and that is
+   Termant itself until you bring the other window forward.
 2. `pc screen` to read the window: buttons, fields and texts with their points.
+   If it says the window gives no readable text, take `pc screenshot file.png`
+   and look at the picture.
 3. `pc click x y`, `pc type "..."`, `pc key ...`; read the screen again to check
    that it did what you wanted.
 

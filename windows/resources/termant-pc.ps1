@@ -27,6 +27,27 @@ public class TermantWin {
   [DllImport("user32.dll")] public static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
   [DllImport("user32.dll")] public static extern bool LockWorkStation();
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder text, int max);
+  public delegate bool EnumProc(IntPtr h, IntPtr l);
+  public struct RECT { public int L, T, R, B; }
+  [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr parent, EnumProc proc, IntPtr l);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, System.Text.StringBuilder s, int max);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, System.Text.StringBuilder l);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  // The classic controls inside a window (text boxes, buttons), read the old way: one per line.
+  public static string Controls(IntPtr parent) {
+    var lines = new System.Text.StringBuilder();
+    EnumChildWindows(parent, delegate(IntPtr h, IntPtr l) {
+      if (!IsWindowVisible(h)) return true;
+      var kind = new System.Text.StringBuilder(256); GetClassName(h, kind, 256);
+      var text = new System.Text.StringBuilder(4000); SendMessage(h, 0x000D, (IntPtr)4000, text);
+      RECT r; GetWindowRect(h, out r);
+      lines.Append(kind.ToString()).Append('\t').Append(text.ToString().Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' '))
+        .Append('\t').Append((r.L + r.R) / 2).Append(',').Append((r.T + r.B) / 2).Append('\n');
+      return true;
+    }, IntPtr.Zero);
+    return lines.ToString();
+  }
 }
 [Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 interface IAudioEndpointVolume {
@@ -100,7 +121,7 @@ function Find-Window($text) {
   if ($hit.Count -eq 0) { Fail "No open window matches '$text'. Open windows: $((($all | ForEach-Object { $_.MainWindowTitle }) -join '; '))" }
   return $hit[0]
 }
-function Focus($process) {
+function Focus($process, $quiet) {
   Native
   $h = $process.MainWindowHandle
   if ([TermantWin]::IsIconic($h)) { [void][TermantWin]::ShowWindowAsync($h, 9); Start-Sleep -Milliseconds 200 }
@@ -112,7 +133,7 @@ function Focus($process) {
   [TermantWin]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
   [void][TermantWin]::SetForegroundWindow($h)
   Start-Sleep -Milliseconds 300
-  if ([TermantWin]::GetForegroundWindow() -ne $h) { Fail "Windows did not bring '$($process.MainWindowTitle)' to the front. Try again, or click it with: pc click <x> <y>" }
+  if (-not $quiet -and [TermantWin]::GetForegroundWindow() -ne $h) { Fail "Windows did not bring '$($process.MainWindowTitle)' to the front. Try again, or click it with: pc click <x> <y>" }
 }
 
 # ---------------------------------------------------------------- the app
@@ -134,8 +155,16 @@ switch ($cmd) {
   # ---------------------------------------------------------------- programs and windows
   'open' {
     Need 1 'open <link, file, folder or program> [arguments]'
-    if ($rest.Count -gt 1) { Start-Process -FilePath $rest[0] -ArgumentList $rest[1..($rest.Count - 1)] }
-    else { Start-Process -FilePath $rest[0] }
+    $started = $null
+    if ($rest.Count -gt 1) { $started = Start-Process -FilePath $rest[0] -ArgumentList $rest[1..($rest.Count - 1)] -PassThru }
+    else { $started = Start-Process -FilePath $rest[0] -PassThru }
+    # a program started from the background may open behind other windows: bring it to the front
+    if ($started) {
+      for ($i = 0; $i -lt 12; $i++) {
+        Start-Sleep -Milliseconds 250
+        try { $started.Refresh(); if ($started.HasExited) { break }; if ($started.MainWindowHandle -ne 0) { Focus $started $true; break } } catch { break }
+      }
+    }
     Write-Output "Opened $($rest[0])"
   }
   'apps' {
@@ -223,14 +252,27 @@ switch ($cmd) {
     $h = [TermantWin]::GetForegroundWindow()
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
     Write-Output "Window: $($root.Current.Name)"
-    $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-    $shown = 0; $problems = 0; $firstProblem = ''
+    # Walk the window's parts one by one (asking for all of them at once misses most in many programs).
+    $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
+    $all = New-Object System.Collections.ArrayList
+    $queue = New-Object System.Collections.Queue
+    $queue.Enqueue($root)
+    while ($queue.Count -gt 0 -and $all.Count -lt 700) {
+      $node = $queue.Dequeue()
+      $child = $null
+      try { $child = $walker.GetFirstChild($node) } catch {}
+      while ($child -ne $null -and $all.Count -lt 700) {
+        [void]$all.Add($child); $queue.Enqueue($child)
+        try { $child = $walker.GetNextSibling($child) } catch { $child = $null }
+      }
+    }
+    $lines = New-Object System.Collections.ArrayList
+    $hiddenLines = New-Object System.Collections.ArrayList
     foreach ($e in $all) {
-      if ($shown -ge 160) { Write-Output '... (more not shown)'; break }
       try {
         $c = $e.Current
         $r = $c.BoundingRectangle
-        if ($r.IsEmpty -or $c.IsOffscreen) { continue }
+        if ($r.IsEmpty) { continue }
         $kind = $c.ControlType.ProgrammaticName -replace '^ControlType\.', ''
         $name = $c.Name
         $value = ''
@@ -240,15 +282,27 @@ switch ($cmd) {
         if (-not $name -and -not $value) { continue }
         if ($kind -in @('Pane', 'Group', 'Custom', 'TitleBar', 'ScrollBar', 'Thumb', 'Image', 'Separator') -and -not $value) { continue }
         $line = "[$kind] $name"
-        if ($value) { $line += " = `"$(($value -replace '\s+', ' ').Trim())`"" }
+        if ($value) { $v = ($value -replace '\s+', ' ').Trim(); if ($v.Length -gt 600) { $v = $v.Substring(0, 600) + '...' }; $line += " = `"$v`"" }
         $line += " @ $([int]($r.X + $r.Width / 2)),$([int]($r.Y + $r.Height / 2))"
-        Write-Output $line
-        $shown++
-      } catch { $problems++; if (-not $firstProblem) { $firstProblem = "$($_.Exception.Message) (line $($_.InvocationInfo.ScriptLineNumber))" } }
+        if ($c.IsOffscreen) { [void]$hiddenLines.Add($line) } else { [void]$lines.Add($line) }
+      } catch {}
     }
-    if ($shown -eq 0) {
-      Write-Output "(nothing readable in this window: $($all.Count) parts, $problems could not be read. $firstProblem)"
-      Write-Output 'Take a picture instead: pc screenshot <file.png>'
+    if ($lines.Count -eq 0) { $lines = $hiddenLines }
+    if ($lines.Count -eq 0) {
+      # Nothing that way: read the classic controls of the window (text boxes, buttons) directly.
+      foreach ($row in ([TermantWin]::Controls($h) -split "`n")) {
+        $f = $row -split "`t"
+        if ($f.Count -lt 3 -or -not $f[1].Trim()) { continue }
+        $v = $f[1].Trim(); if ($v.Length -gt 600) { $v = $v.Substring(0, 600) + '...' }
+        [void]$lines.Add("[$($f[0])] = `"$v`" @ $($f[2])")
+      }
+    }
+    if ($lines.Count -eq 0) {
+      Write-Output "(This window gives no readable text: $($all.Count) parts, none with a name.)"
+      Write-Output 'Take a picture instead and look at it: pc screenshot <file.png>'
+    } else {
+      $lines | Select-Object -First 160 | ForEach-Object { Write-Output $_ }
+      if ($lines.Count -gt 160) { Write-Output "... ($($lines.Count - 160) more not shown)" }
     }
   }
   'screenshot' {
