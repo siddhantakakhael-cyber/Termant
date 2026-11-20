@@ -34,6 +34,8 @@ public class TermantVision {
   [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern int cactus_models();
   [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern IntPtr cactus_last_error();
   [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern int cactus_describe(byte[] rgb, int width, int height, byte[] options, byte[] language, byte[] keywords, byte[] output, int capacity);
+  [DllImport("libcactus.dll", CallingConvention = CallingConvention.Cdecl)] static extern void cactus_set_threads(int n);
+  public static void Threads(int n) { cactus_set_threads(n); }
   static byte[] buffer = new byte[4 * 1024 * 1024];
   static string Error() { IntPtr p = cactus_last_error(); return p == IntPtr.Zero ? "unknown error" : Marshal.PtrToStringAnsi(p); }
   public static int Load(string dll, string weights) {
@@ -77,24 +79,6 @@ function Try-Describe($name, $bmp, $rect, $options) {
 }
 function Whole($bmp) { return New-Object System.Drawing.Rectangle 0, 0, $bmp.Width, $bmp.Height }
 
-# ---- 1. a drawn picture with interface text of known sizes
-$bmp = New-Object System.Drawing.Bitmap 640, 360, ([System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
-$g = [System.Drawing.Graphics]::FromImage($bmp); $g.Clear([System.Drawing.Color]::White)
-$g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
-$y = 8
-foreach ($size in 9, 11, 14, 20) {
-  $font = New-Object System.Drawing.Font 'Segoe UI', $size
-  $g.DrawString("File   Edit   Format   View   Help", $font, [System.Drawing.Brushes]::Black, 10, $y); $y += [int]($size * 2.2)
-  $g.DrawString("Save As...     Cancel     Send message", $font, [System.Drawing.Brushes]::Black, 10, $y); $y += [int]($size * 2.6)
-}
-$g.Dispose(); $bmp.Save((Join-Path $Out 'drawn.png'))
-Try-Describe 'drawn-default' $bmp (Whole $bmp) '{}'
-Try-Describe 'drawn-text' $bmp (Whole $bmp) '{"sections":["text"]}'
-Try-Describe 'drawn-text-many' $bmp (Whole $bmp) '{"sections":["text"],"max_text_lines":200,"text_conf":0.2}'
-$big = New-Object System.Drawing.Bitmap $bmp, 1280, 720
-$big24 = $big.Clone((Whole $big), [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
-Try-Describe 'drawn-2x-text' $big24 (Whole $big24) '{"sections":["text"],"max_text_lines":200}'
-
 # ---- 2. the real desktop: Notepad, maximised, with text and its File menu open
 $pc = Join-Path $PSScriptRoot '..\..\windows\resources\pc.cmd'
 $ErrorActionPreference = 'Continue'
@@ -110,15 +94,19 @@ $ErrorActionPreference = 'Stop'
 $shot = New-Object System.Drawing.Bitmap (Join-Path $Out 'desktop.png')
 $desk = $shot.Clone((Whole $shot), [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
 Say "desktop: $($desk.Width)x$($desk.Height)"
-Try-Describe 'desk-full-text' $desk (Whole $desk) '{"sections":["text"]}'
-Try-Describe 'desk-full-many' $desk (Whole $desk) '{"sections":["text"],"max_text_lines":300,"text_conf":0.2}'
-Try-Describe 'desk-topleft-512x384' $desk (New-Object System.Drawing.Rectangle 0, 0, 512, 384) '{"sections":["text"],"max_text_lines":100}'
-Try-Describe 'desk-topleft-320x240' $desk (New-Object System.Drawing.Rectangle 0, 0, 320, 240) '{"sections":["text"],"max_text_lines":100}'
-Try-Describe 'desk-bottom-512x128' $desk (New-Object System.Drawing.Rectangle 256, ($desk.Height - 128), 512, 128) '{"sections":["text"],"max_text_lines":100}'
-$crop = $desk.Clone((New-Object System.Drawing.Rectangle 0, 0, 320, 240), [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
-$up = New-Object System.Drawing.Bitmap $crop, 960, 720
-$up24 = $up.Clone((Whole $up), [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
-$up24.Save((Join-Path $Out 'topleft-3x.png'))
-Try-Describe 'desk-topleft-3x' $up24 (Whole $up24) '{"sections":["text"],"max_text_lines":100}'
-Try-Describe 'desk-full-objects' $desk (Whole $desk) '{"sections":["objects"],"max_objects":40}'
+Say "processors: $([Environment]::ProcessorCount)"
+$blank = New-Object System.Drawing.Bitmap 512, 384, ([System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
+$gb = [System.Drawing.Graphics]::FromImage($blank); $gb.Clear([System.Drawing.Color]::White); $gb.Dispose()
+Try-Describe 'blank' $blank (Whole $blank) '{"sections":["text"]}'
+Try-Describe 'blank-again' $blank (Whole $blank) '{"sections":["text"]}'
+foreach ($size in @(@(512, 384), @(640, 480), @(768, 576), @(1024, 384))) {
+  Try-Describe "tile-$($size[0])x$($size[1])" $desk (New-Object System.Drawing.Rectangle 0, 0, $size[0], $size[1]) '{"sections":["text"]}'
+}
+Try-Describe 'tile-512-conf02' $desk (New-Object System.Drawing.Rectangle 0, 0, 512, 384) '{"sections":["text"],"text_conf":0.2}'
+Try-Describe 'tile-512-right' $desk (New-Object System.Drawing.Rectangle 512, 0, 512, 384) '{"sections":["text"]}'
+Try-Describe 'tile-512-bottomright' $desk (New-Object System.Drawing.Rectangle 512, 384, 512, 384) '{"sections":["text"]}'
+foreach ($n in 1, 2, 4, 8, 0) {
+  [TermantVision]::Threads($n)
+  Try-Describe "threads-$n" $desk (New-Object System.Drawing.Rectangle 0, 0, 512, 384) '{"sections":["text"]}'
+}
 Say 'done'
