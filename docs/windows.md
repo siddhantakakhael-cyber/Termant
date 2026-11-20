@@ -23,6 +23,8 @@ alarms and keeps rules.
 
 To remove it: Windows **Settings → Apps → Installed apps → Termant → Uninstall**.
 
+<img src="screenshots/windows-chat.png" width="720" alt="The chat: the agent opened Notepad and typed into it; each pc command it ran is listed above its answer">
+
 ## What it does
 
 | | |
@@ -39,6 +41,13 @@ To remove it: Windows **Settings → Apps → Installed apps → Termant → Uni
 | **Tools** | Web search, GitHub token for `git push`, MCP servers. |
 | **Look** | Hindi or English, dark or light. |
 | **Voice** | The microphone button starts Windows dictation (the same as pressing Win+H). |
+
+| | |
+| --- | --- |
+| <img src="screenshots/windows-terminal.png" width="400" alt="A PowerShell tab in Termant running pc info"> | <img src="screenshots/windows-settings-hindi.png" width="400" alt="Settings in Hindi with the light theme"> |
+| Terminal | Settings in Hindi, light theme |
+
+<sub>These pictures are taken by the automated test of each build.</sub>
 
 Closing the window keeps Termant running in the tray next to the clock, because
 alarms, timers and rules need it. To stop it fully: right-click the tray icon → **Quit**.
@@ -81,6 +90,11 @@ pc note add <text>          pc note list     pc note remove <number>
   the PC is awake. Turn on **Start with Windows** in Settings if you rely on them.
 - **Things that need administrator rights** (turning Wi-Fi off, some settings)
   fail unless Termant itself was started as administrator.
+- **Reading other windows.** `pc screen` gives the text of classic programs
+  (Notepad's text box, for example). On the test machine it could not list the
+  buttons and menus of a window, so for those the agent takes a screenshot and
+  looks at it, which needs a model that can read pictures. How well this works
+  on your PC is not yet known.
 - **Brightness** can be set only on screens that Windows can control (laptops, usually not desktop monitors).
 - **Different from the Android app:** there is no Ubuntu inside the app (the
   terminal is the PC's own; Ubuntu appears if you have WSL), the agent's
@@ -94,8 +108,8 @@ Every change is built and tested by the **Windows app** workflow on a Windows
 Server 2025 machine with a real desktop:
 
 1. The `pc` command opens Notepad, brings it to the front, types into it, reads
-   the text back, clicks its menu, takes a screenshot and closes it; and checks
-   the clipboard, the program list, system information and the error messages.
+   the text back, double-clicks a word, takes a screenshot and closes it; and
+   checks the clipboard, the program list, system information and the error messages.
 2. The installer is built, then run silently, as a user would install it; the
    test checks that the program and its shortcuts are there.
 3. The installed program tests itself: first-start notice, notifications,

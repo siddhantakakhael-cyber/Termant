@@ -52,20 +52,23 @@ Check 'the screenshot is a real picture' ($shot -and $shot.Length -gt 5000) "byt
 Expect 'key combination' 'Pressed' key ctrl+a ctrl+c | Out-Null
 Start-Sleep -Milliseconds 500
 Expect 'what was typed arrived whole (copied back out)' '^hello termant \(1\+1\)$' clipboard get | Out-Null
-Expect 'key' 'Pressed' key delete | Out-Null
+
+# a double click selects the word under the pointer: in a maximised Notepad the first word is at the top left
+Run clipboard set nothing-yet | Out-Null
+Run key win+up | Out-Null
+Start-Sleep -Seconds 1
+Expect 'double click' 'Clicked' click 22 58 double | Out-Null
+Start-Sleep -Milliseconds 500
+Run key ctrl+c | Out-Null
+Start-Sleep -Milliseconds 500
+Run screenshot (Join-Path $Out 'desktop-double-click.png') | Out-Null
+Expect 'the double click selected the word under it' '^hello\s*$' clipboard get -Soft | Out-Null
+
+Expect 'key' 'Pressed' key ctrl+a delete | Out-Null
 Start-Sleep -Milliseconds 600
 $r = Run screen
 Check 'delete emptied the text' (-not ($r.out -match 'hello termant')) ($r.out -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($r.out -replace '\s+', ' ').Length))
 
-# click the File menu at the point that `pc screen` reported, and look for its entries
-if ($screen.out -match '(?m)^\[MenuItem\] File @ (\d+),(\d+)') {
-  Expect 'click' 'Clicked' click $Matches[1] $Matches[2] | Out-Null
-  Start-Sleep -Seconds 1
-  $r = Run screen
-  Check 'the click opened the File menu' ($r.out -match 'Save As|Save as|New') ($r.out -replace '\s+', ' ').Substring(0, [Math]::Min(400, ($r.out -replace '\s+', ' ').Length)) -Soft
-  Run screenshot (Join-Path $Out 'desktop-menu.png') | Out-Null
-  Run key esc | Out-Null
-} else { Check 'click' $false 'no File menu in the screen text' -Soft }
 Expect 'move' 'Moved' move 200 200 | Out-Null
 Expect 'scroll' 'Scrolled' scroll -3 | Out-Null
 

@@ -18,7 +18,7 @@
 
 <br>
 
-[Features](#features) · [Install](#install) · [Things to say](#things-to-say) · [Web terminal](#web-terminal) · [Documentation](#documentation) · [Build](#build-from-source)
+[Features](#features) · [Install](#install) · [Things to say](#things-to-say) · [Windows app](#windows-app) · [Web terminal](#web-terminal) · [Documentation](#documentation) · [Build](#build-from-source)
 
 </div>
 
@@ -32,7 +32,8 @@ you want in Hindi, Hinglish or English; the agent writes and runs the code,
 installs what it needs with `apt`, and can use the phone itself: alarms, the
 torch, other apps, rules that run on their own.
 
-The same repository holds a **web terminal**: an Ubuntu terminal in the
+The same repository holds a **[Windows app](#windows-app)**, where the same
+agent works on your PC, and a **web terminal**: an Ubuntu terminal in the
 browser, hosted on your own server with Docker.
 
 ## Features
@@ -132,6 +133,21 @@ Older versions and release notes are on the [Releases page](https://github.com/s
 | `yaad rakho, mujhe chhote jawab pasand hain` | A note is kept for every later chat |
 | `Search the web for the newest stable Python version` | The agent searches and names its source |
 
+## Windows app
+
+The same agent as a desktop program for Windows 10 and 11 (64-bit). It works on
+the PC itself: it opens programs, types, presses keys, clicks, takes
+screenshots, sets alarms and timers, keeps rules, and has PowerShell and
+Command Prompt tabs. This is its first version (0.1.0).
+
+<img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
+
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.0/Termant-Setup.exe)** and open it.
+2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
+3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
+
+Everything it does, the `pc` command and how it is tested: [docs/windows.md](docs/windows.md).
+
 ## Web terminal
 
 A real Ubuntu 24.04 root shell in the browser, on your own machine. Packages,
@@ -163,6 +179,7 @@ so put it behind HTTPS before exposing it to the internet. Details:
 | ↳ [Models and keys](docs/android.md#settings-model-workspace-your-own-api-key) | Auto-switch, free limits, your own API key, MCP servers |
 | ↳ [GitHub, web search, screen control](docs/android.md#tools-for-the-agent-github-web-search-screen-control) | The tools you can give the agent |
 | ↳ [Over other apps](docs/android.md#over-other-apps-what-the-agent-is-doing-and-its-questions) | The status card and the agent's questions |
+| [Windows app](docs/windows.md) | Installing it, what it does, the `pc` command, how it is tested |
 | [Web terminal](docs/web-terminal.md) | Running it, settings, security, what deletes your data |
 
 ## Good to know
@@ -204,6 +221,14 @@ android/build.sh        # writes android/Termant.apk
 
 Or let the **Android APK** workflow in GitHub Actions build and test it.
 
+**Windows app:** Node.js 22 or newer, on Windows.
+
+```sh
+cd windows
+npm ci
+npm run dist            # writes windows/dist/Termant-Setup.exe
+```
+
 **Web terminal without Docker:** Node.js 18 or newer.
 
 ```sh
@@ -216,7 +241,8 @@ TERMANT_PASSWORD=secret npm start
 The Android app is licensed under the **GNU GPL v3** ([`android/LICENSE`](android/LICENSE)),
 to stay compatible with Termux, whose terminal it includes
 ([`android/vendor/termux`](android/vendor/termux/README.md)). The web terminal
-(`server.js`, `public/`) is **MIT**, as its `package.json` says.
+(`server.js`, `public/`) and the Windows app (`windows/`) are **MIT**, as their
+`package.json` files say.
 
 Termant stands on [Termux](https://github.com/termux/termux-app),
 [PRoot](https://proot-me.github.io/), [OpenCode](https://github.com/sst/opencode),
