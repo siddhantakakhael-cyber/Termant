@@ -55,7 +55,7 @@ The chat screen talks to the agent for you. For the full OpenCode interface, ope
 - No root means no `systemd`, no `mount`, no Docker, and ports below 1024 cannot be opened. Start services directly (for example `nginx` on port 8080, `sshd -p 8022`).
 - Programs run through [PRoot](https://proot-me.github.io/), which is slower than native, mostly for work with many small files.
 - Android 12 and newer may stop background programs that use many processes ("signal 9"). This is an Android limit that also affects Termux.
-- Every build is tested automatically on an Android 14 x86-64 emulator (set up Ubuntu, `apt install`, restart, package still there, install OpenCode and get a reply from a free model). ARM phones use the same code with ARM builds of the same components, but are not covered by that automatic test.
+- Every build is tested automatically on an Android 14 x86-64 emulator (set up Ubuntu, `apt install`, restart, package still there, install OpenCode and get a reply from a free model). ARM phones use the same code with ARM builds of the same components, but are not covered by that automatic test. One part is: the reader of pictures is also run on an ARM server, where it must read a real screenshot of the phone.
 
 ### How it works
 
@@ -65,8 +65,9 @@ The chat screen talks to the agent for you. For the full OpenCode interface, ope
 | Running Linux programs without root | Termux's build of PRoot, fetched and checksum-verified at build time |
 | AI agent | [OpenCode](https://github.com/sst/opencode), installed inside Ubuntu on first use with its official installer |
 | The system | Ubuntu Base 24.04 from `cdimage.ubuntu.com`, downloaded by the app |
+| Reading a picture of the screen | [Mirage](https://huggingface.co/Cactus-Compute/mirage) on the [Cactus](https://github.com/cactus-compute/cactus) engine (Apache 2.0): the engine is fetched and checksum-verified at build time and linked into a small program (`android/mirage/reader.c`); the model is downloaded by the app |
 
-Build it yourself with `android/build.sh` (Android SDK + NDK, JDK 17; no Gradle), or let the
+Build it yourself with `android/build.sh` (Android SDK + NDK, JDK 17, python3 with pip; no Gradle), or let the
 **Android APK** GitHub workflow do it. The app is licensed GPLv3 (`android/LICENSE`).
 Release APKs are signed with a public test key (`android/keystore/README.md`), so only
 install APKs from this repository's Releases page.
@@ -312,7 +313,7 @@ on, the agent can open any app, read what it shows and tap, type and swipe
 there:
 
 ```
-phone apps                    phone app YouTube         phone screen
+phone apps                    phone app YouTube         phone screen [ocr]
 phone tap 7 | "Search" | X Y  phone type "lofi music"   phone swipe up|down|left|right
 phone key back|home|recents|notifications|enter
 ```
@@ -321,10 +322,45 @@ phone key back|home|recents|notifications|enter
 answers with the new screen. It acts only when a `phone` command asks it to,
 keeps no record, and refuses to type into password boxes. The agent is told to
 ask before anything that spends money, sends a message, deletes something or
-changes an account. Limits: games and other screens drawn as one picture have
-nothing to read; Android's own permission questions ("Allow … to send
+changes an account. Limits: Android's own permission questions ("Allow … to send
 notifications?") could not be read in the automated test, so answer those
 yourself; `phone key enter` needs Android 11 or newer.
+
+**Reading a picture of the screen.** Games, drawings, photos and some web
+pages tell Android nothing about what they show. When `phone screen` gets
+fewer than three items from an app, or when the agent asks with
+`phone screen ocr`, Termant takes a picture of the screen and reads the
+writing in it with [Mirage](https://huggingface.co/Cactus-Compute/mirage), a
+small vision model by Cactus Compute (Apache 2.0). It runs on the phone: the
+picture is not saved and not sent anywhere. What it reads is added to the
+list as `[seen]` items with numbers, so `phone tap 15` works on them:
+
+```
+Read from a picture of the screen by Mirage (2 parts, 10.6 s). The places are right; ...
+13. [seen] "Settings" @88,156
+14. [seen] "Search settings" @135,227
+15. [seen] "Network & internet" @156,303
+16. [seen] "Mobile, Wi-Fi, hotspot" @136,326
+```
+
+- The first use downloads the model (22 MB) from Hugging Face and checks it
+  against a fixed SHA-256; without internet at that moment it does not work.
+  The program that runs the model is inside the APK (about 1 MB).
+- It needs Android 11 or newer, because older versions give Screen control no
+  picture of the screen. Apps that forbid screenshots (banking apps, for
+  example) cannot be read.
+- The places are right, the letters not always: in the tests it read "CoD"
+  for an icon and "Cl" for "CI". So the agent uses it to find where to tap,
+  and is told not to copy names or numbers from it.
+- It reads Latin letters only: **no Hindi or other scripts**, no icons without words.
+- Speed: 10.6 s on the test emulator (an x86 machine, where the engine is
+  slow); the same program read the same two parts in 0.7 s on an ARM server.
+  How long a phone takes has not been measured.
+- Not tested on a real phone, nor on a full-size phone screen: the emulator's
+  screen is 320 x 640. A screenshot enlarged to 1080 pixels wide read the same
+  in a separate trial.
+- Phones with a 32-bit Android will most likely answer that they cannot run
+  the reader.
 
 ## Over other apps: what the agent is doing, and its questions
 

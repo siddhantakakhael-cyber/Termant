@@ -67,7 +67,7 @@ browser, hosted on your own server with Docker.
 **It can use the phone**
 
 - Alarms, timers, torch, notifications, speech, clipboard, battery.
-- With Screen control turned on: opens any app, reads the screen, taps, types and swipes.
+- With Screen control turned on: opens any app, reads the screen, taps, types and swipes. Where an app tells nothing about its screen (games, pictures), it reads a picture of it on the phone with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage) model (Latin letters only, Android 11 or newer).
 - A small card over other apps shows what the agent is doing, with a stop button, and asks you when it needs a decision.
 
 </td>
@@ -190,7 +190,7 @@ so put it behind HTTPS before exposing it to the internet. Details:
 - **What the agent can touch.** It runs as root inside Ubuntu and can change or delete anything there, and in `/sdcard` if you allowed storage. It reaches the rest of the phone only through the `phone` command, and other apps only when you turn on Screen control.
 - **No root means limits.** No `systemd`, no Docker, no ports below 1024. Programs run through [PRoot](https://proot-me.github.io/), which is slower than native.
 - **64-bit phones for the agent.** Ubuntu runs on ARM64, 32-bit ARM and x86-64; OpenCode has no 32-bit build.
-- **Testing.** Every build is tested automatically on an Android 14 x86-64 emulator: Ubuntu is set up, `apt install` runs, the app restarts, and the agent gets a reply from a free model. ARM phones use the same code with ARM builds of the same components, but that test does not cover them.
+- **Testing.** Every build is tested automatically on an Android 14 x86-64 emulator: Ubuntu is set up, `apt install` runs, the app restarts, and the agent gets a reply from a free model. ARM phones use the same code with ARM builds of the same components, but that test does not cover them, except the reader of pictures, which is also run on an ARM server.
 - **Signing.** Release APKs are signed with a public test key (`android/keystore/README.md`), so install only APKs from this repository's Releases page.
 
 ## How it works
@@ -215,7 +215,7 @@ docs/               guides and screenshots
 
 ## Build from source
 
-**Android app:** Android SDK and NDK, JDK 17.
+**Android app:** Android SDK and NDK, JDK 17, python3 with pip.
 
 ```sh
 android/build.sh        # writes android/Termant.apk
@@ -248,5 +248,6 @@ to stay compatible with Termux, whose terminal it includes
 
 Termant stands on [Termux](https://github.com/termux/termux-app),
 [PRoot](https://proot-me.github.io/), [OpenCode](https://github.com/sst/opencode),
-[Ubuntu](https://ubuntu.com/) and [xterm.js](https://xtermjs.org/). It is not
-affiliated with any of them.
+[Ubuntu](https://ubuntu.com/), [xterm.js](https://xtermjs.org/) and, for reading
+pictures of the screen, [Mirage and the Cactus engine](https://github.com/cactus-compute/cactus)
+(Apache 2.0). It is not affiliated with any of them.
