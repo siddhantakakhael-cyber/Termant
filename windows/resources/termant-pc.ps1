@@ -103,11 +103,16 @@ function Find-Window($text) {
 function Focus($process) {
   Native
   $h = $process.MainWindowHandle
-  if ([TermantWin]::IsIconic($h)) { [void][TermantWin]::ShowWindowAsync($h, 9) }
-  # Windows lets a program bring a window to the front only right after a key press
-  [TermantWin]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [TermantWin]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+  if ([TermantWin]::IsIconic($h)) { [void][TermantWin]::ShowWindowAsync($h, 9); Start-Sleep -Milliseconds 200 }
+  if ([TermantWin]::GetForegroundWindow() -eq $h) { return }
+  # Windows lets a program bring a window to the front only right after a key press.
+  # Alt alone would open the window's menu, so an unused key is pressed while Alt is down.
+  [TermantWin]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)
+  [TermantWin]::keybd_event(0xE8, 0, 0, [UIntPtr]::Zero); [TermantWin]::keybd_event(0xE8, 0, 2, [UIntPtr]::Zero)
+  [TermantWin]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
   [void][TermantWin]::SetForegroundWindow($h)
   Start-Sleep -Milliseconds 300
+  if ([TermantWin]::GetForegroundWindow() -ne $h) { Fail "Windows did not bring '$($process.MainWindowTitle)' to the front. Try again, or click it with: pc click <x> <y>" }
 }
 
 # ---------------------------------------------------------------- the app
@@ -214,12 +219,12 @@ switch ($cmd) {
   'screen' {
     # What the window in front shows: its buttons, fields and texts, each with the point to click.
     Native
-    Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+    Add-Type -AssemblyName WindowsBase, UIAutomationClient, UIAutomationTypes
     $h = [TermantWin]::GetForegroundWindow()
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($h)
     Write-Output "Window: $($root.Current.Name)"
     $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-    $shown = 0
+    $shown = 0; $problems = 0; $firstProblem = ''
     foreach ($e in $all) {
       if ($shown -ge 160) { Write-Output '... (more not shown)'; break }
       try {
@@ -239,7 +244,11 @@ switch ($cmd) {
         $line += " @ $([int]($r.X + $r.Width / 2)),$([int]($r.Y + $r.Height / 2))"
         Write-Output $line
         $shown++
-      } catch {}
+      } catch { $problems++; if (-not $firstProblem) { $firstProblem = "$($_.Exception.Message) (line $($_.InvocationInfo.ScriptLineNumber))" } }
+    }
+    if ($shown -eq 0) {
+      Write-Output "(nothing readable in this window: $($all.Count) parts, $problems could not be read. $firstProblem)"
+      Write-Output 'Take a picture instead: pc screenshot <file.png>'
     }
   }
   'screenshot' {

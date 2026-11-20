@@ -9,7 +9,7 @@ $env:TERMANT_DATA = Join-Path $Out 'no-app'   # no Termant app is running in thi
 $script:hard = 0; $script:soft = 0
 $log = Join-Path $Out 'pc-test.log'
 
-function Run { $o = (& $pc @args 2>&1 | Out-String).Trim(); return @{ out = $o; code = $LASTEXITCODE } }
+function Run { $o = ((& $pc @args 2>&1 | ForEach-Object { "$_" }) -join "`n").Trim(); return @{ out = $o; code = $LASTEXITCODE } }
 function Check($name, $ok, $detail, [switch]$Soft) {
   $word = if ($ok) { 'PASS' } elseif ($Soft) { $script:soft++; 'SOFT-FAIL' } else { $script:hard++; 'FAIL' }
   $line = "$word $name :: $detail"
@@ -49,11 +49,13 @@ Expect 'screenshot' 'Saved' screenshot (Join-Path $Out 'desktop-notepad.png') | 
 $shot = Get-Item (Join-Path $Out 'desktop-notepad.png') -ErrorAction SilentlyContinue
 Check 'the screenshot is a real picture' ($shot -and $shot.Length -gt 5000) "bytes: $($shot.Length)"
 
-Expect 'key combination' 'Pressed' key ctrl+a | Out-Null
+Expect 'key combination' 'Pressed' key ctrl+a ctrl+c | Out-Null
+Start-Sleep -Milliseconds 500
+Expect 'what was typed arrived whole (copied back out)' '^hello termant \(1\+1\)$' clipboard get | Out-Null
 Expect 'key' 'Pressed' key delete | Out-Null
 Start-Sleep -Milliseconds 600
 $r = Run screen
-Check 'ctrl+a, delete emptied the text' (-not ($r.out -match 'hello termant')) ($r.out -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($r.out -replace '\s+', ' ').Length))
+Check 'delete emptied the text' (-not ($r.out -match 'hello termant')) ($r.out -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($r.out -replace '\s+', ' ').Length))
 
 # click the File menu at the point that `pc screen` reported, and look for its entries
 if ($screen.out -match '(?m)^\[MenuItem\] File @ (\d+),(\d+)') {
@@ -86,3 +88,4 @@ Expect 'and cancelled' 'cancelled' cancel-shutdown -Soft | Out-Null
 $summary = "RESULT: $(if ($script:hard -eq 0) { 'PASS' } else { 'FAIL' }) ($($script:hard) failed, $($script:soft) soft-failed)"
 Write-Output $summary; Add-Content -Path $log -Value $summary
 if ($script:hard -ne 0) { exit 1 }
+exit 0
