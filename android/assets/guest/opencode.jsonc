@@ -5,6 +5,7 @@
     { "action": "shell", "resource": "phone *", "effect": "allow" },
     { "action": "shell", "resource": "date *", "effect": "allow" },
     { "action": "shell", "resource": "learn *", "effect": "allow" },
+    { "action": "shell", "resource": "team *", "effect": "allow" },
     { "action": "websearch", "resource": "*", "effect": "allow" },
     { "action": "webfetch", "resource": "*", "effect": "allow" }
   ],

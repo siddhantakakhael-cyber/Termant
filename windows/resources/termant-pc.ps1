@@ -1218,6 +1218,19 @@ switch ($cmd) {
     elseif ($what -eq 'remove') { Need 2 'skill remove <name>'; App '/skill' @{ action = 'remove'; name = $rest[1] } }
     else { App '/skill' @{ action = 'list' } }
   }
+  'team' {
+    $what = if ($rest.Count -gt 0) { $rest[0] } else { 'list' }
+    if ($what -eq 'add') {
+      Need 4 'team add <name> "<what it is for>" <file with its instructions> [provider/model]'
+      if (-not (Test-Path -LiteralPath $rest[3] -PathType Leaf)) { Fail "pc team: there is no file $($rest[3]). Write the helper's instructions to a file first." }
+      $text = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $rest[3]).ProviderPath, [Text.Encoding]::UTF8)
+      $model = if ($rest.Count -gt 4) { $rest[4] } else { '' }
+      App '/team' @{ action = 'add'; name = $rest[1]; about = $rest[2]; text = $text; model = $model }
+    }
+    elseif ($what -eq 'show') { Need 2 'team show <name>'; App '/team' @{ action = 'show'; name = $rest[1] } }
+    elseif ($what -eq 'remove') { Need 2 'team remove <name>'; App '/team' @{ action = 'remove'; name = $rest[1] } }
+    else { App '/team' @{ action = 'list' } }
+  }
   'learned' {
     $days = if ($rest.Count -gt 0) { $rest[0] } else { '1' }
     App '/learned' @{ days = $days }
@@ -1281,6 +1294,11 @@ Learning (with the Termant app)
   pc skill save <name> "<what it is for>" <file with the steps> [link]
   pc skill list               pc skill show <name>      pc skill remove <name>
   pc learned [days]           what was learned today (or in the last days)
+
+Helper agents (with the Termant app; the main agent hands them parts of a job)
+  pc team                     the helpers there are
+  pc team add <name> "<what it is for>" <file with its instructions> [provider/model]
+  pc team show <name>         pc team remove <name>
 
 Word documents (.docx; works without Word, and inside Word when the file is open there)
   pc word read <file>         every paragraph with its number

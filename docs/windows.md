@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.2.0).** It is built and tested automatically on a Windows
+> **Early version (0.3.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.2.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.3.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -203,6 +203,47 @@ the agent at the start of every chat, and it reads one when a task fits.
   depends on the model. Weak free models may need to be told "YouTube se seekh
   kar karo". At most 60 skills of 6,000 letters.
 
+## A team of helper agents
+
+On a big job the agent does not do everything one step after the other any
+more. It is the main agent and hands parts of the job to helper agents. Each
+helper works in its own conversation, several at the same time, and reports
+back; the main agent puts the results together and answers you.
+
+| Helper | What it is for |
+| --- | --- |
+| `researcher` | Finds things out on the web and YouTube; reports facts and steps with their links |
+| `writer` | Writes or rewrites text: a letter, a report, a summary, a translation |
+| `coder` | Writes a program or script and makes it run |
+| `checker` | Checks finished work against what was asked and lists what is wrong |
+
+OpenCode's own `general` and `explore` helpers are there as well.
+
+- Ask for something with separate parts, for example "teen laptop compare
+  karo, har ek ke liye alag researcher lagao". In the chat each hand-over is a
+  step, like `Helper researcher: Find out about chai`, and the line under the
+  chat says "Helper agents are working" while they do.
+- **Your own agents.** Settings → **Team of helper agents** → **Make a
+  helper**: a name, one sentence on what it is for, and its instructions. Or
+  say it in the chat: "ek agent banao jo sirf Hindi kavita likhe". The agent
+  then runs `pc team add NAME "what it is for" FILE`. A model can be given to a
+  helper (`provider/model`); without one it uses the chat's model. A new helper
+  can be used from the next message on, and it is named in "aaj kya seekha?".
+- `pc team` lists the helpers, `pc team show NAME` prints one, `pc team remove
+  NAME` removes one of your own. At most 20 of your own.
+
+Good to know:
+
+- There is one screen, mouse and keyboard. Helpers are told not to use them;
+  only the main agent clicks and types. This is a rule in their instructions,
+  not a lock.
+- Every helper asks the model too. A job with three helpers uses a free
+  model's limit about three times as fast.
+- Whether helpers are used is the model's decision. It is told to use them for
+  big jobs with separate parts and not for small things. A small free model
+  may not use them unless you say so.
+- **Stop** ends the helpers too.
+
 ## Word documents
 
 `pc word` changes the `.docx` file itself, so it needs no mouse and no Word:
@@ -284,6 +325,12 @@ Server 2025 machine with a real desktop:
    "used up", `pc say` must speak with the second and not ask the first again.
    The real YouTube is tried too: the search answered with 8 videos.
 
+7. Helper agents: `pc team add`, `show`, the list and the refusals; a helper is
+   made and removed in Settings. Then the real OpenCode gets a pretend model
+   that hands two parts of a job to two helpers (`windows/test/team-test.js`):
+   both must be started, work at the same time, one must run a command by
+   itself, and both reports must come back into the answer in the chat.
+
 What the test machine cannot check: sound (it has no speakers, so volume, mute
 and `pc say` are only tried), brightness, battery, Wi-Fi, voice dictation, and
 the blue SmartScreen box. Also not checked:
@@ -296,6 +343,9 @@ the blue SmartScreen box. Also not checked:
 - **Word itself.** The test machine has no Word, so `pc word` inside an open
   Word window, and editing by clicks and drags, have not been run. `pc drag`
   was only checked to run.
+- **A real model that uses helpers.** The helpers were run with a pretend
+  model that is made to hand work over. Whether a real model does so when it
+  should, and how good the helpers' work then is, was not tested.
 - **A model that learns.** That a model really searches YouTube and saves a
   skill when it does not know something was not tested; it is told to in its
   rules.

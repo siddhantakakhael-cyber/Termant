@@ -13,6 +13,7 @@ const { Agent, PROVIDERS } = require('./src/agent');
 const { Schedule, span, clock } = require('./src/schedule');
 const learning = require('./src/learn');
 const { Voice, keysFrom } = require('./src/voice');
+const { Team } = require('./src/team');
 
 const WINDOWS = process.platform === 'win32';
 const selftestArg = process.argv.find((a) => a.startsWith('--selftest='));
@@ -35,6 +36,7 @@ let chats = [], current = null;
 let busy = null; // { chat, activity, detail, startedAt } while the agent works
 let notes = [];
 let learned = null;
+let team = null;
 let voice = null;
 let knownModels = [];
 let lastCare = '';
@@ -94,7 +96,8 @@ function start() {
   knownModels = store.load('models.json', []);
   learned = new learning.Learned(store.dir);
   voice = new Voice(store.dir);
-  agent = new Agent(path.join(store.dir, 'agent'), pcDir, () => settings);
+  team = new Team(store.dir);
+  agent = new Agent(path.join(store.dir, 'agent'), pcDir, () => settings, () => team.config());
   writeNotes();
   // OpenCode is started now, so that the first message does not wait for it
   setTimeout(() => {
@@ -213,6 +216,7 @@ function data() {
     notes,
     learned: { today: learned.since(1).map((e) => learned.line(e).slice(2)), skills: learned.skills() },
     voiceKeys: keysFrom(settings.voiceKeys).length,
+    team: team.list(),
   };
 }
 
@@ -346,6 +350,7 @@ async function sendMessage(text, own) {
     reply.text = result.text;
     reply.failed = result.failed;
     reply.steps = result.steps;
+    if (result.helpers && result.helpers.length) reply.helpers = result.helpers;
     if (result.session) chat.session = result.session;
     if (result.stopped) reply.note = 'stopped';
     reply.seconds = Math.round((Date.now() - busy.startedAt) / 100) / 10;
@@ -357,7 +362,7 @@ async function sendMessage(text, own) {
   const fresh = learned.diary().slice(knownBefore);
   if (fresh.length) reply.learned = fresh.map((e) => learned.line(e).slice(2));
   log('reply: ' + JSON.stringify({ text: reply.text.slice(0, 300), steps: reply.steps, failed: reply.failed, note: reply.note,
-    fast: agent.fast, seconds: reply.seconds, learned: reply.learned }));
+    fast: agent.fast, seconds: reply.seconds, learned: reply.learned, helpers: reply.helpers }));
   if (settings.speak && !own && !reply.failed && reply.text && keysFrom(settings.voiceKeys).length) {
     say(reply.text.replace(/```[\s\S]*?```/g, ' ').replace(/[*_#`>|]/g, ' ')).catch((e) => log('speak: ' + e.message));
   }
@@ -547,6 +552,20 @@ async function say(text) {
     (spoken.notes.length ? ' (' + spoken.notes.join('; ') + ')' : '') + '.';
 }
 
+/** Makes or changes a helper agent; it is also written in the diary of what was learned. */
+function teamAdd(name, about, text, model) {
+  const told = team.add(name, about, text, model);
+  learned.record('helper', String(name).trim().toLowerCase(), String(about).replace(/\s+/g, ' ').trim());
+  send('data', data());
+  return told;
+}
+
+function teamRemove(name) {
+  const told = team.remove(name);
+  send('data', data());
+  return told;
+}
+
 async function command(route, body) {
   if (route === '/youtube') {
     if (body.action === 'read') return learning.readText(await learning.youtubeRead(body.id, { lang: body.lang, from: body.from }));
@@ -564,6 +583,12 @@ async function command(route, body) {
     return text;
   }
   if (route === '/learned') return learned.sinceText(body.days);
+  if (route === '/team') {
+    if (body.action === 'add') return teamAdd(body.name, body.about, body.text, body.model);
+    if (body.action === 'remove') return teamRemove(body.name);
+    if (body.action === 'show') return team.show(body.name);
+    return team.listText();
+  }
   if (route === '/voice') {
     const keys = keysFrom(settings.voiceKeys);
     if (body.action === 'say') return say(String(body.text || ''));
@@ -714,6 +739,8 @@ const handlers = {
       { windowsHide: true, timeout: 20000 }, () => {});
     return true;
   },
+  'team:add': (h) => teamAdd(h.name, h.about, h.text, h.model),
+  'team:remove': (name) => teamRemove(name),
   'pick:folder': async () => {
     const result = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'], defaultPath: settings.workspace });
     return result.canceled || !result.filePaths.length ? null : result.filePaths[0];

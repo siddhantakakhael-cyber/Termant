@@ -4,11 +4,11 @@
 termant_keep="$HOME/.cache/termant/server"
 
 # What must stay the same for a kept server to be used again: the keys, the
-# GitHub sign-in, what the agent has learned, and OpenCode's settings.
+# GitHub sign-in, what the agent has learned, OpenCode's settings, and the helper agents.
 termant_stamp() {
   cat "$HOME/.config/termant/keys.env" /usr/local/lib/termant/github.sh "$HOME/.config/termant/github.env" \
     "$HOME/.config/termant/learned.md" "$HOME"/.config/opencode/opencode.json* \
-    /usr/local/lib/termant/AGENTS.md 2>/dev/null | cksum
+    /usr/local/lib/termant/AGENTS.md "$HOME"/.config/opencode/agents/*.md 2>/dev/null | cksum
 }
 
 # open_feed URL FILE: copies the server's event feed to FILE; 0 when the feed is open.

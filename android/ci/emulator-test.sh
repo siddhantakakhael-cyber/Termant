@@ -60,7 +60,6 @@ trap 'kill $WATCH 2>/dev/null' EXIT
 sleep 20
 
 adb install -g android/Termant-debug.apk || finish "FAIL install"
-adb logcat -c
 # The app's texts are in Hindi unless Settings say otherwise; this test reads
 # the English ones, and switches to Hindi itself at the end. Check-ins of the
 # agent's own are off except in their own part: they would write into the
@@ -97,6 +96,8 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest-test5.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/learn-check.sh'" < android/ci/learn-check.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_web.py'" < android/ci/fake_web.py
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/team-check.sh'" < android/ci/team-check.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_model.py'" < android/ci/fake_model.py
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
@@ -704,6 +705,62 @@ run_as cat "$feed" 2>/dev/null | grep -m 3 'session.text.delta' | cut -c 1-600 >
 cat "$OUT/stream-event-types.txt"
 grep -q 'stream: [1-9][0-9]* pieces' "$OUT/stream.txt" || finish "FAIL streaming: no reply arrived piece by piece"
 
+echo "Helper agents in the chat: the main agent hands two parts of a job to helpers"
+# OpenCode is the real one. The model is a pretend one on the test machine (fake_model.py),
+# so that the result does not hang on whether a real model chooses to use helpers.
+rm -f "$OUT/fake-model-port" "$OUT/helpers-model-asked.txt"
+python3 android/ci/fake_model.py "$OUT/fake-model-port" "$OUT/helpers-model-asked.txt" 'touch /root/helper-ran.txt' 0.0.0.0 &
+fake_model=$!
+for _ in $(seq 1 50); do [ -s "$OUT/fake-model-port" ] && break; sleep 0.2; done
+[ -s "$OUT/fake-model-port" ] || finish "FAIL helpers: the pretend model did not start"
+KEYS=files/rootfs/root/.config/termant/keys.env
+keys_before=$(mktemp)
+sleep 2
+adb shell am force-stop "$PKG"
+run_as cat shared_prefs/termant.xml > "$OUT/prefs-before-helpers.xml"
+grep -q '</map>' "$OUT/prefs-before-helpers.xml" || finish "FAIL helpers: could not read the settings"
+had_keys=; run_as test -f "$KEYS" && had_keys=1 && run_as cat "$KEYS" > "$keys_before"
+# the keys file is read before every chat message: it points OpenCode at the pretend model (10.0.2.2 is the test machine)
+{
+  cat "$keys_before"
+  echo "export OPENCODE_CONFIG_CONTENT='{\"provider\":{\"termanttest\":{\"npm\":\"@ai-sdk/openai-compatible\",\"name\":\"Termant test\",\"options\":{\"baseURL\":\"http://10.0.2.2:$(cat "$OUT/fake-model-port")/v1\",\"apiKey\":\"x\"},\"models\":{\"fake\":{\"name\":\"Fake\"}}}}}'"
+} | adb shell "run-as $PKG sh -c 'mkdir -p files/rootfs/root/.config/termant && cat > $KEYS'"
+change_prefs model=termanttest/fake switched= switched_at= free_limit_until= || finish "FAIL helpers: could not prepare the settings"
+run_as rm -f files/rootfs/root/helper-ran.txt
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+tap_on 'content-desc="Start a new chat"' || finish "FAIL helpers: New chat button not found"
+sleep 2
+ask 'TEAM%splease' || finish "FAIL helpers: could not send the request"
+for i in 1 2 3; do sleep 2; shot "23b-helpers-$i"; done
+wait_for_reply 100 || { shot 23c-helpers-timeout; adb logcat -d -s Termant:I | tail -30; cat "$OUT/helpers-model-asked.txt"; finish "FAIL helpers: no reply"; }
+sleep 2
+shot 23d-helpers-done
+cp "$OUT/chat.json" "$OUT/chat-helpers.json"
+# the newest "activity:" line is that of this reply
+adb logcat -d -s Termant:I | grep 'activity:' | tail -n 1 > "$OUT/helpers-activity.txt"
+cat "$OUT/helpers-activity.txt" "$OUT/helpers-model-asked.txt"
+python3 - "$OUT/chat-helpers.json" <<'PY' || finish "FAIL helpers: the chat does not show the two helpers and what they reported"
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+print("helpers: reply:", m)
+ok = (not m["failed"] and "RESEARCH REPORT: chai is tea." in m["text"] and "POEM REPORT: garam chai" in m["text"]
+      and "Helper researcher: Find out about chai" in m["steps"] and "Helper poet: A poem about chai" in m["steps"]
+      and not any(s.startswith("Helper: ") for s in m["steps"]))
+sys.exit(0 if ok else 1)
+PY
+run_as test -f files/rootfs/root/helper-ran.txt || finish "FAIL helpers: the helper did not run its command"
+grep -q 'activity: .*helper' "$OUT/helpers-activity.txt" || finish "FAIL helpers: the app did not notice that helper agents were working"
+# Back to the real models and the settings from before.
+kill $fake_model 2>/dev/null
+sleep 2
+adb shell am force-stop "$PKG"
+if [ -n "$had_keys" ]; then adb shell "run-as $PKG sh -c 'cat > $KEYS'" < "$keys_before"; else run_as rm -f "$KEYS"; fi
+rm -f "$keys_before"
+adb shell "run-as $PKG sh -c 'cat > shared_prefs/termant.xml'" < "$OUT/prefs-before-helpers.xml"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+
 echo "Voice button: this emulator has no speech service, so only that nothing breaks"
 tap_on 'content-desc="Speak"' || finish "FAIL microphone button not found"
 sleep 3
@@ -889,7 +946,7 @@ adb logcat -d -s Termant:I | grep 'screen control:' > "$OUT/screen-control.txt"
 cat "$OUT/screen-control.txt"
 grep -q 'screen control: on' "$OUT/screen-control.txt" || finish "FAIL Android did not start the screen control service"
 type_line 'sh%st5.sh'
-wait_for_end files/rootfs/root/result5.txt 80 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
+wait_for_end files/rootfs/root/result5.txt 130 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
 run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"
 cat "$OUT/result5.txt"
 sleep 2
@@ -926,6 +983,10 @@ run_as cat files/rootfs/root/learn-check.txt > "$OUT/learn-check.txt" 2>/dev/nul
 run_as cat files/rootfs/root/youtube-search.txt > "$OUT/youtube-search.txt" 2>/dev/null
 run_as cat files/rootfs/root/youtube-read.txt > "$OUT/youtube-read.txt" 2>/dev/null
 grep -q '^learn-check-exit=0' "$OUT/result5.txt" || finish "FAIL learning (YouTube, skills, today, ElevenLabs keys) inside Ubuntu"
+run_as cat files/rootfs/root/team-check.txt > "$OUT/team-check.txt" 2>/dev/null
+grep -q '^team-check-exit=0' "$OUT/result5.txt" || finish "FAIL helper agents (the team command, OpenCode with helpers) inside Ubuntu"
+grep -q '^team-real-run=yes' "$OUT/result5.txt" || finish "FAIL helper agents: OpenCode did not run with helpers inside Ubuntu"
+grep -q '^team-add-exit=0' "$OUT/result5.txt" || finish "FAIL team add"
 grep -q '^voice-add-exit=0' "$OUT/result5.txt" || finish "FAIL phone voice add"
 grep -q '^say-exit=0' "$OUT/result5.txt" || finish "FAIL phone say with ElevenLabs keys"
 grep -q '^say-second-key=yes' "$OUT/result5.txt" || finish "FAIL phone say did not move on to the second ElevenLabs key"

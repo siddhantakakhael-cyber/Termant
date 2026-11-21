@@ -180,6 +180,7 @@ final class Ubuntu {
             {"phone", "usr/local/bin/phone", "x"},
             {"termant-agent", "usr/local/bin/termant-agent", "x"},
             {"learn", "usr/local/bin/learn", "x"},
+            {"team", "usr/local/bin/team", "x"},
             {"termant-web", "usr/local/bin/termant-web", "x"},
             {"termant-server", "usr/local/bin/termant-server", "x"},
             {"server.sh", "usr/local/lib/termant/server.sh", ""},

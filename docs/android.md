@@ -16,6 +16,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [Automation rules](#automation-rules)
 - [The agent learns: notes and its own tools](#the-agent-learns-notes-and-its-own-tools)
 - [Learning by itself: YouTube, skills, "aaj kya seekha?"](#learning-by-itself-youtube-skills-aaj-kya-seekha)
+- [A team of helper agents](#a-team-of-helper-agents)
 - [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
 - [Faster answers](#faster-answers)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
@@ -290,6 +291,57 @@ all skills are given to the agent at the start of every chat; it reads one
   bot"), as YouTube does for data centres. Whether reading works on a phone's
   own connection has not been tried. That a model really goes and learns when
   it does not know something was not tested either.
+
+## A team of helper agents
+
+On a big job the agent does not do everything one step after the other any
+more. It is the main agent and hands parts of the job to helper agents. Each
+helper works in its own conversation, several at the same time, and reports
+back; the main agent puts the results together and answers you.
+
+| Helper | What it is for |
+| --- | --- |
+| `researcher` | Finds things out on the web and YouTube; reports facts and steps with their links |
+| `writer` | Writes or rewrites text: a letter, a report, a summary, a translation |
+| `coder` | Writes a program or script and makes it run |
+| `checker` | Checks finished work against what was asked and lists what is wrong |
+
+OpenCode's own `general` and `explore` helpers are there as well.
+
+- Ask for something with separate parts, for example "teen phone compare
+  karo, har ek ke liye alag researcher lagao". In the chat each hand-over is a
+  step, like `Helper researcher: Find out about chai`, and the line that says
+  what the agent is doing reads "A helper agent is working" with the helper's
+  name.
+- **Your own agents.** Say it in the chat: "ek agent banao jo sirf Hindi
+  kavita likhe". The agent writes the helper's instructions to a file and runs
+  `team add NAME "what it is for" FILE`. A model can be given to a helper
+  (`provider/model` at the end); without one it uses the chat's model. A new
+  helper can be used from the next message on, and it is named in "aaj kya
+  seekha?".
+- In the terminal: `team` lists the helpers, `team show NAME` prints one,
+  `team remove NAME` removes one that was made here. At most 20 of your own.
+  Each helper is one file in `~/.config/opencode/agents/`.
+
+Good to know:
+
+- There is one screen. Helpers are told not to tap or type on it; only the
+  main agent does. This is a rule in their instructions, not a lock.
+- Every helper asks the model too. A job with three helpers uses a free
+  model's limit about three times as fast, and a phone runs them more slowly
+  than a PC.
+- Whether helpers are used is the model's decision. It is told to use them for
+  big jobs with separate parts and not for small things. A small free model
+  may not use them unless you say so.
+- **Stop** ends the helpers too.
+- There is no screen in Settings for the helpers yet; the chat and the `team`
+  command are the way.
+- Tested in the emulator: the `team` command (34 checks), then the real
+  OpenCode with a pretend model that hands two parts of a job to two helpers,
+  once in the terminal and once through the chat. Both helpers must be
+  started, work at the same time, one must run a command by itself, and both
+  reports must be in the answer, with the two hand-overs shown as steps.
+  Whether a real model hands work over when it should was not tested.
 
 ## ElevenLabs voice with several keys
 

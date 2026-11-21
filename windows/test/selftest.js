@@ -227,7 +227,32 @@ module.exports = async function selftest(ctx) {
       check('a wrong skill name is refused', r.code !== 0 && /name must be/.test(r.err + r.out), JSON.stringify(r));
       r = await pc('learned');
       check('pc learned tells what was learned today', r.code === 0 && /Learned today \(\d{4}-\d\d-\d\d\): 2/.test(r.out) && /- skill word-table: Make a table in Word \(from https:\/\/youtu\.be\/dQw4w9WgXcQ\)/.test(r.out) && /- note: The user likes chai/.test(r.out), JSON.stringify(r));
+      // helper agents: made with the pc command, and in Settings
+      const helper = require('./team-test').POET;
+      const helperFile = path.join(dir, 'poet.md');
+      fs.writeFileSync(helperFile, helper.text);
+      r = await pc('team', 'add', 'poet', helper.about, helperFile);
+      check('pc team add makes a helper', r.code === 0 && /Made the helper "poet": Writes one short line of verse/.test(r.out), JSON.stringify(r));
+      r = await pc('team');
+      check('pc team lists the helpers', r.code === 0 && /Helpers that come with Termant: 4/.test(r.out) && /- researcher: /.test(r.out) && /Helpers made here: 1/.test(r.out) && /- poet: Writes one short line/.test(r.out), JSON.stringify(r));
+      r = await pc('team', 'show', 'poet');
+      check('pc team show prints the instructions', r.code === 0 && /POET-MARK/.test(r.out), JSON.stringify(r));
+      r = await pc('team', 'add', 'checker', helper.about, helperFile);
+      check('a helper of Termant cannot be replaced', r.code !== 0 && /already there/.test(r.err + r.out), JSON.stringify(r));
+      r = await pc('learned');
+      check('a new helper is in today\'s diary', r.code === 0 && /- helper poet: Writes one short line of verse/.test(r.out), JSON.stringify(r));
       await js('document.getElementById("nav-settings").click()');
+      check('Settings lists the helpers', await until(() => js('(() => { const c = document.getElementById("team-card"); return !!c && c.textContent.includes("researcher") && c.textContent.includes("poet"); })()'), 5000));
+      await js('document.querySelector("#team-card > :last-child").click()');
+      await until(() => js('!!document.getElementById("team-name")'), 3000);
+      await js('document.getElementById("team-name").value = "hindi-teacher"; document.getElementById("team-about").value = "Explains Hindi grammar with short examples."; ' +
+        'document.getElementById("team-text").value = "You explain Hindi grammar simply, with two short examples each time."; document.querySelector("#dialog .buttons button:last-child").click()');
+      check('a helper is made in Settings', await until(() => js('document.getElementById("team-card").textContent.includes("hindi-teacher")'), 5000),
+        await js('document.getElementById("team-card").textContent'));
+      await js('document.getElementById("team-card").scrollIntoView({ block: "center" })');
+      await shot('team');
+      await js('document.querySelector("#team-card button[aria-label$=\\"hindi-teacher\\"]").click()');
+      check('a helper is removed in Settings', await until(() => js('!document.getElementById("team-card").textContent.includes("hindi-teacher")'), 5000));
       check('Settings shows what was learned today', await until(() => js('(document.getElementById("learned-card") || {textContent: ""}).textContent.includes("word-table")'), 5000));
       await js('document.getElementById("learned-card").scrollIntoView({ block: "center" })');
       await shot('learned');
@@ -304,6 +329,26 @@ module.exports = async function selftest(ctx) {
           await pc('screenshot', path.join(dir, 'desktop-after-agent.png'));
           await shot('agent-notepad');
         }
+
+        // ---- helper agents at work. The model is a pretend one on this PC, so that the result
+        // does not hang on whether a real model chooses to use helpers; OpenCode itself is the real one.
+        const teamTest = require('./team-test');
+        const fake = await teamTest.fakeModel();
+        const real = { model: ctx.settings().model, backup: ctx.settings().backup };
+        process.env.OPENCODE_CONFIG_CONTENT = JSON.stringify(fake.config);
+        agent.stopServer();
+        Object.assign(ctx.settings(), { model: fake.model, backup: false });
+        await js('document.getElementById("nav-chat").click(); document.getElementById("new-chat").click()');
+        await sleep(500);
+        reply = await send('TEAM please', 240);
+        teamTest.judge((name, ok, detail) => check('helpers: ' + name, ok, detail), reply, fake, ctx.settings().workspace);
+        check('helpers: the chat shows who got which part', await js('[...document.querySelectorAll(".step code")].some((c) => c.textContent === "Helper researcher: Find out about chai")'),
+          JSON.stringify(reply).slice(0, 500));
+        await shot('helpers');
+        delete process.env.OPENCODE_CONFIG_CONTENT;
+        agent.stopServer();
+        Object.assign(ctx.settings(), real);
+        fake.close();
       }
     }
   } catch (e) {

@@ -118,12 +118,14 @@ function untarOne(stream, wanted, target, onBytes) {
 class Agent {
   /**
    * dir: where OpenCode and its files live. pcDir: the folder with the `pc` command.
-   * settings(): the app's settings as they are now.
+   * settings(): the app's settings as they are now. team(): the helper agents, as OpenCode's
+   * settings name them (see team.js); may be left out.
    */
-  constructor(dir, pcDir, settings) {
+  constructor(dir, pcDir, settings, team) {
     this.dir = dir;
     this.pcDir = pcDir;
     this.settings = settings;
+    this.team = team || null;
     this.bin = path.join(dir, 'bin', EXE);
     this.configDir = path.join(dir, 'config', 'opencode');
     this.learnedFile = path.join(dir, 'learned.md');
@@ -267,6 +269,9 @@ class Agent {
       };
     }
     if (Object.keys(servers).length) config.mcp = { servers };
+    // the helper agents the main one can hand parts of a job to
+    const team = this.team ? this.team() : null;
+    if (team && Object.keys(team).length) config.agent = team;
     fs.writeFileSync(path.join(this.configDir, 'opencode.jsonc'), JSON.stringify(config, null, 2) + '\n');
   }
 
@@ -386,11 +391,13 @@ class Agent {
       } catch (e) {
         cwd = os.homedir();
       }
-      const result = { text: '', steps: [], failed: false, session: session || '', stopped: false };
+      const result = { text: '', steps: [], failed: false, session: session || '', stopped: false, helpers: [] };
       let child;
       try {
         const env = this.env();
         if (kept) env.OPENCODE_PASSWORD = kept.password;
+        // OpenCode takes its folder from this name when it is there (it is, outside Windows)
+        env.PWD = cwd;
         child = spawn(this.bin, args, { cwd, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
       } catch (e) {
         result.failed = true;
@@ -418,6 +425,10 @@ class Agent {
           const message = (event.error && (event.error.message || event.error.type)) || 'The model did not answer';
           result.failed = true;
           result.error = message;
+        } else if (event.type === 'background_wait') {
+          // the main agent has said its part and waits for the helpers it started
+          const jobs = (event.jobs || []).map((j) => String((j && j.title) || '').trim()).filter(Boolean);
+          onEvent({ kind: 'status', activity: 'team', detail: jobs.join(' · ') });
         } else if (event.type === 'retry') {
           onEvent({ kind: 'status', activity: 'wait', detail: (event.error && event.error.message) || '' });
         } else if (part.type === 'text' && typeof part.text === 'string') {
@@ -431,6 +442,7 @@ class Agent {
           if (step && !(key && seen.has(key))) {
             if (key) seen.add(key);
             result.steps.push(step.text);
+            if (step.helper && !result.helpers.includes(step.helper)) result.helpers.push(step.helper);
             onEvent({ kind: 'step', step: step.text, activity: step.activity, detail: step.detail });
           }
         } else if (part.type === 'step-start') {
@@ -503,6 +515,13 @@ function describeTool(part) {
   if (tool === 'glob' || tool === 'grep' || tool === 'list' || tool === 'ls') {
     const what = one(input.pattern || input.query || file);
     return { text: tool + ' ' + what, activity: 'find', detail: what };
+  }
+  if (tool === 'subagent' || tool === 'task') {
+    // a part of the job handed to a helper agent, which works on it by itself
+    const who = one(input.agent || input.subagent_type) || 'general';
+    const what = one(input.description || input.prompt).slice(0, 200);
+    if (input.sessionID || input.task_id) return { text: 'More for helper ' + who + (what ? ': ' + what : ''), activity: 'team', detail: who + (what ? ': ' + what : ''), helper: who };
+    return { text: 'Helper ' + who + (what ? ': ' + what : ''), activity: 'team', detail: who + (what ? ': ' + what : ''), helper: who };
   }
   if (tool.startsWith('todo')) return { text: 'plan', activity: 'think', detail: '' };
   const first = one(Object.values(input).find((v) => typeof v === 'string') || '');

@@ -177,6 +177,9 @@ final class Chat {
     }
 
     private static final Pattern ANSI = Pattern.compile("\u001b\\[[0-9;?]*[ -/]*[@-~]|\u001b\\][^\u0007]*\u0007|\r");
+    /** OpenCode's plain output about helper agents: one was started; the run waits for those still at work. */
+    private static final Pattern HELPER_LINE = Pattern.compile("^[\u2713\u2714\u2717\u2715\u00d7] \\S.* Agent$");
+    private static final Pattern WAITS_FOR_HELPERS = Pattern.compile("^waiting for \\d+ background jobs?$");
     /** OpenCode prints "> agent · model" before each thing the model says or does. */
     private static final Pattern HEADER = Pattern.compile("^> \\S+ \u00b7 \\S.*$");
 
@@ -360,10 +363,24 @@ final class Chat {
         }
     }
 
+    /** The step shown when a part of the job is handed to a helper agent: "Helper researcher: Find out about chai". */
+    static String helperStep(JSONObject input) {
+        String who = input.optString("agent");
+        if (who.isEmpty()) who = input.optString("subagent_type");
+        if (who.isEmpty()) who = "general";
+        String what = oneLine(input.optString("description"));
+        if (what.isEmpty()) what = oneLine(input.optString("prompt"));
+        if (what.length() > 200) what = what.substring(0, 200);
+        // with a session named, it is more work for a helper that is already there
+        boolean more = !input.optString("sessionID").isEmpty() || !input.optString("task_id").isEmpty();
+        return (more ? "More for helper " : "Helper ") + who + (what.isEmpty() ? "" : ": " + what);
+    }
+
     /** What a tool call is about: the command, the file, the search words. */
     static String aboutOf(String tool, JSONObject input) {
         String name = tool == null ? "" : tool;
         if (input == null) return kindOf(name, null) == ACT_TOOL ? name : "";
+        if (kindOf(name, input) == ACT_HELPER) return helperStep(input).replaceFirst("^(More for helper|Helper) ", "");
         for (String key : new String[]{"command", "path", "filePath", "file_path", "query", "url",
                 "pattern", "description", "name"}) {
             String value = input.optString(key);
@@ -865,6 +882,14 @@ final class Chat {
         synchronized (ran) {
             told = new ArrayList<>(ran);
         }
+        // the feed names a helper better ("Helper researcher: ...") than the plain output does
+        boolean named = false;
+        for (String step : told) named |= step.startsWith("Helper ") || step.startsWith("More for helper ");
+        if (named) {
+            for (java.util.Iterator<String> i = steps.iterator(); i.hasNext();) {
+                if (i.next().startsWith("Helper: ")) i.remove();
+            }
+        }
         for (String step : told) {
             String first = step.split("\n", 2)[0].trim();
             boolean listed = false;
@@ -903,6 +928,8 @@ final class Chat {
         private final java.io.ByteArrayOutputStream line = new java.io.ByteArrayOutputStream();
         /** Tool calls seen so far (id to tool name), and the thinking of the current step. */
         private final Map<String, String> tools = new java.util.HashMap<>();
+        /** The helper agents this reply started: their OpenCode session to "name: what it was given". */
+        private final Map<String, String> helpers = new java.util.HashMap<>();
         private final StringBuilder thought = new StringBuilder();
         private int pieces;
         private long firstAfter = -1;
@@ -974,6 +1001,24 @@ final class Chat {
         }
 
         /**
+         * Something a helper agent did. A helper is a session whose parent is this reply's
+         * session; while it works, the indicator names it.
+         */
+        private void helperEvent(String of, String type, JSONObject d) {
+            if ("session.created".equals(type)) {
+                if (session != null && session.equals(d.optString("parentID")) && helpers.size() < 100) {
+                    String who = d.optString("agent");
+                    String what = oneLine(d.optString("title"));
+                    helpers.put(of, (who.isEmpty() ? "general" : who) + (what.isEmpty() ? "" : ": " + what));
+                }
+                return;
+            }
+            String label = helpers.get(of);
+            if (label == null) return;
+            if ("session.step.started".equals(type) || "session.tool.called".equals(type)) doing(ACT_HELPER, label);
+        }
+
+        /**
          * One line of the event feed: "data: {type, data: {sessionID, ...}}".
          * Only the conversation asked here counts: the first session in the
          * feed is that one, later ones belong to helper agents it starts.
@@ -994,7 +1039,10 @@ final class Chat {
                 if (of.isEmpty()) return false;
                 String type = o.optString("type");
                 if (session == null) session = of;
-                if (!of.equals(session)) return false;
+                if (!of.equals(session)) {
+                    helperEvent(of, type, d);
+                    return false;
+                }
                 switch (type) {
                     case "session.step.started":
                         failure = null; // a step that failed is being tried again
@@ -1038,6 +1086,7 @@ final class Chat {
                         if (input != null) {
                             String command = input.optString("command").trim();
                             String step = !command.isEmpty() ? command
+                                    : kindOf(name, input) == ACT_HELPER ? helperStep(input)
                                     : "websearch".equals(name) ? "web search: " + input.optString("query")
                                     : "webfetch".equals(name) ? "web page: " + input.optString("url") : "";
                             if (!step.isEmpty() && ran.size() < 200) ran.add(step);
@@ -1124,8 +1173,12 @@ final class Chat {
                 // file tools: "← Write hi.py", "→ Read notes.txt"
                 result.steps.add(line.substring(2).trim());
                 inCommand = true;
-            } else if (line.startsWith("! retrying (attempt ")) {
+            } else if (line.startsWith("! retrying (attempt ") || WAITS_FOR_HELPERS.matcher(line).matches()) {
                 // OpenCode's own progress line, not something the model said
+                inCommand = false;
+            } else if (!inCommand && HELPER_LINE.matcher(line).matches()) {
+                // "✓ Find out about chai Researcher Agent": a part of the job went to a helper agent
+                result.steps.add("Helper: " + line.substring(2, line.length() - " Agent".length()).trim());
                 inCommand = false;
             } else if (!inCommand) {
                 said.append(line).append('\n');

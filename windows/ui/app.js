@@ -244,6 +244,7 @@
     if (/^web page/.test(text)) return 'globe';
     if (/^(Read)\s/.test(text)) return 'file';
     if (/^(Write|Edit)\s/.test(text)) return 'edit';
+    if (/^(Helper|More for helper)\s/.test(text)) return 'chat';
     if (text === 'plan') return 'list';
     return 'terminal';
   }
@@ -581,6 +582,31 @@
       known.skills.map((k) => el('div', { class: 'item' }, icon('bolt'),
         el('span', { class: 'grow' }, el('span', { class: 'title' }, k.name), el('span', { class: 'sub' }, k.about + (k.day ? ' · ' + k.day : '')))))));
     page.appendChild(el('div', { class: 'hint' }, t('s_learned_note')));
+
+    // the helper agents: those of Termant, and those made here
+    const helpers = (S.data && S.data.team) || [];
+    page.appendChild(el('h2', null, t('s_team')));
+    page.appendChild(el('div', { class: 'card', id: 'team-card' },
+      helpers.map((h) => el('div', { class: 'item' }, icon('chat'),
+        el('span', { class: 'grow' }, el('span', { class: 'title' }, h.name),
+          el('span', { class: 'sub' }, h.about + (h.model ? ' · ' + h.model : ''))),
+        h.own ? el('button', { class: 'icon-button', title: t('remove'), 'aria-label': t('remove') + ': ' + h.name,
+          onclick: () => call('team:remove', h.name).catch(() => {}) }, icon('trash'))
+          : el('span', { class: 'sub' }, t('team_builtin')))),
+      row('plus', t('team_add'), t('team_add_note'), null, () => {
+        const name = el('input', { class: 'field', id: 'team-name', placeholder: t('team_name'), spellcheck: 'false' });
+        const about = el('input', { class: 'field', id: 'team-about', placeholder: t('team_about') });
+        const text = el('textarea', { class: 'field', id: 'team-text', placeholder: t('team_text') });
+        const model = el('input', { class: 'field', id: 'team-model', placeholder: t('team_model'), spellcheck: 'false' });
+        dialog({ title: t('team_add'), body: [name, about, text, model], buttons: [{ text: t('cancel') }, { text: t('save'), kind: 'primary', run: async () => {
+          try {
+            await call('team:add', { name: name.value, about: about.value, text: text.value, model: model.value });
+          } catch (e) {
+            return false; // what is wrong was told; the form stays open
+          }
+        } }] });
+      })));
+    page.appendChild(el('div', { class: 'hint' }, t('s_team_note')));
 
     page.appendChild(el('h2', null, t('s_mcp')));
     page.appendChild(el('div', { class: 'card' },

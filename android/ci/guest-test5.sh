@@ -47,6 +47,14 @@ grep -q '^- dog, ' /root/look-last.txt && echo "look-last-dog=yes"
 echo "== learning: YouTube, skills, today, ElevenLabs keys (against a pretend YouTube and ElevenLabs in Ubuntu)"
 bash /root/learn-check.sh > /root/learn-check.txt 2>&1; echo "learn-check-exit=$?"
 grep -v '^PASS' /root/learn-check.txt; echo "learn-check-passed=$(grep -c '^PASS' /root/learn-check.txt)"
+echo "== helper agents: the team command, and OpenCode handing parts of a job to helpers (a pretend model answers)"
+bash /root/team-check.sh > /root/team-check.txt 2>&1; echo "team-check-exit=$?"
+grep -v '^PASS' /root/team-check.txt; echo "team-check-passed=$(grep -c '^PASS' /root/team-check.txt)"
+grep -q '^PASS a helper runs a command by itself' /root/team-check.txt && echo "team-real-run=yes"
+# the helper that the chat test hands a part to, later
+printf 'POET-MARK You write one short line of verse about the subject you are given.\n' > /root/poet.md
+team add poet "Writes one short line of verse on a given subject." /root/poet.md; echo "team-add-exit=$?"
+team | tail -n 2
 echo "-- phone say with ElevenLabs keys: the second key speaks, the phone plays it"
 python3 /root/fake_web.py /root/fake-port & fake=$!
 i=0; while [ ! -s /root/fake-port ] && [ $i -lt 100 ]; do sleep 0.2; i=$((i+1)); done

@@ -410,6 +410,7 @@ final class Config {
             perms.put(new JSONObject().put("action", "shell").put("resource", "phone *").put("effect", "allow"));
             perms.put(new JSONObject().put("action", "shell").put("resource", "date *").put("effect", "allow"));
             perms.put(new JSONObject().put("action", "shell").put("resource", "learn *").put("effect", "allow"));
+            perms.put(new JSONObject().put("action", "shell").put("resource", "team *").put("effect", "allow"));
             // What the agent learned in earlier chats (notes, own tools); "learn refresh" writes the file.
             o.put("instructions", new JSONArray().put(LEARNED_FILE));
             // Without a search service named here OpenCode asks which one to use, and in a chat nobody can answer.
