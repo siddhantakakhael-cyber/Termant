@@ -219,6 +219,8 @@ back; the main agent puts the results together and answers you.
 
 OpenCode's own `general` and `explore` helpers are there as well.
 
+<img src="screenshots/windows-team.png" width="560" alt="Settings, Team of helper agents: researcher, writer, coder and checker come with Termant; poet and hindi-teacher were made here and have a remove button; below them the row Make a helper">
+
 - Ask for something with separate parts, for example "teen laptop compare
   karo, har ek ke liye alag researcher lagao". In the chat each hand-over is a
   step, like `Helper researcher: Find out about chai`, and the line under the
@@ -231,6 +233,11 @@ OpenCode's own `general` and `explore` helpers are there as well.
   can be used from the next message on, and it is named in "aaj kya seekha?".
 - `pc team` lists the helpers, `pc team show NAME` prints one, `pc team remove
   NAME` removes one of your own. At most 20 of your own.
+
+<img src="screenshots/windows-helpers.png" width="560" alt="The chat after a job was handed to two helpers: the steps Helper researcher: Find out about chai and Helper poet: A poem about chai, then the answer with both reports">
+
+This picture is from the automatic test, where a pretend model plays the main
+agent and the helpers; the words of the answer are that pretend model's.
 
 Good to know:
 

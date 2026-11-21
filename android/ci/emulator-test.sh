@@ -9,10 +9,12 @@ mkdir -p "$OUT"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png" || true; }
 run_as() { adb shell run-as "$PKG" "$@"; }
+fake_model=
 finish() {
   shot "final"
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null 2>&1
   adb logcat -d -t 4000 > "$OUT/logcat.txt" 2>&1 || true
+  [ -n "$fake_model" ] && kill "$fake_model" 2>/dev/null  # a test that leaves it running keeps the job open
   echo "RESULT: $1" | tee "$OUT/verdict.txt"
   [ "$1" = PASS ]
   exit $?
@@ -60,6 +62,7 @@ trap 'kill $WATCH 2>/dev/null' EXIT
 sleep 20
 
 adb install -g android/Termant-debug.apk || finish "FAIL install"
+adb logcat -c
 # The app's texts are in Hindi unless Settings say otherwise; this test reads
 # the English ones, and switches to Hindi itself at the end. Check-ins of the
 # agent's own are off except in their own part: they would write into the
@@ -709,7 +712,7 @@ echo "Helper agents in the chat: the main agent hands two parts of a job to help
 # OpenCode is the real one. The model is a pretend one on the test machine (fake_model.py),
 # so that the result does not hang on whether a real model chooses to use helpers.
 rm -f "$OUT/fake-model-port" "$OUT/helpers-model-asked.txt"
-python3 android/ci/fake_model.py "$OUT/fake-model-port" "$OUT/helpers-model-asked.txt" 'touch /root/helper-ran.txt' 0.0.0.0 &
+python3 android/ci/fake_model.py "$OUT/fake-model-port" "$OUT/helpers-model-asked.txt" 'touch /root/helper-ran.txt' 0.0.0.0 > "$OUT/fake-model.log" 2>&1 < /dev/null &
 fake_model=$!
 for _ in $(seq 1 50); do [ -s "$OUT/fake-model-port" ] && break; sleep 0.2; done
 [ -s "$OUT/fake-model-port" ] || finish "FAIL helpers: the pretend model did not start"
@@ -727,6 +730,16 @@ had_keys=; run_as test -f "$KEYS" && had_keys=1 && run_as cat "$KEYS" > "$keys_b
 } | adb shell "run-as $PKG sh -c 'mkdir -p files/rootfs/root/.config/termant && cat > $KEYS'"
 change_prefs model=termanttest/fake switched= switched_at= free_limit_until= || finish "FAIL helpers: could not prepare the settings"
 run_as rm -f files/rootfs/root/helper-ran.txt
+# a helper of the user's own, as "team add poet ..." writes it
+adb shell "run-as $PKG sh -c 'mkdir -p files/rootfs/root/.config/opencode/agents && cat > files/rootfs/root/.config/opencode/agents/poet.md'" <<'POET'
+---
+description: "Writes one short line of verse on a given subject."
+mode: subagent
+---
+POET-MARK You write one short line of verse about the subject you are given.
+
+Do not touch the screen. Do not ask the user anything. Your last message is your report to the main agent.
+POET
 adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
 sleep 8
 tap_on 'content-desc="Start a new chat"' || finish "FAIL helpers: New chat button not found"
@@ -752,7 +765,8 @@ PY
 run_as test -f files/rootfs/root/helper-ran.txt || finish "FAIL helpers: the helper did not run its command"
 grep -q 'activity: .*helper' "$OUT/helpers-activity.txt" || finish "FAIL helpers: the app did not notice that helper agents were working"
 # Back to the real models and the settings from before.
-kill $fake_model 2>/dev/null
+kill $fake_model 2>/dev/null; fake_model=
+run_as rm -f files/rootfs/root/.config/opencode/agents/poet.md
 sleep 2
 adb shell am force-stop "$PKG"
 if [ -n "$had_keys" ]; then adb shell "run-as $PKG sh -c 'cat > $KEYS'" < "$keys_before"; else run_as rm -f "$KEYS"; fi
