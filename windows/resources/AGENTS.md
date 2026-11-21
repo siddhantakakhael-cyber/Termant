@@ -182,8 +182,8 @@ When to use them:
 Rules:
 
 - There is one screen and it is yours. Never give a helper a task that needs
-  the mouse, the keyboard or a
-  window (`pc click`, `pc type`, `pc key`, `pc open`).
+  the mouse, the keyboard or a window (`pc click`, `pc type`, `pc key`,
+  `pc open`).
 - Two helpers must not write the same file. Give each its own file or folder.
 - After you start helpers, say in one line what you started, and stop. You are
   called again when a helper reports. Do not wait in a loop and do not do
