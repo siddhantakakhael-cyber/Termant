@@ -14,7 +14,7 @@
 
 <a href="https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk"><img src="https://img.shields.io/badge/Download-Termant.apk-ff7a45?style=for-the-badge&logo=android&logoColor=white" alt="Download Termant.apk" height="44"></a>
 
-<sub>Android 7.0 or newer · under 1 MB · no account, no API key</sub>
+<sub>Android 7.0 or newer · about 2 MB · no account, no API key</sub>
 
 <br>
 

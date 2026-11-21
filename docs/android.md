@@ -26,7 +26,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 
 ## Install
 
-**Download:** [Termant.apk](https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk) (Android 7.0 or newer, under 1 MB)
+**Download:** [Termant.apk](https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk) (Android 7.0 or newer, about 2 MB)
 
 Open the APK on your phone and allow the install. The first start downloads
 the official Ubuntu base image from Canonical (about 30 MB) and checks its
@@ -333,15 +333,20 @@ Good to know:
 - Whether helpers are used is the model's decision. It is told to use them for
   big jobs with separate parts and not for small things. A small free model
   may not use them unless you say so.
-- **Stop** ends the helpers too.
 - There is no screen in Settings for the helpers yet; the chat and the `team`
   command are the way.
-- Tested in the emulator: the `team` command (34 checks), then the real
-  OpenCode with a pretend model that hands two parts of a job to two helpers,
+- Tested in the emulator: the `team` command and the real OpenCode (43
+  checks), with a pretend model that hands two parts of a job to two helpers,
   once in the terminal and once through the chat. Both helpers must be
   started, work at the same time, one must run a command by itself, and both
   reports must be in the answer, with the two hand-overs shown as steps.
-  Whether a real model hands work over when it should was not tested.
+- Not tested: whether a real model hands work over when it should, and
+  whether **Stop** also ends helpers that are still at work.
+
+<img src="screenshots/android-helpers-done.png" width="260" alt="The chat after a job was handed to two helpers: the steps Helper researcher: Find out about chai and Helper poet: A poem about chai, then the answer with both reports">
+
+This picture is from the automatic test; the words of the answer are the
+pretend model's.
 
 ## ElevenLabs voice with several keys
 

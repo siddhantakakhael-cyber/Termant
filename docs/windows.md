@@ -249,7 +249,7 @@ Good to know:
 - Whether helpers are used is the model's decision. It is told to use them for
   big jobs with separate parts and not for small things. A small free model
   may not use them unless you say so.
-- **Stop** ends the helpers too.
+- Whether **Stop** also ends helpers that are still at work was not tested.
 
 ## Word documents
 
