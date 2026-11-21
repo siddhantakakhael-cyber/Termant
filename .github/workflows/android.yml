@@ -87,10 +87,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="v$(grep -o 'versionName="[^"]*"' android/AndroidManifest.xml | cut -d'"' -f2)"
-          if gh release view "$version" >/dev/null 2>&1; then
-            gh release upload "$version" android/Termant.apk --clobber
-          else
-            gh release create "$version" android/Termant.apk --target "$GITHUB_SHA" \
-              --title "Termant $version" \
-              --notes "Ubuntu 24.04 terminal for Android 7.0+. Download Termant.apk, open it on your phone and allow the install. First start downloads Ubuntu (about 30 MB)."
-          fi
+          # GitHub now and then refuses an upload; a second try a little later goes through
+          for try in 1 2 3 4; do
+            if gh release view "$version" >/dev/null 2>&1; then
+              gh release upload "$version" android/Termant.apk --clobber && exit 0
+            else
+              gh release create "$version" android/Termant.apk --target "$GITHUB_SHA" \
+                --title "Termant $version" \
+                --notes "Ubuntu 24.04 terminal for Android 7.0+. Download Termant.apk, open it on your phone and allow the install. First start downloads Ubuntu (about 30 MB)." && exit 0
+            fi
+            echo "release: try $try did not work"
+            sleep 30
+          done
+          exit 1

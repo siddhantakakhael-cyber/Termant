@@ -1256,7 +1256,11 @@ final class Chat {
             JSONArray list = new JSONArray();
             String title = "";
             for (Message m : messages) {
-                if (title.isEmpty() && m.user) title = m.text.length() > 80 ? m.text.substring(0, 80) : m.text;
+                if (title.isEmpty() && m.user) {
+                    // an attached file is named, without its path
+                    String said = m.text.replaceAll("\\[file: (?:[^\\]\\n]*/)?([^\\]\\n/]+)\\]", "$1");
+                    title = said.length() > 80 ? said.substring(0, 80) : said;
+                }
                 list.put(new JSONObject().put("user", m.user).put("text", m.text).put("first", m.first)
                         .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps)));
             }

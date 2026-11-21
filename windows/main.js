@@ -307,7 +307,8 @@ async function sendMessage(text, own, files) {
   const chat = current;
   if (!chats.includes(chat)) chats.push(chat);
   if (!own) {
-    if (!chat.title) chat.title = text.replace(/\s+/g, ' ').slice(0, 80);
+    // the title names an attached file, not its whole path
+    if (!chat.title) chat.title = text.replace(/\[file: (?:[^\]\n]*[\\/])?([^\]\n\\/]+)\]/g, '$1').replace(/\s+/g, ' ').slice(0, 80);
     chat.messages.push({ user: true, text });
   }
   const reply = { user: false, text: '', steps: [], failed: false, note: '', own: !!own };

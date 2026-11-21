@@ -372,6 +372,8 @@ of any kind (up to 10 at once, 200 MB each). They are copied to
   Scanned PDFs (pictures of pages) and the old `.doc`/`.xls` formats are not
   read.
 
+<img src="screenshots/android-attach-button.png" width="260" alt="The chat on Android: the message box has a plus button on the left for pictures and files, then the microphone and Send">
+
 **Undo.** When the agent changes or deletes your files through `safe` (`safe
 keep`, `safe rm`, `safe mv`), a line "Undo: N file change(s)" stands under the
 answer. Tap it (or write `undo`) and the files are back. Deleted files go to

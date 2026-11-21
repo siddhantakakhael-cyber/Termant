@@ -312,6 +312,10 @@ message to OpenCode asking the model took 1.5 to 1.7 seconds before, and 0.2
 seconds with the kept server. The model's own thinking time is not changed by
 this, and it is usually the larger part.
 
+<img src="screenshots/windows-attached.png" width="560" alt="The Windows chat: a message with the file attached.png shown by its name, the pretend model's answer that one picture reached it, and the plus button in the message box">
+
+This picture is from the automatic test; the answer is the pretend model's.
+
 ## Not on Windows yet
 
 The Android app got more in its version 0.22.0 than this one: Undo for
