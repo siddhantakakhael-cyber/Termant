@@ -326,8 +326,8 @@ start; the following ones do not. The kept one goes away after 15 minutes
 without a message, after **Stop**, and when a key or what the agent has learned
 changes (the next message then starts it again).
 
-In the emulator test, 15 of the 29 chat messages went through the kept
-OpenCode (the others came after the test had stopped the app or changed a
+In the emulator test of version 0.20.0, 36 of the 49 chat messages went
+through the kept OpenCode (the others came after the test had stopped the app or changed a
 setting). How many seconds this saves on a real phone has not been measured;
 on a Linux PC it was 1.5 to 1.7 seconds per message before and 0.2 after. The
 model's own thinking time is not changed.

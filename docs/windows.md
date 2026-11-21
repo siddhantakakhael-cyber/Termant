@@ -188,6 +188,8 @@ not to answer "I can't" but to learn first:
    today's learning and all skills. `pc learned` (or `pc learned 7`) prints it;
    asking "aaj kya seekha?" makes the agent read it out in its own words.
 
+<img src="screenshots/windows-learned.png" width="560" alt="Settings: ElevenLabs keys, Read answers aloud, and What Termant taught itself with today's learning and the skill word-table">
+
 Skills are plain files in `%APPDATA%\Termant\skills`; their names are given to
 the agent at the start of every chat, and it reads one when a task fits.
 
