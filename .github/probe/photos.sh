@@ -19,9 +19,10 @@ fruits.jpg $raw/opencv/opencv/4.x/samples/data/fruits.jpg
 home.jpg $raw/opencv/opencv/4.x/samples/data/home.jpg
 messi.jpg $raw/opencv/opencv/4.x/samples/data/messi5.jpg
 building.jpg $raw/opencv/opencv/4.x/samples/data/building.jpg
-coffee.png $raw/scikit-image/scikit-image/main/skimage/data/coffee.png
-cat.png $raw/scikit-image/scikit-image/main/skimage/data/chelsea.png
-astronaut.png $raw/scikit-image/scikit-image/main/skimage/data/astronaut.png
+apple.jpg $raw/opencv/opencv/4.x/samples/data/apple.jpg
+plate.jpg $raw/opencv/opencv/4.x/samples/data/licenseplate_motion.jpg
+person.jpg $raw/pjreddie/darknet/master/data/person.jpg
+eagle.jpg $raw/pjreddie/darknet/master/data/eagle.jpg
 EOF
 ls -l photos
 PYTHONPATH=work/py python3 .github/probe/photos.py "$out"
