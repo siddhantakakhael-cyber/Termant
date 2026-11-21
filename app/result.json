@@ -1,0 +1,397 @@
+{
+ "pass": true,
+ "failed": 0,
+ "softFailed": 1,
+ "results": [
+  {
+   "name": "window loads",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "first-start notice is shown",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "notice is remembered",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "bridge file exists",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc notify",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Notification shown.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc note add reaches the agent's notes",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Noted (1).\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc note list",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"1  The user likes chai\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc rule add every",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Rule 1 added: every 30m -> pc notify Paani Paani pee lo\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc rule add at",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Rule 2 added: at 23:00 -> pc volume 0\",\"err\":\"\"}"
+  },
+  {
+   "name": "a wrong trigger is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"I do not understand the trigger \\\"sometimes\\\". Use: at HH:MM, every 30m, startup, in 10m\"}"
+  },
+  {
+   "name": "pc rule add in",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Rule 3 added: in 2s -> pc clipboard set rule-ran-ok\",\"err\":\"\"}"
+  },
+  {
+   "name": "a rule runs its command, with pc on its PATH",
+   "ok": true,
+   "soft": false,
+   "detail": "rule-ran-ok"
+  },
+  {
+   "name": "a one-time rule removes itself",
+   "ok": true,
+   "soft": false,
+   "detail": "2"
+  },
+  {
+   "name": "pc rule list",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"1  on   every 30m  ->  pc notify Paani Paani pee lo\\n2  on   at 23:00  ->  pc volume 0\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc alarm",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Alarm 1 set for Sun Nov 22 07:00 (Wake up). It rings while Termant is running.\",\"err\":\"\"}"
+  },
+  {
+   "name": "a wrong alarm time is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"Give the time as HH:MM on the 24-hour clock, for example: pc alarm 07:00 Wake up\"}"
+  },
+  {
+   "name": "pc timer",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Timer 2 rings at 14:45 (Chai).\",\"err\":\"\"}"
+  },
+  {
+   "name": "rules page lists the rule",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "the timer rings",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "ringing stops",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "the question appears",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc ask prints the answer",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Blue\",\"err\":\"\"}"
+  },
+  {
+   "name": "a terminal tab opens",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "the terminal runs a command",
+   "ok": true,
+   "soft": false,
+   "detail": "PS C:\\Users\\runneradmin\\Documents\\Termant> echo \"termant-ok-$(6*7)\"\ntermant-ok-42\nPS C:\\Users\\runneradmin\\Documents\\Termant> \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+  },
+  {
+   "name": "pc works inside the terminal",
+   "ok": true,
+   "soft": false,
+   "detail": "ermant> echo \"termant-ok-$(6*7)\"\ntermant-ok-42\nPS C:\\Users\\runneradmin\\Documents\\Termant> pc info\nMicrosoft Windows Server 2025 Datacenter 10.0.26100, computer runnervmbpeip, user runneradmin\nProcessor: AMD EPYC 7763 64-Core Processor\nMemory: 13.1 GB free of 16.0 GB\nDisk C: 29 GB free of 150 GB\nDisk D: 146 GB free of 150 GB\nPS C:\\Users\\runneradmin\\Documents\\Termant> \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+  },
+  {
+   "name": "language changes to Hindi",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "theme changes to light",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "settings are saved to disk",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc youtube search lists videos",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"YouTube, \\\"table in word\\\": 1 videos\\n1. Make a table in Word\\n   Office Guru | 4:05\\n   id dQw4w9WgXcQ\\nRead what is said in one of them:  youtube read ID\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc youtube read prints what is said",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"YouTube video dQw4w9WgXcQ: Make a table in Word\\nBy Office Guru, 4:05 long. Link: https://youtu.be/dQw4w9WgXcQ\\nWhat is said (en):\\n[0:00] click insert then table\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc skill save",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Skill learned: word-table (Make a table in Word). You will find it in every chat from now on.\",\"err\":\"\"}"
+  },
+  {
+   "name": "the skill is named in the agent's guide",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc skill show prints the steps",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"# word-table\\nwhat: Make a table in Word\\nfrom: https://youtu.be/dQw4w9WgXcQ\\nlearned: 2026-11-21\\n---\\n1. Open Word.\\n2. Insert > Table.\\n3. Pick 3 x 3.\",\"err\":\"\"}"
+  },
+  {
+   "name": "a wrong skill name is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"The name must be 2 to 40 small letters, digits or dashes and start with a letter, like word-table.\"}"
+  },
+  {
+   "name": "pc learned tells what was learned today",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Learned today (2026-11-21): 2\\n- note: The user likes chai\\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc team add makes a helper",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Made the helper \\\"poet\\\": Writes one short line of verse on a given subject. It can be used from the next message on.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc team lists the helpers",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Helpers that come with Termant: 6\\n- researcher: Finds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.\\n- writer: Writes or rewrites text: a letter, a report, a summary, a translation, a document. Give it the facts, the language and tone, and the file to save to (or it returns the text).\\n- coder: Writes a program or script, runs it and fixes it until it works. Give it exactly what the program must do and the folder to work in.\\n- checker: Checks finished work "
+  },
+  {
+   "name": "pc team show prints the instructions",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Helper poet\\nFor: Writes one short line of verse on a given subject.\\n\\nPOET-MARK You write one short line of verse about the subject you are given.\",\"err\":\"\"}"
+  },
+  {
+   "name": "a helper of Termant cannot be replaced",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"\\\"checker\\\" is a helper that is already there and cannot be changed. Choose another name.\"}"
+  },
+  {
+   "name": "a new helper is in today's diary",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Learned today (2026-11-21): 3\\n- note: The user likes chai\\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)\\n- helper poet: Writes one short line of verse on a given subject.\",\"err\":\"\"}"
+  },
+  {
+   "name": "Settings lists the helpers",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "a helper is made in Settings",
+   "ok": true,
+   "soft": false,
+   "detail": "researcherFinds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.Comes with TermantwriterWrites or rewrites text: a letter, a report, a summary, a translation, a document. Give it the facts, the language and tone, and the file to save to (or it returns the text).Comes with TermantcoderWrites a program or script, runs it and fixes it until it works. Give it exactly what the program must do and the folder to work in.Comes with TermantcheckerChecks finished work against what was ask"
+  },
+  {
+   "name": "a helper is removed in Settings",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "Settings shows what was learned today",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc voice add saves two keys",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"2 key(s) added; 2 ElevenLabs key(s) are saved now.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc say moves to the second key when the first is used up",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Said with ElevenLabs, key 2 of 2 (key 1 (...up-1): quota_exceeded).\",\"err\":\"\"}"
+  },
+  {
+   "name": "the used-up key is left out the next time",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Said with ElevenLabs, key 2 of 2.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc voice shows each key without printing it",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"1. ...up-1  10000 of 10000 letters used (free)  resting until 11/21/2026, 8:46:01 PM: quota_exceeded\\n2. ...-333  40 of 10000 letters used (free)  in use\",\"err\":\"\"}"
+  },
+  {
+   "name": "the chat shows the working folder",
+   "ok": true,
+   "soft": false,
+   "detail": "Working folder: C:\\Users\\runneradmin\\Documents\\Termant"
+  },
+  {
+   "name": "the real YouTube: search",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"code\":0,\"out\":\"YouTube, \\\"how to make a table in Word\\\": 8 videos\\n1. How To Create Tables In Word (COMPLETE Guide!)\\n   Steven Bradburn | 8:34 | 108,377 views | 2 years ago\\n   id HIOZca4iwYk\\n2. How to Insert Table In Microsoft Word\\n   Office Master Tutorials | 3:17 | 729,102 views | 3 years ag"
+  },
+  {
+   "name": "the real YouTube: what a video says",
+   "ok": false,
+   "soft": true,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"YouTube did not give this video (Sign in to confirm you’re not a bot). Try another video from the search.\"}"
+  },
+  {
+   "name": "the agent downloads and starts",
+   "ok": true,
+   "soft": false,
+   "detail": "5 s"
+  },
+  {
+   "name": "the model list loads",
+   "ok": true,
+   "soft": false,
+   "detail": "12 models, first: opencode/beam-free, opencode/big-pickle, opencode/deepseek-v4.1-flash-free, opencode/flint-40b-free"
+  },
+  {
+   "name": "the agent answers",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"user\":false,\"text\":\"pong\",\"steps\":[],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":5.2}"
+  },
+  {
+   "name": "the second message goes through the kept server",
+   "ok": true,
+   "soft": true,
+   "detail": "first 5.2 s (kept server: true), second 2.6 s (kept server: true) {\"user\":false,\"text\":\"ping\",\"steps\":[],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":2.6}"
+  },
+  {
+   "name": "the agent controls the PC with pc",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"user\":false,\"text\":\"done\",\"steps\":[\"pc clipboard set termant-agent-ok\"],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":6} clipboard=termant-agent-ok"
+  },
+  {
+   "name": "the agent opens Notepad",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"user\":false,\"text\":\"Maine Notepad khola, usse focus kiya, aur usme \\\"namaste from termant\\\" type kiya.\",\"steps\":[\"pc open notepad\",\"Start-Sleep 1; pc focus Notepad\",\"pc type \\\"namaste from termant\\\"\"],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":15} windows=*Untitled - Notepad   [notepad, id 6120]\r\nTermant   [Termant, id 7196]\r\nC:\\ProgramData\\GitHub\\HostedComputeAgent\\hosted-compute-agent   [WindowsTerminal, id 1716]"
+  },
+  {
+   "name": "helpers: the main agent hands parts to two helpers",
+   "ok": true,
+   "soft": false,
+   "detail": "[\"Helper poet: A poem about chai\",\"Helper researcher: Find out about chai\"]"
+  },
+  {
+   "name": "helpers: the helpers' reports come back into the answer",
+   "ok": true,
+   "soft": false,
+   "detail": "\"I started two helpers.\\n\\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\\n\\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.\""
+  },
+  {
+   "name": "helpers: the helpers work at the same time",
+   "ok": true,
+   "soft": false,
+   "detail": "poet asked at 1795272411638, researcher reported at 1795272413805"
+  },
+  {
+   "name": "helpers: a helper runs a command by itself",
+   "ok": true,
+   "soft": false,
+   "detail": "helper-ran.txt"
+  },
+  {
+   "name": "helpers: the chat shows who got which part",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"I started two helpers.\\n\\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\\n\\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.\",\"steps\":[\"Helper poet: A poem about chai\",\"Helper researcher: Find out about chai\"],\"failed\":false,\"note\":\"\",\"own\":false,\"helpers\":[\"poet\",\"researcher\"],\"seconds\":4.1}"
+  },
+  {
+   "name": "files: the button to add a picture or file is there",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "files: a picture sent with a message reaches the model",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"SAW pictures=1 words=no\",\"steps\":[],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":2.1}"
+  },
+  {
+   "name": "files: the message names the file, not its path",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+PASS a picture is known by its first bytes
+PASS a PDF, a text file and an archive are told apart
+PASS a file that is only named like a picture is not handed over as one
+PASS a file that is not there is "other"
+PASS a model that takes pictures and PDFs keeps both and stays
+PASS a model that cannot see: a free one that can is asked
+PASS never a paid model by itself
+PASS no free model reads PDFs: the picture is shown, the PDF is left to the agent
+PASS a PDF alone with a model that cannot read it: nothing is forced
+PASS a text file goes into the message with any model, an archive does not
+PASS a picture over 4 MB is not handed over
+PASS without the list of models a picture is handed over all the same
+PASS with no model chosen, a free one that can see is asked
+PASS the files are marked in the message
+PASS and found again, only those that are there
+PASS a message without files stays as it is
+PASS OpenCode's list of models is read
+SKIP the real run of OpenCode with a picture (name the program in TERMANT_OPENCODE)
+RESULT: PASS (17 checks, 0 failed)

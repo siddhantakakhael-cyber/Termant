@@ -1,0 +1,126 @@
+14:45:25 bridge on port 54071
+14:45:27 PASS window loads
+14:45:27 PASS first-start notice is shown
+14:45:27 PASS notice is remembered
+14:45:27 PASS bridge file exists
+14:45:28 notify: Hello | from the test
+14:45:28 PASS pc notify :: {"code":0,"out":"Notification shown.","err":""}
+14:45:29 PASS pc note add reaches the agent's notes :: {"code":0,"out":"Noted (1).","err":""}
+14:45:29 PASS pc note list :: {"code":0,"out":"1  The user likes chai","err":""}
+14:45:30 PASS pc rule add every :: {"code":0,"out":"Rule 1 added: every 30m -> pc notify Paani Paani pee lo","err":""}
+14:45:31 PASS pc rule add at :: {"code":0,"out":"Rule 2 added: at 23:00 -> pc volume 0","err":""}
+14:45:31 PASS a wrong trigger is refused :: {"code":1,"out":"","err":"I do not understand the trigger \"sometimes\". Use: at HH:MM, every 30m, startup, in 10m"}
+14:45:32 PASS pc rule add in :: {"code":0,"out":"Rule 3 added: in 2s -> pc clipboard set rule-ran-ok","err":""}
+14:45:35 rule 3 runs: pc clipboard set rule-ran-ok
+14:45:36 rule 3 ended with 0
+14:45:37 PASS a rule runs its command, with pc on its PATH :: rule-ran-ok
+14:45:37 PASS a one-time rule removes itself :: 2
+14:45:38 PASS pc rule list :: {"code":0,"out":"1  on   every 30m  ->  pc notify Paani Paani pee lo\n2  on   at 23:00  ->  pc volume 0","err":""}
+14:45:38 PASS pc alarm :: {"code":0,"out":"Alarm 1 set for Sun Nov 22 07:00 (Wake up). It rings while Termant is running.","err":""}
+14:45:39 PASS a wrong alarm time is refused :: {"code":1,"out":"","err":"Give the time as HH:MM on the 24-hour clock, for example: pc alarm 07:00 Wake up"}
+14:45:39 PASS pc timer :: {"code":0,"out":"Timer 2 rings at 14:45 (Chai).","err":""}
+14:45:40 PASS rules page lists the rule
+14:45:43 ring: Chai
+14:45:43 notify: Chai | Termant
+14:45:43 PASS the timer rings
+14:45:43 PASS ringing stops
+14:45:44 ask: Which colour? | Red | Blue
+14:45:44 PASS the question appears
+14:45:45 PASS pc ask prints the answer :: {"code":0,"out":"Blue","err":""}
+14:45:46 PASS a terminal tab opens
+14:45:48 PASS the terminal runs a command :: PS C:\Users\runneradmin\Documents\Termant> echo "termant-ok-$(6*7)"
+termant-ok-42
+PS C:\Users\runneradmin\Documents\Termant> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+14:45:50 PASS pc works inside the terminal :: ermant> echo "termant-ok-$(6*7)"
+termant-ok-42
+PS C:\Users\runneradmin\Documents\Termant> pc info
+Microsoft Windows Server 2025 Datacenter 10.0.26100, computer runnervmbpeip, user runneradmin
+Processor: AMD EPYC 7763 64-Core Processor
+Memory: 13.1 GB free of 16.0 GB
+Disk C: 29 GB free of 150 GB
+Disk
+14:45:51 PASS language changes to Hindi
+14:45:51 PASS theme changes to light
+14:45:52 PASS settings are saved to disk
+14:45:53 PASS pc youtube search lists videos :: {"code":0,"out":"YouTube, \"table in word\": 1 videos\n1. Make a table in Word\n   Office Guru | 4:05\n   id dQw4w9WgXcQ\nRead what is said in one of them:  youtube read ID","err":""}
+14:45:54 PASS pc youtube read prints what is said :: {"code":0,"out":"YouTube video dQw4w9WgXcQ: Make a table in Word\nBy Office Guru, 4:05 long. Link: https://youtu.be/dQw4w9WgXcQ\nWhat is said (en):\n[0:00] click insert then table","err":""}
+14:45:54 PASS pc skill save :: {"code":0,"out":"Skill learned: word-table (Make a table in Word). You will find it in every chat from now on.","err":""}
+14:45:54 PASS the skill is named in the agent's guide
+14:45:55 PASS pc skill show prints the steps :: {"code":0,"out":"# word-table\nwhat: Make a table in Word\nfrom: https://youtu.be/dQw4w9WgXcQ\nlearned: 2026-11-21\n---\n1. Open Word.\n2. Insert > Table.\n3. Pick 3 x 3.","err":""}
+14:45:55 PASS a wrong skill name is refused :: {"code":1,"out":"","err":"The name must be 2 to 40 small letters, digits or dashes and start with a letter, like word-table."}
+14:45:56 PASS pc learned tells what was learned today :: {"code":0,"out":"Learned today (2026-11-21): 2\n- note: The user likes chai\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)","err":""}
+14:45:56 PASS pc team add makes a helper :: {"code":0,"out":"Made the helper \"poet\": Writes one short line of verse on a given subject. It can be used from the next message on.","err":""}
+14:45:57 PASS pc team lists the helpers :: {"code":0,"out":"Helpers that come with Termant: 6\n- researcher: Finds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.\n- writer: Writes or rewrites text: a letter, a report, a summ
+14:45:58 PASS pc team show prints the instructions :: {"code":0,"out":"Helper poet\nFor: Writes one short line of verse on a given subject.\n\nPOET-MARK You write one short line of verse about the subject you are given.","err":""}
+14:45:58 PASS a helper of Termant cannot be replaced :: {"code":1,"out":"","err":"\"checker\" is a helper that is already there and cannot be changed. Choose another name."}
+14:45:59 PASS a new helper is in today's diary :: {"code":0,"out":"Learned today (2026-11-21): 3\n- note: The user likes chai\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)\n- helper poet: Writes one short line of verse on a given subject.","err":""}
+14:45:59 PASS Settings lists the helpers
+14:45:59 PASS a helper is made in Settings :: researcherFinds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.Comes with TermantwriterWrites or rewrites text: a letter, a report, a summary, a translation, a document. Give it the 
+14:45:59 PASS a helper is removed in Settings
+14:45:59 PASS Settings shows what was learned today
+14:46:00 PASS pc voice add saves two keys :: {"code":0,"out":"2 key(s) added; 2 ElevenLabs key(s) are saved now.","err":""}
+14:46:01 PASS pc say moves to the second key when the first is used up :: {"code":0,"out":"Said with ElevenLabs, key 2 of 2 (key 1 (...up-1): quota_exceeded).","err":""}
+14:46:01 PASS the used-up key is left out the next time :: {"code":0,"out":"Said with ElevenLabs, key 2 of 2.","err":""}
+14:46:02 PASS pc voice shows each key without printing it :: {"code":0,"out":"1. ...up-1  10000 of 10000 letters used (free)  resting until 11/21/2026, 8:46:01 PM: quota_exceeded\n2. ...-333  40 of 10000 letters used (free)  in use","err":""}
+14:46:02 PASS the chat shows the working folder :: Working folder: C:\Users\runneradmin\Documents\Termant
+14:46:03 PASS the real YouTube: search :: {"code":0,"out":"YouTube, \"how to make a table in Word\": 8 videos\n1. How To Create Tables In Word (COMPLETE Guide!)\n   Steven Bradburn | 8:34 | 108,377 views | 2 years ago\n   id HIOZca4iwYk\n2. How to Insert Table In Microsoft Word\n   Office Master Tutorials | 3:17 | 729,102 views | 3 years ag
+14:46:05 SOFT-FAIL the real YouTube: what a video says :: {"code":1,"out":"","err":"YouTube did not give this video (Sign in to confirm you’re not a bot). Try another video from the search."}
+14:46:10 PASS the agent downloads and starts :: 5 s
+14:46:12 PASS the model list loads :: 12 models, first: opencode/beam-free, opencode/big-pickle, opencode/deepseek-v4.1-flash-free, opencode/flint-40b-free
+14:46:20 reply: {"text":"pong","steps":[],"failed":false,"note":"","fast":true,"seconds":5.2}
+14:46:20 PASS the agent answers :: {"user":false,"text":"pong","steps":[],"failed":false,"note":"","own":false,"seconds":5.2}
+14:46:23 reply: {"text":"ping","steps":[],"failed":false,"note":"","fast":true,"seconds":2.6}
+14:46:23 PASS the second message goes through the kept server :: first 5.2 s (kept server: true), second 2.6 s (kept server: true) {"user":false,"text":"ping","steps":[],"failed":false,"note":"","own":false,"seconds":2.6}
+14:46:29 reply: {"text":"done","steps":["pc clipboard set termant-agent-ok"],"failed":false,"note":"","fast":true,"seconds":6}
+14:46:30 PASS the agent controls the PC with pc :: {"user":false,"text":"done","steps":["pc clipboard set termant-agent-ok"],"failed":false,"note":"","own":false,"seconds":6} clipboard=termant-agent-ok
+14:46:45 reply: {"text":"Maine Notepad khola, usse focus kiya, aur usme \"namaste from termant\" type kiya.","steps":["pc open notepad","Start-Sleep 1; pc focus Notepad","pc type \"namaste from termant\""],"failed":false,"note":"","fast":true,"seconds":15}
+14:46:48 PASS the agent opens Notepad :: {"user":false,"text":"Maine Notepad khola, usse focus kiya, aur usme \"namaste from termant\" type kiya.","steps":["pc open notepad","Start-Sleep 1; pc focus Notepad","pc type \"namaste from termant\""],"failed":false,"note":"","own":false,"seconds":15} windows=*Untitled - Notepad   [notepad, id 612
+14:46:53 reply: {"text":"I started two helpers.\n\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\n\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.","steps":["Helper poet: A poem about chai","Helper researcher: Find out about chai"],"failed":false,"note":"","fast":true,"seconds":4.1,"helpers":["poet","researcher"]}
+14:46:54 PASS helpers: the main agent hands parts to two helpers :: ["Helper poet: A poem about chai","Helper researcher: Find out about chai"]
+14:46:54 PASS helpers: the helpers' reports come back into the answer :: "I started two helpers.\n\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\n\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea."
+14:46:54 PASS helpers: the helpers work at the same time :: poet asked at 1795272411638, researcher reported at 1795272413805
+14:46:54 PASS helpers: a helper runs a command by itself :: helper-ran.txt
+14:46:54 PASS helpers: the chat shows who got which part :: {"user":false,"text":"I started two helpers.\n\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\n\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.","steps":["Helper poet: A poem about chai","Helper researcher: Find out about chai"],"failed":false,"note":
+14:46:54 PASS files: the button to add a picture or file is there
+14:46:56 attached: 1 file(s), 1 handed to termanttest/fake
+14:46:56 reply: {"text":"SAW pictures=1 words=no","steps":[],"failed":false,"note":"","fast":true,"seconds":2.1}
+14:46:57 PASS files: a picture sent with a message reaches the model :: {"user":false,"text":"SAW pictures=1 words=no","steps":[],"failed":false,"note":"","own":false,"seconds":2.1}
+14:46:57 PASS files: the message names the file, not its path
+14:46:57 RESULT: PASS (65 checks, 0 failed, 1 soft-failed)

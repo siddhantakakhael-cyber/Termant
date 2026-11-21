@@ -1,0 +1,13 @@
+Picture termant dog.jpg (768x576), seen by Mirage in 2.6 s.
+Mirage is a small model on this PC: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+Scene: setting = park; surface = wooden deck; lighting = daylight; time of day = day
+Things (6), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (in the picture's own pixels):
+- dog, 59%: left, 14% of the picture; foreground; black and tan, standing @221,366
+- bench, 41%: across the middle, 40% of the picture; background; yellow, wood @384,317
+- tree, 40%: across the top, 35% of the picture; background; green @385,103
+- tree, 36%: across the top, 21% of the picture; background; green @386,63
+- trash can, 35%: top left, 4% of the picture; black @42,115
+- bicycle, 34%: middle, 21% of the picture; red, leaning @353,293
+Also there, place not marked: pickup (background right; white, parked)
+Maybe (this part is often wrong): dog standing on bench; bicycle leaning against bench; pickup behind bicycle

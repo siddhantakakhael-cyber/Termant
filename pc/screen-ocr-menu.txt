@@ -1,0 +1,26 @@
+Window: *Untitled - Notepad
+[Edit] = "hello termant (1+1)" @ 512,370
+Read from a picture by Mirage (4 parts, 10 s). Letters can be wrong (O/0, l/1, capitals) and only Latin script is read; the points are right:
+[Text] "Untitled - Notepad" @ 84,11
+[Text] "File" @ 16,32
+[Text] "Edit" @ 52,31
+[Text] "Format" @ 93,32
+[Text] "View" @ 137,32
+[Text] "Help" @ 176,32
+[Text] "New" @ 51,55
+[Text] "Ctrl+N" @ 193,55
+[Text] "New WindowCtrl- Shift-N" @ 122,76
+[Text] "Open..." @ 56,99
+[Text] "Ctrl+O" @ 193,98
+[Text] "Save" @ 51,121
+[Text] "Ctrl+S" @ 194,121
+[Text] "Save As.." @ 61,143
+[Text] "Ctrl- Shift+S" @ 179,143
+[Text] "Page Setup..." @ 71,174
+[Text] "Print..." @ 55,196
+[Text] "Ctrl+p" @ 194,196
+[Text] "Exit" @ 48,227
+[Text] "Ln 1," @ 618,710
+[Text] "100%" @ 756,709
+[Text] "Windows (CRLF)" @ 832,709
+[Text] "UTF-8" @ 926,709

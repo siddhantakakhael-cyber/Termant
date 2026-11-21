@@ -1,0 +1,19 @@
+The window in front as a picture (1024x728), seen by Mirage in 2.6 s.
+Mirage is a small model on this PC: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: white window with gray title bar, black text labels, gray buttons
+Scene: background = white; style = screenshot
+Things (8), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (pc click X Y clicks there):
+- window, 89%: all over, 95% of the picture; white, rectangular @510,360
+- text label x4, 43-55%: 2 top left, 1 bottom, 1 bottom right
+- button, 40%: bottom right, under 1% of the picture; gray @756,709
+- button, 32%: bottom left, under 1% of the picture; gray @9,688
+- button, 30%: bottom right, under 1% of the picture; gray @925,709
+Also there, place not marked: title bar (top; gray)
+Writing (letters can be wrong):
+- "*Untitled - Notepac": top left @73,10
+- "hello termant (1+1)": top left @84,52
+- "In 1, Col 20": bottom @632,708
+- "100%": bottom right @756,708
+- "Windows (CRLF)": bottom right @834,708
+- "UTF-8": bottom right @925,708
+Maybe (this part is often wrong): title bar part of window; text label on title bar; button on window

@@ -1,0 +1,14 @@
+Window: *Untitled - Notepad
+[Edit] = "hello termant (1+1)" @ 462,347
+(Getting the Mirage reader, 23 MB, once.)
+Read from a picture by Mirage (4 parts, 10 s). Letters can be wrong (O/0, l/1, capitals) and only Latin script is read; the points are right:
+[Text] "+Untitled - Notepad" @ 163,92
+[Text] "File" @ 102,117
+[Text] "ILFommidLVIE" @ 181,122
+[Text] "View" @ 223,117
+[Text] "Help" @ 260,118
+[Text] "hello termant (1+1)" @ 174,138
+[Text] "Ln 1, Col 20" @ 448,578
+[Text] "100%" @ 570,578
+[Text] "Windows (CRLF)" @ 646,578
+[Text] "UTF-8" @ 740,576
