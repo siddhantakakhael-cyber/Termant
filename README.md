@@ -68,6 +68,7 @@ browser, hosted on your own server with Docker.
 
 - Alarms, timers, torch, notifications, speech, clipboard, battery.
 - With Screen control turned on: opens any app, reads the screen, taps, types and swipes. Where an app tells nothing about its screen (games, pictures), it reads a picture of it on the phone with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage) model (Latin letters only, Android 11 or newer).
+- Looks at a photo and says what is in it and where: the scene, each thing with its place (left, top right, across the bottom), the writing. It happens on the phone with the same small model; names can be wrong, the places are about right.
 - A small card over other apps shows what the agent is doing, with a stop button, and asks you when it needs a decision.
 
 </td>
@@ -140,11 +141,12 @@ the PC itself: it opens programs, types, presses keys, clicks, takes
 screenshots, sets alarms and timers, keeps rules, and has PowerShell and
 Command Prompt tabs. Windows that do not say what is in them are read from a
 picture, on the PC itself, with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage)
-model. It is an early version (0.1.1).
+model. The same model looks at a photo and says what is in it and where
+(`pc look photo.jpg`). It is an early version (0.1.2).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.1/Termant-Setup.exe)** and open it.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.2/Termant-Setup.exe)** and open it.
 2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
 3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
 
@@ -190,7 +192,7 @@ so put it behind HTTPS before exposing it to the internet. Details:
 - **What the agent can touch.** It runs as root inside Ubuntu and can change or delete anything there, and in `/sdcard` if you allowed storage. It reaches the rest of the phone only through the `phone` command, and other apps only when you turn on Screen control.
 - **No root means limits.** No `systemd`, no Docker, no ports below 1024. Programs run through [PRoot](https://proot-me.github.io/), which is slower than native.
 - **64-bit phones for the agent.** Ubuntu runs on ARM64, 32-bit ARM and x86-64; OpenCode has no 32-bit build.
-- **Testing.** Every build is tested automatically on an Android 14 x86-64 emulator: Ubuntu is set up, `apt install` runs, the app restarts, and the agent gets a reply from a free model. ARM phones use the same code with ARM builds of the same components, but that test does not cover them, except the reader of pictures, which is also run on an ARM server.
+- **Testing.** Every build is tested automatically on an Android 14 x86-64 emulator: Ubuntu is set up, `apt install` runs, the app restarts, and the agent gets a reply from a free model. ARM phones use the same code with ARM builds of the same components, but that test does not cover them, except the reader of pictures, which is also run on an ARM server (it must read a screenshot and find the dog in a photo).
 - **Signing.** Release APKs are signed with a public test key (`android/keystore/README.md`), so install only APKs from this repository's Releases page.
 
 ## How it works

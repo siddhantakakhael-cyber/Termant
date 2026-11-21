@@ -23,6 +23,7 @@ Use the `pc` command. It works in every shell and needs no confirmation.
 | Press keys | `pc key enter` / `pc key ctrl+s` / `pc key alt+f4` / `pc key win+d` |
 | Read what the window in front shows | `pc screen` (each thing ends with `@ x,y`) |
 | Read it from a picture too | `pc screen ocr` (the window), `pc screen ocr full` (the whole screen) |
+| What is in a photo, and where | `pc look C:\path\photo.jpg` (`pc look`: the window in front; `pc look full`: the whole screen) |
 | Click | `pc click 640 380` (also `right`, `double`) |
 | Screenshot to a file | `pc screenshot C:\path\shot.png` |
 | Volume / mute | `pc volume 40` / `pc mute on` / `pc mute off` |
@@ -41,6 +42,26 @@ Use the `pc` command. It works in every shell and needs no confirmation.
 
 Alarms, timers and rules ring only while Termant is running (it stays in the
 tray next to the clock) and the PC is awake.
+
+## Photos: what is in a picture, and where
+
+`pc look C:\path\photo.jpg` (JPEG, PNG, BMP, GIF or TIFF) lets a small model on
+this PC (Mirage) look at a picture; the picture does not leave the PC. It
+answers with the scene, one line per thing (name, score, place, how much of the
+picture it covers, how it looks, its middle point `@x,y`), the writing in the
+picture, and a "Maybe" line. `pc look` does the same for the window in front
+and `pc look full` for the whole screen; there the points are screen points
+for `pc click`.
+
+- The places are about right: tell the user where each thing is with the words
+  of its line (left, top right, across the bottom ...).
+- A name can be wrong, even with a high score (it has called an orange an
+  avocado). Say "it looks like ...", not "it is ...". The "Maybe" line (who does
+  what with what) is wrong often; use it only when it fits the places.
+- It does not know who a person is, and it reads Latin letters only (no Hindi).
+  Add nothing that the lines do not say.
+- If you can open images yourself, do that too, and trust what you see more.
+- The first use downloads 23 MB, once. It takes a few seconds.
 
 ## Using another program's window
 

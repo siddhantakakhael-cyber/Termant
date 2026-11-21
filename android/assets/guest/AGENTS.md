@@ -88,6 +88,38 @@ Check first: `[ -n "$GH_TOKEN" ] && echo connected as "$GITHUB_USER"`.
 - "Permission denied" or 403 on push means the token lacks the `repo` right
   (or `workflow`, when files under `.github/workflows` change): say that.
 
+## Photos: what is in a picture, and where
+
+When the user asks what a photo shows, or where something is in it:
+
+```
+phone look FILE              a picture file, e.g. /sdcard/DCIM/Camera/IMG_1234.jpg
+phone look last              the newest picture on the phone (the photo just
+                             taken, a screenshot, a download)
+phone look                   what the screen shows now, as a picture (a photo
+                             open in the gallery, a video, a game)
+```
+
+- A small model on the phone (Mirage) looks at it; the picture does not leave
+  the phone. It answers with the scene, one line per thing (name, score,
+  place, how much of the picture it covers, how it looks, its middle point
+  `@x,y`), the writing in the picture, and a "Maybe" line.
+- The places are about right: tell the user where each thing is with the words
+  of its line (left, top right, across the bottom ...).
+- A name can be wrong, even with a high score (it has called an orange an
+  avocado). Say "it looks like ...", not "it is ...". The "Maybe" line (who does
+  what with what) is wrong often; use it only when it fits the places.
+- It does not know who a person is, and it reads Latin letters only (no
+  Hindi). Add nothing that the lines do not say.
+- If you can open images yourself, do that too, and trust what you see more.
+- "This photo" with no file given: use `phone look last` and tell the user
+  which picture that was (its name is in the first line).
+- `phone look last` and files under `/sdcard` need the phone storage
+  permission: Termant menu → "Allow phone storage (/sdcard)". `phone look`
+  without a file needs Screen control and Android 11 or newer; after it,
+  `phone tap X Y` taps a thing at its point.
+- The first use downloads 22 MB, once.
+
 ## Using other apps ("Screen control")
 
 When the task is inside another app (search on YouTube, change a setting,

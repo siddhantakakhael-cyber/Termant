@@ -12,6 +12,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
   - [How it works](#how-it-works)
 - [Chat first](#chat-first)
 - [Phone control](#phone-control)
+- [Photos: what is in a picture, and where](#photos-what-is-in-a-picture-and-where)
 - [Automation rules](#automation-rules)
 - [The agent learns: notes and its own tools](#the-agent-learns-notes-and-its-own-tools)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
@@ -55,7 +56,7 @@ The chat screen talks to the agent for you. For the full OpenCode interface, ope
 - No root means no `systemd`, no `mount`, no Docker, and ports below 1024 cannot be opened. Start services directly (for example `nginx` on port 8080, `sshd -p 8022`).
 - Programs run through [PRoot](https://proot-me.github.io/), which is slower than native, mostly for work with many small files.
 - Android 12 and newer may stop background programs that use many processes ("signal 9"). This is an Android limit that also affects Termux.
-- Every build is tested automatically on an Android 14 x86-64 emulator (set up Ubuntu, `apt install`, restart, package still there, install OpenCode and get a reply from a free model). ARM phones use the same code with ARM builds of the same components, but are not covered by that automatic test. One part is: the reader of pictures is also run on an ARM server, where it must read a real screenshot of the phone.
+- Every build is tested automatically on an Android 14 x86-64 emulator (set up Ubuntu, `apt install`, restart, package still there, install OpenCode and get a reply from a free model). ARM phones use the same code with ARM builds of the same components, but are not covered by that automatic test. One part is: the reader of pictures is also run on an ARM server, where it must read a real screenshot of the phone and find the dog in a photo.
 
 ### How it works
 
@@ -65,7 +66,7 @@ The chat screen talks to the agent for you. For the full OpenCode interface, ope
 | Running Linux programs without root | Termux's build of PRoot, fetched and checksum-verified at build time |
 | AI agent | [OpenCode](https://github.com/sst/opencode), installed inside Ubuntu on first use with its official installer |
 | The system | Ubuntu Base 24.04 from `cdimage.ubuntu.com`, downloaded by the app |
-| Reading a picture of the screen | [Mirage](https://huggingface.co/Cactus-Compute/mirage) on the [Cactus](https://github.com/cactus-compute/cactus) engine (Apache 2.0): the engine is fetched and checksum-verified at build time and linked into a small program (`android/mirage/reader.c`); the model is downloaded by the app |
+| Reading a picture of the screen, looking at a photo | [Mirage](https://huggingface.co/Cactus-Compute/mirage) on the [Cactus](https://github.com/cactus-compute/cactus) engine (Apache 2.0): the engine is fetched and checksum-verified at build time and linked into a small program (`android/mirage/reader.c`); the model is downloaded by the app |
 
 Build it yourself with `android/build.sh` (Android SDK + NDK, JDK 17, python3 with pip; no Gradle), or let the
 **Android APK** GitHub workflow do it. The app is licensed GPLv3 (`android/LICENSE`).
@@ -132,6 +133,67 @@ the time and rings, and to run it; that only works while Termant stays running.
 Limits: an alarm kept by Termant itself is lost if the phone restarts or the
 app is force-stopped; alarms in the Clock app are not. The request is sent to
 OpenCode's free model service, so it needs internet.
+
+## Photos: what is in a picture, and where
+
+Ask in the chat `is photo me kya kya hai, aur kaha?` after taking a photo, or
+name a file. The agent runs one of these, and you can too, in any tab:
+
+```
+phone look /sdcard/DCIM/Camera/IMG_1234.jpg    a picture file (JPEG, PNG, WebP, GIF, BMP)
+phone look last                                the newest picture on the phone
+phone look                                     what the screen shows now, as a picture
+```
+
+The picture is looked at on the phone by
+[Mirage](https://huggingface.co/Cactus-Compute/mirage), the same small model
+that [reads the screen](#tools-for-the-agent-github-web-search-screen-control);
+it is not sent anywhere. For a photo of a dog sitting in front of a bicycle,
+with a pickup truck in the street behind, it gives:
+
+```
+Picture dog.jpg (768x576), seen by Mirage in 7.0 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong ...
+In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+Scene: setting = park; surface = wooden deck; lighting = daylight; time of day = day
+Things (6), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (in the picture's own pixels):
+- dog, 59%: left, 14% of the picture; foreground; black and tan, standing @221,366
+- bench, 42%: across the middle, 40% of the picture; background; yellow, wood @384,317
+- tree, 40%: across the top, 35% of the picture; background; green @385,103
+- tree, 36%: across the top, 21% of the picture; background; green @385,63
+- trash can, 35%: top left, 4% of the picture; black @42,115
+- bicycle, 33%: middle, 21% of the picture; red, leaning @353,293
+Also there, place not marked: pickup (background right; white, parked)
+Maybe (this part is often wrong): dog standing on bench; bicycle leaning against bench; pickup behind bicycle
+```
+
+How to read it, and what it cannot do:
+
+- **The place of a thing is worked out from the box Mirage draws around it**,
+  and those boxes were about right on the photos tried: *left*, *top right*,
+  *across the bottom*, *down the middle*, *all over*. Many things of one kind
+  (the windows of a house) come as one line that says how many are where.
+  `@x,y` is the middle of the thing; after `phone look` without a file it is a
+  point on the screen that `phone tap X Y` can tap.
+- **A name can be wrong, even with a high score.** On the photos tried it
+  called a cut orange "avocado half" with 87%, and here the porch wall is a
+  "bench" and the porch a "park". So the agent is told to say "it looks like", and to
+  look at the file itself too when its model can see images.
+- **"Maybe" is wrong often**: it said people stood *on* a bus they stood in
+  front of.
+- It does not know who a person is. It reads Latin letters only, and writing
+  in a photo (a sign, a bus) mostly comes out garbled.
+- `phone look last` and files under `/sdcard` need the phone storage
+  permission (menu → *Allow phone storage*). `phone look` without a file needs
+  Screen control and Android 11 or newer. A file can be 32 MB at most.
+- The first use downloads the model (22 MB) once. On a phone with a 32-bit
+  system it probably does not run.
+- Tested on the emulator of every build with the photo above: from a file in
+  Ubuntu, as the newest picture in the phone's gallery, and the Settings app
+  as a picture of the screen; the dog must be found, on the left. There it
+  took 7 seconds a picture (an x86 machine, where the engine is slow); the
+  same program on an ARM server took under half a second. It has not been
+  tried on a real phone, and only on 14 photos in all.
 
 ## Automation rules
 

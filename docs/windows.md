@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.1.1).** It is built and tested automatically on a Windows
+> **Early version (0.1.2).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.1/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.2/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -65,6 +65,8 @@ pc type <text>    pc key <enter | ctrl+s | alt+f4 | win+d ...>
 pc click <x> <y> [right|double]              pc move <x> <y>      pc scroll <lines>
 pc screen         what the window in front shows, with the point to click for each thing
 pc screen ocr     the same, and always reads a picture of the window too (pc screen ocr full: the whole screen)
+pc look <file>    what is in a photo and where: the scene, each thing with its place, the writing
+pc look           the same for the window in front as a picture (pc look full: the whole screen)
 pc screenshot [file.png]
 
 pc volume [0-100] pc mute [on|off]           pc brightness [0-100]
@@ -137,6 +139,35 @@ pc note add <text>          pc note list     pc note remove <number>
   the agent does not plan its own follow-up questions, and there are no rules
   for charging, battery level or Wi-Fi.
 
+- **Looking at a photo.** `pc look photo.jpg` (or ask the agent "what is in this
+  photo, and where?" with the file's path) lets the same Mirage model look at a
+  picture on your PC. It gives the scene, one line per thing with its place,
+  and the writing. For a photo of a dog sitting in front of a bicycle, on the
+  test machine, in 2.6 seconds:
+
+  ```
+  Picture termant dog.jpg (768x576), seen by Mirage in 2.6 s.
+  In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+  Scene: setting = park; surface = wooden deck; lighting = daylight; time of day = day
+  - dog, 59%: left, 14% of the picture; foreground; black and tan, standing @221,366
+  - bench, 41%: across the middle, 40% of the picture; background; yellow, wood @384,317
+  - tree, 40%: across the top, 35% of the picture; background; green @385,103
+  - bicycle, 34%: middle, 21% of the picture; red, leaning @353,293
+  Also there, place not marked: pickup (background right; white, parked)
+  Maybe (this part is often wrong): dog standing on bench; bicycle leaning against bench; pickup behind bicycle
+  ```
+
+  - The place comes from the box Mirage draws around a thing, and those boxes
+    were about right on the photos tried. `@x,y` is the middle of the thing in
+    the picture; with `pc look` (the window in front) or `pc look full` (the
+    whole screen) it is a screen point for `pc click`.
+  - A name can be wrong, even with a high score: here the porch wall is a
+    "bench" and the place a "park"; on another photo a cut orange was an
+    "avocado half" with 87%. The agent is told to say "it looks like".
+  - It does not know who a person is, and writing in a photo mostly comes out
+    garbled (Latin letters only).
+  - Files: JPEG, PNG, BMP, GIF, TIFF. Only a handful of photos have been tried.
+
 ## How it is tested
 
 Every change is built and tested by the **Windows app** workflow on a Windows
@@ -147,7 +178,8 @@ Server 2025 machine with a real desktop:
    checks the clipboard, the program list, system information and the error messages.
    It also reads a picture of the Notepad window with Mirage, clicks the point
    it gives for "File", and reads the opened menu the same way (New, Open, Save,
-   Print and Exit must be there).
+   Print and Exit must be there). `pc look` gets a photo of a dog in front of a
+   bicycle and must find the dog, on the left; and it looks at the Notepad window.
 2. The installer is built, then run silently, as a user would install it; the
    test checks that the program and its shortcuts are there.
 3. The installed program tests itself: first-start notice, notifications,
