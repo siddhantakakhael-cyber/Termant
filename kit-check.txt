@@ -1,0 +1,129 @@
+PASS safe keep copies a file before it is changed
+PASS safe keep notes a file that is not there yet
+PASS safe rm deletes into the bin
+PASS the deleted file is gone
+PASS safe mv moves a file
+PASS safe list shows the changes of the message
+PASS the list names what was deleted
+PASS safe has says how many changes a message made
+PASS safe undo reports what it put back
+PASS undo brings the old words back
+PASS undo brings the deleted file back
+PASS undo removes the file the agent made
+PASS undo moves the renamed file back
+PASS a second undo has nothing to do
+PASS an undone message has no undo left
+PASS deleting a folder asks the user first
+PASS without a yes the folder stays
+PASS the folder is still there
+PASS more than 5 files at once need a yes too
+PASS with nobody there (a rule, a night job) a folder is never deleted
+PASS with a yes the folder goes to the bin
+PASS the folder is gone
+PASS a system folder is refused as a whole
+PASS undo by name brings the folder back
+PASS safe rm says when a file is not there
+PASS tidy scan counts the files
+PASS tidy scan counts by kind
+PASS tidy scan names the biggest file first
+PASS tidy scan sees a file that is there twice
+PASS tidy dupes -r looks into folders too
+PASS tidy dupes gives the command for the extras
+PASS tidy sort wants the folder named
+PASS tidy sort reports what it moved
+PASS pictures went to Pictures
+PASS an unknown file went to Other
+PASS a folder that was there is left alone
+PASS a sorted folder has nothing left to sort
+PASS undo puts a sorted folder back as it was
+PASS the folders made by sorting are gone again
+PASS study add makes a card
+PASS the same question is not added twice
+PASS study due lists the cards with their answers
+PASS the answer is shown to the agent
+PASS a right answer comes back tomorrow
+PASS a wrong answer comes back soon
+PASS answered cards are not due any more
+PASS study topics says how a topic is going
+PASS study remove takes a topic away
+PASS a topic name with spaces is refused
+PASS readfile reads a Word document
+PASS it keeps the lines and the & sign
+PASS readfile reads an Excel sheet as rows
+PASS readfile reads PowerPoint slides in order
+PASS readfile reads a PDF
+PASS a file without an ending is known by its first bytes
+PASS and read
+PASS readfile gives a picture's size and how to see it
+PASS it points at phone look
+PASS readfile lists what is in a zip
+PASS it says how to unpack
+PASS readfile unpacks a zip next to it
+PASS readfile unpacks a tar.gz into a named folder
+PASS an archive that writes outside its folder is refused
+PASS nothing escaped
+PASS a long text is cut with the way to go on
+PASS readfile goes on from a place
+PASS readfile reads Hindi text
+PASS a file of no known kind is said to be so, with its readable pieces
+PASS the pieces
+PASS readfile says when a file is not there
+PASS me starts empty
+PASS me set keeps a detail
+PASS me lists the details
+PASS a pin code (of an address) is kept
+PASS a password is refused
+PASS a card number is refused
+PASS a PIN is refused
+PASS me remove takes a detail away
+PASS a watch more often than every 15 minutes is refused
+PASS watch add makes a watch
+PASS the watch is a rule of the app
+PASS a watch that sees nothing does nothing
+PASS nothing ran
+PASS when it happens the command runs
+PASS then the watch ends and its rule is removed
+PASS an ended watch is off the list
+PASS a watch with --keep stays and acts every time
+PASS watch remove stops a watch
+PASS the diary starts empty
+PASS the diary sums the day up
+PASS the diary has one line for each job
+PASS the request is on one line
+PASS a job that failed is marked
+PASS the diary of several days
+PASS the team notebook starts empty
+PASS team note writes into the notebook
+PASS the same note is not written twice
+PASS team notes finds by words
+PASS only the lines that fit
+PASS team seen counts a kind of task
+PASS the third time it says to make a helper
+PASS with the command
+PASS a helper model must be provider/model
+PASS team model sets the helpers' model
+PASS team model off goes back
+PASS a picture goes to a free model that can see, when the chosen one cannot
+PASS the picture is handed to the model
+PASS the change of model is told
+PASS with the automatic model a seeing one is named
+PASS a model that takes pictures and PDFs keeps both
+PASS and stays the chosen one
+PASS no free model reads PDFs: the picture is shown, the PDF is left to readfile
+PASS one file is left to read
+PASS a PDF alone with a model that cannot read it: nothing is forced
+PASS no file is handed over
+PASS a Word file needs no other model
+PASS it is left to readfile
+PASS a message without files keeps its model
+PASS a picture over 4 MB is not pushed into the request
+PASS a command the agent runs belongs to the chat's message
+PASS undo without a name puts that message's change back
+undo said: Undone: 1 change(s) of the message of 2026-01-01 10:10 put back.
+PASS in a job the agent does alone a folder is never deleted
+PASS the folder stays
+PASS and nobody is asked
+PASS in a chat with the user there, a yes deletes it
+real-models=yes
+free-models-that-take-pictures=7
+RESULT: PASS

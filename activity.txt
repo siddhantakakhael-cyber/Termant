@@ -1,0 +1,30 @@
+11-21 14:50:40.476  2721  5575 I Termant : activity: start ask think shell phone result think write
+11-21 14:51:01.130  2721  5924 I Termant : activity: start ask think edit result think shell result think write
+11-21 14:51:17.533  2721  6156 I Termant : activity: start ask think shell phone result think write
+11-21 14:52:15.755  2721  6616 I Termant : activity: start ask think edit result think write
+11-21 14:54:15.243  7753  7857 I Termant : activity: start ask
+11-21 14:54:19.315  7753  7857 I Termant : activity: start ask think write
+11-21 14:54:54.916  8259  8373 I Termant : activity: start ask think shell think shell result think write
+11-21 14:55:00.902  8259  8373 I Termant : activity: start ask think shell result think write
+11-21 14:55:25.628  8787  8877 I Termant : activity: start ask think write think write
+11-21 14:55:46.648  9108  9200 I Termant : activity: start ask
+11-21 14:56:20.184  9396  9510 I Termant : activity: start ask think write
+11-21 14:56:38.231  9396  9845 I Termant : activity: start ask think write
+11-21 14:57:00.179  9396 10124 I Termant : activity: start ask think write
+11-21 14:57:36.824  9396 10934 I Termant : activity: start ask think write
+11-21 14:57:51.464  9396 11175 I Termant : activity: start ask think shell result think write
+11-21 14:58:12.193  9396 11571 I Termant : activity: start ask think shell result think write
+11-21 14:58:44.237  9396 11828 I Termant : activity: start ask think shell result think shell result think shell result think shell result think shell result think shell result think shell result think write
+11-21 15:03:35.156  9396 13355 I Termant : activity: start ask think write
+11-21 15:04:09.242  9396 13701 I Termant : activity: start ask think shell phone result think write
+11-21 15:04:50.431  9396 14244 I Termant : activity: start ask think write
+11-21 15:05:03.950  9396 14515 I Termant : activity: start ask think write
+11-21 15:06:00.368  9396 15053 I Termant : activity: start ask think write
+11-21 15:06:50.753 15330 15445 I Termant : activity: start ask think helper result think write helper think write helper think write
+11-21 15:07:36.432 15849 15938 I Termant : activity: start ask think write
+11-21 15:08:49.464 15849 16730 I Termant : activity: start ask think write
+11-21 15:09:14.246 15849 17073 I Termant : activity: start ask think write
+11-21 15:09:42.472 15849 17493 I Termant : activity: start ask think write
+11-21 15:10:00.582 15849 17782 I Termant : activity: start ask think write
+11-21 15:12:56.606 15849 22563 I Termant : activity: start ask think search result think write
+11-21 15:14:54.380 15849 22895 I Termant : activity: start ask think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell phone result think shell screen result think shell screen result think write

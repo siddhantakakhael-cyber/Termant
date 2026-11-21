@@ -1,0 +1,7 @@
+web search request: answered
+11-21 15:12:56.606 15849 22563 I Termant : activity: start ask think search result think write
+web search: USED
+reply: The newest stable Python version is **Python 3.15.2** (released October 25, 2026).
+
+Source: python.org downloads page and Python Insider blog.
+steps: ['web search: newest stable Python version 2026']

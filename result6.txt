@@ -1,0 +1,12 @@
+open-exit=0
+ask1-exit=0 answer=Alpha
+ask2-exit=0 answer=hello
+ask3-exit=1 said=The user closed the question without answering. Do not go on with the step you asked about; say what you did not do.
+usage: phone ask "Question?" ["Choice 1" "Choice 2" ...]
+With choices the user picks one (or types something else); without, the user types the answer.
+ask-usage-exit=1
+phone ask: 6 choices at most.
+ask-many-exit=1
+return-exit=0
+ask4-exit=0 answer=One
+TERMANT-TEST-END

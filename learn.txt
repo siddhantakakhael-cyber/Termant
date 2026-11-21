@@ -1,0 +1,22 @@
+the agent made the tool ci-sum by itself: yes
+#!/bin/bash
+# termant-tool: prints the sum of two numbers given to it
+# ci-sum: prints the sum of two numbers given to it
+if [ "$#" -ne 2 ]; then
+    echo "Usage: ci-sum NUM1 NUM2" >&2
+    exit 1
+fi
+python3 - "$1" "$2" <<'PY'
+import sys
+a, b = sys.argv[1], sys.argv[2]
+try:
+    x, y = float(a), float(b)
+except ValueError:
+    print("Error: arguments must be numbers", file=sys.stderr)
+    sys.exit(1)
+s = x + y
+if '.' not in a and '.' not in b and 'e' not in a.lower() and 'e' not in b.lower():
+    print(int(s))
+else:
+    print(s)
+PY

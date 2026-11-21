@@ -1,0 +1,438 @@
+== screen
+screen-exit=0
+App: Termant (com.termant.app), screen 320x640
+1. [button] "1 root@localhost: ~" @79,49
+2. [button] "Chat" (Back to the chat) @202,49
+3. [button] "New session" @259,49
+4. [button] "Menu" @297,49
+5. [button] "ESC" @25,330
+6. [button] "/" @69,330
+7. [button] "-" @114,330
+8. [button] "HOME" @159,330
+9. [button] "↑" @204,330
+10. [button] "END" @249,330
+11. [button] "PGUP" @294,330
+12. [button] "TAB" @25,370
+13. [button] "CTRL" @69,370
+14. [button] "ALT" @114,370
+15. [button] "←" @159,370
+16. [button] "↓" @204,370
+17. [button] "→" @249,370
+18. [button] "PGDN" @294,370
+== apps
+apps-exit=0
+Calendar  (com.android.calendar)
+Camera  (com.android.camera2)
+Clock  (com.android.deskclock)
+Contacts  (com.android.contacts)
+Files  (com.android.documentsui)
+Gallery  (com.android.gallery3d)
+Messaging  (com.android.messaging)
+Phone  (com.android.dialer)
+Search  (com.android.quicksearchbox)
+Settings  (com.android.settings)
+Termant  (com.termant.app)
+TMoble  (com.android.stk)
+WebView Browser Tester  (org.chromium.webview_shell)
+== open another app
+app-exit=0
+Opened Settings.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Settings" @90,152
+2. [text] "Search settings" @143,227
+3. [text] "Network & internet" @155,303
+4. [text] "Mobile, Wi‑Fi, hotspot" @138,326
+5. [text] "Connected devices" @156,391
+6. [text] "Bluetooth, pairing" @127,414
+7. [text] "Apps" @94,479
+8. [text] "Recent apps, default apps" @152,502
+9. [text] "Notifications" @128,567
+10. [text] "Notification history, conversations" @178,590
+app-opened=yes
+== read the screen from a picture (Mirage) and tap what was seen
+ocr-exit=0
+Read from a picture of the screen by Mirage (2 parts, 8.9 s). The places are right; letters can be wrong (O/0, l/1, capitals) and only Latin letters are read:
+11. [seen] "3:10>O" @44,11
+12. [seen] "D" @270,12
+13. [seen] "Settings" @88,156
+14. [seen] "Search settings" @135,227
+15. [seen] "Network & internet" @156,303
+16. [seen] "Mobile, Wi-Fi, hotspot" @136,326
+17. [seen] "Connected devices" @155,391
+18. [seen] "CoD" @43,401
+19. [seen] "Bluetooth, pairing" @126,415
+20. [seen] "Apps" @94,481
+21. [seen] "Recent apps, default apps" @151,502
+22. [seen] "Notifications" @130,567
+23. [seen] "Notification history, conversations" @176,590
+ocr-item=15
+ocr-tap-exit=0
+Tapped item 15 "Network & internet" at 156,303.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Network & internet" @160,122
+2. [button] "Navigate up" @28,52
+3. [text] "Internet" @107,275
+4. [text] "AndroidWifi" @108,298
+5. [text] "Calls & SMS" @125,354
+6. [text] "T-Mobile" @98,377
+7. [text] "SIMs" @94,433
+8. [text] "T-Mobile" @98,456
+9. [text] "Hotspot & tethering" @159,572
+ocr-tap-opened=yes
+ocr-again-exit=0 in 9 s
+Read from a picture of the screen by Mirage (2 parts, 9.0 s). The places are right; letters can be wrong (O/0, l/1, capitals) and only Latin letters are read:
+== look: what is in a photo and where (Mirage)
+-rw-rw-rw-. 1 root root 163759 Nov 21 15:10 /root/dog.jpg
+look-file-exit=0 in 4 s
+Picture dog.jpg (768x576), seen by Mirage in 4.0 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+Scene: setting = park; surface = wooden deck; lighting = daylight; time of day = day
+Things (6), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (in the picture's own pixels):
+- dog, 59%: left, 14% of the picture; foreground; black and tan, standing @221,366
+- bench, 42%: across the middle, 40% of the picture; background; yellow, wood @384,317
+- tree, 40%: across the top, 35% of the picture; background; green @385,103
+- tree, 36%: across the top, 21% of the picture; background; green @385,63
+- trash can, 35%: top left, 4% of the picture; black @42,115
+- bicycle, 33%: middle, 21% of the picture; red, leaning @353,293
+Also there, place not marked: pickup (background right; white, parked)
+Maybe (this part is often wrong): dog standing on bench; bicycle leaning against bench; pickup behind bicycle
+look-file-head=yes
+look-file-dog=yes
+look-file-dog-left=yes
+look-file-bicycle=yes
+look-relative=yes
+phone look: there is no such file: /root/no-such-picture.jpg
+look-missing-exit=1
+phone look: phone is not a picture Android can open (JPEG, PNG, WebP, GIF, BMP; HEIC on newer phones)
+look-not-a-picture-exit=1
+usage: phone look [FILE | last]
+look-usage-exit=1
+-- the screen as a picture
+look-screen-exit=0
+The screen as a picture (320x640), seen by Mirage in 4.6 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: white smartphone screen with black text, gray buttons, black arrows
+Scene: background = white; style = screenshot
+Things (13), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (phone tap X Y taps there):
+- smartphone screen, 67%: all over, 88% of the picture; white @157,318
+- text x11, 32-50%: 2 top left, 2 left, 2 middle, 2 bottom left, 2 bottom, 1 top right
+- button, 38%: bottom left, under 1% of the picture; gray, rounded @44,577
+Also there, place not marked: arrow (several; left of buttons; black)
+Writing (letters can be wrong):
+- "3:10>O": top left @46,11
+- "Settings": top left @88,155
+- "Search settings": middle @136,228
+- "Network & internet": middle @153,303
+- "Mobile, Wi-Fi, hotspot": middle @138,326
+- "Connected devices": middle @153,392
+- "LoD": left @45,402
+- "Bluetooth, pairing": middle @127,415
+- ":": bottom left @44,486
+- "Apps": bottom left @95,481
+- "Recent apps, default apps": bottom @148,503
+- "0": bottom left @44,576
+- "Notifications": bottom @127,567
+- "Notification history, conversations": bottom @174,591
+Maybe (this part is often wrong): text on smartphone screen; button on smartphone screen; arrow next to button
+look-screen-head=yes
+-- the newest picture on the phone
+look-last-exit=0
+Picture termant-test-photo.jpg, the newest on the phone (768x576), seen by Mirage in 4.0 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+Scene: setting = park; surface = wooden deck; lighting = daylight; time of day = day
+Things (6), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (in the picture's own pixels):
+- dog, 59%: left, 14% of the picture; foreground; black and tan, standing @221,366
+- bench, 42%: across the middle, 40% of the picture; background; yellow, wood @384,317
+- tree, 40%: across the top, 35% of the picture; background; green @385,103
+- tree, 36%: across the top, 21% of the picture; background; green @385,63
+look-last-head=yes
+look-last-dog=yes
+== learning: YouTube, skills, today, ElevenLabs keys (against a pretend YouTube and ElevenLabs in Ubuntu)
+learn-check-exit=0
+RESULT: PASS
+learn-check-passed=53
+== helper agents: the team command, and OpenCode handing parts of a job to helpers (a pretend model answers)
+team-check-exit=0
+RESULT: PASS
+team-check-passed=48
+team-real-run=yes
+== the kit: undo, tidy, study, readfile, me, watch, diary, attached files
+kit-check-exit=0
+undo said: Undone: 1 change(s) of the message of 2026-01-01 10:10 put back.
+real-models=yes
+free-models-that-take-pictures=7
+RESULT: PASS
+kit-check-passed=125
+-- rules that repeat, jobs, notifications, a message that needs a yes
+phone rule: every 15m to 24h (shorter would drain the battery)
+bad-every-exit=1
+every-rule-exit=0
+Rule 5 added: Every 20 minutes, run: true
+It runs by itself from now on, as long as Termant is not force-stopped.
+Rule 5 removed.
+usage: phone job "what to do"   (the agent does it by itself and reports as a notification)
+bad-job-exit=1
+Termant may not read notifications yet. The user allows it once: Android Settings > Notifications > Notification access > Termant. `phone notifications allow` opens that page.
+notifications-said=yes
+phone sms: not sent. This job runs by itself and nobody is there to say yes to a message.
+Say in your report which message is waiting, so the user can ask for it in the chat.
+sms-alone-said=yes
+Made the helper "poet": Writes one short line of verse on a given subject. It can be used from the next message on.
+team-add-exit=0
+Helpers made here: 1
+- poet: Writes one short line of verse on a given subject.
+-- phone say with ElevenLabs keys: the second key speaks, the phone plays it
+This phone has no text-to-speech voice installed.
+say-own-voice-exit=1
+2 key(s) added; 2 ElevenLabs key(s) are saved now.
+voice-add-exit=0
+say-exit=0
+Said with ElevenLabs, key 2 of 2 (key 1 (...up-1): quota_exceeded).
+say-second-key=yes
+Said with ElevenLabs, key 2 of 2.
+say-skips-used-up-key=yes
+1. ...up-1  10000 of 10000 letters used (free)  resting until 2026-11-21 21:11: quota_exceeded
+2. ...-333  120 of 10000 letters used (free)  in use
+voice-report=yes
+play-exit=0
+Playing speech.mp3 (1 s)
+play-length=yes
+phone play: the phone cannot play this as a sound: phone
+play-not-a-sound-exit=1
+phone play: there is no such file: /root/no-such-sound.mp3
+play-missing-exit=1
+-- the real YouTube from this machine (told, not required: YouTube often refuses data centres)
+youtube-real-search-exit=0
+YouTube, "how to make a table in Word": 8 videos
+1. How To Create Tables In Word (COMPLETE Guide!)
+   Steven Bradburn | 8:34 | 108,377 views | 2 years ago
+   id HIOZca4iwYk
+2. How to Insert Table In Microsoft Word
+   Office Master Tutorials | 3:17 | 729,102 views | 3 years ago
+   id LBcZg9gRmbI
+3. Easiest way to Insert/Create Table in MS Word
+   MJ Tube | 1:29 | 691,755 views | 10 years ago
+   id mKuN3TCqeKY
+4. Microsoft Word Tutorial: Using Tables in Word
+   Simon Sez IT | 15:35 | 187,035 views | 6 years ago
+youtube-real-read-exit=1
+YouTube did not give this video (Sign in to confirm you’re not a bot). Try another video from the search.
+
+-- how long OpenCode needs to start, and how long a kept server needs to answer
+start-own-server-1=510 ms (exit 0)
+start-own-server-2=628 ms (exit 0)
+speed-server-url=yes
+ask-kept-server-1=274 ms (exit 0)
+ask-kept-server-2=625 ms (exit 0)
+ask-kept-server-3=273 ms (exit 0)
+== swipe
+swipe-exit=0
+Swiped up.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Search settings" @143,66
+2. [text] "Notifications" @128,145
+3. [text] "Notification history, conversations" @178,168
+4. [text] "Battery" @104,233
+5. [text] "100%" @89,256
+6. [text] "Storage" @107,321
+7. [text] "38% used - 4.93 GB free" @145,344
+8. [text] "Sound & vibration" @150,409
+9. [text] "Volume, vibration, Do Not Disturb" @174,432
+10. [text] "Display" @104,497
+11. [text] "Dark theme, font size, brightness" @173,520
+swipe-moved=yes
+== tap by its words
+tapping: Search settings
+tap-exit=0
+Tapped "Search settings" at 143,226.
+The screen now:
+App: Settings Suggestions (com.android.settings.intelligence), screen 320x640
+1. [button] "Navigate up" @36,56
+2. [input] "Search…" (typing goes here) @168,56
+3. [button] "More options" @292,56
+== tap by number
+tap-number-exit=0
+Tapped item 1 "Navigate up" at 36,56.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Settings" @90,151
+2. [text] "Search settings" @143,226
+3. [text] "Network & internet" @155,302
+== type (reported only: depends on what is on the screen)
+There is no text box on the screen. Tap one first.
+type-exit=1
+== keys
+key-back-exit=0
+key-home-exit=0
+Pressed home.
+The screen now:
+App: Quickstep (com.android.launcher3), screen 320x640
+1. [text] "Search" @160,93
+usage: phone key back|home|recents|notifications|enter
+bad-key-exit=1
+No app called "NoSuchAppAtAll" is installed. See: phone apps
+bad-app-exit=1
+== back to Termant
+return-exit=0
+== github
+token-for-gh=yes
+cred: protocol=https
+cred: host=github.com
+cred: username=ci-user
+cred: password=ci-token-not-real
+other: fatal: could not read Username for 'https://example.com': terminal prompts disabled
+git-name=ci-user
+git-email=1+ci-user@users.noreply.github.com
+== web search in the agent's settings
+{
+  "$schema": "https:\/\/opencode.ai\/config.json",
+  "instructions": [
+    "\/root\/.config\/termant\/learned.md"
+  ],
+  "websearch": {
+    "provider": "exa"
+  },
+  "permissions": [
+    {
+      "action": "shell",
+      "resource": "phone *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "date *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "learn *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "team *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "safe *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "tidy *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "study *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "readfile *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "me *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "watch *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "diary *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "rm \/sdcard*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/sdcard*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm \/storage*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/storage*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* ~",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* ~\/",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/root",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/root\/",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "mkfs*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "dd * of=\/dev\/*",
+      "effect": "deny"
+    },
+    {
+      "action": "websearch",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "webfetch",
+      "resource": "*",
+      "effect": "allow"
+    }
+  ],
+  "mcp": {
+    "servers": {
+      "ci": {
+        "type": "local",
+        "command": [
+          "\/bin\/bash",
+          "-lc",
+          "bash \/root\/mcp-ci.sh"
+        ],
+        "timeout": {
+          "startup": 120000
+        }
+      }
+    }
+  }
+}
+TERMANT-TEST-END

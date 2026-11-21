@@ -1,0 +1,20 @@
+screen request: answered
+11-21 15:14:54.380 15849 22895 I Termant : activity: start ask think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell phone result think shell screen result think shell screen result think write
+reply: I'm back in Termant now. Here's what the Clock app showed:
+
+**Buttons:**
+- Alarm
+- Timer
+- Stopwatch
+- More options
+- Cities
+
+**Other text on screen:**
+- "3:14 PM"
+- "SAT, NOV 21"
+- Next alarm: "SUN 6:45 AM"
+
+(There was also a "Clock" label at the top, which is the tab/view indicator.)
+
+Note: When I first opened the Clock app, it asked for permission to send notifications ("Allow Clock to send you notifications?"), which I allowed before viewing the main screen.
+steps: ['phone app Clock', 'phone screen', 'phone screen ocr', 'phone key home', 'phone app Clock', 'phone screen ocr', 'phone apps', 'phone app com.android.deskclock', 'phone screen ocr', 'phone key home && sleep 1 && phone app Clock && sleep 2 && phone screen', 'sleep 2; phone screen ocr', 'phone look', 'phone tap 161 359', 'phone app Termant']

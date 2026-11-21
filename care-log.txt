@@ -1,0 +1,14 @@
+11-21 14:59:29.899  9396  9396 I Termant : care: daily times: 03:33
+11-21 14:59:29.919  9396  9396 I Termant : care: turned on
+11-21 14:59:29.959  9396  9396 I Termant : care: planned for Tue Nov 24 14:59:29 UTC 2026: CI topic far away
+11-21 14:59:30.029  9396  9396 I Termant : care: dropped: CI topic far away
+11-21 14:59:30.118  9396  9396 I Termant : care: planned for Sun Nov 22 12:30:00 UTC 2026: CI lunch
+11-21 14:59:30.151  9396  9396 I Termant : care: dropped: CI lunch
+11-21 14:59:30.168  9396  9396 I Termant : care: planned for Sat Nov 21 15:03:30 UTC 2026: which colour the user likes best: name the colour from your notes in your question
+11-21 15:03:30.181  9396  9396 I Termant : care: check-in started about: which colour the user likes best: name the colour from your notes in your question
+11-21 15:03:35.174  9396  9396 I Termant : care: asked: Hey, hope your afternoon's going well. I've got teal down as your favourite colour from before — is that still the one you like best?
+11-21 15:03:35.176  9396  9396 I Termant : care: shown as a notification
+11-21 15:04:07.599  9396  9396 I Termant : care: planned for Sun Nov 22 11:04:07 UTC 2026: how the driving test went
+11-21 15:04:45.054  9396  9396 I Termant : care: check-in started
+11-21 15:04:50.459  9396  9396 I Termant : care: asked: Hey, happy Saturday afternoon! I remember your favourite colour is teal. What's one thing you're looking forward to this weekend?
+11-21 15:05:37.331  9396  9396 I Termant : care: turned off

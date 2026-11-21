@@ -1,0 +1,6 @@
+chat with an MCP server: answered
+requests the MCP server got:
+initialize
+notifications/initialized
+tools/list
+MCP: connected

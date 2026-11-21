@@ -1,0 +1,1 @@
+11-21 15:10:12.060 15849 15849 I Termant : screen control: on

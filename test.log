@@ -1,0 +1,657 @@
+Performing Streamed Install
+Success
+Starting: Intent { cmp=com.termant.app/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.termant.app/.MainActivity
+TotalTime: 359
+WaitTime: 362
+Complete
+waiting for Ubuntu setup
+grep: /sdcard/ui.xml: No such file or directory
+restarting the app
+Starting: Intent { cmp=com.termant.app/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.termant.app/.MainActivity
+TotalTime: 338
+WaitTime: 341
+Complete
+AI agent
+Phone control
+Automation rules
+Chat
+11-21 14:50:40.476  2721  5575 I Termant : activity: start ask think shell phone result think write
+Rule from the chat
+the first chat messages went: 14:50:32 own;14:50:52 kept;14:51:11 kept;
+Model and workspace
+Arena button
+Settings
+Settings reach Ubuntu; Wi-Fi switch
+Auto-switch: the chosen model does not exist, a backup must answer
+auto-switch reply: {'user': False, 'text': 'Hello, my friend.', 'first': False, 'failed': False, 'note': 'Switched to beam-free: no-such-model did not answer (limit reached or not available).', 'steps': []}
+Free limit in the middle of the work: a model of another service carries on
+11-21 14:52:15.762  2721  2721 I Termant : chat c1795272459853 session: ses_e0168295cffeElkRBJ9FHbgydw
+11-21 14:54:15.243  7753  7857 I Termant : model 'opencode/no-such-model' gave no answer, switching to opencode/beam-free
+11-21 14:54:19.324  7753  7753 I Termant : chat c1795272459853 session: ses_e0168295cffeElkRBJ9FHbgydw
+11-21 14:54:54.919  8259  8373 I Termant : free limit: OpenCode refused 'opencode/big-pickle', its free models wait until Sat Nov 21 15:54:54 UTC 2026
+11-21 14:54:54.920  8259  8373 I Termant : model 'opencode/big-pickle' stopped in the middle of the work (error) after 1 steps, carrying on in ses_e0165a512ffeHOlH7z8o6su88h with ci/other-free
+11-21 14:55:00.907  8259  8259 I Termant : chat c1795272878192 session: ses_e0165a512ffeHOlH7z8o6su88h
+free limit: models asked: ['opencode/big-pickle', 'ci/other-free']
+free limit: reply: {'user': False, 'text': 'FINISHED', 'first': False, 'failed': False, 'note': 'Switched to other-free in the middle of the work: big-pickle reached its limit. The work carried on from where it was.', 'steps': ['touch /root/limit-one', 'touch /root/limit-two']}
+free limit: handed on in ['ses_e0165a512ffeHOlH7z8o6su88h'] and the chat ended in ['ses_e0165a512ffeHOlH7z8o6su88h']
+Free limit known: the next message starts with the other service, no error first
+free limit: models asked: ['opencode/big-pickle', 'ci/other-free', 'ci/other-free']
+free limit: reply: {'user': False, 'text': 'AGAIN', 'first': False, 'failed': False, 'note': '', 'steps': []}
+Free limit with no other service: one clear message, the other free models are not tried
+free limit: models asked: ['opencode/big-pickle', 'ci/other-free', 'ci/other-free', 'opencode/big-pickle']
+free limit: reply: {'user': False, 'text': "OpenCode's free limit is used up until about 3:55\u202fPM. It counts for all of OpenCode's free models together, and no model of another service is set up to take over. To keep working without this stop: Settings → add a key of another service (OpenRouter has free models, their names end in :free). The app then moves to it by itself, also in the middle of a task.", 'first': False, 'failed': True, 'note': '', 'steps': []}
+Chat history: an earlier chat can be reopened and continued
+reopened chat: 4 messages; last: mango
+Learning: notes and own tools are kept across chats
+learning: reply: {'text': 'papaya', 'steps': [], 'failed': False}
+learning: reply: {'text': "Saved — I'll remember that your favourite colour is teal.", 'steps': ['learn note "The user\'s favourite colour is teal."'], 'failed': False}
+learning: reply: {'text': 'The tool `ci-hello` prints exactly:\n\n```\nhello-from-tool-42\n```', 'steps': ['ci-hello'], 'failed': False}
+learning: reply: {'text': "Done. `ci-sum` is now a command and works:\n\n- `ci-sum 3 5` → `8`\n- `ci-sum 2.5 4.5` → `7.0`\n- `ci-sum -1 10` → `9`\n\nIt's saved for later use. Aaj maine yeh seekha: ek tool (ci-sum) banana aur register", 'steps': ['learn tools 2>&1; echo "---"; learn help 2>&1 | head -50', 'type ci-hello; echo "---"; which ci-hello; echo "---"; ls -la $(which ci-hello) 2>/dev/null; find / -name "ci-hello*" 2>/dev/null | head', 'cat /usr/local/bin/ci-hello; echo "==="; cat /tmp/ci-hello.sh', 'which bc python3 awk; echo "---"; python3 --version', "cat > /tmp/ci-sum.sh <<'EOF'", 'learn tool ci-sum "prints the sum of two numbers given to it" /tmp/ci-sum.sh', 'ci-sum 3 5; echo "---"; ci-sum 2.5 4.5; echo "---"; ci-sum -1 10'], 'failed': False}
+the agent made the tool ci-sum by itself: yes
+Looking after the user: the agent writes first, nobody asked
+11-21 14:59:29.899  9396  9396 I Termant : care: daily times: 03:33
+11-21 14:59:29.919  9396  9396 I Termant : care: turned on
+11-21 14:59:29.959  9396  9396 I Termant : care: planned for Tue Nov 24 14:59:29 UTC 2026: CI topic far away
+11-21 14:59:30.029  9396  9396 I Termant : care: dropped: CI topic far away
+11-21 14:59:30.118  9396  9396 I Termant : care: planned for Sun Nov 22 12:30:00 UTC 2026: CI lunch
+11-21 14:59:30.151  9396  9396 I Termant : care: dropped: CI lunch
+11-21 14:59:30.168  9396  9396 I Termant : care: planned for Sat Nov 21 15:03:30 UTC 2026: which colour the user likes best: name the colour from your notes in your question
+11-21 15:03:30.181  9396  9396 I Termant : care: check-in started about: which colour the user likes best: name the colour from your notes in your question
+11-21 15:03:35.174  9396  9396 I Termant : care: asked: Hey, hope your afternoon's going well. I've got teal down as your favourite colour from before — is that still the one you like best?
+11-21 15:03:35.176  9396  9396 I Termant : care: shown as a notification
+11-21 15:03:35.169  9396  9396 I Termant : overlay: over other apps
+11-21 15:03:35.173  9396  9396 I Termant : overlay: result shown
+11-21 15:03:35.627  9396  9396 I Termant : overlay: close at 280,80
+11-21 15:03:35.627  9396  9396 I Termant : overlay: reply at 160,212
+care: chat: [{'user': False, 'first': True, 'text': "Hey, hope your afternoon's going well. I've got teal down as your favourite colour from before — is that still the one you like best?", 'steps': []}]
+care: mentions the colour it has a note on: yes
+care: ends with a question: yes
+learning: reply: {'text': "Teal it is — noted! Good luck for the driving test tomorrow at 10, you've got this. Are you feeling ready for it?", 'steps': ['phone care in 20h "how the driving test went"'], 'failed': False}
+the agent planned by itself to come back to the driving test: yes
+learning: reply: {'text': "Hey, happy Saturday afternoon! I remember your favourite colour is teal. What's one thing you're looking forward to this weekend?", 'steps': [], 'failed': False}
+learning: reply: {'text': "Glad to hear you're doing well!", 'steps': [], 'failed': False}
+Streaming: the words of a reply show up while it is being written
+11-21 14:50:40.476  2721  5575 I Termant : stream: 4 pieces, first after 7419 ms, reply after 8128 ms
+11-21 14:51:01.130  2721  5924 I Termant : stream: 2 pieces, first after 8268 ms, reply after 8673 ms
+11-21 14:51:17.533  2721  6156 I Termant : stream: 4 pieces, first after 5900 ms, reply after 6421 ms
+11-21 14:52:15.755  2721  6616 I Termant : stream: 1 pieces, first after 10081 ms, reply after 10492 ms
+11-21 14:54:15.243  7753  7857 I Termant : stream: 0 pieces, reply after 2669 ms
+11-21 14:54:19.315  7753  7857 I Termant : stream: 1 pieces, first after 3881 ms, reply after 4067 ms
+11-21 14:54:54.916  8259  8373 I Termant : stream: 1 pieces, first after 5278 ms, reply after 5581 ms
+11-21 14:55:00.902  8259  8373 I Termant : stream: 1 pieces, first after 5613 ms, reply after 5982 ms
+11-21 14:55:25.628  8787  8877 I Termant : stream: 2 pieces, first after 3732 ms, reply after 3987 ms
+11-21 14:55:46.648  9108  9200 I Termant : stream: 0 pieces, reply after 980 ms
+11-21 14:56:20.184  9396  9510 I Termant : stream: 1 pieces, first after 3866 ms, reply after 4264 ms
+11-21 14:56:38.231  9396  9845 I Termant : stream: 1 pieces, first after 2591 ms, reply after 2930 ms
+11-21 14:57:00.178  9396 10124 I Termant : stream: 1 pieces, first after 1534 ms, reply after 1790 ms
+11-21 14:57:36.824  9396 10934 I Termant : stream: 1 pieces, first after 3200 ms, reply after 3593 ms
+11-21 14:57:51.464  9396 11175 I Termant : stream: 1 pieces, first after 4087 ms, reply after 4249 ms
+11-21 14:58:12.192  9396 11571 I Termant : stream: 1 pieces, first after 4454 ms, reply after 4842 ms
+11-21 14:58:44.236  9396 11828 I Termant : stream: 5 pieces, first after 21445 ms, reply after 22154 ms
+11-21 15:03:35.156  9396 13355 I Termant : stream: 1 pieces, first after 4552 ms, reply after 4974 ms
+11-21 15:04:09.242  9396 13701 I Termant : stream: 1 pieces, first after 10309 ms, reply after 10656 ms
+11-21 15:04:50.431  9396 14244 I Termant : stream: 1 pieces, first after 4952 ms, reply after 5373 ms
+11-21 15:05:03.950  9396 14515 I Termant : stream: 1 pieces, first after 2584 ms, reply after 2835 ms
+11-21 15:06:00.368  9396 15053 I Termant : stream: 22 pieces, first after 1770 ms, reply after 4759 ms
+      1 "type":"project.updated"
+      1 "type":"server.connected"
+      1 "type":"session.created"
+      1 "type":"session.execution.started"
+      1 "type":"session.execution.succeeded"
+      1 "type":"session.inbox.delivered"
+      1 "type":"session.inbox.enqueued"
+      1 "type":"session.instructions.updated"
+      2 "type":"session.reasoning.delta"
+      1 "type":"session.reasoning.ended"
+      1 "type":"session.reasoning.started"
+      1 "type":"session.renamed"
+      1 "type":"session.step.ended"
+      1 "type":"session.step.first-token"
+      1 "type":"session.step.started"
+      1 "type":"session.step.streamed"
+     22 "type":"session.text.delta"
+      1 "type":"session.text.ended"
+      1 "type":"session.text.started"
+      2 "type":"session.usage.updated"
+      1 "type":"user"
+Helper agents in the chat: the main agent hands two parts of a job to helpers
+11-21 15:06:50.753 15330 15445 I Termant : activity: start ask think helper result think write helper think write helper think write
+1795273607.048 title Helpers
+1795273607.077 main calls subagent subagent
+1795273607.689 main I started two helpers.
+1795273607.716 researcher calls shell
+1795273607.746 poet POEM REPORT: garam chai, meethi baat.
+1795273609.304 main TEAM RESULT (1): POEM REPORT: garam chai, meethi baat.
+1795273609.363 researcher RESEARCH REPORT: chai is tea.
+1795273609.916 main TEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.
+helpers: reply: {'user': False, 'text': 'TEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.', 'first': False, 'failed': False, 'note': '', 'steps': ['Helper researcher: Find out about chai', 'Helper poet: A poem about chai']}
+Voice button: this emulator has no speech service, so only that nothing breaks
+MCP: OpenCode starts a server added in Settings (reported, does not fail the test)
+chat with an MCP server: answered
+requests the MCP server got:
+initialize
+notifications/initialized
+tools/list
+MCP: connected
+Tools: GitHub token, web search, screen control
+11-21 15:08:06.362 15849 15849 I Termant : github: token check gave 401
+Over other apps: a card says what the agent is doing while Termant is not on screen
+stop button on the card: worked
+Over other apps: the answer stays for 10 seconds, takes the next message, and can be swiped away
+<stdin>:3: DeprecationWarning: Parsing dates involving a day of month without a year specified is ambiguous
+and fails to parse leap day. The default behavior will change in Python 3.15
+to either always raise an exception or to use a different default year (TBD).
+To avoid trouble, add a specific year to the input & format.
+See https://github.com/python/cpython/issues/70647.
+the answer stayed for 10.1 seconds
+ci-out/dog.jpg: 1 file pushed, 0 skipped. 235.2 MB/s (163759 bytes in 0.001s)
+ci-out/dog.jpg: 1 file pushed, 0 skipped. 276.8 MB/s (163759 bytes in 0.001s)
+11-21 15:10:12.060 15849 15849 I Termant : screen control: on
+== screen
+screen-exit=0
+App: Termant (com.termant.app), screen 320x640
+1. [button] "1 root@localhost: ~" @79,49
+2. [button] "Chat" (Back to the chat) @202,49
+3. [button] "New session" @259,49
+4. [button] "Menu" @297,49
+5. [button] "ESC" @25,330
+6. [button] "/" @69,330
+7. [button] "-" @114,330
+8. [button] "HOME" @159,330
+9. [button] "↑" @204,330
+10. [button] "END" @249,330
+11. [button] "PGUP" @294,330
+12. [button] "TAB" @25,370
+13. [button] "CTRL" @69,370
+14. [button] "ALT" @114,370
+15. [button] "←" @159,370
+16. [button] "↓" @204,370
+17. [button] "→" @249,370
+18. [button] "PGDN" @294,370
+== apps
+apps-exit=0
+Calendar  (com.android.calendar)
+Camera  (com.android.camera2)
+Clock  (com.android.deskclock)
+Contacts  (com.android.contacts)
+Files  (com.android.documentsui)
+Gallery  (com.android.gallery3d)
+Messaging  (com.android.messaging)
+Phone  (com.android.dialer)
+Search  (com.android.quicksearchbox)
+Settings  (com.android.settings)
+Termant  (com.termant.app)
+TMoble  (com.android.stk)
+WebView Browser Tester  (org.chromium.webview_shell)
+== open another app
+app-exit=0
+Opened Settings.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Settings" @90,152
+2. [text] "Search settings" @143,227
+3. [text] "Network & internet" @155,303
+4. [text] "Mobile, Wi‑Fi, hotspot" @138,326
+5. [text] "Connected devices" @156,391
+6. [text] "Bluetooth, pairing" @127,414
+7. [text] "Apps" @94,479
+8. [text] "Recent apps, default apps" @152,502
+9. [text] "Notifications" @128,567
+10. [text] "Notification history, conversations" @178,590
+app-opened=yes
+== read the screen from a picture (Mirage) and tap what was seen
+ocr-exit=0
+Read from a picture of the screen by Mirage (2 parts, 8.9 s). The places are right; letters can be wrong (O/0, l/1, capitals) and only Latin letters are read:
+11. [seen] "3:10>O" @44,11
+12. [seen] "D" @270,12
+13. [seen] "Settings" @88,156
+14. [seen] "Search settings" @135,227
+15. [seen] "Network & internet" @156,303
+16. [seen] "Mobile, Wi-Fi, hotspot" @136,326
+17. [seen] "Connected devices" @155,391
+18. [seen] "CoD" @43,401
+19. [seen] "Bluetooth, pairing" @126,415
+20. [seen] "Apps" @94,481
+21. [seen] "Recent apps, default apps" @151,502
+22. [seen] "Notifications" @130,567
+23. [seen] "Notification history, conversations" @176,590
+ocr-item=15
+ocr-tap-exit=0
+Tapped item 15 "Network & internet" at 156,303.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Network & internet" @160,122
+2. [button] "Navigate up" @28,52
+3. [text] "Internet" @107,275
+4. [text] "AndroidWifi" @108,298
+5. [text] "Calls & SMS" @125,354
+6. [text] "T-Mobile" @98,377
+7. [text] "SIMs" @94,433
+8. [text] "T-Mobile" @98,456
+9. [text] "Hotspot & tethering" @159,572
+ocr-tap-opened=yes
+ocr-again-exit=0 in 9 s
+Read from a picture of the screen by Mirage (2 parts, 9.0 s). The places are right; letters can be wrong (O/0, l/1, capitals) and only Latin letters are read:
+== look: what is in a photo and where (Mirage)
+-rw-rw-rw-. 1 root root 163759 Nov 21 15:10 /root/dog.jpg
+look-file-exit=0 in 4 s
+Picture dog.jpg (768x576), seen by Mirage in 4.0 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+Scene: setting = park; surface = wooden deck; lighting = daylight; time of day = day
+Things (6), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (in the picture's own pixels):
+- dog, 59%: left, 14% of the picture; foreground; black and tan, standing @221,366
+- bench, 42%: across the middle, 40% of the picture; background; yellow, wood @384,317
+- tree, 40%: across the top, 35% of the picture; background; green @385,103
+- tree, 36%: across the top, 21% of the picture; background; green @385,63
+- trash can, 35%: top left, 4% of the picture; black @42,115
+- bicycle, 33%: middle, 21% of the picture; red, leaning @353,293
+Also there, place not marked: pickup (background right; white, parked)
+Maybe (this part is often wrong): dog standing on bench; bicycle leaning against bench; pickup behind bicycle
+look-file-head=yes
+look-file-dog=yes
+look-file-dog-left=yes
+look-file-bicycle=yes
+look-relative=yes
+phone look: there is no such file: /root/no-such-picture.jpg
+look-missing-exit=1
+phone look: phone is not a picture Android can open (JPEG, PNG, WebP, GIF, BMP; HEIC on newer phones)
+look-not-a-picture-exit=1
+usage: phone look [FILE | last]
+look-usage-exit=1
+-- the screen as a picture
+look-screen-exit=0
+The screen as a picture (320x640), seen by Mirage in 4.6 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: white smartphone screen with black text, gray buttons, black arrows
+Scene: background = white; style = screenshot
+Things (13), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (phone tap X Y taps there):
+- smartphone screen, 67%: all over, 88% of the picture; white @157,318
+- text x11, 32-50%: 2 top left, 2 left, 2 middle, 2 bottom left, 2 bottom, 1 top right
+- button, 38%: bottom left, under 1% of the picture; gray, rounded @44,577
+Also there, place not marked: arrow (several; left of buttons; black)
+Writing (letters can be wrong):
+- "3:10>O": top left @46,11
+- "Settings": top left @88,155
+- "Search settings": middle @136,228
+- "Network & internet": middle @153,303
+- "Mobile, Wi-Fi, hotspot": middle @138,326
+- "Connected devices": middle @153,392
+- "LoD": left @45,402
+- "Bluetooth, pairing": middle @127,415
+- ":": bottom left @44,486
+- "Apps": bottom left @95,481
+- "Recent apps, default apps": bottom @148,503
+- "0": bottom left @44,576
+- "Notifications": bottom @127,567
+- "Notification history, conversations": bottom @174,591
+Maybe (this part is often wrong): text on smartphone screen; button on smartphone screen; arrow next to button
+look-screen-head=yes
+-- the newest picture on the phone
+look-last-exit=0
+Picture termant-test-photo.jpg, the newest on the phone (768x576), seen by Mirage in 4.0 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+Scene: setting = park; surface = wooden deck; lighting = daylight; time of day = day
+Things (6), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (in the picture's own pixels):
+- dog, 59%: left, 14% of the picture; foreground; black and tan, standing @221,366
+- bench, 42%: across the middle, 40% of the picture; background; yellow, wood @384,317
+- tree, 40%: across the top, 35% of the picture; background; green @385,103
+- tree, 36%: across the top, 21% of the picture; background; green @385,63
+look-last-head=yes
+look-last-dog=yes
+== learning: YouTube, skills, today, ElevenLabs keys (against a pretend YouTube and ElevenLabs in Ubuntu)
+learn-check-exit=0
+RESULT: PASS
+learn-check-passed=53
+== helper agents: the team command, and OpenCode handing parts of a job to helpers (a pretend model answers)
+team-check-exit=0
+RESULT: PASS
+team-check-passed=48
+team-real-run=yes
+== the kit: undo, tidy, study, readfile, me, watch, diary, attached files
+kit-check-exit=0
+undo said: Undone: 1 change(s) of the message of 2026-01-01 10:10 put back.
+real-models=yes
+free-models-that-take-pictures=7
+RESULT: PASS
+kit-check-passed=125
+-- rules that repeat, jobs, notifications, a message that needs a yes
+phone rule: every 15m to 24h (shorter would drain the battery)
+bad-every-exit=1
+every-rule-exit=0
+Rule 5 added: Every 20 minutes, run: true
+It runs by itself from now on, as long as Termant is not force-stopped.
+Rule 5 removed.
+usage: phone job "what to do"   (the agent does it by itself and reports as a notification)
+bad-job-exit=1
+Termant may not read notifications yet. The user allows it once: Android Settings > Notifications > Notification access > Termant. `phone notifications allow` opens that page.
+notifications-said=yes
+phone sms: not sent. This job runs by itself and nobody is there to say yes to a message.
+Say in your report which message is waiting, so the user can ask for it in the chat.
+sms-alone-said=yes
+Made the helper "poet": Writes one short line of verse on a given subject. It can be used from the next message on.
+team-add-exit=0
+Helpers made here: 1
+- poet: Writes one short line of verse on a given subject.
+-- phone say with ElevenLabs keys: the second key speaks, the phone plays it
+This phone has no text-to-speech voice installed.
+say-own-voice-exit=1
+2 key(s) added; 2 ElevenLabs key(s) are saved now.
+voice-add-exit=0
+say-exit=0
+Said with ElevenLabs, key 2 of 2 (key 1 (...up-1): quota_exceeded).
+say-second-key=yes
+Said with ElevenLabs, key 2 of 2.
+say-skips-used-up-key=yes
+1. ...up-1  10000 of 10000 letters used (free)  resting until 2026-11-21 21:11: quota_exceeded
+2. ...-333  120 of 10000 letters used (free)  in use
+voice-report=yes
+play-exit=0
+Playing speech.mp3 (1 s)
+play-length=yes
+phone play: the phone cannot play this as a sound: phone
+play-not-a-sound-exit=1
+phone play: there is no such file: /root/no-such-sound.mp3
+play-missing-exit=1
+-- the real YouTube from this machine (told, not required: YouTube often refuses data centres)
+youtube-real-search-exit=0
+YouTube, "how to make a table in Word": 8 videos
+1. How To Create Tables In Word (COMPLETE Guide!)
+   Steven Bradburn | 8:34 | 108,377 views | 2 years ago
+   id HIOZca4iwYk
+2. How to Insert Table In Microsoft Word
+   Office Master Tutorials | 3:17 | 729,102 views | 3 years ago
+   id LBcZg9gRmbI
+3. Easiest way to Insert/Create Table in MS Word
+   MJ Tube | 1:29 | 691,755 views | 10 years ago
+   id mKuN3TCqeKY
+4. Microsoft Word Tutorial: Using Tables in Word
+   Simon Sez IT | 15:35 | 187,035 views | 6 years ago
+youtube-real-read-exit=1
+YouTube did not give this video (Sign in to confirm you’re not a bot). Try another video from the search.
+
+-- how long OpenCode needs to start, and how long a kept server needs to answer
+start-own-server-1=510 ms (exit 0)
+start-own-server-2=628 ms (exit 0)
+speed-server-url=yes
+ask-kept-server-1=274 ms (exit 0)
+ask-kept-server-2=625 ms (exit 0)
+ask-kept-server-3=273 ms (exit 0)
+== swipe
+swipe-exit=0
+Swiped up.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Search settings" @143,66
+2. [text] "Notifications" @128,145
+3. [text] "Notification history, conversations" @178,168
+4. [text] "Battery" @104,233
+5. [text] "100%" @89,256
+6. [text] "Storage" @107,321
+7. [text] "38% used - 4.93 GB free" @145,344
+8. [text] "Sound & vibration" @150,409
+9. [text] "Volume, vibration, Do Not Disturb" @174,432
+10. [text] "Display" @104,497
+11. [text] "Dark theme, font size, brightness" @173,520
+swipe-moved=yes
+== tap by its words
+tapping: Search settings
+tap-exit=0
+Tapped "Search settings" at 143,226.
+The screen now:
+App: Settings Suggestions (com.android.settings.intelligence), screen 320x640
+1. [button] "Navigate up" @36,56
+2. [input] "Search…" (typing goes here) @168,56
+3. [button] "More options" @292,56
+== tap by number
+tap-number-exit=0
+Tapped item 1 "Navigate up" at 36,56.
+The screen now:
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Settings" @90,151
+2. [text] "Search settings" @143,226
+3. [text] "Network & internet" @155,302
+== type (reported only: depends on what is on the screen)
+There is no text box on the screen. Tap one first.
+type-exit=1
+== keys
+key-back-exit=0
+key-home-exit=0
+Pressed home.
+The screen now:
+App: Quickstep (com.android.launcher3), screen 320x640
+1. [text] "Search" @160,93
+usage: phone key back|home|recents|notifications|enter
+bad-key-exit=1
+No app called "NoSuchAppAtAll" is installed. See: phone apps
+bad-app-exit=1
+== back to Termant
+return-exit=0
+== github
+token-for-gh=yes
+cred: protocol=https
+cred: host=github.com
+cred: username=ci-user
+cred: password=ci-token-not-real
+other: fatal: could not read Username for 'https://example.com': terminal prompts disabled
+git-name=ci-user
+git-email=1+ci-user@users.noreply.github.com
+== web search in the agent's settings
+{
+  "$schema": "https:\/\/opencode.ai\/config.json",
+  "instructions": [
+    "\/root\/.config\/termant\/learned.md"
+  ],
+  "websearch": {
+    "provider": "exa"
+  },
+  "permissions": [
+    {
+      "action": "shell",
+      "resource": "phone *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "date *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "learn *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "team *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "safe *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "tidy *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "study *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "readfile *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "me *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "watch *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "diary *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "rm \/sdcard*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/sdcard*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm \/storage*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/storage*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* ~",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* ~\/",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/root",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "rm -* \/root\/",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "mkfs*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "dd * of=\/dev\/*",
+      "effect": "deny"
+    },
+    {
+      "action": "websearch",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "webfetch",
+      "resource": "*",
+      "effect": "allow"
+    }
+  ],
+  "mcp": {
+    "servers": {
+      "ci": {
+        "type": "local",
+        "command": [
+          "\/bin\/bash",
+          "-lc",
+          "bash \/root\/mcp-ci.sh"
+        ],
+        "timeout": {
+          "startup": 120000
+        }
+      }
+    }
+  }
+}
+TERMANT-TEST-END
+11-21 15:10:19.768 15849 18140 I Termant : mirage: downloading the model
+11-21 15:10:22.301 15849 18140 I Termant : mirage: model ready
+11-21 15:10:31.203 15849 18140 I Termant : mirage: 13 pieces from 2 parts in 8900 ms
+11-21 15:10:42.149 15849 18218 I Termant : mirage: 13 pieces from 2 parts in 8987 ms
+11-21 15:10:46.289 15849 18261 I Termant : mirage: saw 6 things in a picture of 768x576 in 4081 ms
+11-21 15:10:50.280 15849 18289 I Termant : mirage: saw 6 things in a picture of 768x576 in 3929 ms
+11-21 15:10:54.972 15849 18321 I Termant : mirage: saw 13 things in a picture of 320x640 in 4631 ms
+11-21 15:10:59.077 15849 18343 I Termant : mirage: saw 6 things in a picture of 768x576 in 4066 ms
+Questions from the agent: over another app, then inside Termant
+open-exit=0
+ask1-exit=0 answer=Alpha
+ask2-exit=0 answer=hello
+ask3-exit=1 said=The user closed the question without answering. Do not go on with the step you asked about; say what you did not do.
+usage: phone ask "Question?" ["Choice 1" "Choice 2" ...]
+With choices the user picks one (or types something else); without, the user types the answer.
+ask-usage-exit=1
+phone ask: 6 choices at most.
+ask-many-exit=1
+return-exit=0
+ask4-exit=0 answer=One
+TERMANT-TEST-END
+Web search and another app from the chat (reported, do not fail the test: they need the model to choose the tool)
+web search request: answered
+11-21 15:12:56.606 15849 22563 I Termant : activity: start ask think search result think write
+web search: USED
+reply: The newest stable Python version is **Python 3.15.2** (released October 25, 2026).
+
+Source: python.org downloads page and Python Insider blog.
+steps: ['web search: newest stable Python version 2026']
+screen request: answered
+11-21 15:14:54.380 15849 22895 I Termant : activity: start ask think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell screen result think shell phone result think shell screen result think shell screen result think write
+reply: I'm back in Termant now. Here's what the Clock app showed:
+
+**Buttons:**
+- Alarm
+- Timer
+- Stopwatch
+- More options
+- Cities
+
+**Other text on screen:**
+- "3:14 PM"
+- "SAT, NOV 21"
+- Next alarm: "SUN 6:45 AM"
+
+(There was also a "Clock" label at the top, which is the tab/view indicator.)
+
+Note: When I first opened the Clock app, it asked for permission to send notifications ("Allow Clock to send you notifications?"), which I allowed before viewing the main screen.
+steps: ['phone app Clock', 'phone screen', 'phone screen ocr', 'phone key home', 'phone app Clock', 'phone screen ocr', 'phone apps', 'phone app com.android.deskclock', 'phone screen ocr', 'phone key home && sleep 1 && phone app Clock && sleep 2 && phone screen', 'sleep 2; phone screen ocr', 'phone look', 'phone tap 161 359', 'phone app Termant']
+Deleted 1 rows
+Look: light theme, then Hindi
+90%,20%: 246 248 250
+90%,28%: 246 248 250
+90%,36%: 246 248 250
+60%,40%: 246 248 250
+40%,30%: 246 248 250
+light
+text="Abhi"
+text="5 minute pehle"
+text="7 minute pehle"
+text="8 minute pehle"
+text="9 minute pehle"
+chat messages that started OpenCode themselves: 16, that used the kept server: 14
+RESULT: PASS

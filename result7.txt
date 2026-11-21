@@ -1,0 +1,37 @@
+== notes the agent saved by itself before this test
+(no notes yet)
+== note
+Saved. You will know this in every chat from now on: The user's secret fruit is papaya.
+note-exit=0
+Already known: The user's secret fruit is papaya.
+again-exit=0
+papaya-notes=1
+learn: that is 300 letters; a note is one short sentence of at most 240.
+long-exit=1
+Saved. You will know this in every chat from now on: temporary note for the test
+Forgotten: temporary note for the test
+forget-exit=0
+forgotten=yes
+== tool
+Saved. 'ci-hello' is now a command: Prints the greeting of the test
+tool-exit=0
+tool-says=hello-from-tool-42
+learn: 'ls' is already a command on this system. Pick another name.
+clash-exit=1
+learn: the name must be 2 to 30 small letters, digits or dashes, and start with a letter.
+badname-exit=1
+learn: the script has a mistake, so it was not saved. Fix it and save again:
+/root/.config/termant/learned/.new-tool: line 3: syntax error near unexpected token `then'
+/root/.config/termant/learned/.new-tool: line 3: `if then'
+syntax-exit=1
+bad-kept=no
+ci-hello: Prints the greeting of the test
+== the file the agent reads
+guide-note=1
+guide-tool=1
+== turned off
+learn: learning is turned off in Termant's Settings, so nothing was saved. Tell the user that.
+off-exit=1
+off-guide=gone
+on-guide=there
+TERMANT-TEST-END

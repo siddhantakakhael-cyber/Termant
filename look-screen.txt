@@ -1,0 +1,25 @@
+The screen as a picture (320x640), seen by Mirage in 4.6 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: white smartphone screen with black text, gray buttons, black arrows
+Scene: background = white; style = screenshot
+Things (13), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point (phone tap X Y taps there):
+- smartphone screen, 67%: all over, 88% of the picture; white @157,318
+- text x11, 32-50%: 2 top left, 2 left, 2 middle, 2 bottom left, 2 bottom, 1 top right
+- button, 38%: bottom left, under 1% of the picture; gray, rounded @44,577
+Also there, place not marked: arrow (several; left of buttons; black)
+Writing (letters can be wrong):
+- "3:10>O": top left @46,11
+- "Settings": top left @88,155
+- "Search settings": middle @136,228
+- "Network & internet": middle @153,303
+- "Mobile, Wi-Fi, hotspot": middle @138,326
+- "Connected devices": middle @153,392
+- "LoD": left @45,402
+- "Bluetooth, pairing": middle @127,415
+- ":": bottom left @44,486
+- "Apps": bottom left @95,481
+- "Recent apps, default apps": bottom @148,503
+- "0": bottom left @44,576
+- "Notifications": bottom @127,567
+- "Notification history, conversations": bottom @174,591
+Maybe (this part is often wrong): text on smartphone screen; button on smartphone screen; arrow next to button

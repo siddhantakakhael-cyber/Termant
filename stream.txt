@@ -1,0 +1,22 @@
+11-21 14:50:40.476  2721  5575 I Termant : stream: 4 pieces, first after 7419 ms, reply after 8128 ms
+11-21 14:51:01.130  2721  5924 I Termant : stream: 2 pieces, first after 8268 ms, reply after 8673 ms
+11-21 14:51:17.533  2721  6156 I Termant : stream: 4 pieces, first after 5900 ms, reply after 6421 ms
+11-21 14:52:15.755  2721  6616 I Termant : stream: 1 pieces, first after 10081 ms, reply after 10492 ms
+11-21 14:54:15.243  7753  7857 I Termant : stream: 0 pieces, reply after 2669 ms
+11-21 14:54:19.315  7753  7857 I Termant : stream: 1 pieces, first after 3881 ms, reply after 4067 ms
+11-21 14:54:54.916  8259  8373 I Termant : stream: 1 pieces, first after 5278 ms, reply after 5581 ms
+11-21 14:55:00.902  8259  8373 I Termant : stream: 1 pieces, first after 5613 ms, reply after 5982 ms
+11-21 14:55:25.628  8787  8877 I Termant : stream: 2 pieces, first after 3732 ms, reply after 3987 ms
+11-21 14:55:46.648  9108  9200 I Termant : stream: 0 pieces, reply after 980 ms
+11-21 14:56:20.184  9396  9510 I Termant : stream: 1 pieces, first after 3866 ms, reply after 4264 ms
+11-21 14:56:38.231  9396  9845 I Termant : stream: 1 pieces, first after 2591 ms, reply after 2930 ms
+11-21 14:57:00.178  9396 10124 I Termant : stream: 1 pieces, first after 1534 ms, reply after 1790 ms
+11-21 14:57:36.824  9396 10934 I Termant : stream: 1 pieces, first after 3200 ms, reply after 3593 ms
+11-21 14:57:51.464  9396 11175 I Termant : stream: 1 pieces, first after 4087 ms, reply after 4249 ms
+11-21 14:58:12.192  9396 11571 I Termant : stream: 1 pieces, first after 4454 ms, reply after 4842 ms
+11-21 14:58:44.236  9396 11828 I Termant : stream: 5 pieces, first after 21445 ms, reply after 22154 ms
+11-21 15:03:35.156  9396 13355 I Termant : stream: 1 pieces, first after 4552 ms, reply after 4974 ms
+11-21 15:04:09.242  9396 13701 I Termant : stream: 1 pieces, first after 10309 ms, reply after 10656 ms
+11-21 15:04:50.431  9396 14244 I Termant : stream: 1 pieces, first after 4952 ms, reply after 5373 ms
+11-21 15:05:03.950  9396 14515 I Termant : stream: 1 pieces, first after 2584 ms, reply after 2835 ms
+11-21 15:06:00.368  9396 15053 I Termant : stream: 22 pieces, first after 1770 ms, reply after 4759 ms

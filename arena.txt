@@ -1,0 +1,2 @@
+    topResumedActivity=ActivityRecord{ba32af8 u0 org.chromium.webview_shell/.WebViewBrowserActivity t9}
+      Intent { act=android.intent.action.VIEW dat=https://arena.ai/ cmp=org.chromium.webview_shell/.WebViewBrowserActivity }

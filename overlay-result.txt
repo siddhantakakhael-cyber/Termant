@@ -1,0 +1,17 @@
+11-21 15:03:35.169  9396  9396 I Termant : overlay: over other apps
+11-21 15:03:35.173  9396  9396 I Termant : overlay: result shown
+11-21 15:03:35.627  9396  9396 I Termant : overlay: close at 280,80
+11-21 15:03:35.627  9396  9396 I Termant : overlay: reply at 160,212
+11-21 15:03:44.349  9396  9396 I Termant : overlay: hidden
+11-21 15:08:46.623 15849 15849 I Termant : overlay: over other apps
+11-21 15:08:46.645 15849 15849 I Termant : overlay: status shown
+11-21 15:08:47.107 15849 15849 I Termant : overlay: stop at 285,90
+11-21 15:08:49.461 15849 15849 I Termant : overlay: stopped by the user
+11-21 15:08:49.481 15849 15849 I Termant : overlay: hidden
+11-21 15:09:10.850 15849 15849 I Termant : overlay: over other apps
+11-21 15:09:10.862 15849 15849 I Termant : overlay: status shown
+11-21 15:09:11.315 15849 15849 I Termant : overlay: stop at 285,90
+11-21 15:09:14.260 15849 15849 I Termant : overlay: result shown
+11-21 15:09:14.709 15849 15849 I Termant : overlay: close at 280,80
+11-21 15:09:14.709 15849 15849 I Termant : overlay: reply at 160,158
+11-21 15:09:24.321 15849 15849 I Termant : overlay: hidden

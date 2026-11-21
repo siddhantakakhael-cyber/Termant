@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="models">opencode/beam-free&#10;opencode/big-pickle&#10;opencode/deepseek-v4.1-flash-free&#10;opencode/flint-40b-free&#10;opencode/hy4-flash-free&#10;opencode/iceman-free&#10;opencode/longcat-2.5-free&#10;opencode/mimo-v2.6-flash-free&#10;opencode/nemotron-3.5-lightning-free&#10;opencode/nemotron-3.5-super-vl-free&#10;opencode/tidepool-alpha-free</string>
+    <string name="workspace">/root/ci-project</string>
+    <long name="last_user_message" value="1795272671083" />
+    <boolean name="care_on" value="false" />
+    <string name="last_chat">c1795272459853</string>
+    <string name="model">opencode/big-pickle</string>
+    <string name="lang">en</string>
+</map>

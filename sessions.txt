@@ -1,0 +1,10 @@
+11-21 14:50:40.477  2721  2721 I Termant : chat c1795272459853 session: ses_e0169928cffeHl57dh47Aiq6eQ
+11-21 14:51:01.133  2721  2721 I Termant : chat c1795272459853 session: ses_e0169928cffeHl57dh47Aiq6eQ
+11-21 14:51:17.540  2721  2721 I Termant : chat c1795272459853 session: ses_e0169928cffeHl57dh47Aiq6eQ
+11-21 14:52:15.762  2721  2721 I Termant : chat c1795272459853 session: ses_e0168295cffeElkRBJ9FHbgydw
+11-21 14:54:19.324  7753  7753 I Termant : chat c1795272459853 session: ses_e0168295cffeElkRBJ9FHbgydw
+11-21 14:55:00.907  8259  8259 I Termant : chat c1795272878192 session: ses_e0165a512ffeHOlH7z8o6su88h
+11-21 14:55:25.629  8787  8787 I Termant : chat c1795272878192 session: ses_e0165a512ffeHOlH7z8o6su88h
+11-21 14:56:20.185  9396  9396 I Termant : chat c1795272966125 session: ses_e016454adffeTVkGMhxftRt7Bn
+11-21 14:56:38.241  9396  9396 I Termant : chat c1795272983973 session: ses_e01640b07ffeOLi0DFvxrtGWgV
+11-21 14:57:00.180  9396  9396 I Termant : chat c1795272966125 session: ses_e016454adffeTVkGMhxftRt7Bn

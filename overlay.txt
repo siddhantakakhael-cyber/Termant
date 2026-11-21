@@ -1,0 +1,63 @@
+11-21 15:03:35.169  9396  9396 I Termant : overlay: over other apps
+11-21 15:03:35.173  9396  9396 I Termant : overlay: result shown
+11-21 15:03:35.627  9396  9396 I Termant : overlay: close at 280,80
+11-21 15:03:35.627  9396  9396 I Termant : overlay: reply at 160,212
+11-21 15:03:44.349  9396  9396 I Termant : overlay: hidden
+11-21 15:08:46.623 15849 15849 I Termant : overlay: over other apps
+11-21 15:08:46.645 15849 15849 I Termant : overlay: status shown
+11-21 15:08:47.107 15849 15849 I Termant : overlay: stop at 285,90
+11-21 15:08:49.461 15849 15849 I Termant : overlay: stopped by the user
+11-21 15:08:49.481 15849 15849 I Termant : overlay: hidden
+11-21 15:09:10.850 15849 15849 I Termant : overlay: over other apps
+11-21 15:09:10.862 15849 15849 I Termant : overlay: status shown
+11-21 15:09:11.315 15849 15849 I Termant : overlay: stop at 285,90
+11-21 15:09:14.260 15849 15849 I Termant : overlay: result shown
+11-21 15:09:14.709 15849 15849 I Termant : overlay: close at 280,80
+11-21 15:09:14.709 15849 15849 I Termant : overlay: reply at 160,158
+11-21 15:09:24.321 15849 15849 I Termant : overlay: hidden
+11-21 15:09:40.097 15849 15849 I Termant : overlay: over other apps
+11-21 15:09:40.109 15849 15849 I Termant : overlay: status shown
+11-21 15:09:40.559 15849 15849 I Termant : overlay: stop at 285,90
+11-21 15:09:42.496 15849 15849 I Termant : overlay: result shown
+11-21 15:09:42.946 15849 15849 I Termant : overlay: close at 280,80
+11-21 15:09:42.947 15849 15849 I Termant : overlay: reply at 160,158
+11-21 15:09:44.022 15849 15849 I Termant : overlay: typing the next message
+11-21 15:09:44.466 15849 15849 I Termant : overlay: close at 280,80
+11-21 15:09:44.471 15849 15849 I Termant : overlay: box at 135,151
+11-21 15:09:44.471 15849 15849 I Termant : overlay: send at 277,150
+11-21 15:09:58.854 15849 15849 I Termant : overlay: sent from the card
+11-21 15:09:58.886 15849 15849 I Termant : overlay: status shown
+11-21 15:09:59.341 15849 15849 I Termant : overlay: stop at 285,90
+11-21 15:10:00.612 15849 15849 I Termant : overlay: result shown
+11-21 15:10:01.062 15849 15849 I Termant : overlay: close at 280,80
+11-21 15:10:01.062 15849 15849 I Termant : overlay: reply at 160,158
+11-21 15:10:02.655 15849 15849 I Termant : overlay: swiped away
+11-21 15:10:02.663 15849 15849 I Termant : overlay: hidden
+11-21 15:11:52.366 15849 21998 I Termant : ask: CI: which one? [Alpha, Beta]
+11-21 15:11:52.370 15849 15849 I Termant : overlay: with screen control
+11-21 15:11:52.375 15849 15849 I Termant : overlay: question shown
+11-21 15:11:52.826 15849 15849 I Termant : overlay: close at 280,56
+11-21 15:11:52.826 15849 15849 I Termant : overlay: choice 1 at 160,130
+11-21 15:11:52.826 15849 15849 I Termant : overlay: choice 2 at 160,178
+11-21 15:11:52.826 15849 15849 I Termant : overlay: write at 160,226
+11-21 15:11:54.704 15849 21998 I Termant : ask: answered
+11-21 15:11:54.711 15849 15849 I Termant : overlay: hidden
+11-21 15:11:54.718 15849 22028 I Termant : ask: CI: type a word (typed answer)
+11-21 15:11:54.725 15849 15849 I Termant : overlay: with screen control
+11-21 15:11:54.733 15849 15849 I Termant : overlay: question shown
+11-21 15:11:55.183 15849 15849 I Termant : overlay: close at 280,56
+11-21 15:11:55.183 15849 15849 I Termant : overlay: box at 135,131
+11-21 15:11:55.183 15849 15849 I Termant : overlay: send at 277,130
+11-21 15:11:59.164 15849 22028 I Termant : ask: answered
+11-21 15:11:59.168 15849 15849 I Termant : overlay: hidden
+11-21 15:11:59.179 15849 22077 I Termant : ask: CI: skip this one [Yes, No]
+11-21 15:11:59.203 15849 15849 I Termant : overlay: with screen control
+11-21 15:11:59.209 15849 15849 I Termant : overlay: question shown
+11-21 15:11:59.662 15849 15849 I Termant : overlay: close at 280,56
+11-21 15:11:59.662 15849 15849 I Termant : overlay: choice 1 at 160,130
+11-21 15:11:59.662 15849 15849 I Termant : overlay: choice 2 at 160,178
+11-21 15:11:59.662 15849 15849 I Termant : overlay: write at 160,226
+11-21 15:12:01.423 15849 15849 I Termant : overlay: hidden
+11-21 15:12:04.499 15849 22135 I Termant : ask: CI: inside Termant [One, Two]
+11-21 15:12:04.514 15849 15849 I Termant : ask: shown in Termant
+11-21 15:12:09.344 15849 22135 I Termant : ask: answered

@@ -1,0 +1,41 @@
+--------- beginning of main
+11-21 14:48:39.497  2721  2721 I Termant : alarm 06:45 sent to the Clock app
+11-21 14:48:39.542  2721  2721 I Termant : own alarm scheduled for 1795272523539
+11-21 14:48:44.556  2721  2721 I Termant : ringing: CI-timer
+11-21 14:48:48.800  2721  2721 I Termant : rule 1 (charging) runs: date > /root/charged.txt
+11-21 14:48:48.906  2721  2721 I Termant : rule 1 finished with 0
+11-21 14:48:59.084  2721  2721 I Termant : alarm 07:00 sent to the Clock app
+11-21 14:50:00.004  2721  2721 I Termant : rule 2 (at 14:50) runs: echo timed-rule-ran > /root/timed.txt
+11-21 14:50:00.119  2721  2721 I Termant : rule 2 finished with 0
+11-21 14:50:06.770  2721  2721 I Termant : rule 1 (charging) runs: date > /root/charged.txt
+11-21 14:50:06.874  2721  2721 I Termant : rule 1 finished with 0
+11-21 14:50:36.993  2721  2721 I Termant : alarm 07:00 sent to the Clock app
+11-21 14:50:40.476  2721  5575 I Termant : stream: 4 pieces, first after 7419 ms, reply after 8128 ms
+11-21 14:50:40.476  2721  5575 I Termant : activity: start ask think shell phone result think write
+11-21 14:50:40.477  2721  2721 I Termant : chat c1795272459853 session: ses_e0169928cffeHl57dh47Aiq6eQ
+11-21 14:51:01.130  2721  5924 I Termant : stream: 2 pieces, first after 8268 ms, reply after 8673 ms
+11-21 14:51:01.130  2721  5924 I Termant : activity: start ask think edit result think shell result think write
+11-21 14:51:01.133  2721  2721 I Termant : chat c1795272459853 session: ses_e0169928cffeHl57dh47Aiq6eQ
+11-21 14:51:17.533  2721  6156 I Termant : stream: 4 pieces, first after 5900 ms, reply after 6421 ms
+11-21 14:51:17.533  2721  6156 I Termant : activity: start ask think shell phone result think write
+11-21 14:51:17.540  2721  2721 I Termant : chat c1795272459853 session: ses_e0169928cffeHl57dh47Aiq6eQ
+11-21 14:52:15.755  2721  6616 I Termant : stream: 1 pieces, first after 10081 ms, reply after 10492 ms
+11-21 14:52:15.755  2721  6616 I Termant : activity: start ask think edit result think write
+11-21 14:52:15.762  2721  2721 I Termant : chat c1795272459853 session: ses_e0168295cffeElkRBJ9FHbgydw
+11-21 14:54:15.243  7753  7857 I Termant : stream: 0 pieces, reply after 2669 ms
+11-21 14:54:15.243  7753  7857 I Termant : activity: start ask
+11-21 14:54:15.243  7753  7857 I Termant : model 'opencode/no-such-model' gave no answer, switching to opencode/beam-free
+11-21 14:54:19.315  7753  7857 I Termant : stream: 1 pieces, first after 3881 ms, reply after 4067 ms
+11-21 14:54:19.315  7753  7857 I Termant : activity: start ask think write
+11-21 14:54:19.324  7753  7753 I Termant : chat c1795272459853 session: ses_e0168295cffeElkRBJ9FHbgydw
+11-21 14:54:54.916  8259  8373 I Termant : stream: 1 pieces, first after 5278 ms, reply after 5581 ms
+11-21 14:54:54.916  8259  8373 I Termant : activity: start ask think shell think shell result think write
+11-21 14:54:54.919  8259  8373 I Termant : free limit: OpenCode refused 'opencode/big-pickle', its free models wait until Sat Nov 21 15:54:54 UTC 2026
+11-21 14:54:54.920  8259  8373 I Termant : model 'opencode/big-pickle' stopped in the middle of the work (error) after 1 steps, carrying on in ses_e0165a512ffeHOlH7z8o6su88h with ci/other-free
+11-21 14:55:00.902  8259  8373 I Termant : stream: 1 pieces, first after 5613 ms, reply after 5982 ms
+11-21 14:55:00.902  8259  8373 I Termant : activity: start ask think shell result think write
+11-21 14:55:00.907  8259  8259 I Termant : chat c1795272878192 session: ses_e0165a512ffeHOlH7z8o6su88h
+11-21 14:55:21.602  8787  8787 I Termant : free limit: OpenCode's free models wait until Sat Nov 21 15:54:54 UTC 2026, starting with ci/other-free
+11-21 14:55:25.628  8787  8877 I Termant : stream: 2 pieces, first after 3732 ms, reply after 3987 ms
+11-21 14:55:25.628  8787  8877 I Termant : activity: start ask think write think write
+11-21 14:55:25.629  8787  8787 I Termant : chat c1795272878192 session: ses_e0165a512ffeHOlH7z8o6su88h
