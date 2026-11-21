@@ -78,6 +78,8 @@ browser, hosted on your own server with Docker.
 
 - Rules: "every night at 11 turn Wi-Fi off", "when charging starts, run the backup".
 - It learns: short notes about you and scripts it keeps as its own tools, across chats.
+- It teaches itself: asked for something it does not know, it searches YouTube, reads what a video says, does the task and keeps the steps as a skill. Ask "aaj kya seekha?".
+- It speaks with ElevenLabs if you give it keys; several keys take turns when one has used up its limit.
 - It checks in: asks how the exam went the next day, by notification you can answer.
 - Hindi (Hinglish) or English interface, dark or light theme.
 
@@ -142,11 +144,13 @@ screenshots, sets alarms and timers, keeps rules, and has PowerShell and
 Command Prompt tabs. Windows that do not say what is in them are read from a
 picture, on the PC itself, with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage)
 model. The same model looks at a photo and says what is in it and where
-(`pc look photo.jpg`). It is an early version (0.1.2).
+(`pc look photo.jpg`). It learns from YouTube by itself and keeps skills, reads
+and changes Word documents (`pc word`), and speaks with ElevenLabs keys that
+take turns. It is an early version (0.2.0).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.2/Termant-Setup.exe)** and open it.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.2.0/Termant-Setup.exe)** and open it.
 2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
 3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
 

@@ -15,6 +15,9 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [Photos: what is in a picture, and where](#photos-what-is-in-a-picture-and-where)
 - [Automation rules](#automation-rules)
 - [The agent learns: notes and its own tools](#the-agent-learns-notes-and-its-own-tools)
+- [Learning by itself: YouTube, skills, "aaj kya seekha?"](#learning-by-itself-youtube-skills-aaj-kya-seekha)
+- [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
+- [Faster answers](#faster-answers)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
 - [Settings: model, workspace, your own API key](#settings-model-workspace-your-own-api-key)
 - [Tools for the agent: GitHub, web search, screen control](#tools-for-the-agent-github-web-search-screen-control)
@@ -251,6 +254,83 @@ then. Notes stay on the phone, yet they are sent to the model's service with
 each message, like the message itself. Whether something gets saved is the
 model's decision; weaker free models may need to be told ("yaad rakho"). This
 does not change the app itself: the app only changes with a new version.
+
+## Learning by itself: YouTube, skills, "aaj kya seekha?"
+
+When you ask for something the agent does not know how to do, its rules tell it
+not to answer "nahi kar sakta" but to learn first:
+
+1. It looks at the skills it already has (`learn skills`).
+2. It searches YouTube (`learn youtube search "scan a document with the phone"`)
+   and reads what is said in a video (`learn youtube read ID`; `--lang hi` for
+   Hindi captions, `--from 10` to go on from minute 10). Web search is its
+   other source.
+3. It does the task, and when it worked it writes the steps down as a skill:
+   `learn skill NAME "what it is for" steps.md LINK`.
+4. It ends the answer with what it learned ("Aaj maine yeh seekha: ...").
+
+Ask "aaj kya seekha?" and it runs `learn today` (or `learn today 7` for the
+last week), which lists the skills, notes and tools of that day. The names of
+all skills are given to the agent at the start of every chat; it reads one
+(`learn show NAME`) when a task fits. `learn unlearn NAME` removes one.
+
+- "Reading a video" means reading its captions. A video without captions gives
+  only its description, and the agent is told to take another one.
+- YouTube has no official way to do this without an account. Termant asks the
+  same addresses the YouTube website and app ask; YouTube can change or refuse
+  them, and then the agent falls back to web search.
+- Whether the agent really learns before answering, and how good the skill is,
+  depends on the model. Weak free models may need to be told "YouTube se seekh
+  kar karo". At most 60 skills of 6,000 letters. Skills are not yet listed in
+  Settings; use `learn skills` or ask the agent.
+- Tested in the emulator against a pretend YouTube inside Ubuntu (53 checks:
+  search, captions in both forms, language, cut and continue, skills, today).
+  The real YouTube was tried from the emulator too: the search answered with
+  8 videos, but reading a video was refused ("Sign in to confirm you're not a
+  bot"), as YouTube does for data centres. Whether reading works on a phone's
+  own connection has not been tried. That a model really goes and learns when
+  it does not know something was not tested either.
+
+## ElevenLabs voice with several keys
+
+Tell the agent your keys in the chat ("ye meri ElevenLabs keys hain: ..."), or
+type in the terminal:
+
+```
+phone voice add KEY1 KEY2 KEY3      save keys (up to 30)
+phone say "Namaste"                 speaks with ElevenLabs
+phone voice                         each key: letters used, and whether it rests
+phone voice remove N     phone voice retry     phone voice list     phone voice use ID
+```
+
+- The keys take turns. When ElevenLabs answers that a key has used up its
+  limit, or that the key is wrong, Termant goes on to the next key within the
+  same sentence and lets the refused key rest (6 hours for a used-up limit, a
+  week for a wrong key), so it is not asked again every time.
+- Without keys, or when no key can speak, the phone's own voice is used.
+- Only the last 4 letters of a key are ever shown. The keys are kept in
+  `~/.config/termant/voice.keys` inside Ubuntu, readable by the owner only.
+  One text is at most 2,500 letters.
+- `phone play FILE` plays any sound file from Ubuntu.
+- Tested in the emulator with a pretend ElevenLabs: with two keys of which the
+  first is "used up", `phone say` spoke with the second, did not ask the first
+  again the next time, and the phone played the one-second sound. No real
+  ElevenLabs key was used, and nobody listened: the emulator has no speaker.
+
+## Faster answers
+
+OpenCode needs several seconds to start on a phone, and it used to be started
+anew for every message. Now Termant starts it once and keeps it running
+between messages. The first message after opening the app still waits for the
+start; the following ones do not. The kept one goes away after 15 minutes
+without a message, after **Stop**, and when a key or what the agent has learned
+changes (the next message then starts it again).
+
+In the emulator test, 15 of the 29 chat messages went through the kept
+OpenCode (the others came after the test had stopped the app or changed a
+setting). How many seconds this saves on a real phone has not been measured;
+on a Linux PC it was 1.5 to 1.7 seconds per message before and 0.2 after. The
+model's own thinking time is not changed.
 
 ## Looking after you: the agent asks first
 

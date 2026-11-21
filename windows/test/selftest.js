@@ -229,6 +229,7 @@ module.exports = async function selftest(ctx) {
       check('pc learned tells what was learned today', r.code === 0 && /Learned today \(\d{4}-\d\d-\d\d\): 2/.test(r.out) && /- skill word-table: Make a table in Word \(from https:\/\/youtu\.be\/dQw4w9WgXcQ\)/.test(r.out) && /- note: The user likes chai/.test(r.out), JSON.stringify(r));
       await js('document.getElementById("nav-settings").click()');
       check('Settings shows what was learned today', await until(() => js('(document.getElementById("learned-card") || {textContent: ""}).textContent.includes("word-table")'), 5000));
+      await js('document.getElementById("learned-card").scrollIntoView({ block: "center" })');
       await shot('learned');
       r = await pc('voice', 'add', 'key-used-up-1', 'key-good-333');
       check('pc voice add saves two keys', r.code === 0 && /2 ElevenLabs key\(s\) are saved/.test(r.out) && ctx.settings().voiceKeys.length === 2, JSON.stringify(r));

@@ -9,6 +9,13 @@ const path = require('path');
 const YOUTUBE = () => (process.env.TERMANT_YOUTUBE_URL || 'https://www.youtube.com').replace(/\/+$/, '');
 const BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 const PHONE_APP = '20.10.38';
+// The apps of YouTube that are asked for a video, in this order; the website's page comes last.
+const APPS = [
+  { agent: 'com.google.android.youtube/' + PHONE_APP + ' (Linux; U; Android 14) gzip',
+    client: { clientName: 'ANDROID', clientVersion: PHONE_APP, androidSdkVersion: 34, hl: 'en' } },
+  { agent: 'com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip',
+    client: { clientName: 'ANDROID_VR', clientVersion: '1.62.27', deviceMake: 'Oculus', deviceModel: 'Quest 3', androidSdkVersion: 32, osName: 'Android', osVersion: '12L', hl: 'en' } },
+];
 const MOST_SKILLS = 60;
 const MOST_SKILL_LETTERS = 6000;
 const MOST_ABOUT = 160;
@@ -169,17 +176,19 @@ function clock(seconds) {
 
 async function player(id) {
   let last = '';
-  try {
-    const r = await ask(YOUTUBE() + '/youtubei/v1/player?prettyPrint=false', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'user-agent': 'com.google.android.youtube/' + PHONE_APP + ' (Linux; U; Android 14) gzip' },
-      body: JSON.stringify({ context: { client: { clientName: 'ANDROID', clientVersion: PHONE_APP, androidSdkVersion: 34, hl: 'en' } }, videoId: id }),
-    });
-    const data = r.status === 200 ? json(r.text) : null;
-    if (data && data.videoDetails) return data;
-    last = data && data.playabilityStatus ? words(data.playabilityStatus.reason) || data.playabilityStatus.status : 'answer ' + r.status;
-  } catch (e) {
-    last = e.message;
+  for (const app of APPS) {
+    try {
+      const r = await ask(YOUTUBE() + '/youtubei/v1/player?prettyPrint=false', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'user-agent': app.agent },
+        body: JSON.stringify({ context: { client: app.client }, videoId: id }),
+      });
+      const data = r.status === 200 ? json(r.text) : null;
+      if (data && data.videoDetails) return data;
+      last = data && data.playabilityStatus ? words(data.playabilityStatus.reason) || data.playabilityStatus.status : 'answer ' + r.status;
+    } catch (e) {
+      last = e.message;
+    }
   }
   const page = await ask(YOUTUBE() + '/watch?v=' + id + '&hl=en');
   const data = page.status === 200 ? embedded(page.text, 'ytInitialPlayerResponse') : null;

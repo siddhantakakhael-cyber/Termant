@@ -30,6 +30,14 @@ SOUND_FILE = os.path.join(HOME, '.cache', 'termant', 'speech.mp3')
 BROWSER = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
            'Chrome/131.0.0.0 Safari/537.36')
 PHONE_APP = '20.10.38'
+# The apps of YouTube that are asked for a video, in this order; the website's page comes last.
+APPS = [
+    ('com.google.android.youtube/%s (Linux; U; Android 14) gzip' % PHONE_APP,
+     {'clientName': 'ANDROID', 'clientVersion': PHONE_APP, 'androidSdkVersion': 34, 'hl': 'en'}),
+    ('com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip',
+     {'clientName': 'ANDROID_VR', 'clientVersion': '1.62.27', 'deviceMake': 'Oculus', 'deviceModel': 'Quest 3',
+      'androidSdkVersion': 32, 'osName': 'Android', 'osVersion': '12L', 'hl': 'en'}),
+]
 VOICE = 'JBFqnCBsd6RMkjVDRZzb'
 MODEL = 'eleven_multilingual_v2'
 MOST_LETTERS = 2500
@@ -217,17 +225,17 @@ def clock(seconds):
 
 def player(vid):
     last = ''
-    try:
-        status, raw = ask(youtube() + '/youtubei/v1/player?prettyPrint=false', {
-            'context': {'client': {'clientName': 'ANDROID', 'clientVersion': PHONE_APP, 'androidSdkVersion': 34, 'hl': 'en'}},
-            'videoId': vid}, {'User-Agent': 'com.google.android.youtube/%s (Linux; U; Android 14) gzip' % PHONE_APP})
-        data = parsed(raw) if status == 200 else None
-        if data and data.get('videoDetails'):
-            return data
-        state = (data or {}).get('playabilityStatus') or {}
-        last = words(state.get('reason')) or state.get('status') or 'answer %d' % status
-    except Problem as e:
-        last = str(e)
+    for agent, client in APPS:
+        try:
+            status, raw = ask(youtube() + '/youtubei/v1/player?prettyPrint=false',
+                              {'context': {'client': client}, 'videoId': vid}, {'User-Agent': agent})
+            data = parsed(raw) if status == 200 else None
+            if data and data.get('videoDetails'):
+                return data
+            state = (data or {}).get('playabilityStatus') or {}
+            last = words(state.get('reason')) or state.get('status') or 'answer %d' % status
+        except Problem as e:
+            last = str(e)
     status, raw = ask(youtube() + '/watch?v=' + vid + '&hl=en')
     data = embedded(raw.decode('utf-8', 'replace'), 'ytInitialPlayerResponse') if status == 200 else None
     if data and data.get('videoDetails'):

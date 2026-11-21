@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.1.2).** It is built and tested automatically on a Windows
+> **Early version (0.2.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.1.2/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.2.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -36,11 +36,14 @@ To remove it: Windows **Settings → Apps → Installed apps → Termant → Uni
 | **Rules** | "Every day at 11 pm turn the volume to zero." Rules run at a time of day, every so often, once after a delay, or when Termant starts. |
 | **Alarms and timers** | They ring in Termant, with a notification. |
 | **Notes** | Tell it something about you and it remembers in later chats. |
+| **Learns by itself** | Asked for something it does not know, it does not say "I can't": it searches YouTube, reads what is said in a video, does the task, and keeps the steps as a skill. Ask "aaj kya seekha?" for today's list. |
+| **Word documents** | Reads and changes `.docx` files directly (no Word needed), or works by hand in Word with clicks and drags. |
+| **Working folder** | The folder chip at the top of the chat shows where the agent works; click it to pick another folder. |
 | **Questions** | When the agent needs a decision, a card with choices appears and it waits. |
 | **Check-ins** | If you turn it on, the agent writes first at the times of day you choose. |
 | **Tools** | Web search, GitHub token for `git push`, MCP servers. |
 | **Look** | Hindi or English, dark or light. |
-| **Voice** | The microphone button starts Windows dictation (the same as pressing Win+H). |
+| **Voice** | The microphone button starts Windows dictation (the same as pressing Win+H). With ElevenLabs keys (Settings), `pc say` and "Read answers aloud" use that voice; several keys take turns when one has used up its limit. |
 
 | | |
 | --- | --- |
@@ -62,7 +65,8 @@ pc windows        pc focus <title>           pc close <title>
 pc processes [filter]                        pc kill <name | id>
 
 pc type <text>    pc key <enter | ctrl+s | alt+f4 | win+d ...>
-pc click <x> <y> [right|double]              pc move <x> <y>      pc scroll <lines>
+pc click <x> <y> [right|double|triple]       pc move <x> <y>      pc scroll <lines>
+pc drag <x1> <y1> <x2> <y2>                  press, move, let go: selects text, moves things
 pc screen         what the window in front shows, with the point to click for each thing
 pc screen ocr     the same, and always reads a picture of the window too (pc screen ocr full: the whole screen)
 pc look <file>    what is in a photo and where: the scene, each thing with its place, the writing
@@ -168,6 +172,87 @@ pc note add <text>          pc note list     pc note remove <number>
     garbled (Latin letters only).
   - Files: JPEG, PNG, BMP, GIF, TIFF. Only a handful of photos have been tried.
 
+## Learning by itself
+
+When you ask for something the agent does not know how to do, its rules tell it
+not to answer "I can't" but to learn first:
+
+1. It looks at the skills it already has (`pc skill list`).
+2. It searches YouTube (`pc youtube search "mail merge in Word"`) and reads what
+   is said in a video (`pc youtube read ID`; `--lang hi` for Hindi captions,
+   `--from 10` to go on from minute 10). Web search is its other source.
+3. It does the task, and when it worked it writes the steps down as a skill
+   (`pc skill save NAME "what it is for" steps.md LINK`).
+4. It ends the answer with what it learned. Under that answer the chat shows
+   **Learned just now**, and **Settings → What Termant taught itself** lists
+   today's learning and all skills. `pc learned` (or `pc learned 7`) prints it;
+   asking "aaj kya seekha?" makes the agent read it out in its own words.
+
+Skills are plain files in `%APPDATA%\Termant\skills`; their names are given to
+the agent at the start of every chat, and it reads one when a task fits.
+
+- "Reading a video" means reading its captions. A video without captions gives
+  only its description, and the agent is told to take another one.
+- YouTube has no official way to do this without an account. Termant asks the
+  same addresses the YouTube website and app ask; YouTube can change or refuse
+  them (it often refuses computers in data centres), and then the agent falls
+  back to web search.
+- Whether the agent really learns before answering, and how good the skill is,
+  depends on the model. Weak free models may need to be told "YouTube se seekh
+  kar karo". At most 60 skills of 6,000 letters.
+
+## Word documents
+
+`pc word` changes the `.docx` file itself, so it needs no mouse and no Word:
+
+```
+pc word read report.docx                        every paragraph with its number
+pc word new letter.docx "Dear Asha,\nThank you."   (\n starts a new paragraph)
+pc word add report.docx [--bold] "One more paragraph."
+pc word replace report.docx "2024" "2025"       everywhere, also in tables
+pc word set report.docx 3 "New text"            pc word delete report.docx 5
+```
+
+- Replacing keeps the look of the text. Where Word has cut the words into
+  pieces with different looks, the changed sentence takes the look of its
+  first piece.
+- If the document is open in Word, the same commands work inside Word and
+  save, so you see the change.
+- Tables, pictures, fonts and page layout are not done by `pc word`. For those
+  the agent works in Word by hand: `pc screen` to see the window,
+  `pc click X Y` (`double` selects a word, `triple` a paragraph),
+  `pc drag X1 Y1 X2 Y2` to select from one point to another, `pc key ctrl+b`,
+  `pc type`. Old `.doc` files must be saved as `.docx` first.
+
+## ElevenLabs voice with several keys
+
+**Settings → Voice (ElevenLabs) → ElevenLabs keys**: paste your keys, one per
+line (up to 30). Then `pc say "text"` speaks with ElevenLabs, and **Read
+answers aloud** speaks every answer.
+
+- The keys take turns. When ElevenLabs answers that a key has used up its
+  limit, or that the key is wrong, Termant goes on to the next key within the
+  same sentence and lets the refused key rest (6 hours for a used-up limit, a
+  week for a wrong key), so it is not asked again every time.
+- `pc voice` shows for each key how many letters are used and whether it
+  rests; only the last 4 letters of a key are ever shown. `pc voice retry`
+  tries all keys again, `pc voice list` and `pc voice use ID` pick the voice.
+- Without keys, or when no key can speak, the PC's own voice is used.
+- The keys are stored in Termant's settings file on this PC, like the other
+  API keys. One text is at most 2,500 letters.
+
+## Faster answers
+
+OpenCode used to be started anew for every message. Now Termant starts it once
+and keeps it running between messages, so a message no longer waits for that
+start. A new one is started when a key, the settings or what the agent has
+learned changes, and after **Stop**.
+
+Measured on a Linux machine with the same OpenCode (2.3.2): from sending a
+message to OpenCode asking the model took 1.5 to 1.7 seconds before, and 0.2
+seconds with the kept server. The model's own thinking time is not changed by
+this, and it is usually the larger part.
+
 ## How it is tested
 
 Every change is built and tested by the **Windows app** workflow on a Windows
@@ -186,11 +271,32 @@ Server 2025 machine with a real desktop:
    notes, rules that really run, an alarm and a timer that rings, a question
    card, a terminal tab that runs commands, settings in Hindi and light theme.
 4. It downloads the agent, loads the model list, sends real messages to a free
-   model and asks it to control the PC.
+   model and asks it to control the PC. The second message must go through the
+   kept OpenCode server.
+5. `pc word` makes a document, adds, replaces, sets and deletes paragraphs and
+   reads it back; and it replaces words in a document whose sentence is cut
+   into pieces and has a table, the way Word writes them.
+6. Learning and voice run against a pretend YouTube and a pretend ElevenLabs on
+   the test machine: search, reading captions (JSON and XML, language, cut and
+   continue), skills, today's list, and with two keys of which the first is
+   "used up", `pc say` must speak with the second and not ask the first again.
+   The real YouTube is tried too: the search answered with 8 videos.
 
 What the test machine cannot check: sound (it has no speakers, so volume, mute
 and `pc say` are only tried), brightness, battery, Wi-Fi, voice dictation, and
-the blue SmartScreen box.
+the blue SmartScreen box. Also not checked:
+
+- **Reading a real YouTube video.** YouTube refused the test machine ("Sign in
+  to confirm you're not a bot"), as it does for data centres. Whether it
+  answers on a home connection has not been tried.
+- **The real ElevenLabs.** No real key was used; the pretend one answers the
+  way ElevenLabs documents its refusals (`quota_exceeded`, `invalid_api_key`).
+- **Word itself.** The test machine has no Word, so `pc word` inside an open
+  Word window, and editing by clicks and drags, have not been run. `pc drag`
+  was only checked to run.
+- **A model that learns.** That a model really searches YouTube and saves a
+  skill when it does not know something was not tested; it is told to in its
+  rules.
 
 ## Build from source
 
