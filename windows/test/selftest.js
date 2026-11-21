@@ -179,6 +179,84 @@ module.exports = async function selftest(ctx) {
     check('settings are saved to disk', store.load('settings.json', {}).lang === 'en' && store.load('settings.json', {}).theme === 'dark');
     await js('window.termantTest.show("chat")');
 
+    // ---- learning: skills, the diary, YouTube and the ElevenLabs keys (a pretend YouTube and ElevenLabs on this PC)
+    if (WINDOWS) {
+      const pretend = http.createServer((request, response) => {
+        let body = '';
+        request.on('data', (part) => { body += part; });
+        request.on('end', () => {
+          const url = new URL(request.url, 'http://x');
+          const key = request.headers['xi-api-key'] || '';
+          const give = (code, value, type) => {
+            response.writeHead(code, { 'content-type': type || 'application/json' });
+            response.end(Buffer.isBuffer(value) ? value : JSON.stringify(value));
+          };
+          if (url.pathname === '/youtubei/v1/search') {
+            return give(200, { contents: [{ videoRenderer: { videoId: 'dQw4w9WgXcQ', title: { runs: [{ text: 'Make a table in Word' }] },
+              ownerText: { runs: [{ text: 'Office Guru' }] }, lengthText: { simpleText: '4:05' } } }] });
+          }
+          if (url.pathname === '/youtubei/v1/player') {
+            return give(200, { videoDetails: { videoId: 'dQw4w9WgXcQ', title: 'Make a table in Word', author: 'Office Guru', lengthSeconds: '245', shortDescription: '' },
+              captions: { playerCaptionsTracklistRenderer: { captionTracks: [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=dQw4w9WgXcQ&lang=en', languageCode: 'en' }] } } });
+          }
+          if (url.pathname === '/api/timedtext') return give(200, { events: [{ tStartMs: 0, segs: [{ utf8: 'click insert then table' }] }] });
+          if (url.pathname.startsWith('/v1/text-to-speech/')) {
+            if (key === 'key-used-up-1') return give(401, { detail: { status: 'quota_exceeded', message: 'No credits left.' } });
+            return give(200, Buffer.concat([Buffer.from('ID3'), Buffer.alloc(600, 3)]), 'audio/mpeg');
+          }
+          if (url.pathname === '/v1/user/subscription') return give(200, { tier: 'free', character_count: key === 'key-used-up-1' ? 10000 : 40, character_limit: 10000 });
+          give(404, {});
+        });
+      });
+      await new Promise((resolve) => pretend.listen(0, '127.0.0.1', resolve));
+      const pretendUrl = 'http://127.0.0.1:' + pretend.address().port;
+      process.env.TERMANT_YOUTUBE_URL = pretendUrl;
+      process.env.TERMANT_ELEVEN_URL = pretendUrl;
+      r = await pc('youtube', 'search', 'table', 'in', 'word');
+      check('pc youtube search lists videos', r.code === 0 && /1\. Make a table in Word/.test(r.out) && /id dQw4w9WgXcQ/.test(r.out), JSON.stringify(r));
+      r = await pc('youtube', 'read', 'dQw4w9WgXcQ');
+      check('pc youtube read prints what is said', r.code === 0 && /\[0:00\] click insert then table/.test(r.out) && /4:05 long/.test(r.out), JSON.stringify(r));
+      const stepsFile = path.join(dir, 'steps.md');
+      fs.writeFileSync(stepsFile, '1. Open Word.\n2. Insert > Table.\n3. Pick 3 x 3.\n');
+      r = await pc('skill', 'save', 'word-table', 'Make a table in Word', stepsFile, 'https://youtu.be/dQw4w9WgXcQ');
+      check('pc skill save', r.code === 0 && /Skill learned: word-table/.test(r.out), JSON.stringify(r));
+      check('the skill is named in the agent\'s guide', fs.readFileSync(path.join(store.dir, 'agent', 'learned.md'), 'utf8').includes('- `word-table`: Make a table in Word'));
+      r = await pc('skill', 'show', 'word-table');
+      check('pc skill show prints the steps', r.code === 0 && /2\. Insert > Table\./.test(r.out), JSON.stringify(r));
+      r = await pc('skill', 'save', 'Bad Name', 'x', stepsFile);
+      check('a wrong skill name is refused', r.code !== 0 && /name must be/.test(r.err + r.out), JSON.stringify(r));
+      r = await pc('learned');
+      check('pc learned tells what was learned today', r.code === 0 && /Learned today \(\d{4}-\d\d-\d\d\): 2/.test(r.out) && /- skill word-table: Make a table in Word \(from https:\/\/youtu\.be\/dQw4w9WgXcQ\)/.test(r.out) && /- note: The user likes chai/.test(r.out), JSON.stringify(r));
+      await js('document.getElementById("nav-settings").click()');
+      check('Settings shows what was learned today', await until(() => js('(document.getElementById("learned-card") || {textContent: ""}).textContent.includes("word-table")'), 5000));
+      await shot('learned');
+      r = await pc('voice', 'add', 'key-used-up-1', 'key-good-333');
+      check('pc voice add saves two keys', r.code === 0 && /2 ElevenLabs key\(s\) are saved/.test(r.out) && ctx.settings().voiceKeys.length === 2, JSON.stringify(r));
+      r = await pc('say', 'namaste', 'from', 'termant');
+      const sound = path.join(dir, 'said.mp3');
+      check('pc say moves to the second key when the first is used up', r.code === 0 && /Said with ElevenLabs, key 2 of 2 \(key 1 \(\.\.\.up-1\): quota_exceeded\)/.test(r.out) && fs.existsSync(sound) && fs.statSync(sound).size === 603, JSON.stringify(r));
+      r = await pc('say', 'again');
+      check('the used-up key is left out the next time', r.code === 0 && /Said with ElevenLabs, key 2 of 2\.$/.test(r.out), JSON.stringify(r));
+      r = await pc('voice');
+      check('pc voice shows each key without printing it', r.code === 0 && /1\. \.\.\.up-1 .*10000 of 10000.*resting/.test(r.out) && /2\. \.\.\.-333 .*in use/.test(r.out) && !r.out.includes('key-good-333'), JSON.stringify(r));
+      await js('document.getElementById("nav-chat").click()');
+      check('the chat shows the working folder', await until(() => js('document.getElementById("folder-chip").textContent.length > 0'), 4000), await js('document.getElementById("folder-chip").title'));
+      delete process.env.TERMANT_YOUTUBE_URL;
+      delete process.env.TERMANT_ELEVEN_URL;
+      pretend.close();
+      store.save('settings.json', Object.assign(ctx.settings(), { voiceKeys: [] }));
+      // the real YouTube, from this machine (it often refuses computers in data centres, so this does not decide the result)
+      r = await pc('youtube', 'search', 'how', 'to', 'make', 'a', 'table', 'in', 'Word');
+      fs.writeFileSync(path.join(dir, 'youtube-search.txt'), r.out + '\n' + r.err);
+      check('the real YouTube: search', r.code === 0 && /\nRead what is said/.test(r.out), JSON.stringify(r).slice(0, 300), true);
+      const real = (r.out.match(/\n {3}id ([A-Za-z0-9_-]{11})/) || [])[1];
+      if (real) {
+        r = await pc('youtube', 'read', real);
+        fs.writeFileSync(path.join(dir, 'youtube-read.txt'), r.out + '\n' + r.err);
+        check('the real YouTube: what a video says', r.code === 0 && /What is said \(/.test(r.out), JSON.stringify(r).slice(0, 300), true);
+      }
+    }
+
     // ---- the AI agent (needs the internet and a free model that answers)
     if (process.argv.includes('--selftest-agent')) {
       const started = Date.now();
@@ -207,6 +285,11 @@ module.exports = async function selftest(ctx) {
         };
         let reply = await send('Reply with exactly this one word and nothing else: pong', 300);
         check('the agent answers', !reply.failed && /pong/i.test(reply.text), JSON.stringify(reply), true);
+        const firstSeconds = reply.seconds;
+        const firstFast = agent.fast;
+        reply = await send('Reply with exactly this one word and nothing else: ping', 300);
+        check('the second message goes through the kept server', firstFast && agent.fast && !reply.failed && /ping/i.test(reply.text),
+          'first ' + firstSeconds + ' s (kept server: ' + firstFast + '), second ' + reply.seconds + ' s (kept server: ' + agent.fast + ') ' + JSON.stringify(reply).slice(0, 200), true);
         await shot('answer');
         if (!reply.failed && WINDOWS) {
           reply = await send('Use your shell tool to run exactly this command: pc clipboard set termant-agent-ok   Then say "done".', 300);

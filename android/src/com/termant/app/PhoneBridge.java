@@ -72,7 +72,9 @@ final class PhoneBridge {
                     + "  phone ring [label]          ring loudly now until stopped\n"
                     + "  phone stop                  stop ringing\n"
                     + "  phone notify TITLE [TEXT]   show a notification\n"
-                    + "  phone say TEXT              speak aloud\n"
+                    + "  phone say TEXT              speak aloud (with ElevenLabs when keys are saved: phone voice)\n"
+                    + "  phone play FILE             play a sound file\n"
+                    + "  phone voice                 the ElevenLabs keys; they take turns when one is used up\n"
                     + "  phone toast TEXT            show a short message\n"
                     + "  phone vibrate [MS]          vibrate (default 400)\n"
                     + "  phone torch on|off          flashlight\n"
@@ -182,7 +184,8 @@ final class PhoneBridge {
             List<String> args = new ArrayList<>();
             for (int i = 0; i < count; i++) args.add(field(in));
             // "look - NAME SIZE": the bytes of a picture file in Ubuntu follow
-            boolean picture = count == 4 && "look".equals(args.get(0)) && "-".equals(args.get(1));
+            // "play - NAME SIZE": the bytes of a sound file follow in the same way
+            boolean picture = count == 4 && ("look".equals(args.get(0)) || "play".equals(args.get(0))) && "-".equals(args.get(1));
             int size = picture ? Integer.parseInt(args.get(3)) : 0;
             if (picture && (size < 1 || size > MOST_PICTURE_BYTES)) return;
 
@@ -195,7 +198,7 @@ final class PhoneBridge {
                         if (n < 0) throw new IOException("short request");
                         got += n;
                     }
-                    text = look(args.get(2), sent);
+                    text = "play".equals(args.get(0)) ? play(args.get(2), sent) : look(args.get(2), sent);
                 } else {
                     text = run(args);
                 }
@@ -543,6 +546,37 @@ final class PhoneBridge {
                         new Intent(service, MainActivity.class), immutable));
         nm.notify(notificationId++, b.build());
         return "";
+    }
+
+    private android.media.MediaPlayer player;
+
+    /** Plays a sound file that Ubuntu sent along (speech made by ElevenLabs, or any sound the agent has). */
+    private synchronized String play(String name, byte[] sound) throws Exception {
+        File file = new File(service.getCacheDir(), "termant-sound");
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+            out.write(sound);
+        }
+        if (player != null) {
+            try {
+                player.release();
+            } catch (Exception e) {
+                // it had ended already
+            }
+            player = null;
+        }
+        android.media.MediaPlayer p = new android.media.MediaPlayer();
+        int ms;
+        try {
+            p.setDataSource(file.getPath());
+            p.prepare();
+            ms = p.getDuration();
+            p.start();
+        } catch (Exception e) {
+            p.release();
+            throw new Refused("phone play: the phone cannot play this as a sound: " + name);
+        }
+        player = p;
+        return "Playing " + name + (ms > 0 ? " (" + Math.max(1, (ms + 500) / 1000) + " s)" : "");
     }
 
     private synchronized String say(final String text) throws Exception {

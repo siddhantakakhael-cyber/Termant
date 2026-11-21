@@ -263,6 +263,9 @@
     const chat = S.chat;
     $('chat-title').textContent = (chat && chat.title) || t('new_chat');
     clear($('model-chip')).append(icon('sparkle'), modelName());
+    const folder = String(S.settings.workspace || '');
+    clear($('folder-chip')).append(icon('folder'), folder.split(/[\\/]/).filter(Boolean).pop() || folder);
+    $('folder-chip').title = t('s_folder') + ': ' + folder;
     const box = $('messages');
     const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
     clear(box);
@@ -294,6 +297,9 @@
         }
         if (m.note === 'stopped') node.appendChild(el('div', { class: 'note' }, t('stopped')));
         else if (m.note && m.note.startsWith('model:')) node.appendChild(el('div', { class: 'note' }, t('switched', m.note.slice(6))));
+        if (m.learned && m.learned.length) {
+          node.appendChild(el('div', { class: 'learned' }, el('b', null, t('learned_now')), m.learned.map((line) => el('div', null, line))));
+        }
         column.appendChild(node);
       });
       box.appendChild(column);
@@ -553,6 +559,29 @@
       }))));
     page.appendChild(el('div', { class: 'hint' }, t('s_keys_note')));
 
+    const voiceCount = (s.voiceKeys || []).length;
+    section(t('s_voice'),
+      row('key', t('voice_keys'), t('voice_keys_note'), voiceCount ? t('voice_count', voiceCount) : t('key_none'), () => {
+        const field = el('textarea', { class: 'field', id: 'voice-keys', placeholder: 'sk_...\nsk_...', spellcheck: 'false' });
+        field.value = (s.voiceKeys || []).join('\n');
+        dialog({ title: t('voice_keys'), text: t('voice_keys_help'), body: field, buttons: [{ text: t('cancel') }, { text: t('save'), kind: 'primary', run: () => {
+          const seen = new Set();
+          const keys = field.value.split(/[\s,;]+/).map((k) => k.trim()).filter((k) => k.length >= 8 && !seen.has(k) && seen.add(k)).slice(0, 30);
+          set({ voiceKeys: keys });
+        } }] });
+        field.focus();
+      }),
+      toggle('bell', t('voice_speak'), t('voice_speak_note'), 'speak'));
+
+    const known = (S.data && S.data.learned) || { today: [], skills: [] };
+    page.appendChild(el('h2', null, t('s_learned')));
+    page.appendChild(el('div', { class: 'card', id: 'learned-card' },
+      el('div', { class: 'item' }, icon('sparkle'), el('span', { class: 'grow' }, el('span', { class: 'title' }, t('learned_today', known.today.length)),
+        known.today.length ? known.today.map((line) => el('span', { class: 'sub' }, line)) : el('span', { class: 'sub' }, t('learned_none')))),
+      known.skills.map((k) => el('div', { class: 'item' }, icon('bolt'),
+        el('span', { class: 'grow' }, el('span', { class: 'title' }, k.name), el('span', { class: 'sub' }, k.about + (k.day ? ' · ' + k.day : '')))))));
+    page.appendChild(el('div', { class: 'hint' }, t('s_learned_note')));
+
     page.appendChild(el('h2', null, t('s_mcp')));
     page.appendChild(el('div', { class: 'card' },
       Object.entries(s.mcp || {}).map(([name, command]) => el('div', { class: 'item' }, icon('plug'),
@@ -723,7 +752,21 @@
 
     api.on('chat', (update) => { applyChat(update); });
     api.on('chats', (list) => { S.chats = list; renderSide(); });
-    api.on('data', (d) => { S.data = d; if (view === 'auto') renderAuto(); });
+    api.on('data', (d) => { S.data = d; if (view === 'auto') renderAuto(); if (view === 'settings') renderSettings(); });
+    api.on('settings', (s) => { S.settings = s; renderAll(); });
+    let speaking = null;
+    api.on('voice', (sound) => {
+      if (speaking) speaking.pause();
+      speaking = new Audio('data:audio/mpeg;base64,' + sound);
+      speaking.play().catch(() => {});
+    });
+    $('folder-chip').addEventListener('click', async () => {
+      const folder = await call('pick:folder');
+      if (!folder) return;
+      S.settings = await call('settings:set', { workspace: folder });
+      renderAll();
+      toast(t('s_folder'), folder);
+    });
     api.on('install', (p) => { for (const f of installListeners) f(p); });
     api.on('installed', () => { S.agentInstalled = true; });
     api.on('shells', (list) => { S.shells = list; });

@@ -152,6 +152,245 @@ function App($path, $body) {
   if ($r.text) { Write-Output $r.text }
 }
 
+# Like App, but gives the answer back (or nothing when the app is not there) instead of stopping.
+function AppTry($path, $body) {
+  try {
+    $b = Get-Content -Raw -LiteralPath (Join-Path (Data-Dir) 'bridge.json') -ErrorAction Stop | ConvertFrom-Json
+    $bytes = [Text.Encoding]::UTF8.GetBytes(($body | ConvertTo-Json -Compress -Depth 5))
+    return Invoke-RestMethod -Uri "http://127.0.0.1:$($b.port)$path" -Method Post -Body $bytes `
+      -ContentType 'application/json; charset=utf-8' -Headers @{ 'X-Termant' = $b.token } -TimeoutSec 120
+  } catch { return $null }
+}
+
+# ---------------------------------------------------------------- Word documents (.docx)
+# A .docx is a zip with the text in word/document.xml, so it can be read and changed without Word.
+# When Word has the file open, the same is done through Word itself, so the user sees the change.
+$WordNs = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+$XmlNs = 'http://www.w3.org/XML/1998/namespace'
+function Docx-Full($file, $mustExist) {
+  if (-not $file) { Fail 'pc word: give the .docx file.' }
+  $full = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($file)
+  if ($full -notmatch '\.docx$') { Fail "pc word: $file is not a .docx file. (An old .doc must be saved as .docx in Word first.)" }
+  if ($mustExist -and -not (Test-Path -LiteralPath $full -PathType Leaf)) { Fail "pc word: there is no such file: $full" }
+  return $full
+}
+function Docx-Live($full) {
+  try { $word = [Runtime.InteropServices.Marshal]::GetActiveObject('Word.Application') } catch { return $null }
+  try { foreach ($d in $word.Documents) { if ($d.FullName -ieq $full) { return $d } } } catch { }
+  return $null
+}
+function Docx-Load($full) {
+  Add-Type -AssemblyName System.IO.Compression
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $text = $null
+  try { $zip = [IO.Compression.ZipFile]::OpenRead($full) }
+  catch { Fail "pc word: $full cannot be opened ($($_.Exception.Message)). If another program has it open, close it there first." }
+  try {
+    $entry = $zip.GetEntry('word/document.xml')
+    if ($entry) {
+      $reader = New-Object IO.StreamReader($entry.Open(), [Text.Encoding]::UTF8)
+      try { $text = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    }
+  } finally { $zip.Dispose() }
+  if (-not $text) { Fail "pc word: $full is not a Word document." }
+  $xml = New-Object Xml.XmlDocument
+  $xml.PreserveWhitespace = $true
+  $xml.LoadXml($text)
+  return ,$xml
+}
+function Docx-Save($full, $xml) {
+  $bytes = (New-Object Text.UTF8Encoding($false)).GetBytes($xml.OuterXml)
+  try { $zip = [IO.Compression.ZipFile]::Open($full, [IO.Compression.ZipArchiveMode]::Update) }
+  catch { Fail "pc word: $full cannot be written ($($_.Exception.Message)). If another program has it open, close it there first." }
+  try {
+    $old = $zip.GetEntry('word/document.xml')
+    if ($old) { $old.Delete() }
+    $stream = $zip.CreateEntry('word/document.xml').Open()
+    try { $stream.Write($bytes, 0, $bytes.Length) } finally { $stream.Dispose() }
+  } finally { $zip.Dispose() }
+}
+function Docx-Ns($xml) {
+  $ns = New-Object Xml.XmlNamespaceManager($xml.NameTable)
+  $ns.AddNamespace('w', $WordNs)
+  return ,$ns
+}
+function Docx-Text($p, $ns) {
+  $sb = New-Object Text.StringBuilder
+  foreach ($n in $p.SelectNodes('.//w:t | .//w:tab | .//w:br', $ns)) {
+    if ($n.LocalName -eq 't') { [void]$sb.Append($n.InnerText) } elseif ($n.LocalName -eq 'tab') { [void]$sb.Append("`t") } else { [void]$sb.Append(' ') }
+  }
+  return $sb.ToString()
+}
+function Docx-NewParagraph($xml, $text, $bold) {
+  $p = $xml.CreateElement('w', 'p', $WordNs)
+  $r = $xml.CreateElement('w', 'r', $WordNs)
+  if ($bold) {
+    $rpr = $xml.CreateElement('w', 'rPr', $WordNs)
+    [void]$rpr.AppendChild($xml.CreateElement('w', 'b', $WordNs))
+    [void]$r.AppendChild($rpr)
+  }
+  $t = $xml.CreateElement('w', 't', $WordNs)
+  [void]$t.SetAttribute('space', $XmlNs, 'preserve')
+  $t.InnerText = $text
+  [void]$r.AppendChild($t)
+  [void]$p.AppendChild($r)
+  return ,$p
+}
+# Puts $text into paragraph $p: the first piece of text keeps its look, the other pieces are emptied.
+function Docx-SetText($xml, $p, $ns, $text) {
+  $parts = @($p.SelectNodes('.//w:t', $ns))
+  if ($parts.Count -eq 0) {
+    $fresh = Docx-NewParagraph $xml $text $false
+    [void]$p.AppendChild($fresh.FirstChild)
+    return
+  }
+  $parts[0].InnerText = $text
+  [void]$parts[0].SetAttribute('space', $XmlNs, 'preserve')
+  for ($i = 1; $i -lt $parts.Count; $i++) { $parts[$i].InnerText = '' }
+}
+function Docx-Lines($text) { return @(($text -replace '\\n', "`n") -split "`r?`n") }
+function Docx-Create($full, $lines) {
+  Add-Type -AssemblyName System.IO.Compression
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $body = New-Object Text.StringBuilder
+  foreach ($line in $lines) {
+    [void]$body.Append('<w:p><w:r><w:t xml:space="preserve">' + [Security.SecurityElement]::Escape($line) + '</w:t></w:r></w:p>')
+  }
+  if ($lines.Count -eq 0) { [void]$body.Append('<w:p/>') }
+  $files = [ordered]@{
+    '[Content_Types].xml' = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'
+    '_rels/.rels' = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'
+    'word/document.xml' = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="' + $WordNs + '"><w:body>' + $body.ToString() + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>'
+  }
+  $folder = Split-Path -Parent $full
+  if ($folder -and -not (Test-Path -LiteralPath $folder)) { [void](New-Item -ItemType Directory -Force -Path $folder) }
+  $zip = [IO.Compression.ZipFile]::Open($full, [IO.Compression.ZipArchiveMode]::Create)
+  try {
+    foreach ($name in $files.Keys) {
+      $bytes = (New-Object Text.UTF8Encoding($false)).GetBytes($files[$name])
+      $stream = $zip.CreateEntry($name).Open()
+      try { $stream.Write($bytes, 0, $bytes.Length) } finally { $stream.Dispose() }
+    }
+  } finally { $zip.Dispose() }
+}
+function Word-Command {
+  $what = if ($rest.Count -gt 0) { $rest[0] } else { '' }
+  $usage = 'Usage: pc word read <file.docx> | new <file.docx> [text] | add <file.docx> [--bold] <text> | replace <file.docx> <old> <new> | set <file.docx> <number> <text> | delete <file.docx> <number>'
+  if ($what -eq 'new') {
+    if ($rest.Count -lt 2) { Fail $usage }
+    $full = Docx-Full $rest[1] $false
+    if (Test-Path -LiteralPath $full) { Fail "pc word: $full is already there. Change it with pc word add / replace, or pick another name." }
+    $lines = if ($rest.Count -gt 2) { Docx-Lines (($rest[2..($rest.Count - 1)]) -join ' ') } else { @() }
+    Docx-Create $full $lines
+    Write-Output "Made $full with $($lines.Count) paragraph(s). Open it with: pc open `"$full`""
+    return
+  }
+  if (@('read', 'add', 'replace', 'set', 'delete') -notcontains $what -or $rest.Count -lt 2) { Fail $usage }
+  $full = Docx-Full $rest[1] $true
+  $live = Docx-Live $full
+  if ($live) {
+    # Word has this file open: work in Word, so that the user sees it and nothing is overwritten
+    if ($what -eq 'read') {
+      $n = 0
+      foreach ($p in $live.Paragraphs) { $n++; $line = ([string]$p.Range.Text).Trim(); if ($line) { Write-Output "${n}: $line" } }
+      Write-Output "($n paragraphs; the file is open in Word)"
+    } elseif ($what -eq 'add') {
+      $bold = $rest[2] -eq '--bold'
+      $from = if ($bold) { 3 } else { 2 }
+      if ($rest.Count -le $from) { Fail $usage }
+      $lines = Docx-Lines (($rest[$from..($rest.Count - 1)]) -join ' ')
+      foreach ($line in $lines) {
+        $live.Content.InsertParagraphAfter()
+        $range = $live.Paragraphs.Item($live.Paragraphs.Count).Range
+        $range.InsertBefore($line)
+        $range.Bold = [int]$bold
+      }
+      $live.Save()
+      Write-Output "Added $($lines.Count) paragraph(s) in Word and saved."
+    } elseif ($what -eq 'replace') {
+      if ($rest.Count -lt 4) { Fail $usage }
+      $before = [string]$live.Content.Text
+      $count = ([regex]::Matches($before, [regex]::Escape($rest[2]))).Count
+      if ($count -eq 0) { Fail "pc word: `"$($rest[2])`" is not in the document. Read it first: pc word read `"$full`"" }
+      [void]$live.Content.Find.Execute($rest[2], $true, $false, $false, $false, $false, $true, 1, $false, $rest[3], 2)
+      $live.Save()
+      Write-Output "Replaced $count time(s) in Word and saved."
+    } else {
+      $n = 0
+      if ($rest.Count -lt 3 -or -not [int]::TryParse($rest[2], [ref]$n) -or $n -lt 1 -or $n -gt $live.Paragraphs.Count) { Fail "pc word: say which paragraph by its number from pc word read (1 to $($live.Paragraphs.Count))." }
+      $range = $live.Paragraphs.Item($n).Range
+      if ($what -eq 'delete') { $range.Delete() | Out-Null; $live.Save(); Write-Output "Deleted paragraph $n in Word and saved." }
+      else {
+        if ($rest.Count -lt 4) { Fail $usage }
+        [void]$range.MoveEnd(1, -1)
+        $range.Text = (($rest[3..($rest.Count - 1)]) -join ' ')
+        $live.Save()
+        Write-Output "Changed paragraph $n in Word and saved."
+      }
+    }
+    return
+  }
+  $xml = Docx-Load $full
+  $ns = Docx-Ns $xml
+  $body = $xml.SelectSingleNode('//w:body', $ns)
+  if (-not $body) { Fail "pc word: $full has no text part." }
+  $all = @($body.SelectNodes('.//w:p', $ns))
+  if ($what -eq 'read') {
+    $n = 0; $shown = 0
+    foreach ($p in $all) { $n++; $line = (Docx-Text $p $ns).Trim(); if ($line) { $shown++; Write-Output "${n}: $line" } }
+    Write-Output "($n paragraphs, $shown with text)"
+    return
+  }
+  if ($what -eq 'add') {
+    $bold = $rest[2] -eq '--bold'
+    $from = if ($bold) { 3 } else { 2 }
+    if ($rest.Count -le $from) { Fail $usage }
+    $lines = Docx-Lines (($rest[$from..($rest.Count - 1)]) -join ' ')
+    $last = $body.SelectSingleNode('w:sectPr', $ns)
+    foreach ($line in $lines) {
+      $p = Docx-NewParagraph $xml $line $bold
+      if ($last) { [void]$body.InsertBefore($p, $last) } else { [void]$body.AppendChild($p) }
+    }
+    Docx-Save $full $xml
+    Write-Output "Added $($lines.Count) paragraph(s) at the end of $full"
+    return
+  }
+  if ($what -eq 'replace') {
+    if ($rest.Count -lt 4) { Fail $usage }
+    $old = $rest[2]; $new = $rest[3]; $count = 0
+    if (-not $old) { Fail 'pc word: the text to replace is empty.' }
+    foreach ($p in $all) {
+      $joined = Docx-Text $p $ns
+      $here = ([regex]::Matches($joined, [regex]::Escape($old))).Count
+      if ($here -eq 0) { continue }
+      $count += $here
+      # where the words sit inside one piece of text, only that piece changes and all looks stay
+      foreach ($t in $p.SelectNodes('.//w:t', $ns)) {
+        if ($t.InnerText.Contains($old)) { $t.InnerText = $t.InnerText.Replace($old, $new); [void]$t.SetAttribute('space', $XmlNs, 'preserve') }
+      }
+      $joined = Docx-Text $p $ns
+      if ($joined.Contains($old) -and -not $new.Contains($old)) { Docx-SetText $xml $p $ns ($joined.Replace($old, $new)) }
+    }
+    if ($count -eq 0) { Fail "pc word: `"$old`" is not in the document. Read it first: pc word read `"$full`"" }
+    Docx-Save $full $xml
+    Write-Output "Replaced $count time(s) in $full"
+    return
+  }
+  $n = 0
+  if ($rest.Count -lt 3 -or -not [int]::TryParse($rest[2], [ref]$n) -or $n -lt 1 -or $n -gt $all.Count) { Fail "pc word: say which paragraph by its number from pc word read (1 to $($all.Count))." }
+  $p = $all[$n - 1]
+  if ($what -eq 'delete') {
+    [void]$p.ParentNode.RemoveChild($p)
+    Docx-Save $full $xml
+    Write-Output "Deleted paragraph $n of $full"
+  } else {
+    if ($rest.Count -lt 4) { Fail $usage }
+    Docx-SetText $xml $p $ns ((($rest[3..($rest.Count - 1)]) -join ' '))
+    Docx-Save $full $xml
+    Write-Output "Changed paragraph $n of $full"
+  }
+}
+
 
 # ---------------------------------------------------------------- reading a picture of the screen
 # Mirage (Cactus Compute, Apache 2.0) is a small vision model that runs on this PC. Its text reader
@@ -644,7 +883,7 @@ switch ($cmd) {
     $how = if ($rest.Count -gt 2) { $rest[2] } else { 'left' }
     if ($how -eq 'right') { [TermantWin]::mouse_event(0x08, 0, 0, 0, [UIntPtr]::Zero); [TermantWin]::mouse_event(0x10, 0, 0, 0, [UIntPtr]::Zero) }
     else {
-      $times = if ($how -eq 'double') { 2 } else { 1 }
+      $times = if ($how -eq 'double') { 2 } elseif ($how -eq 'triple') { 3 } else { 1 }
       for ($i = 0; $i -lt $times; $i++) { [TermantWin]::mouse_event(0x02, 0, 0, 0, [UIntPtr]::Zero); [TermantWin]::mouse_event(0x04, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 70 }
     }
     Write-Output "Clicked $($rest[0]),$($rest[1])"
@@ -859,10 +1098,20 @@ switch ($cmd) {
   }
   'say' {
     Need 1 'say <text>'
-    Add-Type -AssemblyName System.Speech
-    $s = New-Object System.Speech.Synthesis.SpeechSynthesizer
-    $s.Speak((Words)); $s.Dispose()
-    Write-Output 'Said.'
+    # with ElevenLabs keys saved in Termant, the app speaks; without them, or when none can, the PC's own voice
+    $done = $false
+    $has = AppTry '/voice' @{ action = 'has' }
+    if ($has -and $has.ok -and $has.text -eq 'yes') {
+      $said = AppTry '/voice' @{ action = 'say'; text = (Words) }
+      if ($said -and $said.ok) { Write-Output $said.text; $done = $true }
+      elseif ($said) { [Console]::Error.WriteLine("ElevenLabs: $($said.error) The PC's own voice is used instead.") }
+    }
+    if (-not $done) {
+      Add-Type -AssemblyName System.Speech
+      $s = New-Object System.Speech.Synthesis.SpeechSynthesizer
+      $s.Speak((Words)); $s.Dispose()
+      Write-Output 'Said.'
+    }
   }
   'lock' { Native; [void][TermantWin]::LockWorkStation(); Write-Output 'Locked.' }
   'sleep' { Write-Output 'Going to sleep.'; & rundll32.exe powrprof.dll,SetSuspendState 0,1,0 }
@@ -927,6 +1176,60 @@ switch ($cmd) {
     } elseif ($what -eq 'remove') { Need 2 'rule remove <id>'; App '/rule' @{ action = 'remove'; id = $rest[1] } }
     else { App '/rule' @{ action = 'list' } }
   }
+  'drag' {
+    Need 4 'drag <x1> <y1> <x2> <y2>'
+    Native
+    $x1 = [int]$rest[0]; $y1 = [int]$rest[1]; $x2 = [int]$rest[2]; $y2 = [int]$rest[3]
+    [void][TermantWin]::SetCursorPos($x1, $y1); Start-Sleep -Milliseconds 90
+    [TermantWin]::mouse_event(0x02, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 90
+    for ($i = 1; $i -le 16; $i++) {
+      [void][TermantWin]::SetCursorPos($x1 + [int](($x2 - $x1) * $i / 16), $y1 + [int](($y2 - $y1) * $i / 16))
+      [TermantWin]::mouse_event(0x01, 0, 0, 0, [UIntPtr]::Zero)
+      Start-Sleep -Milliseconds 15
+    }
+    Start-Sleep -Milliseconds 90
+    [TermantWin]::mouse_event(0x04, 0, 0, 0, [UIntPtr]::Zero)
+    Write-Output "Dragged from $x1,$y1 to $x2,$y2"
+  }
+  'word' { Word-Command }
+  'youtube' {
+    $what = if ($rest.Count -gt 0) { $rest[0] } else { '' }
+    if ($what -eq 'search') { Need 2 'youtube search <words>'; App '/youtube' @{ action = 'search'; query = ($rest[1..($rest.Count - 1)] -join ' ') } }
+    elseif ($what -eq 'read') {
+      Need 2 'youtube read <id | link> [--lang hi] [--from MINUTE]'
+      $body = @{ action = 'read'; id = $rest[1] }
+      for ($i = 2; $i -lt $rest.Count - 1; $i++) {
+        if ($rest[$i] -eq '--lang') { $body.lang = $rest[$i + 1] } elseif ($rest[$i] -eq '--from') { $body.from = $rest[$i + 1] }
+      }
+      App '/youtube' $body
+    }
+    else { Fail 'Usage: pc youtube search <words>   |   pc youtube read <id | link> [--lang hi] [--from MINUTE]' }
+  }
+  'skill' {
+    $what = if ($rest.Count -gt 0) { $rest[0] } else { 'list' }
+    if ($what -eq 'save') {
+      Need 4 'skill save <name> "<what it is for>" <file with the steps> [link it came from]'
+      if (-not (Test-Path -LiteralPath $rest[3] -PathType Leaf)) { Fail "pc skill: there is no file $($rest[3]). Write the steps to a file first." }
+      $steps = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $rest[3]).ProviderPath, [Text.Encoding]::UTF8)
+      $from = if ($rest.Count -gt 4) { $rest[4] } else { '' }
+      App '/skill' @{ action = 'save'; name = $rest[1]; about = $rest[2]; steps = $steps; from = $from }
+    }
+    elseif ($what -eq 'show') { Need 2 'skill show <name>'; App '/skill' @{ action = 'show'; name = $rest[1] } }
+    elseif ($what -eq 'remove') { Need 2 'skill remove <name>'; App '/skill' @{ action = 'remove'; name = $rest[1] } }
+    else { App '/skill' @{ action = 'list' } }
+  }
+  'learned' {
+    $days = if ($rest.Count -gt 0) { $rest[0] } else { '1' }
+    App '/learned' @{ days = $days }
+  }
+  'voice' {
+    $what = if ($rest.Count -gt 0) { $rest[0] } else { 'keys' }
+    if ($what -eq 'add') { Need 2 'voice add <key> [more keys]'; App '/voice' @{ action = 'add'; keys = (($rest[1..($rest.Count - 1)]) -join ' ') } }
+    elseif ($what -eq 'list') { App '/voice' @{ action = 'voices' } }
+    elseif ($what -eq 'use') { $id = if ($rest.Count -gt 1) { $rest[1] } else { '' }; App '/voice' @{ action = 'use'; id = $id } }
+    elseif ($what -eq 'retry') { App '/voice' @{ action = 'retry' } }
+    else { App '/voice' @{ action = 'keys' } }
+  }
   'note' {
     $what = if ($rest.Count -gt 0) { $rest[0] } else { 'list' }
     if ($what -eq 'add') { Need 2 'note add <what to remember>'; App '/note' @{ action = 'add'; text = ($rest[1..($rest.Count - 1)] -join ' ') } }
@@ -946,7 +1249,8 @@ Programs and windows
 
 Keyboard, mouse, screen
   pc type <text>    pc key <enter | ctrl+s | alt+f4 | win+d ...>
-  pc click <x> <y> [right|double]              pc move <x> <y>      pc scroll <lines>
+  pc click <x> <y> [right|double|triple]       pc move <x> <y>      pc scroll <lines>
+  pc drag <x1> <y1> <x2> <y2>                  press at the first point, move, let go at the second (selects text, moves things)
   pc screen         what the window in front shows, with the point to click for each thing
   pc screen ocr     the same, and always reads a picture of the window too (pc screen ocr full: the whole screen)
   pc look <file>    what is in a photo and where: the scene, each thing with its place, the writing
@@ -967,6 +1271,22 @@ With the Termant app (it must be running)
   pc rule add <at HH:MM | every 30m | startup | in 10m> do <command>
   pc rule list                pc rule remove <id>
   pc note add <text>          pc note list     pc note remove <number>
+  pc say <text>               speaks with ElevenLabs when keys are saved (they take turns), else with the PC's own voice
+  pc voice                    the ElevenLabs keys: how much each has used, which one rests
+  pc voice add <key> [...]    pc voice list (voices)    pc voice use <voice id>    pc voice retry
+
+Learning (with the Termant app)
+  pc youtube search <words>   videos for these words
+  pc youtube read <id | link> [--lang hi] [--from MINUTE]     what is said in a video
+  pc skill save <name> "<what it is for>" <file with the steps> [link]
+  pc skill list               pc skill show <name>      pc skill remove <name>
+  pc learned [days]           what was learned today (or in the last days)
+
+Word documents (.docx; works without Word, and inside Word when the file is open there)
+  pc word read <file>         every paragraph with its number
+  pc word new <file> [text]   pc word add <file> [--bold] <text>      (\n in the text starts a new paragraph)
+  pc word replace <file> <old> <new>
+  pc word set <file> <number> <text>           pc word delete <file> <number>
 '@
     if ($cmd -ne 'help') { exit 1 }
   }

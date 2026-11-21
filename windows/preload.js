@@ -1,7 +1,7 @@
 // The only door between the window's page and the main process.
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['chat', 'chats', 'data', 'install', 'installed', 'ring', 'ask', 'toast', 'shells', 'term:data', 'term:exit'];
+const EVENTS = ['chat', 'chats', 'data', 'install', 'installed', 'ring', 'ask', 'toast', 'shells', 'term:data', 'term:exit', 'voice', 'settings'];
 
 contextBridge.exposeInMainWorld('termant', {
   call: async (name, argument) => {

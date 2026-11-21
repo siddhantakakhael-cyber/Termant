@@ -4,6 +4,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const https = require('https');
 const zlib = require('zlib');
 const { spawn, execFile } = require('child_process');
@@ -129,6 +130,9 @@ class Agent {
     this.guideFile = path.join(this.configDir, 'AGENTS.md');
     this.running = null;
     this.installing = null;
+    this.kept = null;
+    /** Whether the last message went through the kept server. */
+    this.fast = false;
   }
 
   installed() {
@@ -285,10 +289,94 @@ class Agent {
    * Sends one message. onEvent gets {kind:'step'|'text'|'status'|'session', ...} while the agent works.
    * Resolves to {text, steps, failed, session, stopped}.
    */
-  run({ text, session, model, cwd, onEvent, log }) {
+  async run(options) {
+    const kept = await this.server();
+    this.fast = !!kept;
+    let result = await this.runOnce(options, kept);
+    if (kept && result.failed && !result.stopped && !result.heard) {
+      // the kept server did not take the message: ask the slow, sure way
+      this.stopServer();
+      this.fast = false;
+      result = await this.runOnce(options, null);
+    }
+    return result;
+  }
+
+  /** What must stay the same for the kept server to be used again. */
+  stamp() {
+    const s = this.settings();
+    const read = (file) => {
+      try {
+        return fs.readFileSync(file, 'utf8');
+      } catch (e) {
+        return '';
+      }
+    };
+    return crypto.createHash('sha256').update(JSON.stringify([s.keys, s.github,
+      read(path.join(this.configDir, 'opencode.jsonc')), read(this.guideFile), read(this.learnedFile)])).digest('hex');
+  }
+
+  /**
+   * Keeps one OpenCode server running between messages, so that a message does not wait for
+   * OpenCode to start. Resolves to {url, password}, or null when that does not work here.
+   */
+  server() {
+    if (process.env.TERMANT_NO_SERVER || !this.installed()) return Promise.resolve(null);
+    const stamp = this.stamp();
+    if (this.kept && !this.kept.dead && this.kept.stamp === stamp) return this.kept.ready;
+    this.stopServer();
+    const password = crypto.randomBytes(18).toString('hex');
+    const kept = { stamp, dead: false, child: null, ready: null };
+    kept.ready = new Promise((resolve) => {
+      let out = '', done = false;
+      const end = (value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        if (!value) {
+          if (this.kept === kept) this.stopServer();
+          kept.dead = true;
+        }
+        resolve(value);
+      };
+      const timer = setTimeout(() => end(null), 30000);
+      try {
+        kept.child = spawn(this.bin, ['serve', '--hostname', '127.0.0.1', '--port', '0'], {
+          cwd: this.dir, env: Object.assign(this.env(), { OPENCODE_PASSWORD: password }), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+        });
+      } catch (e) {
+        return end(null);
+      }
+      const read = (chunk) => {
+        out = (out + chunk.toString('utf8')).slice(-4000);
+        const m = out.match(/https?:\/\/127\.0\.0\.1:\d+/);
+        if (m) end({ url: m[0], password });
+      };
+      kept.child.stdout.on('data', read);
+      kept.child.stderr.on('data', read);
+      kept.child.on('error', () => end(null));
+      kept.child.on('close', () => {
+        kept.dead = true;
+        end(null);
+      });
+    });
+    this.kept = kept;
+    return kept.ready;
+  }
+
+  stopServer() {
+    const kept = this.kept;
+    this.kept = null;
+    if (!kept || !kept.child || kept.dead) return;
+    kept.dead = true;
+    if (WINDOWS) execFile('taskkill', ['/pid', String(kept.child.pid), '/T', '/F'], { windowsHide: true }, () => {});
+    else kept.child.kill('SIGTERM');
+  }
+
+  runOnce({ text, session, model, cwd, onEvent, log }, kept) {
     return new Promise((resolve) => {
       const s = this.settings();
-      const args = ['run', '--format', 'json', '--standalone'];
+      const args = ['run', '--format', 'json'].concat(kept ? ['--server', kept.url] : ['--standalone']);
       if (s.auto !== false) args.push('--auto');
       if (session) args.push('--session', session);
       if (model) args.push('--model', model);
@@ -301,7 +389,9 @@ class Agent {
       const result = { text: '', steps: [], failed: false, session: session || '', stopped: false };
       let child;
       try {
-        child = spawn(this.bin, args, { cwd, env: this.env(), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+        const env = this.env();
+        if (kept) env.OPENCODE_PASSWORD = kept.password;
+        child = spawn(this.bin, args, { cwd, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
       } catch (e) {
         result.failed = true;
         result.text = String(e.message || e);
@@ -318,6 +408,7 @@ class Agent {
         } catch (e) {
           return;
         }
+        result.heard = true;
         if (event.sessionID && !result.session) {
           result.session = event.sessionID;
           onEvent({ kind: 'session', session: result.session });
@@ -379,6 +470,8 @@ class Agent {
   /** Stops the message that is running, with everything it started. */
   stop() {
     const running = this.running;
+    // the server would go on with the answer by itself, so it goes too; the next message starts a new one
+    this.stopServer();
     if (!running) return;
     running.result.stopped = true;
     if (WINDOWS) {

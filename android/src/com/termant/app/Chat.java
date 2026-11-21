@@ -63,8 +63,11 @@ final class Chat {
                     // OpenCode prints a paragraph only when it is complete. To show the words while
                     // they are written, start its server here and copy the server's event feed to $6.
                     // If any of that fails, OpenCode starts its own server as before.
-                    + "where=--standalone; srv=; feed=\n"
-                    + "if [ -n \"$6\" ] && command -v curl >/dev/null 2>&1 && mkdir -p \"$(dirname \"$6\")\"; then\n"
+                    + "where=--standalone; srv=; feed=; url=\n"
+                    // The server Termant kept from the message before is used when it is there
+                    // (server.sh): then this message does not wait for OpenCode to start.
+                    + "[ -n \"$6\" ] && . /usr/local/lib/termant/server.sh 2>/dev/null && use_kept \"$6\"\n"
+                    + "if [ -z \"$url\" ] && [ -n \"$6\" ] && command -v curl >/dev/null 2>&1 && mkdir -p \"$(dirname \"$6\")\"; then\n"
                     + "  export OPENCODE_PASSWORD=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \\n')\n"
                     + "  : > \"$6.server\"\n"
                     // the server stops when its input closes, which is when this script is gone
@@ -189,6 +192,42 @@ final class Chat {
     /** What the agent ran in the current attempt, as told by its event feed (its printed text can leave calls out). */
     private final List<String> ran = java.util.Collections.synchronizedList(new ArrayList<String>());
     private Process process;
+    /** The script that keeps OpenCode's server running between messages (assets/guest/termant-server). */
+    private Process keeper;
+    /** Where that script says how to reach its server, as seen from inside Ubuntu; must match assets/guest/server.sh. */
+    private static final String KEEP_FILE = "/root/.cache/termant/server.env";
+
+    /** Starts the kept server if it is not running; the message that is sent now still goes the slow way. */
+    private synchronized void keepServer() {
+        try {
+            if (keeper != null) {
+                try {
+                    keeper.exitValue();
+                } catch (IllegalThreadStateException running) {
+                    return;
+                }
+            }
+            ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context, "/bin/bash", "/usr/local/bin/termant-server"));
+            Map<String, String> env = pb.environment();
+            env.clear();
+            for (String e : Ubuntu.hostEnvironment(context)) {
+                int eq = e.indexOf('=');
+                env.put(e.substring(0, eq), e.substring(eq + 1));
+            }
+            pb.redirectErrorStream(true);
+            keeper = pb.start();
+            keeper.getOutputStream().close();
+        } catch (Exception e) {
+            keeper = null; // without it every message starts OpenCode itself, as before
+        }
+    }
+
+    /** Ends the kept server: it would go on with an answer that nobody waits for any more. */
+    private synchronized void dropServer() {
+        new File(Ubuntu.rootfs(context), KEEP_FILE.substring(1)).delete();
+        if (keeper != null) keeper.destroy();
+        keeper = null;
+    }
     private int run; // identifies the current request; stale threads are ignored
     private boolean busy;
     private boolean continues;
@@ -433,6 +472,7 @@ final class Chat {
         status = "";
         if (process != null) process.destroy();
         process = null;
+        dropServer();
         Message last = messages.get(messages.size() - 1);
         if (last.first && quiet) messages.remove(last); // a check-in that was cut off leaves nothing behind
         else if (last.text.isEmpty()) last.text = Lang.of(context).getString(R.string.chat_stopped);
@@ -523,6 +563,7 @@ final class Chat {
                     final Stream stream = new Stream(id, reply);
                     try {
                         Ubuntu.prepareHost(context);
+                        if (attempt == 0 && !moved) keepServer();
                         stream.start();
                         ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
                                 "/bin/bash", "-c", SCRIPT, "termant-chat", prompt, how,
@@ -554,6 +595,7 @@ final class Chat {
                             if (!stuck && retries(out.toString()) >= patience) {
                                 stuck = true;
                                 p.destroy();
+                                dropServer();
                             }
                             long now = System.currentTimeMillis();
                             if (now - shown > 150) { // do not redraw for every few bytes

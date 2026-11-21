@@ -95,6 +95,8 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t2.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t3.sh'" < android/ci/guest-test3.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest-test4.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest-test5.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/learn-check.sh'" < android/ci/learn-check.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_web.py'" < android/ci/fake_web.py
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
@@ -192,6 +194,9 @@ sleep 2
 shot 10-chat-rule
 run_as cat files/rules.json > "$OUT/rules.json"
 grep -q '"trigger":"at 23:00","command":"phone wifi off"' "$OUT/rules.json" || finish "FAIL chat: the agent did not create the 23:00 Wi-Fi rule"
+# which way the first three messages went: OpenCode started for the message, or the server Termant keeps
+run_as cat files/rootfs/root/.cache/termant/server.history > "$OUT/server-history-3.txt" 2>/dev/null
+echo "the first chat messages went: $(tr '\n' ';' < "$OUT/server-history-3.txt")"
 
 echo "Model and workspace"
 tap_on 'content-desc="Model"' || finish "FAIL model chip not found"
@@ -917,6 +922,19 @@ grep -q '^look-screen-head=yes' "$OUT/result5.txt" || finish "FAIL phone look di
 grep -q '^look-last-exit=0' "$OUT/result5.txt" || finish "FAIL phone look last"
 grep -q '^look-last-head=yes' "$OUT/result5.txt" || finish "FAIL phone look last did not take the newest picture on the phone"
 grep -q '^look-last-dog=yes' "$OUT/result5.txt" || finish "FAIL phone look last did not find the dog"
+run_as cat files/rootfs/root/learn-check.txt > "$OUT/learn-check.txt" 2>/dev/null
+run_as cat files/rootfs/root/youtube-search.txt > "$OUT/youtube-search.txt" 2>/dev/null
+run_as cat files/rootfs/root/youtube-read.txt > "$OUT/youtube-read.txt" 2>/dev/null
+grep -q '^learn-check-exit=0' "$OUT/result5.txt" || finish "FAIL learning (YouTube, skills, today, ElevenLabs keys) inside Ubuntu"
+grep -q '^voice-add-exit=0' "$OUT/result5.txt" || finish "FAIL phone voice add"
+grep -q '^say-exit=0' "$OUT/result5.txt" || finish "FAIL phone say with ElevenLabs keys"
+grep -q '^say-second-key=yes' "$OUT/result5.txt" || finish "FAIL phone say did not move on to the second ElevenLabs key"
+grep -q '^say-skips-used-up-key=yes' "$OUT/result5.txt" || finish "FAIL phone say asked the used-up ElevenLabs key again"
+grep -q '^voice-report=yes' "$OUT/result5.txt" || finish "FAIL phone voice did not report the keys"
+grep -q '^play-exit=0' "$OUT/result5.txt" || finish "FAIL phone play"
+grep -q '^play-length=yes' "$OUT/result5.txt" || finish "FAIL phone play did not play the one-second sound"
+grep -q '^play-not-a-sound-exit=1' "$OUT/result5.txt" || finish "FAIL phone play accepted a file that is no sound"
+grep -q '^play-missing-exit=1' "$OUT/result5.txt" || finish "FAIL phone play accepted a file that is not there"
 grep -q '^swipe-exit=0' "$OUT/result5.txt" || finish "FAIL phone swipe"
 grep -q '^swipe-moved=yes' "$OUT/result5.txt" || finish "FAIL after a swipe the screen was described as before it"
 grep -q '^tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap by words"
@@ -1064,5 +1082,11 @@ adb shell cat /sdcard/ui.xml | tr '>' '\n' | grep -o 'text="[^"]*\(pehle\|Abhi\|
 cat "$OUT/history-hindi.txt"
 grep -q ' ago"' "$OUT/history-hindi.txt" && finish "FAIL the chat list still says 'ago' in Hindi"
 grep -q 'pehle\|Abhi' "$OUT/history-hindi.txt" || finish "FAIL the chat list shows no time in Hindi"
+
+# Which way every chat message of this test went. At least one must have used the
+# server that Termant keeps between messages, or keeping it does not work on a phone.
+run_as cat files/rootfs/root/.cache/termant/server.history > "$OUT/server-history.txt" 2>/dev/null
+echo "chat messages that started OpenCode themselves: $(grep -c ' own$' "$OUT/server-history.txt"), that used the kept server: $(grep -c ' kept$' "$OUT/server-history.txt")"
+grep -q ' kept$' "$OUT/server-history.txt" || finish "FAIL no chat message used the kept OpenCode server"
 
 finish PASS

@@ -147,6 +147,58 @@ Check 'Notepad is gone' (-not ($r.out -match 'Notepad')) ($r.out -replace '\s+',
 # ---- things a test machine may not have: reported, but they do not fail the test
 Expect 'volume set' 'Volume 30' volume 30 -Soft | Out-Null
 Expect 'volume get' 'Volume 30' volume -Soft | Out-Null
+# ---- Word documents, without Word: the file itself is made, read and changed
+$doc = Join-Path $Out 'test letter.docx'
+Remove-Item -LiteralPath $doc -ErrorAction SilentlyContinue
+Expect 'word new' 'with 2 paragraph' word new $doc 'Dear Asha,\nThe year is 2024.' | Out-Null
+$r = Run word new $doc again
+Check 'word new does not overwrite' (($r.code -ne 0) -and ($r.out -match 'already there')) "exit $($r.code): $($r.out)"
+$r = Run word read $doc
+Check 'word read numbers the paragraphs' (($r.code -eq 0) -and ($r.out -match '(?m)^1: Dear Asha,\s*$') -and ($r.out -match '(?m)^2: The year is 2024\.\s*$') -and ($r.out -match '\(2 paragraphs, 2 with text\)')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+Expect 'word add' 'Added 1 paragraph' word add $doc 'Yours, Termant' | Out-Null
+Expect 'word add --bold' 'Added 2 paragraph' word add $doc --bold 'Bold line\nSecond bold line' | Out-Null
+Expect 'word replace' 'Replaced 1 time' word replace $doc 2024 2025 | Out-Null
+Expect 'word set' 'Changed paragraph 1 ' word set $doc 1 'Namaste Asha,' | Out-Null
+Expect 'word delete' 'Deleted paragraph 5 ' word delete $doc 5 | Out-Null
+$r = Run word read $doc
+$ok = ($r.out -match '(?m)^1: Namaste Asha,\s*$') -and ($r.out -match '(?m)^2: The year is 2025\.\s*$') -and ($r.out -match '(?m)^3: Yours, Termant\s*$') -and ($r.out -match '(?m)^4: Bold line\s*$') -and ($r.out -notmatch 'Second bold') -and ($r.out -match '\(4 paragraphs, 4 with text\)')
+Check 'the document holds every change' $ok "exit $($r.code): $($r.out -replace '\s+', ' ')"
+$r = Run word replace $doc 'not in there' x
+Check 'replacing words that are not there is refused' (($r.code -ne 0) -and ($r.out -match 'is not in the document')) "exit $($r.code): $($r.out)"
+$r = Run word set $doc 9 x
+Check 'a paragraph number that does not exist is refused' (($r.code -ne 0) -and ($r.out -match '1 to 4')) "exit $($r.code): $($r.out)"
+$r = Run word read (Join-Path $Out 'missing.docx')
+Check 'a missing document is refused' (($r.code -ne 0) -and ($r.out -match 'no such file')) "exit $($r.code): $($r.out)"
+$r = Run word read $log
+Check 'a file that is not .docx is refused' (($r.code -ne 0) -and ($r.out -match 'not a \.docx')) "exit $($r.code): $($r.out)"
+# a document the way Word writes it: one sentence cut into pieces with different looks, a table, a bold run
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$made = Join-Path $Out 'pieces.docx'
+Copy-Item -LiteralPath $doc -Destination $made -Force
+$w = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+$xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="' + $w + '"><w:body>' +
+  '<w:p><w:r><w:t>Hel</w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">lo wor</w:t></w:r><w:r><w:t>ld, hello all</w:t></w:r></w:p>' +
+  '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>Price</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>100</w:t></w:r></w:p></w:tc></w:tr></w:tbl>' +
+  '<w:p/><w:sectPr/></w:body></w:document>'
+$zip = [IO.Compression.ZipFile]::Open($made, [IO.Compression.ZipArchiveMode]::Update)
+$zip.GetEntry('word/document.xml').Delete()
+$stream = $zip.CreateEntry('word/document.xml').Open()
+$bytes = [Text.Encoding]::UTF8.GetBytes($xml); $stream.Write($bytes, 0, $bytes.Length); $stream.Dispose(); $zip.Dispose()
+$r = Run word read $made
+Check 'word read joins the pieces of a sentence and reads table cells' (($r.out -match '(?m)^1: Hello world, hello all\s*$') -and ($r.out -match '(?m)^2: Price\s*$') -and ($r.out -match '(?m)^3: 100\s*$') -and ($r.out -match '\(4 paragraphs, 3 with text\)')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+Expect 'word replace finds words that are cut into pieces' 'Replaced 1 time' word replace $made 'Hello world' 'Namaste duniya' | Out-Null
+Expect 'word replace inside one piece and in a table cell' 'Replaced 1 time' word replace $made 100 250 | Out-Null
+$r = Run word read $made
+Check 'both replacements are in the document' (($r.out -match '(?m)^1: Namaste duniya, hello all\s*$') -and ($r.out -match '(?m)^3: 250\s*$')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+$zip = [IO.Compression.ZipFile]::OpenRead($made)
+$names = ($zip.Entries | ForEach-Object { $_.FullName }) -join ' '
+$reader = New-Object IO.StreamReader($zip.GetEntry('word/document.xml').Open()); $after = $reader.ReadToEnd(); $reader.Dispose(); $zip.Dispose()
+Check 'the changed file is still a whole .docx' (($names -match '\[Content_Types\]\.xml') -and ($names -match '_rels/\.rels') -and ($after -match '<w:tbl>') -and ($after -match '<w:b ?/>')) "$names"
+Expect 'drag' 'Dragged from 300,300 to 340,300' drag 300 300 340 300 | Out-Null
+$r = Run skill list
+Check 'learning commands say that the app is not running' (($r.code -ne 0) -and ($r.out -match 'not running')) "exit $($r.code): $($r.out)"
+
 Expect 'mute' 'Muted' mute on -Soft | Out-Null
 Expect 'unmute' 'Sound on' mute off -Soft | Out-Null
 Expect 'say' 'Said' say hello -Soft | Out-Null

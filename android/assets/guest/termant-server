@@ -1,0 +1,42 @@
+#!/bin/bash
+# Keeps one OpenCode server running between chat messages (started by Termant's
+# Chat.java, used by the chat script through server.sh). It goes away by itself
+# after 15 minutes without a message, when what it was started with has changed,
+# and when Termant ends this script.
+exec >/dev/null 2>&1 </dev/null
+. /usr/local/lib/termant/server.sh || exit 2
+export PATH="$HOME/.opencode/bin:$PATH" NO_COLOR=1
+command -v opencode >/dev/null 2>&1 || exit 3
+command -v curl >/dev/null 2>&1 || exit 3
+[ -f "$HOME/.config/termant/keys.env" ] && . "$HOME/.config/termant/keys.env"
+[ -f /usr/local/lib/termant/github.sh ] && . /usr/local/lib/termant/github.sh
+export GIT_TERMINAL_PROMPT=0 GH_PROMPT_DISABLED=1
+keep=$termant_keep
+mkdir -p "$(dirname "$keep")" || exit 2
+rm -f "$keep.env" "$keep.stop"
+mine=$(termant_stamp)
+OPENCODE_PASSWORD=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+export OPENCODE_PASSWORD
+cd "$HOME" || exit 2
+# the server stops when its input closes, which is when this script is gone
+( while kill -0 $$ 2>/dev/null; do sleep 2; done ) 2>/dev/null \
+  | opencode serve --stdio --port 0 > "$keep.out" 2> "$keep.log" &
+srv=$!
+url=; i=0
+while [ $i -lt 900 ] && [ -z "$url" ] && kill -0 $srv 2>/dev/null; do
+  url=$(sed -n 's/.*"url":"\([^"]*\)".*/\1/p' "$keep.out" 2>/dev/null | head -n 1)
+  [ -n "$url" ] || sleep 0.1
+  i=$((i+1))
+done
+[ -n "$url" ] || { kill $srv 2>/dev/null; exit 4; }
+( umask 077; printf 'url=%s\npassword=%s\nstamp=%s\n' "$url" "$OPENCODE_PASSWORD" "$mine" > "$keep.tmp" ) && mv "$keep.tmp" "$keep.env"
+touch "$keep.used"
+while kill -0 $srv 2>/dev/null; do
+  sleep ${TERMANT_SERVER_POLL:-5}
+  [ -e "$keep.stop" ] && break
+  [ -n "$(find "$keep.used" -mmin +${TERMANT_SERVER_IDLE:-15} 2>/dev/null)" ] && break
+done
+grep -q "^password=$OPENCODE_PASSWORD\$" "$keep.env" 2>/dev/null && rm -f "$keep.env"
+rm -f "$keep.stop"
+kill $srv 2>/dev/null
+exit 0

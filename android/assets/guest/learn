@@ -2,8 +2,11 @@
 # What the agent has learned on this phone, kept across chats:
 #   notes  short facts about the user and about what works here
 #   tools  scripts the agent made for jobs that come up again; each is a command
-# Both are written into one file that OpenCode reads at the start of every
-# chat (Termant names it under "instructions" in OpenCode's config).
+#   skills step-by-step how-tos the agent wrote after it learned something
+#          (from YouTube or the web) and did it; one file each
+# All are named in one file that OpenCode reads at the start of every chat
+# (Termant names it under "instructions" in OpenCode's config). A diary keeps
+# what was learned on which day, for "what did you learn today?".
 dir="$HOME/.config/termant/learned"
 notes="$dir/notes.txt"
 guide="$HOME/.config/termant/learned.md"
@@ -13,6 +16,10 @@ MAX_NOTES=40
 MAX_NOTE=240
 MAX_TOOLS=30
 MAX_ABOUT=160
+MAX_SKILLS=60
+MAX_SKILL=6000
+skills="$dir/skills"
+diary="$dir/journal.tsv"
 
 mkdir -p "$dir" && touch "$notes" || { echo "learn: cannot use $dir" >&2; exit 1; }
 
@@ -21,6 +28,20 @@ one_line() { printf '%s' "$1" | tr '\n\r\t' '   ' | sed 's/  */ /g; s/^ //; s/ $
 is_tool() { [ -f "$1" ] && head -n 3 "$1" 2>/dev/null | grep -aq "^$mark"; }
 must_be_on() {
   [ -e "$dir/off" ] && fail "learning is turned off in Termant's Settings, so nothing was saved. Tell the user that."
+}
+
+# record KIND NAME TEXT [FROM]: one line in the diary: day, kind, name, text, where it came from
+record() {
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date +%F)" "$1" "$2" "$(one_line "$3")" "$(one_line "$4")" >> "$diary"
+  if [ "$(wc -l < "$diary")" -gt 500 ]; then tail -n 500 "$diary" > "$diary.tmp" && mv "$diary.tmp" "$diary"; fi
+}
+skill_field() { sed -n "/^---\$/q; s/^$2: //p" "$1" | head -n 1; }
+skill_list() { # "name<TAB>what it is for<TAB>day" for every skill
+  local f
+  for f in "$skills"/*.md; do
+    [ -f "$f" ] || continue
+    printf '%s\t%s\t%s\n' "$(basename "$f" .md)" "$(skill_field "$f" what)" "$(skill_field "$f" learned)"
+  done
 }
 
 tools() { # "name<TAB>what it does" for every tool
@@ -53,6 +74,10 @@ by you in earlier chats: rely on them, and keep adding to them.
   write the script to a file, run it once to test it, then
   `learn tool NAME "what it does" FILE`. From then on `NAME` is a command.
   Use a tool you already have instead of doing its steps by hand.
+- **Learn a skill** when you did not know how to do something and found out
+  (see "When you do not know how" in your instructions): write the steps to a
+  file, then `learn skill NAME "what it is for" FILE [LINK]`. Before a task
+  that a skill below fits, read it with `learn show NAME` and follow it.
 - Never save passwords, PINs, OTPs, keys or card numbers. Do not save one-time
   things (today's task, a single alarm).
 - A note that is wrong or old: `learn notes`, then `learn forget N`. A tool:
@@ -71,6 +96,15 @@ EOF
     list=$(tools)
     if [ -n "$list" ]; then
       printf '%s\n' "$list" | while IFS=$'\t' read -r name about; do echo "- \`$name\`: $about"; done
+    else
+      echo "(none yet)"
+    fi
+    echo
+    echo "## Skills you taught yourself (read one with \`learn show NAME\`)"
+    echo
+    list=$(skill_list)
+    if [ -n "$list" ]; then
+      printf '%s\n' "$list" | while IFS=$'\t' read -r name about day; do echo "- \`$name\`: $about"; done
     else
       echo "(none yet)"
     fi
@@ -94,6 +128,7 @@ case "$1" in
     [ "$(wc -l < "$notes")" -lt $MAX_NOTES ] \
       || fail "there are already $MAX_NOTES notes. Remove one that is old or wrong first: learn notes, then learn forget N."
     printf '%s\t%s\n' "$(date +%F)" "$text" >> "$notes"
+    record note "" "$text"
     refresh
     echo "Saved. You will know this in every chat from now on: $text"
     ;;
@@ -146,6 +181,7 @@ case "$1" in
 $problem"
     fi
     chmod 755 "$tmp" && mv "$tmp" "$target" || fail "could not write $target."
+    record tool "$name" "$about"
     refresh
     echo "Saved. '$name' is now a command: $about"
     ;;
@@ -161,6 +197,74 @@ $problem"
     refresh
     echo "Removed the tool '$2'."
     ;;
+  skill)
+    must_be_on
+    [ $# -eq 4 ] || [ $# -eq 5 ] || fail 'use:  learn skill NAME "what it is for" FILE [LINK]   (FILE holds the steps, short and numbered)'
+    name=$2
+    about=$(one_line "$3")
+    file=$4
+    from=$(one_line "$5")
+    [[ "$name" =~ ^[a-z][a-z0-9-]{1,39}$ ]] \
+      || fail "the name must be 2 to 40 small letters, digits or dashes and start with a letter, like word-table."
+    [ -n "$about" ] || fail "say in a few words what the skill is for."
+    [ ${#about} -le $MAX_ABOUT ] || fail "describe it in at most $MAX_ABOUT letters; this has ${#about}."
+    [ -f "$file" ] || fail "there is no file $file. Write the steps to a file first."
+    size=$(wc -m < "$file")
+    [ "$size" -ge 20 ] || fail "the steps are missing: $file is almost empty."
+    [ "$size" -le $MAX_SKILL ] || fail "the steps have $size letters; keep a skill under $MAX_SKILL. Keep only what is needed to do it."
+    if [ -f "$HOME/.config/termant/keys.env" ]; then
+      while IFS= read -r secret; do
+        [ ${#secret} -ge 8 ] || continue
+        grep -qF -- "$secret" "$file" && fail "the steps contain a saved key. Keys and passwords are never kept in a skill."
+      done < <(sed -n "s/^export [A-Z_]*\(KEY\|TOKEN\)='\(.*\)'\$/\2/p" "$HOME/.config/termant/keys.env")
+    fi
+    mkdir -p "$skills" || fail "cannot use $skills"
+    target="$skills/$name.md"
+    if [ -f "$target" ]; then word=updated
+    else
+      word=learned
+      [ "$(skill_list | wc -l)" -lt $MAX_SKILLS ] || fail "there are already $MAX_SKILLS skills. Remove one that is old first: learn skills, then learn unlearn NAME."
+    fi
+    { printf '# %s\nwhat: %s\nfrom: %s\nlearned: %s\n---\n' "$name" "$about" "$from" "$(date +%F)"; tr -d '\r' < "$file"; echo; } > "$target.tmp" \
+      && mv "$target.tmp" "$target" || fail "could not write $target."
+    record skill "$name" "$about" "$from"
+    refresh
+    echo "Skill $word: $name ($about). You will find it in every chat from now on."
+    ;;
+  skills)
+    list=$(skill_list)
+    if [ -n "$list" ]; then printf '%s\n' "$list" | while IFS=$'\t' read -r name about day; do echo "$name: $about${day:+  ($day)}"; done
+    else echo "(no skills yet)"; fi
+    ;;
+  show)
+    [[ "$2" =~ ^[a-z][a-z0-9-]{1,39}$ ]] && [ -f "$skills/$2.md" ] || fail "there is no skill '$2' (see: learn skills)."
+    cat "$skills/$2.md"
+    ;;
+  unlearn)
+    [[ "$2" =~ ^[a-z][a-z0-9-]{1,39}$ ]] && [ -f "$skills/$2.md" ] || fail "there is no skill '$2' (see: learn skills)."
+    rm -f "$skills/$2.md"
+    refresh
+    echo "Skill removed: $2"
+    ;;
+  today)
+    days=${2:-1}
+    case "$days" in ''|*[!0-9]*) fail "use:  learn today   or   learn today 7  (the last 7 days)" ;; esac
+    [ "$days" -ge 1 ] || days=1
+    first=$(date -d "-$((days - 1)) days" +%F)
+    if [ "$days" -eq 1 ]; then head="Learned today ($(date +%F))"; else head="Learned in the last $days days"; fi
+    found=$([ -f "$diary" ] && awk -F '\t' -v first="$first" '$1 >= first' "$diary")
+    if [ -z "$found" ]; then echo "$head: nothing yet."; exit 0; fi
+    echo "$head: $(printf '%s\n' "$found" | wc -l)"
+    printf '%s\n' "$found" | awk -F '\t' -v many="$days" '{
+      if (many > 1 && $1 != last) print $1
+      last = $1
+      print "- " $2 ($3 != "" ? " " $3 : "") ": " $4 ($5 != "" ? " (from " $5 ")" : "")
+    }'
+    ;;
+  youtube)
+    shift
+    exec termant-web youtube "$@"
+    ;;
   refresh)
     refresh
     ;;
@@ -174,6 +278,13 @@ learn: what the agent keeps across chats
   learn tool NAME "what it does" FILE   keep the script FILE as the command NAME
   learn tools                           list the tools
   learn drop NAME                       remove a tool
+  learn skill NAME "what it is for" FILE [LINK]   keep the steps in FILE as a skill
+  learn skills                          list the skills
+  learn show NAME                       read a skill
+  learn unlearn NAME                    remove a skill
+  learn today [DAYS]                    what was learned today (or in the last DAYS days)
+  learn youtube search WORDS            videos for these words
+  learn youtube read ID [--lang hi] [--from MINUTE]   what is said in a video
 EOF
     [ "$1" = help ] || [ "$1" = --help ] || [ -z "$1" ]
     ;;

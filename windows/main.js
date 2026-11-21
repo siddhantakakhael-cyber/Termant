@@ -11,6 +11,8 @@ const { execFile } = require('child_process');
 const { Store } = require('./src/store');
 const { Agent, PROVIDERS } = require('./src/agent');
 const { Schedule, span, clock } = require('./src/schedule');
+const learning = require('./src/learn');
+const { Voice, keysFrom } = require('./src/voice');
 
 const WINDOWS = process.platform === 'win32';
 const selftestArg = process.argv.find((a) => a.startsWith('--selftest='));
@@ -32,6 +34,8 @@ let store, settings, agent, schedule, win, tray, quitting = false;
 let chats = [], current = null;
 let busy = null; // { chat, activity, detail, startedAt } while the agent works
 let notes = [];
+let learned = null;
+let voice = null;
 let knownModels = [];
 let lastCare = '';
 let ringing = null;
@@ -72,6 +76,9 @@ function defaults() {
     tray: true,
     autostart: false,
     seenNotice: false,
+    voiceKeys: [],
+    voiceId: '',
+    speak: false,
   };
 }
 
@@ -85,7 +92,20 @@ function start() {
   chats = store.load('chats.json', []);
   notes = store.load('notes.json', []);
   knownModels = store.load('models.json', []);
+  learned = new learning.Learned(store.dir);
+  voice = new Voice(store.dir);
   agent = new Agent(path.join(store.dir, 'agent'), pcDir, () => settings);
+  writeNotes();
+  // OpenCode is started now, so that the first message does not wait for it
+  setTimeout(() => {
+    try {
+      if (!agent.installed()) return;
+      agent.writeConfig(path.join(pcDir, 'AGENTS.md'));
+      agent.server();
+    } catch (e) {
+      log('server: ' + e.message);
+    }
+  }, 1200);
   schedule = new Schedule(store, () => shellEnv(), {
     ring: (label, late) => ring(label, late),
     changed: () => send('data', data()),
@@ -172,6 +192,7 @@ app.on('before-quit', () => {
     try { t.kill(); } catch (e) { /* already gone */ }
   }
   if (agent) agent.stop();
+  if (agent) agent.stopServer();
   try { fs.rmSync(store.file('bridge.json'), { force: true }); } catch (e) { /* nothing to remove */ }
 });
 app.on('window-all-closed', () => {
@@ -190,6 +211,8 @@ function data() {
     rules: schedule.rules.map((r) => Object.assign({ when: schedule.describe(r) }, r)),
     alarms: schedule.alarms.slice().sort((a, b) => a.at - b.at),
     notes,
+    learned: { today: learned.since(1).map((e) => learned.line(e).slice(2)), skills: learned.skills() },
+    voiceKeys: keysFrom(settings.voiceKeys).length,
   };
 }
 
@@ -230,8 +253,9 @@ function writeNotes() {
   const lines = notes.length
     ? '# What you know about this user from earlier chats\n\n' + notes.map((n) => '- ' + n).join('\n') + '\n'
     : '';
+  const skills = learned.guide('pc skill show');
   fs.mkdirSync(path.join(store.dir, 'agent'), { recursive: true });
-  fs.writeFileSync(path.join(store.dir, 'agent', 'learned.md'), lines);
+  fs.writeFileSync(path.join(store.dir, 'agent', 'learned.md'), lines + (lines && skills ? '\n' : '') + skills);
   store.save('notes.json', notes);
 }
 
@@ -264,6 +288,7 @@ async function sendMessage(text, own) {
     chat.messages.push({ user: true, text });
   }
   const reply = { user: false, text: '', steps: [], failed: false, note: '', own: !!own };
+  const knownBefore = learned.diary().length;
   chat.messages.push(reply);
   chat.updated = Date.now();
   busy = { chat, activity: agent.installed() ? 'start' : 'setup', detail: '', startedAt: Date.now() };
@@ -323,11 +348,19 @@ async function sendMessage(text, own) {
     reply.steps = result.steps;
     if (result.session) chat.session = result.session;
     if (result.stopped) reply.note = 'stopped';
+    reply.seconds = Math.round((Date.now() - busy.startedAt) / 100) / 10;
   } catch (e) {
     reply.failed = true;
     reply.text = 'The AI agent could not be set up: ' + (e.message || e) + '\nCheck the internet connection and try again.';
   }
-  log('reply: ' + JSON.stringify({ text: reply.text.slice(0, 300), steps: reply.steps, failed: reply.failed, note: reply.note }));
+  // what the agent taught itself while it answered is shown under the answer
+  const fresh = learned.diary().slice(knownBefore);
+  if (fresh.length) reply.learned = fresh.map((e) => learned.line(e).slice(2));
+  log('reply: ' + JSON.stringify({ text: reply.text.slice(0, 300), steps: reply.steps, failed: reply.failed, note: reply.note,
+    fast: agent.fast, seconds: reply.seconds, learned: reply.learned }));
+  if (settings.speak && !own && !reply.failed && reply.text && keysFrom(settings.voiceKeys).length) {
+    say(reply.text.replace(/```[\s\S]*?```/g, ' ').replace(/[*_#`>|]/g, ' ')).catch((e) => log('speak: ' + e.message));
+  }
   if (own) {
     // a check-in that did not work is not shown; one that did is announced
     if (reply.failed || !reply.text) chat.messages.splice(chat.messages.indexOf(reply), 1);
@@ -505,7 +538,56 @@ function when(ms) {
   return day + two(d.getHours()) + ':' + two(d.getMinutes());
 }
 
+/** Speaks with ElevenLabs through the window; the keys take turns when one is used up. */
+async function say(text) {
+  const spoken = await voice.speak(text, settings.voiceKeys, { voice: settings.voiceId });
+  if (SELFTEST) fs.writeFileSync(path.join(SELFTEST, 'said.mp3'), spoken.audio);
+  send('voice', spoken.audio.toString('base64'));
+  return 'Said with ElevenLabs, key ' + spoken.key + ' of ' + keysFrom(settings.voiceKeys).length +
+    (spoken.notes.length ? ' (' + spoken.notes.join('; ') + ')' : '') + '.';
+}
+
 async function command(route, body) {
+  if (route === '/youtube') {
+    if (body.action === 'read') return learning.readText(await learning.youtubeRead(body.id, { lang: body.lang, from: body.from }));
+    const list = await learning.youtubeSearch(body.query);
+    return learning.searchText(String(body.query).trim(), list);
+  }
+  if (route === '/skill') {
+    let text;
+    if (body.action === 'save') text = learned.saveSkill(body.name, body.about, body.steps, body.from);
+    else if (body.action === 'show') return learned.showSkill(body.name);
+    else if (body.action === 'remove') text = learned.removeSkill(body.name);
+    else return learned.listText();
+    writeNotes();
+    send('data', data());
+    return text;
+  }
+  if (route === '/learned') return learned.sinceText(body.days);
+  if (route === '/voice') {
+    const keys = keysFrom(settings.voiceKeys);
+    if (body.action === 'say') return say(String(body.text || ''));
+    if (body.action === 'has') return keys.length ? 'yes' : 'no';
+    if (body.action === 'voices') return voice.voices(keys);
+    if (body.action === 'use') {
+      saveSettings({ voiceId: String(body.id || '').trim() });
+      send('settings', settings);
+      return settings.voiceId ? 'Voice set to ' + settings.voiceId + '.' : 'Back to the usual voice.';
+    }
+    if (body.action === 'add') {
+      const more = keysFrom(keys.concat(keysFrom(body.keys)));
+      const added = more.length - keys.length;
+      saveSettings({ voiceKeys: more });
+      send('settings', settings);
+      send('data', data());
+      return added + ' key(s) added; ' + more.length + ' ElevenLabs key(s) are saved now.';
+    }
+    if (body.action === 'retry') {
+      voice.forgetRest();
+      return 'All keys will be tried again.';
+    }
+    return voice.report(keys, body.online !== false);
+  }
   if (route === '/notify') {
     notify(String(body.title || 'Termant'), String(body.text || ''));
     return 'Notification shown.';
@@ -558,6 +640,7 @@ async function command(route, body) {
       const text = String(body.text || '').replace(/\s+/g, ' ').trim();
       if (!text) throw new Error('The note is empty.');
       notes.push(text.slice(0, 500));
+      learned.record('note', '', text.slice(0, 500));
       writeNotes();
       send('data', data());
       return 'Noted (' + notes.length + ').';

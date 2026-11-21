@@ -22,6 +22,7 @@ jobs:
           android/tools/build_mirage.sh "$PWD/libs" "$PWD/work"
           bash android/ci/mirage-check.sh libs/arm64-v8a/libmirage.so "$PWD/work"
           bash android/ci/look-check.sh "$PWD/work/look"
+          bash android/ci/learn-check.sh android/assets/guest
 
   build:
     needs: reader-on-arm

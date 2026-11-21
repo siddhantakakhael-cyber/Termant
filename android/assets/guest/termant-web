@@ -1,0 +1,531 @@
+#!/usr/bin/env python3
+"""What Termant's agent fetches from the web for itself, inside Ubuntu.
+
+  termant-web youtube search WORDS...                       videos for these words
+  termant-web youtube read ID|LINK [--lang hi] [--from MIN]  what is said in a video
+  termant-web voice speak TEXT...     speech by ElevenLabs into a file; prints the file, then a line about it
+  termant-web voice [keys]            the saved ElevenLabs keys: use, and which one rests
+  termant-web voice add KEY...        save keys        termant-web voice remove N
+  termant-web voice list              the voices       termant-web voice use ID
+  termant-web voice retry             try the resting keys again
+
+The ElevenLabs keys take turns: when one has used up its limit, the next one speaks.
+The Windows app does the same in windows/src/learn.js and voice.js; keep them alike.
+"""
+import hashlib
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+HOME = os.path.expanduser('~')
+CONFIG = os.path.join(HOME, '.config', 'termant')
+KEYS_FILE = os.path.join(CONFIG, 'voice.keys')
+STATE_FILE = os.path.join(CONFIG, 'voice.json')
+SOUND_FILE = os.path.join(HOME, '.cache', 'termant', 'speech.mp3')
+BROWSER = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+           'Chrome/131.0.0.0 Safari/537.36')
+PHONE_APP = '20.10.38'
+VOICE = 'JBFqnCBsd6RMkjVDRZzb'
+MODEL = 'eleven_multilingual_v2'
+MOST_LETTERS = 2500
+HOUR = 3600
+
+
+class Problem(Exception):
+    pass
+
+
+def youtube():
+    return os.environ.get('TERMANT_YOUTUBE_URL', 'https://www.youtube.com').rstrip('/')
+
+
+def eleven():
+    return os.environ.get('TERMANT_ELEVEN_URL', 'https://api.elevenlabs.io').rstrip('/')
+
+
+def ask(url, body=None, headers=None, who='YouTube', wait=25):
+    """Returns (status, bytes); a refusal by the server is an answer, not an error."""
+    all_headers = {'User-Agent': BROWSER, 'Accept-Language': 'en-US,en;q=0.8', 'Cookie': 'SOCS=CAI; CONSENT=YES+1'}
+    all_headers.update(headers or {})
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode('utf-8')
+        all_headers['Content-Type'] = 'application/json'
+    request = urllib.request.Request(url, data=data, headers=all_headers)
+    try:
+        with urllib.request.urlopen(request, timeout=wait) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+    except Exception as e:  # no network, no answer in time
+        reason = getattr(e, 'reason', None) or e
+        raise Problem('%s could not be reached (%s). Check the internet connection.' % (who, reason))
+
+
+def parsed(raw):
+    try:
+        return json.loads(raw.decode('utf-8', 'replace') if isinstance(raw, bytes) else raw)
+    except ValueError:
+        return None
+
+
+def embedded(page, name):
+    """The object that follows `name = ` in a page, cut out by counting braces."""
+    at = page.find(name)
+    while at >= 0:
+        start = page.find('{', at)
+        if start < 0 or start - at > len(name) + 8:
+            at = page.find(name, at + len(name))
+            continue
+        depth, quote, i = 0, False, start
+        while i < len(page):
+            c = page[i]
+            if quote:
+                if c == '\\':
+                    i += 1
+                elif c == '"':
+                    quote = False
+            elif c == '"':
+                quote = True
+            elif c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    return parsed(page[start:i + 1])
+            i += 1
+        return None
+    return None
+
+
+def words(node):
+    if not node:
+        return ''
+    if isinstance(node, str):
+        return node
+    if node.get('simpleText'):
+        return str(node['simpleText'])
+    return ''.join(r.get('text', '') for r in node.get('runs') or [])
+
+
+def videos(tree):
+    """Every video in an answer of YouTube's search, wherever it sits."""
+    found, seen = [], set()
+
+    def walk(node):
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+        elif isinstance(node, dict):
+            v = node.get('videoRenderer')
+            if isinstance(v, dict) and v.get('videoId') and v['videoId'] not in seen:
+                seen.add(v['videoId'])
+                found.append({
+                    'id': v['videoId'], 'title': words(v.get('title')),
+                    'channel': words(v.get('ownerText')) or words(v.get('longBylineText')),
+                    'length': words(v.get('lengthText')), 'views': words(v.get('viewCountText')),
+                    'age': words(v.get('publishedTimeText')),
+                })
+            for key, value in node.items():
+                if key != 'videoRenderer':
+                    walk(value)
+
+    walk(tree)
+    return found
+
+
+def youtube_search(query, most=8):
+    query = ' '.join(query.split())
+    if not query:
+        raise Problem('Say what to look for, for example: learn youtube search "mail merge in Word"')
+    found, why = [], ''
+    try:
+        status, raw = ask(youtube() + '/youtubei/v1/search?prettyPrint=false', {
+            'context': {'client': {'clientName': 'WEB', 'clientVersion': '2.20250101.00.00', 'hl': 'en'}}, 'query': query})
+        if status == 200:
+            found = videos(parsed(raw))
+        else:
+            why = 'answer %d' % status
+    except Problem as e:
+        why = str(e)
+    if not found:
+        status, raw = ask(youtube() + '/results?hl=en&search_query=' + urllib.parse.quote(query))
+        if status == 200:
+            found = videos(embedded(raw.decode('utf-8', 'replace'), 'ytInitialData'))
+        else:
+            why = 'answer %d' % status
+    if not found:
+        raise Problem('YouTube gave no videos for "%s"%s. Try other words, or search the web instead.'
+                      % (query, ' (%s)' % why if why else ''))
+    found = found[:most]
+    lines = ['YouTube, "%s": %d videos' % (query, len(found))]
+    for n, v in enumerate(found, 1):
+        lines.append('%d. %s\n   %s\n   id %s' % (
+            n, v['title'], ' | '.join(x for x in (v['channel'], v['length'], v['views'], v['age']) if x), v['id']))
+    lines.append('Read what is said in one of them:  learn youtube read ID')
+    return '\n'.join(lines)
+
+
+def video_id(text):
+    text = text.strip()
+    if re.fullmatch(r'[A-Za-z0-9_-]{11}', text):
+        return text
+    m = re.search(r'(?:[?&]v=|youtu\.be/|/shorts/|/embed/|/live/)([A-Za-z0-9_-]{11})', text)
+    if not m:
+        raise Problem('That is not a YouTube video: give the id (11 letters) or the link.')
+    return m.group(1)
+
+
+def plain(text):
+    text = re.sub(r'<[^>]+>', '', text)
+    text = re.sub(r'&#(\d+);', lambda m: chr(int(m.group(1))), text)
+    text = re.sub(r'&#x([0-9a-fA-F]+);', lambda m: chr(int(m.group(1), 16)), text)
+    for a, b in (('&lt;', '<'), ('&gt;', '>'), ('&quot;', '"'), ('&apos;', "'"), ('&amp;', '&')):
+        text = text.replace(a, b)
+    return text
+
+
+def captions(body):
+    """Captions as [(seconds, text)], from YouTube's JSON or either of its XML forms."""
+    lines = []
+    data = parsed(body)
+    if isinstance(data, dict) and isinstance(data.get('events'), list):
+        for event in data['events']:
+            text = ' '.join(''.join(s.get('utf8', '') for s in event.get('segs') or []).split())
+            if text:
+                lines.append(((event.get('tStartMs') or 0) / 1000.0, text))
+        return lines
+    for m in re.finditer(r'<(text|p)\b([^>]*)>(.*?)</\1>', body, re.S):
+        start = re.search(r'\bstart="([\d.]+)"', m.group(2))
+        t = re.search(r'\bt="(\d+)"', m.group(2))
+        text = ' '.join(plain(plain(m.group(3))).split())
+        if text:
+            lines.append((float(start.group(1)) if start else int(t.group(1)) / 1000.0 if t else 0.0, text))
+    return lines
+
+
+def clock(seconds):
+    seconds = max(0, int(seconds + 0.5))
+    h, m, s = seconds // 3600, seconds % 3600 // 60, seconds % 60
+    return ('%d:%02d' % (h, m) if h else str(m)) + ':%02d' % s
+
+
+def player(vid):
+    last = ''
+    try:
+        status, raw = ask(youtube() + '/youtubei/v1/player?prettyPrint=false', {
+            'context': {'client': {'clientName': 'ANDROID', 'clientVersion': PHONE_APP, 'androidSdkVersion': 34, 'hl': 'en'}},
+            'videoId': vid}, {'User-Agent': 'com.google.android.youtube/%s (Linux; U; Android 14) gzip' % PHONE_APP})
+        data = parsed(raw) if status == 200 else None
+        if data and data.get('videoDetails'):
+            return data
+        state = (data or {}).get('playabilityStatus') or {}
+        last = words(state.get('reason')) or state.get('status') or 'answer %d' % status
+    except Problem as e:
+        last = str(e)
+    status, raw = ask(youtube() + '/watch?v=' + vid + '&hl=en')
+    data = embedded(raw.decode('utf-8', 'replace'), 'ytInitialPlayerResponse') if status == 200 else None
+    if data and data.get('videoDetails'):
+        return data
+    state = (data or {}).get('playabilityStatus') or {}
+    reason = words(state.get('reason')) or state.get('status') or last or 'answer %d' % status
+    raise Problem('YouTube did not give this video (%s). Try another video from the search.' % reason)
+
+
+def youtube_read(which, lang='', start=0.0, most=12000):
+    vid = video_id(which)
+    data = player(vid)
+    details = data.get('videoDetails') or {}
+    tracks = [t for t in (((data.get('captions') or {}).get('playerCaptionsTracklistRenderer') or {})
+                          .get('captionTracks') or []) if t.get('baseUrl')]
+    wanted = [w for w in (lang, 'en', 'hi') if w]
+
+    def rank(t):
+        code = str(t.get('languageCode'))
+        at = next((i for i, w in enumerate(wanted) if code == w or code.startswith(w + '-')), -1)
+        return (50 if at < 0 else at * 10) + (1 if t.get('kind') == 'asr' else 0)
+
+    tracks.sort(key=rank)
+    lines, used = [], None
+    for track in tracks[:3]:
+        url = re.sub(r'&fmt=[a-z0-9]+', '', track['baseUrl']) + '&fmt=json3'
+        if os.environ.get('TERMANT_YOUTUBE_URL'):
+            url = re.sub(r'^https?://[^/]+', youtube(), url)
+        try:
+            status, raw = ask(url)
+        except Problem:
+            continue
+        lines = captions(raw.decode('utf-8', 'replace')) if status == 200 else []
+        if lines:
+            used = track
+            break
+    seconds = int(details.get('lengthSeconds') or 0)
+    out = ['YouTube video %s: %s' % (vid, details.get('title', '')),
+           'By %s%s. Link: https://youtu.be/%s' % (details.get('author', ''), ', %s long' % clock(seconds) if seconds else '', vid)]
+    text, mark, more = '', -1e9, 0
+    for at, line in lines:
+        if at < start * 60:
+            continue
+        if len(text) + len(line) > most:
+            more = int(at // 60)
+            break
+        if at - mark >= 60:
+            text += ('\n' if text else '') + '[%s] ' % clock(at)
+            mark = at
+        else:
+            text += ' '
+        text += line
+    description = str(details.get('shortDescription') or '').strip()
+    if text:
+        auto = used.get('kind') == 'asr'
+        out.append('What is said (%s%s):' % (used.get('languageCode'), ', written down by a machine, so words can be wrong' if auto else ''))
+        out.append(text)
+        if more:
+            out.append('(cut here; the rest:  learn youtube read %s --from %d)' % (vid, more))
+    elif tracks:
+        out.append('The words of this video could not be fetched (YouTube refused). Only its description is below; try another video.')
+    else:
+        out.append('This video has no captions, so what is said in it cannot be read. Only its description is below; try another video.')
+    if description and (not text or len(description) < 1500):
+        out += ['Description:', description[:3000]]
+    return '\n'.join(out)
+
+
+# ---------------------------------------------------------------- ElevenLabs
+
+def saved_keys():
+    try:
+        with open(KEYS_FILE) as f:
+            return keys_from(f.read())
+    except OSError:
+        return []
+
+
+def keys_from(text):
+    seen, keys = set(), []
+    for key in re.split(r'[\s,;]+', text if isinstance(text, str) else ' '.join(text)):
+        if len(key) >= 8 and key not in seen:
+            seen.add(key)
+            keys.append(key)
+    return keys[:30]
+
+
+def write_keys(keys):
+    os.makedirs(CONFIG, exist_ok=True)
+    fd = os.open(KEYS_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'w') as f:
+        f.write(''.join(k + '\n' for k in keys))
+    os.chmod(KEYS_FILE, 0o600)
+
+
+def tail(key):
+    return '...' + key[-4:]
+
+
+def mark_of(key):
+    return hashlib.sha256(key.encode()).hexdigest()[:12]
+
+
+def load_state():
+    try:
+        with open(STATE_FILE) as f:
+            state = json.load(f)
+    except (OSError, ValueError):
+        state = {}
+    state.setdefault('rest', {})
+    return state
+
+
+def save_state(state):
+    try:
+        os.makedirs(CONFIG, exist_ok=True)
+        with open(STATE_FILE, 'w') as f:
+            json.dump(state, f, indent=1)
+    except OSError:
+        pass  # not being able to remember only costs one more try next time
+
+
+def resting(state, key):
+    r = state['rest'].get(mark_of(key))
+    if r and r.get('until', 0) > time.time():
+        return r
+    state['rest'].pop(mark_of(key), None)
+    return None
+
+
+def order(state, keys):
+    """The one that worked last first; resting ones at the end."""
+    start = next((i for i, k in enumerate(keys) if mark_of(k) == state.get('last')), 0)
+    turn = keys[start:] + keys[:start]
+    return [k for k in turn if not resting(state, k)] + [k for k in turn if resting(state, k)]
+
+
+def eleven_ask(path, key, body=None):
+    headers = {'xi-api-key': key, 'User-Agent': 'Termant'}
+    if body is not None:
+        headers['Accept'] = 'audio/mpeg'
+    return ask(eleven() + path, body, headers, who='ElevenLabs', wait=60)
+
+
+def refusal(raw):
+    data = parsed(raw)
+    detail = data.get('detail') if isinstance(data, dict) else None
+    if isinstance(detail, str):
+        return '', detail
+    if isinstance(detail, dict):
+        return str(detail.get('status') or ''), str(detail.get('message') or '')
+    return '', raw.decode('utf-8', 'replace')[:200]
+
+
+def speak(text, keys=None, voice=None):
+    """Returns (sound bytes, number of the key that spoke, notes)."""
+    keys = saved_keys() if keys is None else keys
+    state = load_state()
+    text = ' '.join(text.split())
+    if not text:
+        raise Problem('There is nothing to say.')
+    if not keys:
+        raise Problem('No ElevenLabs key is saved.')
+    cut = len(text) > MOST_LETTERS
+    text = text[:MOST_LETTERS]
+    path = '/v1/text-to-speech/%s?output_format=mp3_44100_128' % urllib.parse.quote(voice or state.get('voice') or VOICE)
+    notes = []
+    for key in order(state, keys):
+        n = keys.index(key) + 1
+        status, raw = eleven_ask(path, key, {'text': text, 'model_id': MODEL})
+        if status == 200 and len(raw) > 100:
+            state['last'] = mark_of(key)
+            state['rest'].pop(mark_of(key), None)
+            save_state(state)
+            if cut:
+                notes.append('only the first %d letters were spoken' % MOST_LETTERS)
+            return raw, n, notes
+        code, message = refusal(raw)
+        reason = code or 'answer %d' % status
+        if status == 401 and re.search('invalid_api_key|missing_api_key', code):
+            rest = 7 * 24 * HOUR
+        elif 'quota_exceeded' in code or status == 402:
+            rest = 6 * HOUR
+        elif status in (401, 403):
+            rest = 24 * HOUR
+        elif status == 429 or status >= 500:
+            rest = 60
+        else:
+            # the request itself is wrong (the voice, the text): another key would say the same
+            save_state(state)
+            raise Problem('ElevenLabs refused: %s%s' % (message or reason, ' Pick a voice with: phone voice list' if code == 'voice_not_found' else ''))
+        state['rest'][mark_of(key)] = {'until': time.time() + rest, 'why': reason, 'message': message[:200]}
+        notes.append('key %d (%s): %s' % (n, tail(key), reason))
+    save_state(state)
+    raise Problem('None of the %d ElevenLabs keys can speak now: %s.' % (len(keys), '; '.join(notes)))
+
+
+def report(online=True):
+    keys = saved_keys()
+    if not keys:
+        return 'No ElevenLabs key is saved. Add them with: phone voice add KEY1 KEY2 ...'
+    state = load_state()
+    lines = []
+    for n, key in enumerate(keys, 1):
+        line = '%d. %s' % (n, tail(key))
+        if online:
+            try:
+                status, raw = eleven_ask('/v1/user/subscription', key)
+                d = parsed(raw) if status == 200 else None
+                if d and d.get('character_limit'):
+                    line += '  %s of %s letters used%s' % (d.get('character_count'), d['character_limit'], ' (%s)' % d['tier'] if d.get('tier') else '')
+                    if d.get('character_count', 0) >= d['character_limit'] and not resting(state, key):
+                        state['rest'][mark_of(key)] = {'until': time.time() + 6 * HOUR, 'why': 'quota_exceeded', 'message': ''}
+                else:
+                    line += '  ' + (refusal(raw)[0] or 'answer %d' % status)
+            except Problem:
+                line += '  (could not ask ElevenLabs)'
+        rest = resting(state, key)
+        if rest:
+            line += '  resting until %s: %s' % (time.strftime('%Y-%m-%d %H:%M', time.localtime(rest['until'])), rest['why'])
+        elif mark_of(key) == state.get('last'):
+            line += '  in use'
+        lines.append(line)
+    save_state(state)
+    return '\n'.join(lines)
+
+
+def voice_command(args):
+    what = args[0] if args else 'keys'
+    if what == 'speak':
+        sound, n, notes = speak(' '.join(args[1:]))
+        os.makedirs(os.path.dirname(SOUND_FILE), exist_ok=True)
+        with open(SOUND_FILE, 'wb') as f:
+            f.write(sound)
+        total = len(saved_keys())
+        return SOUND_FILE + '\nSaid with ElevenLabs, key %d of %d%s.' % (n, total, ' (%s)' % '; '.join(notes) if notes else '')
+    if what == 'add':
+        before = saved_keys()
+        after = keys_from(before + keys_from(args[1:]))
+        if len(after) == len(before):
+            raise Problem('Give the keys to add: phone voice add KEY1 KEY2 ...  (a key has at least 8 letters; ones already saved are not added twice)')
+        write_keys(after)
+        return '%d key(s) added; %d ElevenLabs key(s) are saved now.' % (len(after) - len(before), len(after))
+    if what == 'remove':
+        keys = saved_keys()
+        if len(args) < 2 or not args[1].isdigit() or not 1 <= int(args[1]) <= len(keys):
+            raise Problem('Say which key by its number (1 to %d); see: phone voice' % len(keys))
+        gone = keys.pop(int(args[1]) - 1)
+        write_keys(keys)
+        return 'Removed key %s; %d left.' % (tail(gone), len(keys))
+    if what == 'retry':
+        state = load_state()
+        state['rest'] = {}
+        save_state(state)
+        return 'All keys will be tried again.'
+    if what == 'use':
+        state = load_state()
+        state['voice'] = args[1] if len(args) > 1 else ''
+        save_state(state)
+        return 'Voice set to %s.' % state['voice'] if state['voice'] else 'Back to the usual voice.'
+    if what == 'list':
+        keys = saved_keys()
+        if not keys:
+            raise Problem('No ElevenLabs key is saved.')
+        for key in order(load_state(), keys):
+            status, raw = eleven_ask('/v1/voices', key)
+            if status == 200:
+                found = (parsed(raw) or {}).get('voices') or []
+                return '\n'.join('%s  %s%s' % (v.get('voice_id'), v.get('name'), '  ' + ', '.join(str(x) for x in v['labels'].values()) if v.get('labels') else '')
+                                 for v in found[:60]) or 'No voices.'
+        raise Problem('No key could list the voices.')
+    if what == 'keys':
+        return report()
+    raise Problem('use: phone voice | phone voice add KEY... | phone voice remove N | phone voice list | phone voice use ID | phone voice retry')
+
+
+def main(args):
+    if len(args) >= 2 and args[0] == 'youtube' and args[1] == 'search':
+        return youtube_search(' '.join(args[2:]))
+    if len(args) >= 3 and args[0] == 'youtube' and args[1] == 'read':
+        lang, start, rest = '', 0.0, args[3:]
+        for i in range(len(rest) - 1):
+            if rest[i] == '--lang':
+                lang = rest[i + 1]
+            elif rest[i] == '--from':
+                try:
+                    start = max(0.0, float(rest[i + 1]))
+                except ValueError:
+                    raise Problem('--from takes a minute, like --from 10')
+        return youtube_read(args[2], lang, start)
+    if args and args[0] == 'voice':
+        return voice_command(args[1:])
+    raise Problem('use: learn youtube search WORDS | learn youtube read ID [--lang hi] [--from MINUTE] | phone voice ...')
+
+
+if __name__ == '__main__':
+    try:
+        print(main(sys.argv[1:]))
+    except Problem as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
