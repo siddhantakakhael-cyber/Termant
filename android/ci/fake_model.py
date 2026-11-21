@@ -3,7 +3,9 @@
 
 Asked "TEAM ...", it starts the researcher and the helper "poet" in one step; the researcher
 runs one command and reports, the poet reports; then the main agent's answer repeats what
-the helpers reported. OpenCode itself is the real one; only the model is this stand-in.
+the helpers reported. Asked "RUN command", the main agent runs that command and answers with
+what it printed. Asked "LOOK ...", it answers how many pictures and other files came with
+the message. OpenCode itself is the real one; only the model is this stand-in.
 
   fake_model.py PORT_FILE [LOG_FILE] [COMMAND THE RESEARCHER RUNS] [ADDRESS TO LISTEN ON]
 """
@@ -50,6 +52,19 @@ def answer(body):
     if reports:
         said = [re.sub(r"\s+", " ", re.sub(r"</?subagent[^>]*>", " ", r)).strip() for r in reports]
         return {"who": "main", "text": "TEAM RESULT (%d): %s" % (len(reports), " | ".join(said))}
+    asked = users[-1] if users else ""
+    wanted = re.search(r"^RUN (.+)$", asked, re.M)
+    if wanted:
+        shell = next((name for name in ("shell", "bash") if name in tools), None)
+        if not results and shell:
+            return {"who": "main", "calls": [(shell, {"command": wanted.group(1).strip()})]}
+        return {"who": "main", "text": "RAN: " + " ".join(text_of(m) for m in results)[:1500]}
+    if "LOOK" in asked:
+        last = [m for m in messages if m.get("role") == "user"][-1].get("content")
+        parts = last if isinstance(last, list) else []
+        return {"who": "main", "text": "SAW pictures=%d files=%d" % (
+            sum(1 for p in parts if isinstance(p, dict) and p.get("type") == "image_url"),
+            sum(1 for p in parts if isinstance(p, dict) and p.get("type") == "file"))}
     if results:
         return {"who": "main", "text": "I started two helpers."}
     if "subagent" in tools and any("TEAM" in u for u in users):

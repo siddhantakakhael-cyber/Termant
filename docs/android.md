@@ -17,6 +17,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [The agent learns: notes and its own tools](#the-agent-learns-notes-and-its-own-tools)
 - [Learning by itself: YouTube, skills, "aaj kya seekha?"](#learning-by-itself-youtube-skills-aaj-kya-seekha)
 - [A team of helper agents](#a-team-of-helper-agents)
+- [Pictures and files in the chat, Undo, and work by itself](#pictures-and-files-in-the-chat-undo-and-work-by-itself)
 - [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
 - [Faster answers](#faster-answers)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
@@ -209,8 +210,9 @@ Ask once, and the app keeps doing it by itself:
 | `jab charging lage toh backup chalao` | `phone rule add charging -- bash /root/backup.sh` |
 | `WiFi se judte hi mummy ko message bhejo` | `phone rule add wifi-connected -- phone sms +91… "…"` |
 
-Triggers: `at HH:MM` (every day), `charging`, `unplugged`, `battery-below N`,
-`wifi-connected`, `wifi-lost`, `boot`. The action is any command in Ubuntu.
+Triggers: `at HH:MM` (every day), `every 30m` (again and again, 15 minutes to
+24 hours), `charging`, `unplugged`, `battery-below N`, `wifi-connected`,
+`wifi-lost`, `boot`. The action is any command in Ubuntu.
 Rules are listed in **Settings** (switch off or delete there) and with
 `phone rule list`. A rule that fails shows a notification.
 
@@ -305,6 +307,8 @@ back; the main agent puts the results together and answers you.
 | `writer` | Writes or rewrites text: a letter, a report, a summary, a translation |
 | `coder` | Writes a program or script and makes it run |
 | `checker` | Checks finished work against what was asked and lists what is wrong |
+| `planner` | Splits a big job into steps and says which helper does each |
+| `coach` | Looks at a job that went badly and keeps the lesson as a note or a skill |
 
 OpenCode's own `general` and `explore` helpers are there as well.
 
@@ -347,6 +351,93 @@ Good to know:
 
 This picture is from the automatic test; the words of the answer are the
 pretend model's.
+
+## Pictures and files in the chat, Undo, and work by itself
+
+New in 0.22.0. Most of this is the agent using new commands in Ubuntu; what
+it does with them is told to it in its instructions, so a small free model may
+follow them less well than a big one.
+
+**Pictures and files.** The **+** in the message box picks pictures or files
+of any kind (up to 10 at once, 200 MB each). They are copied to
+`/root/uploads` in Ubuntu and go with your next message.
+
+- A picture is handed to the model itself. If the model you chose cannot see
+  pictures, Termant asks the first free model that can, for this message, and
+  says so under the answer.
+- A PDF is handed to the model only when the model reads PDFs (no free model
+  does today). Otherwise the agent reads it with `readfile`.
+- `readfile FILE` reads PDF, Word (docx, odt), Excel (xlsx, ods), PowerPoint
+  (pptx, odp) and text; `readfile FILE --unpack` unpacks a zip or tar.
+  Scanned PDFs (pictures of pages) and the old `.doc`/`.xls` formats are not
+  read.
+
+**Undo.** When the agent changes or deletes your files through `safe` (`safe
+keep`, `safe rm`, `safe mv`), a line "Undo: N file change(s)" stands under the
+answer. Tap it (or write `undo`) and the files are back. Deleted files go to
+a bin, not away. Undo covers only what went through `safe`: a file the agent
+changed in some other way is not kept.
+
+**Dangerous things ask first.**
+
+- `phone sms` sent by the agent shows the number and the text on the screen
+  and waits for "Haan, bhejo".
+- `rm` on the phone's storage (`/sdcard`, `/storage`) and wiping the home
+  folder are refused by OpenCode, for the main agent and for every helper.
+  `safe rm` asks before a folder or more than 5 files.
+- Paying, ordering and sending in other apps: the agent is told to ask first.
+  That is an instruction, not a lock.
+
+**The team.**
+
+- For a big job the agent writes a plan first and starts after your yes.
+- `researcher`, then `writer`, then `checker` run one after the other; faults
+  go back to the writer, two rounds at most.
+- A shared notebook: `team note "..."` and `team notes WORDS`.
+- A small model for easy parts: `team model provider/model` gives
+  `researcher` and `checker` their own model; `team model off` ends it.
+- The same kind of job three times: the agent is told to make a helper for it
+  (`team seen KIND` counts).
+- After a job that went badly the `coach` keeps the lesson.
+
+**Work by itself.**
+
+- Night shift: "raat 2 baje news aur ek naya skill, subah report do" becomes
+  `phone rule add at 02:00 -- phone job "..."`. The report comes as a
+  notification and in the chat. Nobody is there to say yes then, so sending,
+  paying and deleting wait for the morning.
+- Watching: `watch add NAME every 15m --when "TEST" --then "COMMAND"` runs a
+  test every few minutes and acts once when it succeeds, for example
+  `phone screen | grep -qi "out for delivery"`. No model is asked while it
+  only looks. It sees only the app that is open at that moment, and needs
+  Screen control for `phone screen`.
+- Notifications: `phone notifications` lists the newest ones of all apps,
+  after you allowed Termant under the phone's "Notification access"
+  (`phone notifications allow` opens the page). Only what arrived since then
+  is listed, 80 at most, and the list is empty again after the app restarts.
+  Answering one is done through Screen control, after asking you.
+
+**Everyday helpers.**
+
+- Tidying: `tidy scan`, `tidy sort FOLDER` (into Pictures, Videos, Music,
+  Documents, Archives, Apps, Other; can be undone), `tidy dupes` (the same
+  file twice). Nothing is deleted without asking.
+- Forms: `me set NAME VALUE` keeps your details (name, phone, address ...);
+  the agent fills forms from them and shows them before Submit. Passwords,
+  PINs, OTPs, card and ID numbers are refused.
+- Teacher: `study add TOPIC "question" "answer"` makes cards; `study due 5`
+  gives today's five. A wrong card comes back in 10 minutes, a right one
+  after 1, 2, 4, 8, 16, 32 days.
+- Diary: `diary` (today) or `diary 7`: each job, how long, which model, how
+  many helpers, how many file changes. It counts time, not tokens: how much
+  of a free limit is left is not known to the app.
+
+Tested: the commands themselves, on Linux and inside Ubuntu in the emulator
+(`android/ci/kit-check.sh`, 125 checks), and with the real OpenCode and a
+pretend model: a picture reaches the model, a change made with `safe` is
+undone from the chat script, `rm -rf /sdcard/...` is refused for the agent.
+Not tested on a real phone: the file picker, the notification list, a night
+job from start to end, and how well real models follow the new instructions.
 
 ## ElevenLabs voice with several keys
 

@@ -23,6 +23,11 @@
     <string name="alarm_ringing">Band karne ke liye tap karein</string>
     <string name="alarm_stop">Band karein</string>
     <string name="ask_hint">Hindi ya English mein poochein…</string>
+    <string name="attach_file">Photo ya file jodein</string>
+    <string name="attach_remove">%1$s hatayein</string>
+    <string name="attach_default">Yeh file dekho aur batao isme kya hai.</string>
+    <string name="attach_failed">Yeh file nahi jud payi (bahut badi hai, ya padhi nahi ja sakti).</string>
+    <string name="undo_changes">Badli hui files wapas laayein</string>
     <string name="ask_send">Bhejein</string>
     <string name="ask_voice">Bolkar likhein</string>
     <string name="voice_missing">Is phone mein voice typing app nahi hai. Keyboard ka microphone button istemal karein.</string>

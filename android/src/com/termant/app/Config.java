@@ -48,6 +48,14 @@ final class Config {
             "opencode/big-pickle", "opencode/glm-5.3-flash-free",
             "opencode/deepseek-v4.1-flash-free", "opencode/minimax-m3.1-flash-free",
     };
+    /** Termant's own commands in Ubuntu (guest/kit); the agent may run them without asking. */
+    static final String[] KIT_TOOLS = {"safe", "tidy", "study", "readfile", "me", "watch", "diary"};
+    /** Shell commands OpenCode refuses outright, for the main agent and its helpers. */
+    static final String[] NEVER = {
+            "rm /sdcard*", "rm -* /sdcard*", "rm /storage*", "rm -* /storage*",
+            "rm -* /", "rm -* ~", "rm -* ~/", "rm -* /root", "rm -* /root/",
+            "mkfs*", "dd * of=/dev/*",
+    };
     /** How long the app stays on a model it switched to before trying the chosen one again. */
     private static final long SWITCH_LASTS_MS = 3 * 60 * 60 * 1000;
     static final int MAX_ATTEMPTS = 5;
@@ -411,6 +419,14 @@ final class Config {
             perms.put(new JSONObject().put("action", "shell").put("resource", "date *").put("effect", "allow"));
             perms.put(new JSONObject().put("action", "shell").put("resource", "learn *").put("effect", "allow"));
             perms.put(new JSONObject().put("action", "shell").put("resource", "team *").put("effect", "allow"));
+            for (String tool : KIT_TOOLS) {
+                perms.put(new JSONObject().put("action", "shell").put("resource", tool + " *").put("effect", "allow"));
+            }
+            // Never, whoever asks (helpers too): wiping the phone's storage or the system. Deleting
+            // the user's files goes through `safe rm`, which keeps them and asks before a folder.
+            for (String never : NEVER) {
+                perms.put(new JSONObject().put("action", "shell").put("resource", never).put("effect", "deny"));
+            }
             // What the agent learned in earlier chats (notes, own tools); "learn refresh" writes the file.
             o.put("instructions", new JSONArray().put(LEARNED_FILE));
             // Without a search service named here OpenCode asks which one to use, and in a chat nobody can answer.

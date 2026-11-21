@@ -51,6 +51,20 @@ echo "== helper agents: the team command, and OpenCode handing parts of a job to
 bash /root/team-check.sh > /root/team-check.txt 2>&1; echo "team-check-exit=$?"
 grep -v '^PASS' /root/team-check.txt; echo "team-check-passed=$(grep -c '^PASS' /root/team-check.txt)"
 grep -q '^PASS a helper runs a command by itself' /root/team-check.txt && echo "team-real-run=yes"
+echo "== the kit: undo, tidy, study, readfile, me, watch, diary, attached files"
+bash /root/kit-check.sh > /root/kit-check.txt 2>&1; echo "kit-check-exit=$?"
+grep -v '^PASS' /root/kit-check.txt; echo "kit-check-passed=$(grep -c '^PASS' /root/kit-check.txt)"
+echo "-- rules that repeat, jobs, notifications, a message that needs a yes"
+phone rule add every 5m -- true; echo "bad-every-exit=$?"
+made=$(phone rule add every 20m -- true); echo "every-rule-exit=$?"; echo "$made"
+phone rule remove "$(printf '%s\n' "$made" | sed -n 's/^Rule \([0-9]*\) added.*/\1/p')"
+phone job hi; echo "bad-job-exit=$?"
+phone notifications 2>&1 | tee /root/notifications.txt | head -n 5
+grep -q 'phone notifications allow\|^Notifications, newest last\|^No notifications' /root/notifications.txt && echo "notifications-said=yes"
+mkdir -p /root/.cache/termant; : > /root/.cache/termant/alone
+TERMANT_CHAT=1 phone sms +911234567890 "termant test, must not go out" 2>&1 | tee /root/sms-alone.txt
+grep -q 'not sent' /root/sms-alone.txt && echo "sms-alone-said=yes"
+rm -f /root/.cache/termant/alone
 # the helper that the chat test hands a part to, later
 printf 'POET-MARK You write one short line of verse about the subject you are given.\n' > /root/poet.md
 team add poet "Writes one short line of verse on a given subject." /root/poet.md; echo "team-add-exit=$?"

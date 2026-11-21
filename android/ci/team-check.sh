@@ -6,6 +6,7 @@
 here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
 opencode=$(PATH="$HOME/.opencode/bin:$PATH" command -v opencode 2>/dev/null)
+settings=; [ -n "$1" ] && settings=$(cd "$1" 2>/dev/null && pwd)/opencode.jsonc
 if [ -n "$1" ]; then
   # the file as it is in the repository: put it where commands are found
   mkdir -p "$work/bin" && cp "$1/team" "$work/bin/" && chmod 755 "$work/bin"/* || exit 2
@@ -29,13 +30,14 @@ about='Writes one short line of verse on a given subject.'
 printf 'POET-MARK You write one short line of verse about the subject you are given.\n' > "$work/poet.md"
 
 run team
-check "four helpers come with Termant" has "Helpers that come with Termant: 4
+check "six helpers come with Termant" has "Helpers that come with Termant: 6
 - researcher: Finds things out"
-check "the list names writer, coder and checker" [ "$(printf '%s\n' "$out" | grep -c '^- \(writer\|coder\|checker\): ')" -eq 3 ]
+check "the list names writer, coder, checker, planner and coach" [ "$(printf '%s\n' "$out" | grep -c '^- \(writer\|coder\|checker\|planner\|coach\): ')" -eq 5 ]
 check "no helper made here yet" has "Helpers made here: none yet."
-check "each is a file OpenCode reads" [ "$(ls "$agents" | tr '\n' ' ')" = "checker.md coder.md researcher.md writer.md " ]
+check "each is a file OpenCode reads" [ "$(ls "$agents" | tr '\n' ' ')" = "checker.md coach.md coder.md planner.md researcher.md writer.md " ]
 check "a helper file says it is a subagent" grep -qx 'mode: subagent' "$agents/checker.md"
-check "every helper is told to leave the screen alone" [ "$(grep -l 'Do not touch the screen' "$agents"/*.md | wc -l)" -eq 4 ]
+check "every helper is told to leave the screen alone" [ "$(grep -l 'Do not touch the screen' "$agents"/*.md | wc -l)" -eq 6 ]
+check "every helper is told not to send, pay or delete, and of the team notebook" [ "$(grep -l 'Never send a message, pay, post, or delete' "$agents"/*.md | xargs grep -l 'team notes' | wc -l)" -eq 6 ]
 run team add Poet "  Writes one short line
  of verse on a given subject. " "$work/poet.md"
 check "a helper is made" [ "$code" -eq 0 ]
@@ -110,7 +112,7 @@ else
   export NO_COLOR=1 OPENCODE_DISABLE_AUTOUPDATE=1
   mkdir -p "$work/job" && cd "$work/job" || exit 2
   run "$opencode" debug agents --standalone
-  check "OpenCode knows the helpers of Termant" [ "$(printf '%s\n' "$out" | grep -c '"id": "\(researcher\|writer\|coder\|checker\)"')" -eq 4 ]
+  check "OpenCode knows the helpers of Termant" [ "$(printf '%s\n' "$out" | grep -c '"id": "\(researcher\|writer\|coder\|checker\|planner\|coach\)"')" -eq 6 ]
   check "OpenCode knows the helper made here" has '"id": "poet"'
   out=$(timeout 240 "$opencode" run --standalone --auto --model termanttest/fake "TEAM please" 2>&1 </dev/null | sed 's/\x1b\[[0-9;]*m//g'); code=$?
   printf '%s\n' "$out" > "$work/run.txt"
@@ -126,6 +128,23 @@ else
   same_time() { [ -n "$poet" ] && [ -n "$done_at" ] && [ "$poet" -lt "$done_at" ]; }
   check "the helpers work at the same time" same_time
   [ "$failed" -eq 0 ] || { echo "-- the run:"; cat "$work/run.txt"; echo "-- the model was asked:"; cat "$work/asked.txt"; }
+  # What nobody may do, the main agent or a helper: Termant's settings for OpenCode refuse it.
+  [ -f "$settings" ] || settings=/usr/local/lib/termant/opencode.jsonc
+  if [ -f "$settings" ]; then
+    mkdir -p "$HOME/.config/opencode" && cp "$settings" "$HOME/.config/opencode/opencode.jsonc"
+    try() { out=$(timeout 120 "$opencode" run --standalone --auto --model termanttest/fake "RUN $1" 2>&1 </dev/null | sed 's/\x1b\[[0-9;]*m//g'); }
+    try 'rm -rf /sdcard/DCIM-not-there'
+    check "deleting in the phone's storage with rm is refused" has "permission.rejected"
+    try 'cd /tmp && rm -rf ~'
+    check "wiping the home folder is refused, also behind another command" has "permission.rejected"
+    mkdir -p "$work/job/old-build"
+    try 'rm -rf old-build'
+    check "a folder of the work itself can still be deleted" [ ! -d "$work/job/old-build" ]
+    try 'echo allowed-words'
+    check "an ordinary command runs" has "RAN: allowed-words"
+  else
+    echo "SKIP what OpenCode refuses (Termant's settings file is not here)"
+  fi
 fi
 
 if [ "$failed" -eq 0 ]; then echo "RESULT: PASS"; else echo "RESULT: FAIL ($failed)"; fi

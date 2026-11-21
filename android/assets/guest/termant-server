@@ -5,7 +5,8 @@
 # and when Termant ends this script.
 exec >/dev/null 2>&1 </dev/null
 . /usr/local/lib/termant/server.sh || exit 2
-export PATH="$HOME/.opencode/bin:$PATH" NO_COLOR=1
+# TERMANT_CHAT tells Termant's own commands (safe, see kit) that the agent runs them
+export PATH="$HOME/.opencode/bin:$PATH" NO_COLOR=1 TERMANT_CHAT=1
 command -v opencode >/dev/null 2>&1 || exit 3
 command -v curl >/dev/null 2>&1 || exit 3
 [ -f "$HOME/.config/termant/keys.env" ] && . "$HOME/.config/termant/keys.env"

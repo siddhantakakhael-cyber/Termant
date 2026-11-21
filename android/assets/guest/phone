@@ -6,6 +6,17 @@ if ! read -r port token 2>/dev/null < /etc/termant/bridge; then
   exit 1
 fi
 [ $# -gt 0 ] || set -- help
+# A text message costs money and cannot be taken back. Sent by the agent in a chat, the user
+# says yes on the screen first; in a job the agent does alone there is nobody to say yes.
+# Typed by the user, or run by a rule the user set up, it goes out as before.
+if [ "$1" = sms ] && [ -n "$TERMANT_CHAT" ] && [ -z "$TERMANT_UNATTENDED" ]; then
+  if [ -e "$HOME/.cache/termant/alone" ]; then
+    echo "phone sms: not sent. This job runs by itself and nobody is there to say yes to a message." >&2
+    echo "Say in your report which message is waiting, so the user can ask for it in the chat." >&2
+    exit 1
+  fi
+  shift; set -- sms-ask "$@"
+fi
 # phone voice ...: the ElevenLabs keys live in Ubuntu
 if [ "$1" = voice ]; then shift; exec termant-web voice "$@"; fi
 # phone say TEXT: with ElevenLabs keys saved, their voice speaks (the keys take turns when one is

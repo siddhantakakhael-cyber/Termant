@@ -96,9 +96,13 @@ final class PhoneBridge {
                     + "                              (screen, tap, type, swipe and key need Screen control: Termant Settings)\n"
                     + "  phone wifi on|off           Wi-Fi\n"
                     + "  phone volume 0-100          media volume\n"
-                    + "  phone sms NUMBER TEXT       send a text message (costs what an SMS costs)\n"
+                    + "  phone sms NUMBER TEXT       send a text message (costs what an SMS costs). When the\n"
+                    + "                              agent sends it, the user is asked on the screen first\n"
                     + "  phone rule ...              automation: run a command when something happens (phone rule help)\n"
                     + "  phone care ...              write to the user first, now or later (phone care help)\n"
+                    + "  phone job TASK              the agent does TASK by itself now and reports as a notification\n"
+                    + "                              (for rules: phone rule add at 02:00 -- phone job \"...\")\n"
+                    + "  phone notifications [N]     the phone's newest notifications (allow | clear)\n"
                     + "  phone wake on|off           keep running with the screen off\n"
                     + "  phone info                  phone model and Android version\n";
 
@@ -348,12 +352,24 @@ final class PhoneBridge {
                         return service.care.command(args);
                     }
                 });
+            case "job":
+                return onMain(new Action() {
+                    @Override
+                    public String run() throws Exception {
+                        return service.care.job(rest(args, 1));
+                    }
+                });
+            case "notifications":
+                return NotifyListener.command(service, args);
             case "wifi":
                 return wifi(args);
             case "volume":
                 return volume(args);
             case "sms":
-                return sms(args);
+                return sms(args, false);
+            case "sms-ask":
+                // the agent sends it: the user says yes on the screen first (the `phone` script picks this)
+                return sms(args, true);
             case "battery":
                 return battery();
             case "clipboard":
@@ -646,7 +662,7 @@ final class PhoneBridge {
         return "Media volume " + percent + "%.";
     }
 
-    private String sms(List<String> args) throws Exception {
+    private String sms(List<String> args, boolean askFirst) throws Exception {
         String number = args.size() > 1 ? args.get(1) : "";
         String text = rest(args, 2);
         if (!number.matches("\\+?[0-9][0-9 -]{2,18}") || text.isEmpty()) {
@@ -661,6 +677,18 @@ final class PhoneBridge {
             });
             throw new Refused("Termant is not allowed to send SMS yet. The phone is asking the user now "
                     + "(or: Settings > Automation > Allow SMS). Ask the user to allow it, then try again.");
+        }
+        if (askFirst) {
+            String shown = text.length() > 400 ? text.substring(0, 400) + "\u2026" : text;
+            List<String> choices = new ArrayList<>();
+            choices.add("Haan, bhejo");
+            choices.add("Nahi");
+            String answer = Ask.ask(service, "SMS bhejna hai " + number + " ko?\n\n" + shown, choices);
+            if (!"Haan, bhejo".equals(answer.trim())) {
+                android.util.Log.i("Termant", "sms not sent: the user said no");
+                throw new Refused("The user did not say yes, so the SMS was NOT sent. Do not try again; "
+                        + "tell the user it was not sent.");
+            }
         }
         SmsManager sm = SmsManager.getDefault();
         sm.sendMultipartTextMessage(number.replaceAll("[ -]", ""), null, sm.divideMessage(text), null, null);

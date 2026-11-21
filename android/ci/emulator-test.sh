@@ -101,6 +101,7 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/learn-check.sh'" < android
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_web.py'" < android/ci/fake_web.py
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/team-check.sh'" < android/ci/team-check.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_model.py'" < android/ci/fake_model.py
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/kit-check.sh'" < android/ci/kit-check.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
@@ -960,7 +961,7 @@ adb logcat -d -s Termant:I | grep 'screen control:' > "$OUT/screen-control.txt"
 cat "$OUT/screen-control.txt"
 grep -q 'screen control: on' "$OUT/screen-control.txt" || finish "FAIL Android did not start the screen control service"
 type_line 'sh%st5.sh'
-wait_for_end files/rootfs/root/result5.txt 130 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
+wait_for_end files/rootfs/root/result5.txt 220 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
 run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"
 cat "$OUT/result5.txt"
 sleep 2
@@ -1001,6 +1002,13 @@ run_as cat files/rootfs/root/team-check.txt > "$OUT/team-check.txt" 2>/dev/null
 grep -q '^team-check-exit=0' "$OUT/result5.txt" || finish "FAIL helper agents (the team command, OpenCode with helpers) inside Ubuntu"
 grep -q '^team-real-run=yes' "$OUT/result5.txt" || finish "FAIL helper agents: OpenCode did not run with helpers inside Ubuntu"
 grep -q '^team-add-exit=0' "$OUT/result5.txt" || finish "FAIL team add"
+run_as cat files/rootfs/root/kit-check.txt > "$OUT/kit-check.txt" 2>/dev/null
+grep -q '^kit-check-exit=0' "$OUT/result5.txt" || finish "FAIL the kit (undo, tidy, study, readfile, me, watch, diary, attached files) inside Ubuntu"
+grep -q '^every-rule-exit=0' "$OUT/result5.txt" || finish "FAIL phone rule add every 20m"
+grep -q '^bad-every-exit=1' "$OUT/result5.txt" || finish "FAIL a rule for every 5 minutes was accepted"
+grep -q '^bad-job-exit=1' "$OUT/result5.txt" || finish "FAIL phone job without a task was accepted"
+grep -q '^notifications-said=yes' "$OUT/result5.txt" || finish "FAIL phone notifications did not say how to allow it"
+grep -q '^sms-alone-said=yes' "$OUT/result5.txt" || finish "FAIL phone sms in a job the agent does alone was not held back"
 grep -q '^voice-add-exit=0' "$OUT/result5.txt" || finish "FAIL phone voice add"
 grep -q '^say-exit=0' "$OUT/result5.txt" || finish "FAIL phone say with ElevenLabs keys"
 grep -q '^say-second-key=yes' "$OUT/result5.txt" || finish "FAIL phone say did not move on to the second ElevenLabs key"

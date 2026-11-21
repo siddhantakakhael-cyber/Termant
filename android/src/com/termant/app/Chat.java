@@ -45,6 +45,8 @@ final class Chat {
     private static final int SETUP_FAILED = 97;
     private static final String SESSION_MARKER = "@@TERMANT-SESSION@@";
     private static final Pattern SESSION_ID = Pattern.compile("\\bses_[A-Za-z0-9]+");
+    /** A note under a reply that starts with this sign can be tapped: it undoes the reply's file changes. */
+    static final String UNDO_SIGN = "\u21a9";
     /** Where the agent script copies OpenCode's event feed while a reply is written, as seen from inside Ubuntu. */
     private static final String STREAM_FILE = "/root/.cache/termant/events.txt";
     /**
@@ -53,8 +55,10 @@ final class Chat {
      * $6 the file the reply is copied to word by word.
      */
     private static final String SCRIPT =
-            "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
-                    + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
+            "rm -f \"$6.note\" 2>/dev/null\n"
+                    + "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
+                    // TERMANT_CHAT tells Termant's own commands that the agent runs them (see guest/kit)
+                    + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1 TERMANT_CHAT=1\n"
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
                     // git must fail rather than wait for a password nobody can type
                     + "[ -f " + Config.GITHUB_FILE + " ] && . " + Config.GITHUB_FILE + "\n"
@@ -63,6 +67,14 @@ final class Chat {
                     // OpenCode prints a paragraph only when it is complete. To show the words while
                     // they are written, start its server here and copy the server's event feed to $6.
                     // If any of that fails, OpenCode starts its own server as before.
+                    // Every message is one "turn": what `safe` keeps and deletes during it can be undone together.
+                    + "turn=$(date +%Y%m%d-%H%M%S); mkdir -p \"$HOME/.cache/termant\"; echo \"$turn\" > \"$HOME/.cache/termant/turn\"\n"
+                    + "began=$(date +%s)\n"
+                    // a job the agent does by itself: nobody is there to answer a question (see `safe rm`)
+                    + "case \"$1\" in 'Here is a job to do by yourself now.'*|'You look after the user'*)"
+                    + " : > \"$HOME/.cache/termant/alone\" ;; *) rm -f \"$HOME/.cache/termant/alone\" ;; esac\n"
+                    // "undo" (typed, or the line under a reply tapped) puts the files back at once, without a model
+                    + "case \"$1\" in undo|Undo|UNDO) if put=$(safe undo 2>&1); then echo " + MARKER + "; echo \"$put\"; exit 0; fi ;; esac\n"
                     + "where=--standalone; srv=; feed=; url=\n"
                     // The server Termant kept from the message before is used when it is there
                     // (server.sh): then this message does not wait for OpenCode to start.
@@ -88,10 +100,37 @@ final class Chat {
                     + "    kill $srv 2>/dev/null; srv=; unset OPENCODE_PASSWORD\n"
                     + "  fi\n"
                     + "fi\n"
+                    // Files attached to the message ("[file: PATH]"): a picture or PDF goes to the model itself
+                    // when a model that can take it is there, and that model is asked; see `termant-kit attach`.
+                    + "model=$4; files=(); told=\n"
+                    + "case \"$1\" in *'[file: '*)\n"
+                    + "  picked=$(termant-kit attach \"$4\" \"$1\" 2>/dev/null)\n"
+                    + "  case \"$picked\" in model=*) model=$(printf '%s\\n' \"$picked\" | sed -n 's/^model=//p' | head -n 1) ;; esac\n"
+                    + "  while IFS= read -r f; do [ -n \"$f\" ] && files+=(--file \"$f\"); done"
+                    + " < <(printf '%s\\n' \"$picked\" | sed -n 's/^file=//p')\n"
+                    + "  told=$(printf '%s\\n' \"$picked\" | sed -n 's/^note=model://p' | head -n 1)\n"
+                    + "  ;;\n"
+                    + "esac\n"
                     + "echo " + MARKER + "\n"
-                    + "if [ -n \"$4\" ]; then opencode run $where --auto $2 --model \"$4\" \"$1\" </dev/null\n"
-                    + "else opencode run $where --auto $2 \"$1\" </dev/null; fi\n"
+                    + "if [ -n \"$model\" ]; then opencode run $where --auto $2 --model \"$model\" \"${files[@]}\" \"$1\" </dev/null\n"
+                    + "else opencode run $where --auto $2 \"${files[@]}\" \"$1\" </dev/null; fi\n"
                     + "code=$?\n"
+                    // the work diary (`diary`), and what is said under the reply: what can be undone, which model saw the file
+                    + "if command -v termant-kit >/dev/null 2>&1; then\n"
+                    + "  kind=; said=$1\n"
+                    + "  case \"$1\" in\n"
+                    + "    'Here is a job to do by yourself now.'*) kind=job; said=$(printf '%s\\n' \"$1\" | sed -n 's/^The job: //p' | head -n 1) ;;\n"
+                    + "    'You look after the user'*) kind=check-in; said= ;;\n"
+                    + "  esac\n"
+                    + "  helpers=0; [ -s \"$6\" ] && helpers=$(grep '\"session.created\"' \"$6\" 2>/dev/null | grep -c '\"parentID\":\"ses_')\n"
+                    + "  termant-kit diary add --seconds $(( $(date +%s) - began )) --model \"$model\" --ok $code --helpers \"$helpers\""
+                    + " --turn \"$turn\" ${kind:+--kind $kind} -- \"$said\" >/dev/null 2>&1\n"
+                    + "  changes=$(safe has \"$turn\" 2>/dev/null)\n"
+                    + "  note=\n"
+                    + "  [ -n \"$told\" ] && note=\"Model for the attached file: ${told#opencode/}\"\n"
+                    + "  [ -n \"$changes\" ] && note=\"" + UNDO_SIGN + " Undo: $changes file change(s)${note:+ \u00b7 $note}\"\n"
+                    + "  [ -n \"$note\" ] && [ -n \"$6\" ] && printf '%s\\n' \"$note\" > \"$6.note\"\n"
+                    + "fi\n"
                     + "if [ $code -eq 0 ] && [ -n \"$5\" ]; then\n"
                     + "  echo; echo " + SESSION_MARKER + "\n"
                     + "  { opencode session list $where --max-count 1 --format json 2>/dev/null </dev/null ||\n"
@@ -810,6 +849,8 @@ final class Chat {
                     if (text.isEmpty()) reply.note = "";
                 }
                 if (exit != null) {
+                    String told = toldByScript();
+                    if (!told.isEmpty()) reply.note = reply.note.isEmpty() ? told : told + " \u00b7 " + reply.note;
                     busy = false;
                     process = null;
                     status = "";
@@ -835,6 +876,21 @@ final class Chat {
                 changed();
             }
         });
+    }
+
+    /** What the chat script wants said under the reply: what can be undone, which model saw an attached file. */
+    private String toldByScript() {
+        try {
+            File f = new File(Ubuntu.rootfs(context), STREAM_FILE.substring(1) + ".note");
+            if (!f.isFile()) return "";
+            byte[] all = new byte[(int) Math.min(f.length(), 600)];
+            try (FileInputStream in = new FileInputStream(f)) {
+                int n = in.read(all);
+                return n <= 0 ? "" : new String(all, 0, n, StandardCharsets.UTF_8).trim();
+            }
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private void apply(Message reply, String raw, Integer exit) {

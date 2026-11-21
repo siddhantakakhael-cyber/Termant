@@ -1,0 +1,1411 @@
+#!/usr/bin/env python3
+"""Termant's kit: small tools the agent (and you) use inside Ubuntu.
+
+One file, several commands; the name it is called by picks the tool:
+
+  safe      keep copies before changing files, delete into a bin, undo
+  tidy      look at a folder, sort it by kind, find the same file twice
+  study     question cards that come back on the right day
+  readfile  the text of a PDF, Word, Excel or PowerPoint file, a zip's list
+  me        the user's own details, for filling in forms
+  watch     look for something every few minutes, then do something once
+  diary     what the agent did, how long it took
+  termant-kit TOOL ...   any of the above, and: team (notes, seen, model), attach, models
+
+`TOOL help` explains each one.
+"""
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tarfile
+import time
+import zipfile
+import zlib
+
+HOME = os.path.expanduser("~")
+KIT = os.environ.get("TERMANT_KIT_DIR")
+DATA = os.path.join(KIT, "data") if KIT else os.path.join(HOME, ".config", "termant")
+BIN = os.path.join(KIT, "safe") if KIT else os.path.join(HOME, ".local", "share", "termant", "safe")
+CACHE = os.path.join(KIT, "cache") if KIT else os.path.join(HOME, ".cache", "termant")
+PHONE = os.environ.get("TERMANT_PHONE", "phone")
+DAY = 86400
+
+
+class Refused(Exception):
+    pass
+
+
+def out(text=""):
+    sys.stdout.write(str(text) + "\n")
+
+
+def load(name, empty):
+    try:
+        with open(os.path.join(DATA, name), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return empty
+
+
+def save(name, value):
+    os.makedirs(DATA, exist_ok=True)
+    temp = os.path.join(DATA, name + ".new")
+    with open(temp, "w", encoding="utf-8") as f:
+        json.dump(value, f, ensure_ascii=False, indent=1)
+    os.replace(temp, os.path.join(DATA, name))
+
+
+def size_text(n):
+    for unit in ("bytes", "kB", "MB", "GB"):
+        if n < 1000 or unit == "GB":
+            return ("%d %s" % (n, unit)) if unit == "bytes" else ("%.1f %s" % (n, unit))
+        n /= 1000.0
+
+
+def one_line(text, limit=200):
+    text = re.sub(r"\s+", " ", str(text)).strip()
+    return text if len(text) <= limit else text[: limit - 1] + "\u2026"
+
+
+def phone(*args, timeout=330):
+    """Runs the phone command; (ok, what it printed)."""
+    try:
+        p = subprocess.run([PHONE] + list(args), capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+        return p.returncode == 0, (p.stdout if p.returncode == 0 else p.stderr or p.stdout).strip()
+    except (OSError, subprocess.SubprocessError) as e:
+        return False, str(e)
+
+
+# ---------------------------------------------------------------- safe: copies, the bin, undo
+
+KEEP_LIMIT = 200 * 1000 * 1000
+ASK_ABOVE = 5
+TURNS_KEPT = 40
+
+
+def turn_id():
+    given = os.environ.get("TERMANT_TURN", "")
+    if not given and os.environ.get("TERMANT_CHAT"):
+        # run by the agent: the chat wrote down which message this is
+        try:
+            with open(os.path.join(CACHE, "turn")) as f:
+                given = f.read().strip()
+        except OSError:
+            pass
+    given = re.sub(r"[^A-Za-z0-9._-]", "", given)[:60]
+    return given or "by-hand-" + time.strftime("%Y%m%d")
+
+
+def turn_dir(turn):
+    return os.path.join(BIN, turn)
+
+
+def turn_log(turn):
+    try:
+        with open(os.path.join(turn_dir(turn), "log.jsonl"), encoding="utf-8") as f:
+            return [json.loads(line) for line in f if line.strip()]
+    except (OSError, ValueError):
+        return []
+
+
+def record(entry):
+    turn = turn_id()
+    d = turn_dir(turn)
+    os.makedirs(os.path.join(d, "files"), exist_ok=True)
+    with open(os.path.join(d, "log.jsonl"), "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    try:
+        os.remove(os.path.join(d, "undone"))
+    except OSError:
+        pass
+
+
+def new_slot():
+    d = os.path.join(turn_dir(turn_id()), "files")
+    os.makedirs(d, exist_ok=True)
+    n = len(os.listdir(d))
+    while os.path.lexists(os.path.join(d, str(n))):
+        n += 1
+    return os.path.join("files", str(n))
+
+
+def tree_size(path, stop=None):
+    if not os.path.isdir(path) or os.path.islink(path):
+        try:
+            return os.lstat(path).st_size, 1
+        except OSError:
+            return 0, 0
+    total = count = 0
+    for folder, _, files in os.walk(path):
+        for name in files:
+            try:
+                total += os.lstat(os.path.join(folder, name)).st_size
+            except OSError:
+                pass
+            count += 1
+            if stop and (total > stop or count > 5000):
+                return total, count
+    return total, count
+
+
+def turns():
+    """The change sets, newest first: (name, time, entries)."""
+    found = []
+    try:
+        names = os.listdir(BIN)
+    except OSError:
+        names = []
+    for name in names:
+        log = turn_log(name)
+        if log:
+            found.append((name, os.path.getmtime(os.path.join(turn_dir(name), "log.jsonl")), log))
+    return sorted(found, key=lambda t: -t[1])
+
+
+def prune():
+    for name, _, _ in turns()[TURNS_KEPT:]:
+        shutil.rmtree(turn_dir(name), ignore_errors=True)
+
+
+def nobody_there():
+    """A rule's command, or a job the agent does by itself: no one to answer a question."""
+    if os.environ.get("TERMANT_UNATTENDED"):
+        return True
+    return bool(os.environ.get("TERMANT_CHAT")) and os.path.exists(os.path.join(CACHE, "alone"))
+
+
+def said_yes(question):
+    """A clear yes from the user, through the question on the phone's screen."""
+    preset = os.environ.get("TERMANT_SAFE_ANSWER")
+    if preset is not None:
+        answer = preset
+    else:
+        if nobody_there():
+            return False
+        ok, answer = phone("ask", question, "Haan", "Nahi")
+        if not ok:
+            return False
+    return answer.strip().lower() in ("haan", "yes", "ha", "han", "y", "ok", "\u0939\u093e\u0901", "\u0939\u093e\u0902")
+
+
+def safe(args):
+    what = args[0] if args else "help"
+    rest = args[1:]
+    if what == "keep":
+        if not rest:
+            raise Refused("usage: safe keep FILE [more files]   (before you change or overwrite them)")
+        for path in rest:
+            full = os.path.abspath(path)
+            if not os.path.lexists(full):
+                record({"op": "new", "path": full})
+                out("Noted: %s does not exist yet; undo will remove it." % full)
+                continue
+            size, _ = tree_size(full, KEEP_LIMIT)
+            if size > KEEP_LIMIT:
+                raise Refused("safe keep: %s is bigger than 200 MB; no copy was made. Change it only if the user agrees." % full)
+            slot = new_slot()
+            target = os.path.join(turn_dir(turn_id()), slot)
+            if os.path.isdir(full) and not os.path.islink(full):
+                shutil.copytree(full, target, symlinks=True)
+            else:
+                shutil.copy2(full, target, follow_symlinks=False)
+            record({"op": "keep", "path": full, "copy": slot})
+            out("Kept a copy of %s (%s)." % (full, size_text(size)))
+        prune()
+        return
+    if what == "rm":
+        if not rest:
+            raise Refused("usage: safe rm FILE [more files]   (they go to Termant's bin; safe undo brings them back)")
+        paths = []
+        for path in rest:
+            full = os.path.abspath(path)
+            if not os.path.lexists(full):
+                raise Refused("safe rm: there is no %s. Nothing was deleted." % full)
+            if full in ("/", HOME, "/sdcard", "/storage/emulated/0") or full.count(os.sep) < 2:
+                raise Refused("safe rm: %s is not something to delete as a whole. Nothing was deleted." % full)
+            paths.append(full)
+        folders = [p for p in paths if os.path.isdir(p) and not os.path.islink(p)]
+        if folders or len(paths) > ASK_ABOVE:
+            total = sum(tree_size(p)[0] for p in paths)
+            names = ", ".join(os.path.basename(p) + ("/" if p in folders else "") for p in paths[:6])
+            question = "Delete %d thing(s), %s? %s%s" % (len(paths), size_text(total), names, " ..." if len(paths) > 6 else "")
+            if not said_yes(question):
+                raise Refused("safe rm: the user did not say yes (a folder, or more than %d files, needs their yes). "
+                              "Nothing was deleted." % ASK_ABOVE)
+        for full in paths:
+            slot = new_slot()
+            shutil.move(full, os.path.join(turn_dir(turn_id()), slot))
+            record({"op": "rm", "path": full, "copy": slot})
+            out("Deleted %s (in the bin; safe undo brings it back)." % full)
+        prune()
+        return
+    if what == "mv":
+        if len(rest) != 2:
+            raise Refused("usage: safe mv FROM TO")
+        move(os.path.abspath(rest[0]), os.path.abspath(rest[1]))
+        out("Moved %s to %s." % (os.path.abspath(rest[0]), os.path.abspath(rest[1])))
+        return
+    if what == "undo":
+        wanted = rest[0] if rest else None
+        for name, _, log in turns():
+            if wanted and name != wanted:
+                continue
+            if not wanted and os.path.exists(os.path.join(turn_dir(name), "undone")):
+                continue
+            done, failed = undo(name, log)
+            with open(os.path.join(turn_dir(name), "undone"), "w") as f:
+                f.write(str(time.time()))
+            out("Undone: %d change(s) of %s put back." % (done, title_of(name)))
+            for line in failed:
+                out("Not put back: " + line)
+            if failed:
+                sys.exit(1)
+            return
+        raise Refused("safe undo: there is nothing to undo." if not wanted else "safe undo: there is no change set " + wanted)
+    if what == "list":
+        found = turns()
+        if not found:
+            out("Nothing was changed through safe yet.")
+            return
+        for name, at, log in found[:20]:
+            undone = os.path.exists(os.path.join(turn_dir(name), "undone"))
+            out("%s  %s  %d change(s)%s" % (name, time.strftime("%Y-%m-%d %H:%M", time.localtime(at)), len(log),
+                                           "  (undone)" if undone else ""))
+            for e in log[:8]:
+                out("    " + describe_change(e))
+            if len(log) > 8:
+                out("    ... and %d more" % (len(log) - 8))
+        return
+    if what == "has":
+        name = rest[0] if rest else turn_id()
+        log = turn_log(name)
+        if not log or os.path.exists(os.path.join(turn_dir(name), "undone")):
+            sys.exit(1)
+        out(len(log))
+        return
+    out("""safe: change the user's files so that it can be undone
+  safe keep FILE ...   before you change or overwrite a file: keeps a copy (a file that
+                       does not exist yet is noted, so that undo removes it)
+  safe rm FILE ...     delete: the files go to Termant's bin. A folder, or more than 5
+                       files at once, asks the user first
+  safe mv FROM TO      move or rename, remembered
+  safe undo            puts back everything of the last message that changed something
+  safe undo NAME       the same for one change set of the list
+  safe list            what was changed, by message""")
+
+
+def title_of(name):
+    if name.startswith("by-hand-"):
+        return "the changes made by hand"
+    m = re.match(r"^(\d{4})(\d\d)(\d\d)-(\d\d)(\d\d)\d\d$", name)
+    return "the message of %s-%s-%s %s:%s" % m.groups() if m else "message " + name
+
+
+def describe_change(e):
+    if e["op"] == "keep":
+        return "changed  " + e["path"]
+    if e["op"] == "new":
+        return "made     " + e["path"]
+    if e["op"] == "rm":
+        return "deleted  " + e["path"]
+    return "moved    %s -> %s" % (e["from"], e["to"])
+
+
+def move(source, target):
+    if not os.path.lexists(source):
+        raise Refused("there is no " + source)
+    if os.path.lexists(target):
+        raise Refused("%s is already there; nothing was moved" % target)
+    os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+    shutil.move(source, target)
+    record({"op": "mv", "from": source, "to": target})
+
+
+def undo(name, log):
+    done, failed = 0, []
+    d = turn_dir(name)
+    for e in reversed(log):
+        try:
+            if e["op"] == "mv":
+                if os.path.lexists(e["from"]):
+                    raise Refused(e["from"] + " exists again")
+                os.makedirs(os.path.dirname(e["from"]) or ".", exist_ok=True)
+                shutil.move(e["to"], e["from"])
+                # a folder that tidy made and that is empty again goes away
+                try:
+                    os.rmdir(os.path.dirname(e["to"]))
+                except OSError:
+                    pass
+            elif e["op"] == "new":
+                if os.path.isdir(e["path"]) and not os.path.islink(e["path"]):
+                    shutil.rmtree(e["path"])
+                elif os.path.lexists(e["path"]):
+                    os.remove(e["path"])
+            else:
+                copy = os.path.join(d, e["copy"])
+                if not os.path.lexists(copy):
+                    raise Refused("its copy is gone")
+                if e["op"] == "rm":
+                    if os.path.lexists(e["path"]):
+                        raise Refused(e["path"] + " exists again")
+                    os.makedirs(os.path.dirname(e["path"]) or ".", exist_ok=True)
+                    shutil.move(copy, e["path"])
+                else:
+                    if os.path.isdir(e["path"]) and not os.path.islink(e["path"]):
+                        shutil.rmtree(e["path"])
+                    elif os.path.lexists(e["path"]):
+                        os.remove(e["path"])
+                    os.makedirs(os.path.dirname(e["path"]) or ".", exist_ok=True)
+                    if os.path.isdir(copy) and not os.path.islink(copy):
+                        shutil.copytree(copy, e["path"], symlinks=True)
+                    else:
+                        shutil.copy2(copy, e["path"], follow_symlinks=False)
+            done += 1
+        except (OSError, Refused, shutil.Error) as problem:
+            failed.append("%s (%s)" % (describe_change(e).strip(), problem))
+    return done, failed
+
+
+# ---------------------------------------------------------------- tidy: a folder's files
+
+KINDS = [
+    ("Pictures", "jpg jpeg png gif webp heic heif bmp svg tif tiff raw dng"),
+    ("Videos", "mp4 mkv mov avi webm 3gp m4v flv wmv"),
+    ("Music", "mp3 m4a wav flac ogg opus aac amr wma mid"),
+    ("Documents", "pdf doc docx odt rtf txt md xls xlsx ods csv ppt pptx odp epub json xml html htm"),
+    ("Archives", "zip rar 7z tar gz tgz bz2 xz iso"),
+    ("Apps", "apk xapk apks exe msi deb dmg appimage"),
+]
+KIND_OF = {ext: name for name, exts in KINDS for ext in exts.split()}
+
+
+def kind_of(name):
+    ext = name.rsplit(".", 1)[1].lower() if "." in name[1:] else ""
+    return KIND_OF.get(ext, "Other")
+
+
+def default_folder():
+    for path in ("/sdcard/Download", os.path.join(HOME, "Downloads")):
+        if os.path.isdir(path):
+            return path
+    return os.getcwd()
+
+
+def files_of(folder, deep):
+    found = []
+    if deep:
+        for where, dirs, names in os.walk(folder):
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            for name in names:
+                if not name.startswith("."):
+                    found.append(os.path.join(where, name))
+            if len(found) > 20000:
+                break
+    else:
+        for name in sorted(os.listdir(folder)):
+            path = os.path.join(folder, name)
+            if not name.startswith(".") and os.path.isfile(path) and not os.path.islink(path):
+                found.append(path)
+    return found
+
+
+def digest(path):
+    h = hashlib.sha1()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def same_files(paths):
+    """Groups of files with the same content, each oldest first."""
+    by_size = {}
+    for p in paths:
+        try:
+            s = os.path.getsize(p)
+        except OSError:
+            continue
+        if 0 < s <= KEEP_LIMIT * 5:
+            by_size.setdefault(s, []).append(p)
+    groups = []
+    for size, same in by_size.items():
+        if len(same) < 2:
+            continue
+        by_hash = {}
+        for p in same:
+            try:
+                by_hash.setdefault(digest(p), []).append(p)
+            except OSError:
+                pass
+        for group in by_hash.values():
+            if len(group) > 1:
+                groups.append((size, sorted(group, key=lambda p: (os.path.getmtime(p), p))))
+    return sorted(groups, key=lambda g: -g[0] * (len(g[1]) - 1))
+
+
+def tidy(args):
+    what = args[0] if args else "help"
+    rest = [a for a in args[1:] if a != "-r"]
+    deep = "-r" in args[1:]
+    if what not in ("scan", "sort", "dupes"):
+        out("""tidy: put a folder in order
+  tidy scan [FOLDER] [-r]    what is in it: how many of each kind, the biggest, old ones,
+                             the same file twice (-r looks into its folders too)
+  tidy sort FOLDER           moves its files into Pictures, Videos, Music, Documents,
+                             Archives, Apps, Other (safe undo puts them back)
+  tidy dupes [FOLDER] [-r]   the files that are there twice, and the command to delete the extras
+Without a folder: the phone's Download folder.""")
+        return
+    folder = os.path.abspath(rest[0]) if rest else default_folder()
+    if not os.path.isdir(folder):
+        raise Refused("tidy: there is no folder " + folder)
+    if what == "sort" and not rest:
+        raise Refused("usage: tidy sort FOLDER   (name the folder; tidy scan shows what is in it first)")
+    paths = files_of(folder, deep and what != "sort")
+    if what == "scan":
+        kinds = {}
+        total = 0
+        sized = []
+        old = 0
+        now = time.time()
+        for p in paths:
+            try:
+                st = os.stat(p)
+            except OSError:
+                continue
+            k = kinds.setdefault(kind_of(os.path.basename(p)), [0, 0])
+            k[0] += 1
+            k[1] += st.st_size
+            total += st.st_size
+            sized.append((st.st_size, p))
+            if now - st.st_mtime > 180 * DAY:
+                old += 1
+        out("%s: %d file(s), %s%s" % (folder, len(paths), size_text(total), " (with its folders)" if deep else ""))
+        for name in [k[0] for k in KINDS] + ["Other"]:
+            if name in kinds:
+                out("  %-10s %5d   %s" % (name, kinds[name][0], size_text(kinds[name][1])))
+        if sized:
+            out("Biggest:")
+            for s, p in sorted(sized, reverse=True)[:8]:
+                out("  %-9s %s" % (size_text(s), os.path.relpath(p, folder)))
+        out("Not touched for half a year: %d" % old)
+        groups = same_files(paths)
+        extra = sum(len(g) - 1 for _, g in groups)
+        out("There twice or more: %d extra file(s), %s (tidy dupes lists them)"
+            % (extra, size_text(sum(s * (len(g) - 1) for s, g in groups))))
+        return
+    if what == "dupes":
+        groups = same_files(paths)
+        if not groups:
+            out("No file is there twice in " + folder + ".")
+            return
+        extras = []
+        for size, group in groups[:40]:
+            out("%s each, %d times:" % (size_text(size), len(group)))
+            out("  keep   " + group[0])
+            for p in group[1:]:
+                out("  extra  " + p)
+                extras.append(p)
+        out("To delete the extras (they go to the bin, safe undo brings them back), after the user agreed:")
+        out("  safe rm " + " ".join(shell_quote(p) for p in extras[:60]))
+        return
+    moved = {}
+    for p in paths:
+        kind = kind_of(os.path.basename(p))
+        target = os.path.join(folder, kind, os.path.basename(p))
+        n = 1
+        while os.path.lexists(target):
+            stem, dot, ext = os.path.basename(p).rpartition(".")
+            target = os.path.join(folder, kind, "%s (%d).%s" % (stem, n, ext) if dot else "%s (%d)" % (ext, n))
+            n += 1
+        move(p, target)
+        moved[kind] = moved.get(kind, 0) + 1
+    if not moved:
+        out("Nothing to sort: %s has no loose files." % folder)
+        return
+    out("Sorted %d file(s) in %s: %s." % (sum(moved.values()), folder,
+                                          ", ".join("%s %d" % (k, v) for k, v in sorted(moved.items()))))
+    out("safe undo puts them back where they were.")
+    prune()
+
+
+def shell_quote(text):
+    return "'" + text.replace("'", "'\\''") + "'"
+
+
+# ---------------------------------------------------------------- study: question cards
+
+STEPS = [0, 1, 2, 4, 8, 16, 32]
+TOPIC = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
+
+
+def study(args):
+    what = args[0] if args else "help"
+    cards = load("study.json", {"next": 1, "cards": []})
+    now = time.time()
+    if what == "add":
+        if len(args) != 4:
+            raise Refused('usage: study add TOPIC "question" "answer"')
+        topic = args[1].lower()
+        if not TOPIC.match(topic):
+            raise Refused("study add: a topic is small letters, digits and dashes, like hindi-grammar")
+        q, a = one_line(args[2], 500), one_line(args[3], 500)
+        if len(q) < 3 or not a:
+            raise Refused("study add: give a question and its answer")
+        if len(cards["cards"]) >= 3000:
+            raise Refused("study add: there are 3000 cards already; remove a topic first")
+        if any(c["topic"] == topic and c["q"] == q for c in cards["cards"]):
+            raise Refused("study add: this question is already in " + topic)
+        card = {"id": cards["next"], "topic": topic, "q": q, "a": a, "box": 0, "due": now, "right": 0, "wrong": 0}
+        cards["next"] += 1
+        cards["cards"].append(card)
+        save("study.json", cards)
+        out("Card %d added to %s (%d card(s) there now)." % (card["id"], topic, sum(1 for c in cards["cards"] if c["topic"] == topic)))
+        return
+    if what == "due":
+        count, topic = 5, None
+        for a in args[1:]:
+            if a.isdigit():
+                count = max(1, min(50, int(a)))
+            else:
+                topic = a.lower()
+        due = sorted((c for c in cards["cards"] if c["due"] <= now and (not topic or c["topic"] == topic)),
+                     key=lambda c: (c["due"], c["id"]))
+        if not due:
+            later = [c["due"] for c in cards["cards"] if not topic or c["topic"] == topic]
+            out("Nothing is due now." + (" The next card comes back on %s." % time.strftime("%Y-%m-%d", time.localtime(min(later)))
+                                         if later else " There are no cards yet: study add TOPIC \"question\" \"answer\""))
+            return
+        out("%d card(s) due, here are %d. Ask one at a time; do not show the answer before the user tried." % (len(due), min(count, len(due))))
+        for c in due[:count]:
+            out("%d  [%s]  Q: %s" % (c["id"], c["topic"], c["q"]))
+            out("      A: %s" % c["a"])
+        out("Then: study right ID   or   study wrong ID")
+        return
+    if what in ("right", "wrong"):
+        if len(args) != 2 or not args[1].isdigit():
+            raise Refused("usage: study %s ID" % what)
+        card = next((c for c in cards["cards"] if c["id"] == int(args[1])), None)
+        if not card:
+            raise Refused("study: there is no card " + args[1])
+        if what == "right":
+            card["box"] = min(card["box"] + 1, len(STEPS) - 1)
+            card["right"] += 1
+            card["due"] = now + STEPS[card["box"]] * DAY
+            out("Card %d: right. It comes back in %d day(s)." % (card["id"], STEPS[card["box"]]))
+        else:
+            card["box"] = 0
+            card["wrong"] += 1
+            card["due"] = now + 600
+            out("Card %d: wrong. It comes back in 10 minutes, then tomorrow." % card["id"])
+        save("study.json", cards)
+        return
+    if what == "topics":
+        if not cards["cards"]:
+            out('No cards yet. Make some: study add TOPIC "question" "answer"')
+            return
+        topics = {}
+        for c in cards["cards"]:
+            t = topics.setdefault(c["topic"], [0, 0, 0, 0, 0])
+            t[0] += 1
+            t[1] += c["due"] <= now
+            t[2] += c["box"] >= 4
+            t[3] += c["right"]
+            t[4] += c["wrong"]
+        for name in sorted(topics):
+            t = topics[name]
+            out("%s: %d card(s), %d due now, %d known well, answered right %d and wrong %d time(s)" % (name, t[0], t[1], t[2], t[3], t[4]))
+        return
+    if what == "remove":
+        if len(args) != 2:
+            raise Refused("usage: study remove TOPIC   or   study remove ID")
+        before = len(cards["cards"])
+        cards["cards"] = [c for c in cards["cards"] if not (str(c["id"]) == args[1] or c["topic"] == args[1].lower())]
+        if len(cards["cards"]) == before:
+            raise Refused("study remove: there is no topic or card " + args[1])
+        save("study.json", cards)
+        out("Removed %d card(s)." % (before - len(cards["cards"])))
+        return
+    out("""study: question cards that come back on the right day
+  study add TOPIC "question" "answer"
+  study due [N] [TOPIC]     the cards to ask now (5 unless N is given), with their answers
+  study right ID            answered right: it comes back after 1, 2, 4, 8, 16, 32 days
+  study wrong ID            answered wrong: it comes back in 10 minutes
+  study topics              how each topic is going
+  study remove TOPIC|ID""")
+
+
+# ---------------------------------------------------------------- readfile: what a file says
+
+READ_LIMIT = 20000
+PICTURES = ("png", "jpg", "jpeg", "gif", "webp", "bmp", "heic", "heif")
+
+
+def ext_of(path):
+    name = os.path.basename(path).lower()
+    for double in (".tar.gz", ".tar.bz2", ".tar.xz"):
+        if name.endswith(double):
+            return double[1:]
+    return name.rsplit(".", 1)[1] if "." in name else ""
+
+
+def sniff(path):
+    """The kind of a file from its first bytes, when the name does not say."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(600)
+    except OSError:
+        return ""
+    if head.startswith(b"%PDF"):
+        return "pdf"
+    if head.startswith(b"\x89PNG"):
+        return "png"
+    if head.startswith(b"\xff\xd8"):
+        return "jpg"
+    if head[:4] in (b"GIF8",):
+        return "gif"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "webp"
+    if head.startswith(b"PK\x03\x04"):
+        return "zip"
+    if head.startswith(b"\x1f\x8b"):
+        return "gz"
+    if len(head) > 262 and head[257:262] == b"ustar":
+        return "tar"
+    return ""
+
+
+def xml_text(data, paragraph, cell=None):
+    """The words of an office file's XML: `paragraph` tags end a line, `cell` tags a column."""
+    text = data.decode("utf-8", "replace")
+    text = re.sub(r"<(?:[a-z]+:)?(?:tab|s)\b[^>]*/>", " ", text)
+    text = re.sub(r"</(?:[a-z]+:)?(?:%s)>" % paragraph, "\n", text)
+    if cell:
+        text = re.sub(r"</(?:[a-z]+:)?(?:%s)>" % cell, "\t", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    for a, b in (("&lt;", "<"), ("&gt;", ">"), ("&quot;", '"'), ("&apos;", "'"), ("&amp;", "&")):
+        text = text.replace(a, b)
+    text = re.sub(r"&#(\d+);", lambda m: chr(int(m.group(1))), text)
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(line.rstrip() for line in text.split("\n"))).strip()
+
+
+def natural(name):
+    return [int(p) if p.isdigit() else p for p in re.split(r"(\d+)", name)]
+
+
+def office_text(path, ext):
+    with zipfile.ZipFile(path) as z:
+        names = z.namelist()
+        if ext == "docx":
+            return xml_text(z.read("word/document.xml"), "p", "tc")
+        if ext in ("odt", "ods", "odp"):
+            return xml_text(z.read("content.xml"), "p|h|table-row", "table-cell")
+        if ext == "pptx":
+            parts = []
+            slides = sorted((n for n in names if re.match(r"ppt/slides/slide\d+\.xml$", n)), key=natural)
+            for i, n in enumerate(slides, 1):
+                parts.append("--- Slide %d ---\n%s" % (i, xml_text(z.read(n), "p")))
+            return "\n\n".join(parts)
+        if ext == "xlsx":
+            shared = []
+            if "xl/sharedStrings.xml" in names:
+                for item in re.findall(r"<si\b.*?</si>", z.read("xl/sharedStrings.xml").decode("utf-8", "replace"), re.S):
+                    shared.append(xml_text(item.encode(), "zzz"))
+            parts = []
+            sheets = sorted((n for n in names if re.match(r"xl/worksheets/sheet\d+\.xml$", n)), key=natural)
+            for i, n in enumerate(sheets, 1):
+                rows = []
+                for row in re.findall(r"<row\b.*?</row>", z.read(n).decode("utf-8", "replace"), re.S):
+                    cells = []
+                    for attrs, body in re.findall(r"<c\b([^>]*?)(?:/>|>(.*?)</c>)", row, re.S):
+                        value = re.search(r"<v>(.*?)</v>", body or "", re.S)
+                        inline = re.search(r"<t\b[^>]*>(.*?)</t>", body or "", re.S)
+                        if value and 't="s"' in attrs and value.group(1).isdigit() and int(value.group(1)) < len(shared):
+                            cells.append(shared[int(value.group(1))])
+                        elif value:
+                            cells.append(xml_text(value.group(1).encode(), "zzz"))
+                        elif inline:
+                            cells.append(xml_text(inline.group(1).encode(), "zzz"))
+                        else:
+                            cells.append("")
+                    rows.append("\t".join(cells).rstrip())
+                parts.append("--- Sheet %d ---\n%s" % (i, "\n".join(rows)))
+            return "\n\n".join(parts)
+    return ""
+
+
+def pdf_rough(path):
+    """A PDF's words without any other program: fine for plain PDFs, wrong for many others."""
+    with open(path, "rb") as f:
+        data = f.read(60 * 1000 * 1000)
+    lines = []
+    for m in re.finditer(rb"stream\r?\n(.*?)endstream", data, re.S):
+        raw = m.group(1)
+        try:
+            raw = zlib.decompress(raw)
+        except zlib.error:
+            pass
+        if b"BT" not in raw:
+            continue
+        for block in re.findall(rb"BT(.*?)ET", raw, re.S):
+            words = []
+            for piece in re.finditer(rb"\((?:\\.|[^\\)])*\)|\[(?:\\.|[^\]])*\]\s*TJ|T\*|'|Td|TD", block):
+                token = piece.group(0)
+                if token.startswith(b"("):
+                    words.append(pdf_string(token))
+                elif token.startswith(b"["):
+                    words.append("".join(pdf_string(s) for s in re.findall(rb"\((?:\\.|[^\\)])*\)", token)))
+                elif words and not words[-1].endswith("\n"):
+                    words.append("\n")
+            text = "".join(words).strip()
+            if text:
+                lines.append(text)
+    return "\n".join(lines)
+
+
+def pdf_string(token):
+    body = token[1:-1]
+    body = re.sub(rb"\\([nrtbf()\\])", lambda m: {b"n": b"\n", b"r": b"", b"t": b" ", b"b": b"", b"f": b""}.get(m.group(1), m.group(1)), body)
+    body = re.sub(rb"\\([0-7]{1,3})", lambda m: bytes([int(m.group(1), 8) & 255]), body)
+    return body.decode("latin-1")
+
+
+def pdf_text(path):
+    tool = shutil.which("pdftotext")
+    if not tool and not os.environ.get("TERMANT_NO_INSTALL") and shutil.which("apt-get") and os.geteuid() == 0:
+        sys.stderr.write("readfile: getting the PDF reader (poppler-utils), once...\n")
+        env = dict(os.environ, DEBIAN_FRONTEND="noninteractive")
+        subprocess.run("apt-get install -y --no-install-recommends poppler-utils >/dev/null 2>&1 || "
+                       "(apt-get update >/dev/null 2>&1 && apt-get install -y --no-install-recommends poppler-utils >/dev/null 2>&1)",
+                       shell=True, env=env, stdin=subprocess.DEVNULL, timeout=600)
+        tool = shutil.which("pdftotext")
+    if tool:
+        p = subprocess.run([tool, "-layout", "-enc", "UTF-8", path, "-"], capture_output=True, timeout=300, stdin=subprocess.DEVNULL)
+        said = p.stdout.decode("utf-8", "replace").replace("\f", "\n\n").strip()
+        if p.returncode == 0 and said:
+            return said, ""
+    return pdf_rough(path).strip(), ("(Read without the PDF reader, so words may be missing or wrong. "
+                                     "apt-get install -y poppler-utils gives the real one.)")
+
+
+def picture_size(path):
+    try:
+        with open(path, "rb") as f:
+            head = f.read(64 * 1024)
+    except OSError:
+        return None
+    if head.startswith(b"\x89PNG") and len(head) > 24:
+        return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+    if head[:3] == b"GIF" and len(head) > 10:
+        return int.from_bytes(head[6:8], "little"), int.from_bytes(head[8:10], "little")
+    if head.startswith(b"\xff\xd8"):
+        i = 2
+        while i + 9 < len(head):
+            if head[i] != 0xFF:
+                i += 1
+                continue
+            marker = head[i + 1]
+            if marker in (0xC0, 0xC1, 0xC2):
+                return int.from_bytes(head[i + 7:i + 9], "big"), int.from_bytes(head[i + 5:i + 7], "big")
+            i += 2 + int.from_bytes(head[i + 2:i + 4], "big")
+    return None
+
+
+def archive_list(path, ext):
+    lines = []
+    if ext == "zip":
+        with zipfile.ZipFile(path) as z:
+            infos = z.infolist()
+            for i in infos[:300]:
+                lines.append("%10s  %s" % ("" if i.is_dir() else size_text(i.file_size), i.filename))
+            total, count = sum(i.file_size for i in infos), len(infos)
+    else:
+        with tarfile.open(path) as t:
+            members = t.getmembers()
+            for m in members[:300]:
+                lines.append("%10s  %s" % ("" if m.isdir() else size_text(m.size), m.name + ("/" if m.isdir() else "")))
+            total, count = sum(m.size for m in members), len(members)
+    head = "%d entr%s, %s unpacked" % (count, "y" if count == 1 else "ies", size_text(total))
+    if count > 300:
+        lines.append("... and %d more" % (count - 300))
+    return head + "\n" + "\n".join(lines)
+
+
+def unpack(path, ext, target):
+    target = os.path.abspath(target)
+    if os.path.lexists(target) and (not os.path.isdir(target) or os.listdir(target)):
+        raise Refused("readfile: %s is already there and not empty. Name another folder." % target)
+    os.makedirs(target, exist_ok=True)
+    inside = lambda name: os.path.abspath(os.path.join(target, name)).startswith(target + os.sep)
+    count = 0
+    if ext == "zip":
+        with zipfile.ZipFile(path) as z:
+            infos = z.infolist()
+            if sum(i.file_size for i in infos) > 4 * 1000 ** 3 or len(infos) > 20000:
+                raise Refused("readfile: this archive is too big to unpack here (over 4 GB or 20000 files).")
+            for i in infos:
+                if not inside(i.filename):
+                    raise Refused("readfile: this archive wants to write outside its folder (%s). Not unpacked." % i.filename)
+            z.extractall(target)
+            count = len(infos)
+    else:
+        with tarfile.open(path) as t:
+            members = t.getmembers()
+            if sum(m.size for m in members) > 4 * 1000 ** 3 or len(members) > 20000:
+                raise Refused("readfile: this archive is too big to unpack here (over 4 GB or 20000 files).")
+            for m in members:
+                if not inside(m.name) or m.islnk() or m.issym() or m.isdev():
+                    raise Refused("readfile: this archive has an entry that is not a plain file or folder (%s). Not unpacked." % m.name)
+            t.extractall(target)
+            count = len(members)
+    record({"op": "new", "path": target})
+    return "Unpacked %d entr%s into %s" % (count, "y" if count == 1 else "ies", target)
+
+
+def readfile(args):
+    start, target, do_unpack, paths = 0, None, False, []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--from" and i + 1 < len(args) and args[i + 1].isdigit():
+            start = int(args[i + 1])
+            i += 1
+        elif a == "--unpack":
+            do_unpack = True
+            if i + 1 < len(args) and len(paths) == 1:
+                target = args[i + 1]
+                i += 1
+        elif a in ("help", "--help", "-h") and not paths:
+            paths = []
+            break
+        else:
+            paths.append(a)
+        i += 1
+    if len(paths) != 1:
+        out("""readfile: what a file says, whatever kind it is
+  readfile FILE              PDF, Word (docx, odt), Excel (xlsx, ods), PowerPoint (pptx, odp),
+                             text of any kind; for a zip or tar the list of what is in it;
+                             for a picture its size (phone look FILE says what it shows)
+  readfile FILE --from N     go on from letter N, when the text was cut
+  readfile FILE --unpack [FOLDER]   unpack a zip or tar (into a new folder next to it)""")
+        return
+    path = paths[0]
+    if not os.path.isfile(path):
+        raise Refused("readfile: there is no file " + path)
+    size = os.path.getsize(path)
+    ext = ext_of(path)
+    known = ("pdf", "docx", "odt", "ods", "odp", "pptx", "xlsx", "zip", "tar", "tgz", "gz", "tar.gz", "tar.bz2", "tar.xz", "bz2", "xz") + PICTURES
+    if ext not in known:
+        ext = sniff(path) or ext
+    note = ""
+    archive = ext in ("zip", "tar", "tgz", "tar.gz", "tar.bz2", "tar.xz") or (ext in ("gz", "bz2", "xz") and tarfile.is_tarfile(path))
+    if do_unpack:
+        if not archive:
+            raise Refused("readfile: %s is not a zip or tar archive." % path)
+        if target is None:
+            stem = re.sub(r"\.(zip|tar|tgz|tar\.gz|tar\.bz2|tar\.xz|gz|bz2|xz)$", "", os.path.abspath(path), flags=re.I)
+            target = stem if stem != os.path.abspath(path) else os.path.abspath(path) + "-unpacked"
+        out(unpack(path, "zip" if ext == "zip" else "tar", target))
+        return
+    try:
+        if ext in PICTURES:
+            dims = picture_size(path)
+            out("%s: a picture (%s%s, %s)." % (path, ext.upper().replace("JPEG", "JPG"),
+                                              ", %d x %d" % dims if dims else "", size_text(size)))
+            out("To know what it shows: phone look " + shell_quote(path))
+            return
+        if archive:
+            kind, text = "an archive", archive_list(path, "zip" if ext == "zip" else "tar")
+            text += "\nUnpack it with: readfile %s --unpack" % shell_quote(path)
+        elif ext == "pdf":
+            kind = "a PDF"
+            text, note = pdf_text(path)
+            if not text:
+                note = ("No words could be read: the pages are probably pictures (a scan). "
+                        "A model that reads PDFs or pictures can see it; otherwise tell the user.")
+        elif ext in ("docx", "odt", "ods", "odp", "pptx", "xlsx"):
+            kind = {"docx": "a Word document", "odt": "a text document", "ods": "a spreadsheet", "odp": "slides",
+                    "pptx": "PowerPoint slides", "xlsx": "an Excel workbook"}[ext]
+            text = office_text(path, ext)
+        elif ext in ("doc", "xls", "ppt"):
+            raise Refused("readfile: %s is in the old Office format, which is not read here. "
+                          "Try: apt-get install -y catdoc && catdoc FILE (xls2csv, catppt for the others)." % path)
+        else:
+            with open(path, "rb") as f:
+                f.seek(0)
+                raw = f.read(4 * 1000 * 1000)
+            if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+                text = raw.decode("utf-16", "replace")
+            else:
+                text = raw.decode("utf-8", "replace")
+                if b"\0" in raw[:4000] or text.count("\ufffd") > len(text) / 20 + 2:
+                    words = re.findall(rb"[\x20-\x7e]{6,}", raw[:400000])
+                    out("%s: not a text file (%s, kind not known%s)." % (path, size_text(size), ", ." + ext if ext else ""))
+                    if words:
+                        out("Readable pieces in it: " + one_line(b" | ".join(words[:30]).decode("ascii"), 1200))
+                    return
+            kind = "text"
+    except (zipfile.BadZipFile, tarfile.TarError, KeyError, zlib.error) as e:
+        raise Refused("readfile: %s could not be read as %s (%s). The file may be damaged." % (path, ext or "a file", e))
+    whole = len(text)
+    piece = text[start:start + READ_LIMIT]
+    out("%s: %s, %s, %d letters%s" % (path, kind, size_text(size), whole,
+                                     "" if start == 0 and whole <= READ_LIMIT else ", shown from %d to %d" % (start, start + len(piece))))
+    if note:
+        out(note)
+    out()
+    out(piece)
+    if start + len(piece) < whole:
+        out()
+        out("[cut here; go on with: readfile %s --from %d]" % (shell_quote(path), start + len(piece)))
+
+
+# ---------------------------------------------------------------- me: the user's own details
+
+ME_KEY = re.compile(r"^[a-z][a-z0-9-]{0,29}$")
+SECRET = re.compile(r"pass|pwd|pin|otp|cvv|cvc|card|upi-?pin|secret|aadhaar|aadhar|pan-?no|ssn", re.I)
+
+
+def me(args):
+    what = args[0] if args else "list"
+    details = load("me.json", {})
+    if what == "set":
+        if len(args) < 3:
+            raise Refused('usage: me set NAME VALUE   (for example: me set city "Bhubaneswar")')
+        key = args[1].lower()
+        value = one_line(" ".join(args[2:]), 400)
+        if not ME_KEY.match(key):
+            raise Refused("me set: a name is small letters, digits and dashes, like full-name, phone, email, address, city, pin-code")
+        digits = re.sub(r"\D", "", value)
+        number = len(digits) in (12, 15, 16) and len(digits) >= len(value) - 4 and not re.search(r"phone|mobile|whatsapp", key)
+        if (SECRET.search(key) and key not in ("pin-code", "pincode")) or number:
+            raise Refused("me set: passwords, PINs, OTPs, card and ID numbers are not kept here. The user types those themselves.")
+        if len(details) >= 60 and key not in details:
+            raise Refused("me set: 60 details are kept already; remove one first")
+        details[key] = value
+        save("me.json", details)
+        out("Kept: %s = %s" % (key, value))
+        return
+    if what == "remove":
+        if len(args) != 2 or args[1].lower() not in details:
+            raise Refused("me remove: there is no detail " + (args[1] if len(args) > 1 else ""))
+        del details[args[1].lower()]
+        save("me.json", details)
+        out("Removed %s." % args[1].lower())
+        return
+    if what == "list":
+        if not details:
+            out("Nothing is kept about the user yet. When they tell you their name, phone, email or address: me set NAME VALUE")
+            return
+        out("The user's details (for filling in forms; passwords and card numbers are never kept):")
+        for key in sorted(details):
+            out("  %s: %s" % (key, details[key]))
+        return
+    out("""me: the user's own details, to fill in forms without asking again
+  me                    all of them
+  me set NAME VALUE     full-name, phone, email, address, city, pin-code, date-of-birth ...
+  me remove NAME
+Passwords, PINs, OTPs, card and ID numbers are refused: the user types those.""")
+
+
+# ---------------------------------------------------------------- watch: look every few minutes
+
+WATCH_NAME = re.compile(r"^[a-z][a-z0-9-]{1,29}$")
+
+
+def watch(args):
+    what = args[0] if args else "help"
+    watches = load("watch.json", {})
+    if what == "add":
+        usage = 'usage: watch add NAME every 15m --when "TEST COMMAND" --then "COMMAND" [--keep]'
+        rest = args[1:]
+        keep = "--keep" in rest
+        rest = [a for a in rest if a != "--keep"]
+        if len(rest) != 7 or rest[1] != "every" or rest[3] != "--when" or rest[5] != "--then":
+            raise Refused(usage)
+        name, every, test, then = rest[0].lower(), rest[2].lower(), rest[4], rest[6]
+        if not WATCH_NAME.match(name):
+            raise Refused("watch add: a name is small letters, digits and dashes")
+        if name in watches:
+            raise Refused('watch add: "%s" is already there (watch remove %s first)' % (name, name))
+        if len(watches) >= 10:
+            raise Refused("watch add: 10 watches are running already; every one uses the battery")
+        m = re.match(r"^(\d+)(m|h)$", every)
+        minutes = int(m.group(1)) * (60 if m.group(2) == "h" else 1) if m else 0
+        if minutes < 15 or minutes > 1440:
+            raise Refused("watch add: every 15m to 24h (15m, 30m, 1h, 6h ...). " + usage)
+        ok, told = phone("rule", "add", "every", every, "--", "watch check " + name)
+        rule = re.search(r"Rule (\d+) added", told)
+        if not ok or not rule:
+            raise Refused("watch add: the rule could not be made: " + told)
+        watches[name] = {"every": every, "when": test, "then": then, "keep": keep, "rule": rule.group(1),
+                         "made": time.time(), "checks": 0, "hits": 0}
+        save("watch.json", watches)
+        out('Watching "%s" every %s. When `%s` succeeds, `%s` runs%s.' % (name, every, test, then,
+                                                                         " each time" if keep else " once, and the watch ends"))
+        return
+    if what == "check":
+        name = args[1] if len(args) > 1 else ""
+        w = watches.get(name)
+        if not w:
+            raise Refused("watch check: there is no watch " + name)
+        w["checks"] += 1
+        w["last"] = time.time()
+        found = subprocess.run(["/bin/bash", "-c", w["when"]], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL, timeout=120).returncode == 0
+        if not found:
+            save("watch.json", watches)
+            out('"%s": not yet (looked %d time(s)).' % (name, w["checks"]))
+            return
+        w["hits"] += 1
+        done = subprocess.run(["/bin/bash", "-c", w["then"]], stdin=subprocess.DEVNULL, timeout=600).returncode
+        if not w.get("keep"):
+            phone("rule", "remove", w["rule"])
+            del watches[name]
+        save("watch.json", watches)
+        out('"%s": it happened; the command ran (exit %d)%s.' % (name, done, "" if w.get("keep") else " and the watch ended"))
+        return
+    if what == "remove":
+        name = args[1] if len(args) > 1 else ""
+        if name not in watches:
+            raise Refused("watch remove: there is no watch " + name)
+        phone("rule", "remove", watches[name]["rule"])
+        del watches[name]
+        save("watch.json", watches)
+        out('Stopped watching "%s".' % name)
+        return
+    if what == "list":
+        if not watches:
+            out("Nothing is being watched.")
+            return
+        for name in sorted(watches):
+            w = watches[name]
+            out('%s: every %s, when `%s` then `%s`%s; looked %d time(s)' % (name, w["every"], w["when"], w["then"],
+                                                                         " (each time)" if w.get("keep") else "", w["checks"]))
+        return
+    out("""watch: look for something every few minutes, and act once when it is there
+  watch add NAME every 15m --when "TEST" --then "COMMAND" [--keep]
+        TEST is a command that succeeds when the thing has happened, for example
+          phone screen | grep -qi "out for delivery"        words on the screen
+          phone notifications | grep -qi "otp"               a notification
+          curl -fsS https://example.com/item | grep -qi "in stock"
+          test -e /sdcard/Download/result.pdf
+        COMMAND then runs once (phone notify ..., phone say ..., phone job "..."),
+        and the watch ends; with --keep it stays and runs every time.
+  watch list            watch remove NAME
+The app runs a watch as a rule (phone rule list). No model is asked while it only looks.""")
+
+
+# ---------------------------------------------------------------- diary: what was done
+
+def diary(args):
+    path = os.path.join(DATA, "diary.jsonl")
+    if args and args[0] == "add":
+        entry = {"at": time.time(), "seconds": 0, "model": "", "ok": True, "helpers": 0, "text": ""}
+        i = 1
+        while i < len(args):
+            a = args[i]
+            if a == "--" and i + 1 < len(args):
+                entry["text"] = one_line(" ".join(args[i + 1:]), 160)
+                break
+            if a in ("--seconds", "--helpers") and i + 1 < len(args):
+                try:
+                    entry[a[2:]] = int(float(args[i + 1]))
+                except ValueError:
+                    pass
+                i += 1
+            elif a == "--model" and i + 1 < len(args):
+                entry["model"] = args[i + 1][:80]
+                i += 1
+            elif a == "--ok" and i + 1 < len(args):
+                entry["ok"] = args[i + 1] in ("0", "yes", "true")
+                i += 1
+            elif a == "--turn" and i + 1 < len(args):
+                entry["changes"] = len(turn_log(re.sub(r"[^A-Za-z0-9._-]", "", args[i + 1])))
+                i += 1
+            elif a == "--kind" and i + 1 < len(args):
+                entry["kind"] = args[i + 1][:20]
+                i += 1
+            i += 1
+        os.makedirs(DATA, exist_ok=True)
+        lines = []
+        try:
+            with open(path, encoding="utf-8") as f:
+                lines = f.read().splitlines()[-1999:]
+        except OSError:
+            pass
+        lines.append(json.dumps(entry, ensure_ascii=False))
+        with open(path + ".new", "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        os.replace(path + ".new", path)
+        return
+    if args and not args[0].isdigit():
+        out("""diary: what the agent did
+  diary          today
+  diary N        the last N days""")
+        return
+    days = max(1, min(60, int(args[0]))) if args else 1
+    start = time.mktime(time.localtime()[:3] + (0, 0, 0, 0, 0, -1)) - (days - 1) * DAY
+    entries = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                    if e["at"] >= start:
+                        entries.append(e)
+                except (ValueError, KeyError):
+                    pass
+    except OSError:
+        pass
+    label = "today" if days == 1 else "the last %d days" % days
+    if not entries:
+        out("Nothing was done %s." % label)
+        return
+    seconds = sum(e.get("seconds", 0) for e in entries)
+    out("Work diary, %s: %d job(s), %d min %02d s of work, %d did not work, %d helper(s) used, %d file change(s) that can be undone"
+        % (label, len(entries), seconds // 60, seconds % 60, sum(1 for e in entries if not e.get("ok", True)),
+           sum(e.get("helpers", 0) for e in entries), sum(e.get("changes", 0) for e in entries)))
+    for e in entries[-60:]:
+        marks = []
+        if e.get("kind"):
+            marks.append(e["kind"])
+        if e.get("helpers"):
+            marks.append("%d helper(s)" % e["helpers"])
+        if e.get("changes"):
+            marks.append("%d file change(s)" % e["changes"])
+        if not e.get("ok", True):
+            marks.append("did not work")
+        out("%s  %4ds  %-28s %s%s" % (time.strftime("%m-%d %H:%M", time.localtime(e["at"])), e.get("seconds", 0),
+                                      (e.get("model") or "automatic")[:28], e.get("text", ""),
+                                      "  [" + ", ".join(marks) + "]" if marks else ""))
+
+
+# ---------------------------------------------------------------- team: notebook, repeated tasks, model
+
+MODEL = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._:/@#-]+$")
+
+
+def team(args):
+    what = args[0] if args else ""
+    if what == "note":
+        text = one_line(" ".join(args[1:]), 400)
+        if len(text) < 4:
+            raise Refused('usage: team note "a fact the other helpers need"')
+        lines = notebook()
+        if any(line.split("  ", 1)[-1] == text for line in lines):
+            out("That is in the team notebook already.")
+            return
+        lines.append(time.strftime("%Y-%m-%d %H:%M") + "  " + text)
+        os.makedirs(DATA, exist_ok=True)
+        with open(os.path.join(DATA, "team-notes.txt"), "w", encoding="utf-8") as f:
+            f.write("\n".join(lines[-300:]) + "\n")
+        out("Written into the team notebook (%d line(s))." % min(len(lines), 300))
+        return
+    if what == "notes":
+        lines = notebook()
+        if len(args) > 1 and args[1] == "clear":
+            try:
+                os.remove(os.path.join(DATA, "team-notes.txt"))
+            except OSError:
+                pass
+            out("The team notebook is empty now.")
+            return
+        words = [w.lower() for w in args[1:]]
+        found = [line for line in lines if all(w in line.lower() for w in words)]
+        if not found:
+            out("The team notebook has nothing%s." % (" about " + " ".join(args[1:]) if words else " in it yet"))
+            return
+        out("Team notebook%s, %d line(s):" % (" about " + " ".join(args[1:]) if words else "", len(found)))
+        for line in found[-40:]:
+            out("  " + line)
+        return
+    if what == "seen":
+        kind = args[1].lower() if len(args) == 2 else ""
+        if not WATCH_NAME.match(kind):
+            raise Refused("usage: team seen KIND   (the kind of task just done, as a short name like translate-letter)")
+        seen = load("seen.json", {})
+        seen[kind] = seen.get(kind, 0) + 1
+        if len(seen) > 300:
+            for old in sorted(seen, key=lambda k: seen[k])[: len(seen) - 300]:
+                del seen[old]
+        save("seen.json", seen)
+        has = os.path.exists(os.path.join(os.environ.get("TERMANT_TEAM_DIR") or os.path.join(HOME, ".config", "opencode", "agents"), kind + ".md"))
+        if seen[kind] >= 3 and not has:
+            out('"%s" has come up %d times. Make a helper for it now: write how this kind of task is done to a file, '
+                'then run: team add %s "what it is for" FILE' % (kind, seen[kind], kind))
+        else:
+            out('"%s" has come up %d time(s)%s.' % (kind, seen[kind], "; it has its own helper" if has else ""))
+        return
+    if what == "model":
+        path = os.path.join(DATA, "helper-model")
+        if len(args) == 1:
+            try:
+                with open(path) as f:
+                    out("The helpers that come with Termant use the model " + f.read().strip() + ".")
+            except OSError:
+                out("The helpers use the same model as the main agent. A lighter one for them: team model provider/model")
+            return
+        if args[1] in ("off", "none", "same"):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            out("The helpers use the same model as the main agent again.")
+        elif MODEL.match(args[1]):
+            os.makedirs(DATA, exist_ok=True)
+            with open(path, "w") as f:
+                f.write(args[1] + "\n")
+            out("From the next message on, the helpers that come with Termant use " + args[1] + ".")
+        else:
+            raise Refused("usage: team model provider/model   or   team model off")
+        subprocess.run(["team", "refresh"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return
+    raise Refused("usage: team note TEXT | team notes [WORDS] | team seen KIND | team model [provider/model | off]")
+
+
+def notebook():
+    try:
+        with open(os.path.join(DATA, "team-notes.txt"), encoding="utf-8") as f:
+            return [line for line in f.read().splitlines() if line.strip()]
+    except OSError:
+        return []
+
+
+# ---------------------------------------------------------------- attach: files sent with a message
+
+MARK = re.compile(r"\[file: ([^\]\n]+)\]")
+SEEN_BY_MODEL = {"png": "image", "jpg": "image", "jpeg": "image", "gif": "image", "webp": "image", "pdf": "pdf"}
+DIRECT_LIMIT = 4 * 1000 * 1000
+LIKED = ("glm", "mimo", "deepseek", "longcat", "hy4", "inkling", "nemotron")
+
+
+def model_facts(refresh=False):
+    """What each model can take in: {"provider/model": {"input": [...], "free": bool}}."""
+    path = os.path.join(CACHE, "models.json")
+    try:
+        fresh = time.time() - os.path.getmtime(path) < 7 * DAY
+        with open(path, encoding="utf-8") as f:
+            facts = json.load(f)
+    except (OSError, ValueError):
+        fresh, facts = False, {}
+    if facts and (fresh or not refresh):
+        return facts
+    if not refresh and not facts:
+        return {}
+    try:
+        p = subprocess.run(["opencode", "api", "--standalone", "GET", "/api/model"], capture_output=True, text=True,
+                           timeout=90, stdin=subprocess.DEVNULL)
+        listed = json.loads(p.stdout[p.stdout.index("{"):])["data"]
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+        return facts
+    facts = {}
+    for m in listed:
+        try:
+            cost = m.get("cost") or [{}]
+            facts[m["providerID"] + "/" + m["id"]] = {
+                "input": list(m.get("capabilities", {}).get("input", ["text"])),
+                "free": not any((c.get("input") or 0) or (c.get("output") or 0) for c in cost),
+            }
+        except (KeyError, TypeError, AttributeError):
+            pass
+    if facts:
+        os.makedirs(CACHE, exist_ok=True)
+        with open(path + ".new", "w", encoding="utf-8") as f:
+            json.dump(facts, f)
+        os.replace(path + ".new", path)
+    return facts
+
+
+def choose_model(model, needs, facts):
+    """The model to ask when the message carries files of these kinds; (model, kinds it will be shown)."""
+    def takes(name, kind):
+        return kind in facts.get(name, {}).get("input", [])
+
+    if not needs:
+        return model, set()
+    if not facts:
+        # the list of models could not be read: a picture is handed over all the same
+        # (OpenCode passes it on, and a model that cannot see says so)
+        return model, {"image"} & set(needs)
+    if model and all(takes(model, k) for k in needs):
+        return model, set(needs)
+    free = sorted(n for n in facts if n.startswith("opencode/") and facts[n].get("free"))
+    for wanted in (set(needs), {"image"} & set(needs)):
+        if not wanted:
+            continue
+        if model and all(takes(model, k) for k in wanted):
+            return model, wanted
+        able = [n for n in free if all(takes(n, k) for k in wanted)]
+        if able:
+            able.sort(key=lambda n: (next((i for i, w in enumerate(LIKED) if w in n), len(LIKED)), n))
+            return able[0], wanted
+    return model, {k for k in needs if model and takes(model, k)}
+
+
+def attach(args):
+    """termant-kit attach MODEL MESSAGE: prints model=..., file=... (to hand to the model itself), note=..."""
+    model = args[0] if args else ""
+    message = args[1] if len(args) > 1 else ""
+    files = []
+    for path in MARK.findall(message):
+        path = path.strip()
+        if os.path.isfile(path) and path not in files:
+            files.append(path)
+    kinds = {p: SEEN_BY_MODEL.get(ext_of(p) or sniff(p)) or SEEN_BY_MODEL.get(sniff(p)) for p in files}
+    direct = [p for p in files if kinds[p] and os.path.getsize(p) <= DIRECT_LIMIT]
+    needs = {kinds[p] for p in direct}
+    chosen, shown = choose_model(model, needs, model_facts(refresh=bool(needs))) if needs else (model, set())
+    out("model=" + (chosen or ""))
+    for p in direct:
+        if kinds[p] in shown:
+            out("file=" + os.path.abspath(p))
+    if needs and chosen != model:
+        out("note=model:" + chosen)
+    left = [p for p in files if p not in direct or kinds[p] not in shown]
+    if left:
+        out("read=" + str(len(left)))
+
+
+def models(args):
+    facts = model_facts(refresh=True) if args[:1] == ["refresh"] else model_facts()
+    for name in sorted(facts):
+        out("%s  %s%s" % (name, ",".join(facts[name]["input"]), "  free" if facts[name].get("free") else ""))
+
+
+TOOLS = {"safe": safe, "tidy": tidy, "study": study, "readfile": readfile, "me": me, "watch": watch,
+         "diary": diary, "team": team, "attach": attach, "models": models}
+
+
+def main():
+    name = os.path.basename(sys.argv[0])
+    args = sys.argv[1:]
+    if name not in TOOLS:
+        if not args or args[0] not in TOOLS:
+            out(__doc__.strip())
+            sys.exit(0 if not args or args[0] in ("help", "--help", "-h") else 1)
+        name, args = args[0], args[1:]
+    elif name == "watch" and args and args[0] not in ("add", "check", "list", "remove", "help", "--help", "-h"):
+        # Linux has a `watch` of its own (watch -n 5 COMMAND): what is not ours goes to it
+        for real in ("/usr/bin/watch", "/bin/watch"):
+            if os.path.exists(real) and os.path.realpath(real) != os.path.realpath(sys.argv[0]):
+                os.execv(real, [real] + args)
+    try:
+        TOOLS[name](args)
+    except Refused as e:
+        sys.stderr.write(str(e) + "\n")
+        sys.exit(1)
+    except subprocess.TimeoutExpired:
+        sys.stderr.write(name + ": that took too long and was stopped.\n")
+        sys.exit(1)
+    except (OSError, shutil.Error) as e:
+        sys.stderr.write("%s: %s\n" % (name, e))
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
