@@ -1,0 +1,120 @@
+name: Windows app
+
+on:
+  push:
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install packages
+        working-directory: windows
+        run: npm ci --no-audit --no-fund
+
+      - name: Test the pc command on this desktop
+        run: |
+          New-Item -ItemType Directory -Force -Path ci-out | Out-Null
+          cmd /c "node windows\test\learn-test.js > ci-out\learn-test.log 2>&1"
+          if ($LASTEXITCODE -ne 0) { "TESTS_FAILED=learning and voice" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          Get-Content ci-out\learn-test.log | Select-Object -Last 5
+          cmd /c "node windows\test\team-test.js > ci-out\team-test.log 2>&1"
+          if ($LASTEXITCODE -ne 0) { "TESTS_FAILED=helper agents" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          Get-Content ci-out\team-test.log | Select-Object -Last 5
+          cmd /c "node windows\test\attach-test.js > ci-out\attach-test.log 2>&1"
+          if ($LASTEXITCODE -ne 0) { "TESTS_FAILED=files with a message" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          Get-Content ci-out\attach-test.log | Select-Object -Last 5
+          powershell -NoProfile -ExecutionPolicy Bypass -File windows\test\pc-test.ps1 ci-out\pc
+          if ($LASTEXITCODE -ne 0) { "TESTS_FAILED=pc command" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          exit 0
+
+      - name: Build the installer
+        working-directory: windows
+        run: |
+          cmd /c "npm run dist > ..\ci-out\build.log 2>&1"
+          $code = $LASTEXITCODE
+          Get-Content ..\ci-out\build.log | Select-Object -Last 60
+          if ($code -ne 0) { exit 1 }
+          Get-Item dist\Termant-Setup.exe | Format-List Name, Length
+
+      - name: Install it the way a user does
+        run: |
+          $setup = Start-Process -FilePath windows\dist\Termant-Setup.exe -ArgumentList '/S' -Wait -PassThru
+          "installer exit code: $($setup.ExitCode)"
+          Start-Sleep -Seconds 5
+          Get-Process Termant -ErrorAction SilentlyContinue | Stop-Process -Force
+          $exe = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter Termant.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Write-Output 'Termant.exe was not installed'; exit 1 }
+          "installed: $($exe.FullName)"
+          "TERMANT_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $links = @(Get-ChildItem "$env:USERPROFILE\Desktop", "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Recurse -Filter 'Termant*.lnk' -ErrorAction SilentlyContinue)
+          "shortcuts: $(($links | ForEach-Object { $_.FullName }) -join '; ')"
+          if ($links.Count -eq 0) { Write-Output 'no shortcut was made'; exit 1 }
+
+      - name: The installed app tests itself (window, terminal, rules, alarms, AI agent)
+        run: |
+          $out = Join-Path (Get-Location) 'ci-out\app'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $env:TERMANT_DATA = Join-Path $env:RUNNER_TEMP 'termant-data'
+          $app = Start-Process -FilePath $env:TERMANT_EXE -ArgumentList "--selftest=$out", '--selftest-agent' -PassThru
+          if (-not $app.WaitForExit(35 * 60 * 1000)) { Write-Output 'the test did not end in time'; $app.Kill() }
+          Get-Content (Join-Path $out 'app.log') -ErrorAction SilentlyContinue | Select-Object -Last 120
+          "app exit code: $($app.ExitCode)"
+          Get-Process notepad -ErrorAction SilentlyContinue | Stop-Process -Force
+          if ($app.ExitCode -ne 0) { "TESTS_FAILED=app self-test" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          exit 0
+
+      # Logs and screenshots are also pushed to a hidden ref so they can be read with git.
+      - name: Publish logs
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p ci-out && cd ci-out
+          echo "${GITHUB_SHA} run ${GITHUB_RUN_ID}" > commit.txt
+          git init -q
+          git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "CI output for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:refs/ci/termant-windows
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Termant-windows
+          path: |
+            windows/dist/Termant-Setup.exe
+            ci-out
+
+      - name: Every test passed
+        run: |
+          if ($env:TESTS_FAILED) { Write-Output "Failed: $env:TESTS_FAILED"; exit 1 }
+
+      # A pre-release, so that "latest" keeps pointing at the Android APK.
+      - name: Release
+        if: success() && (github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[release]'))
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="windows-v$(node -p "require('./windows/package.json').version")"
+          if gh release view "$version" >/dev/null 2>&1; then
+            gh release upload "$version" windows/dist/Termant-Setup.exe --clobber
+          else
+            gh release create "$version" windows/dist/Termant-Setup.exe --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Termant for Windows ${version#windows-v}" \
+              --notes "Termant for Windows 10 and 11 (64-bit). Download Termant-Setup.exe and open it. Windows shows a blue 'Windows protected your PC' box because the installer is not signed: choose More info, then Run anyway. The AI agent (about 120 MB) is downloaded the first time you send a message."
+          fi

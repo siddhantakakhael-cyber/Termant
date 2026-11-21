@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -187,7 +188,14 @@ public final class ScreenService extends AccessibilityService {
      * What is on the screen, one numbered line per thing that can be read
      * or used: its kind, its words and where its middle is.
      */
-    synchronized String describe(int limit) {
+    String describe(int limit) {
+        return describe(limit, LOOK);
+    }
+
+    /** How far a description goes: only what the app tells; or also a picture when that is next to nothing; or always both. */
+    static final int LOOK = 0, PICTURE_IF_NEEDED = 1, PICTURE = 2;
+
+    synchronized String describe(int limit, int how) {
         AccessibilityNodeInfo root = root();
         items.clear();
         labels.clear();
@@ -200,9 +208,86 @@ public final class ScreenService extends AccessibilityService {
         out.append("App: ").append(appName(pkg)).append(" (").append(pkg).append("), screen ")
                 .append(size.x).append('x').append(size.y).append('\n');
         walk(root, out, limit, 0);
+        int told = items.size();
+        if (told >= limit) out.append("(more items not listed; swipe to see further)\n");
+        if (how == PICTURE || (how == PICTURE_IF_NEEDED && told < 3 && Build.VERSION.SDK_INT >= 30)) seen(out);
+        else if (told < 3 && Build.VERSION.SDK_INT >= 30) out.append("(the app tells next to nothing; phone screen ocr reads a picture of it)\n");
         if (items.isEmpty()) out.append("(nothing readable here; try: phone swipe up, or phone key back)\n");
-        else if (items.size() >= limit) out.append("(more items not listed; swipe to see further)\n");
         return out.toString();
+    }
+
+    // ------------------------------------------------------------ reading a picture of the screen
+
+    /**
+     * Adds what Mirage reads in a picture of the screen to the list: each piece
+     * of writing gets a number like the other items, so `phone tap N` works on it.
+     */
+    private void seen(StringBuilder out) {
+        try {
+            Bitmap picture = picture();
+            Mirage.Reading reading;
+            try {
+                reading = Mirage.read(this, picture);
+            } finally {
+                picture.recycle();
+            }
+            if (reading.pieces.isEmpty()) {
+                out.append("(a picture of the screen was read too: no writing found in it)\n");
+                return;
+            }
+            out.append("Read from a picture of the screen by Mirage (").append(reading.parts).append(" parts, ")
+                    .append(String.format(Locale.ROOT, "%.1f", reading.ms / 1000.0)).append(" s). The places are right; ")
+                    .append("letters can be wrong (O/0, l/1, capitals) and only Latin letters are read:\n");
+            int shown = 0;
+            for (Mirage.Piece p : reading.pieces) {
+                if (shown++ >= 120) break;
+                items.add(p.box);
+                labels.add(p.text);
+                out.append(items.size()).append(". [seen] \"").append(shorten(p.text, 140)).append("\" @")
+                        .append(p.box.centerX()).append(',').append(p.box.centerY()).append('\n');
+            }
+        } catch (Exception e) {
+            String why = e.getMessage() == null ? e.toString() : e.getMessage();
+            android.util.Log.i("Termant", "mirage: failed: " + why);
+            out.append("(a picture of the screen could not be read: ").append(why).append(")\n");
+        }
+    }
+
+    /** What Mirage sees in a picture of the screen: the scene, the things and where they are, the writing. */
+    String look() throws Exception {
+        Bitmap picture = picture();
+        try {
+            long[] ms = new long[1];
+            org.json.JSONObject answer = Mirage.see(this, picture, ms);
+            return Look.text(answer, picture.getWidth(), picture.getHeight(), "The screen as a picture", ms[0], "phone",
+                    " (phone tap X Y taps there)");
+        } finally {
+            picture.recycle();
+        }
+    }
+
+    /** A picture of the whole screen, without Termant's own card. It is never saved. */
+    private Bitmap picture() throws Exception {
+        if (Build.VERSION.SDK_INT < 30) throw new java.io.IOException("it needs Android 11 or newer");
+        boolean card = Overlay.isShown() && !MainActivity.isOnScreen();
+        if (card) {
+            showCard(false);
+            Thread.sleep(250); // until the screen is drawn without it
+        }
+        try {
+            return ScreenPicture.take(this);
+        } finally {
+            if (card) showCard(true);
+        }
+    }
+
+    private void showCard(final boolean show) {
+        main.post(new Runnable() {
+            @Override
+            public void run() {
+                Overlay.setSeen(show);
+            }
+        });
     }
 
     private void walk(AccessibilityNodeInfo n, StringBuilder out, int limit, int depth) {

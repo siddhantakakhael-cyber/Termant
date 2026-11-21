@@ -176,6 +176,16 @@ final class Overlay {
      * While the agent itself taps or swipes, the card must not be in the way:
      * a tap on a button under it would land on the card.
      */
+    /** The card is taken out of sight for the moment in which a picture of the screen is made. */
+    static void setSeen(boolean seen) {
+        if (shown == null) return;
+        try {
+            shown.card.setVisibility(seen ? View.VISIBLE : View.INVISIBLE);
+        } catch (Exception e) {
+            // gone meanwhile
+        }
+    }
+
     static void letThrough(boolean through) {
         if (shown == null) return;
         try {

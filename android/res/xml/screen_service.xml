@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Screen control for the AI agent: read what is on the screen and tap,
+<!-- Screen control for the AI agent: read what is on the screen (for apps
+     that tell nothing, from a picture of it, read on the phone) and tap,
      type and swipe in other apps. Off until the user turns it on in
      Android's Accessibility settings. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
@@ -9,4 +10,5 @@
     android:accessibilityFlags="flagDefault|flagReportViewIds|flagRetrieveInteractiveWindows"
     android:canRetrieveWindowContent="true"
     android:canPerformGestures="true"
+    android:canTakeScreenshot="true"
     android:notificationTimeout="200" />

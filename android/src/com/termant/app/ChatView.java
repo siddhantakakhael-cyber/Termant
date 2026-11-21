@@ -42,6 +42,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         void onPickModel();
 
         void onOpenArena();
+
+        /** The user wants to send a picture or a file with the message. */
+        void onAttach();
     }
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
@@ -62,6 +65,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private final TextView workspaceChip, modelChip;
     private final ImageView mic;
     private Chat chat;
+    /** Files waiting to go with the next message, as paths inside Ubuntu. */
+    private final java.util.List<String> attached = new java.util.ArrayList<>();
+    private LinearLayout attachRow;
     /** The text of the reply being written, and what the list looked like when it was built. */
     private TextView writing;
     private String shape = "";
@@ -188,14 +194,22 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         LinearLayout pill = new LinearLayout(context);
         pill.setGravity(Gravity.BOTTOM);
         pill.setBackground(Ui.card(context, 26));
-        pill.setPadding(dp(18), dp(5), dp(5), dp(5));
+        pill.setPadding(dp(5), dp(5), dp(5), dp(5));
+        ImageView plus = Ui.iconButton(context, R.drawable.ic_plus, context.getString(R.string.attach_file), MUTED, 42, 22);
+        plus.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ChatView.this.host.onAttach();
+            }
+        });
+        pill.addView(plus, new LayoutParams(dp(42), dp(42)));
         input = new EditText(context);
         input.setHint(R.string.ask_hint);
         input.setHintTextColor(MUTED);
         input.setTextColor(TEXT);
         input.setTextSize(16);
         input.setBackground(null);
-        input.setPadding(0, dp(10), 0, dp(10));
+        input.setPadding(dp(4), dp(10), 0, dp(10));
         input.setMaxLines(5);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
                 | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -224,6 +238,15 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         LayoutParams sendSize = new LayoutParams(dp(42), dp(42));
         sendSize.leftMargin = dp(2);
         pill.addView(send, sendSize);
+
+        // the files that go with the next message: a name each, a tap takes one off again
+        attachRow = new LinearLayout(context);
+        attachRow.setPadding(dp(12), dp(4), dp(12), 0);
+        android.widget.HorizontalScrollView attachScroll = new android.widget.HorizontalScrollView(context);
+        attachScroll.setHorizontalScrollBarEnabled(false);
+        attachScroll.addView(attachRow);
+        addView(attachScroll);
+        attachRow.setVisibility(GONE);
 
         FrameLayout wrap = new FrameLayout(context);
         wrap.setPadding(dp(10), dp(4), dp(10), dp(10));
@@ -283,8 +306,50 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         input.requestFocus();
     }
 
+    /** A file the user picked, already copied to where Ubuntu reads it. It goes with the next message. */
+    void addAttachment(String path) {
+        if (path == null || path.isEmpty() || attached.contains(path) || attached.size() >= 10) return;
+        attached.add(path);
+        showAttached();
+    }
+
+    private void showAttached() {
+        attachRow.removeAllViews();
+        attachRow.setVisibility(attached.isEmpty() ? GONE : VISIBLE);
+        for (final String path : attached) {
+            String name = path.substring(path.lastIndexOf('/') + 1);
+            TextView v = chip(getContext().getString(R.string.attach_remove, name), R.drawable.ic_file, R.drawable.ic_close);
+            v.setText(name);
+            v.setMaxWidth(dp(190));
+            v.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    attached.remove(path);
+                    showAttached();
+                }
+            });
+            LayoutParams size = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
+            size.rightMargin = dp(6);
+            attachRow.addView(v, size);
+        }
+    }
+
+    /** "[file: /root/uploads/a.jpg]" in a message is shown as the file's name. */
+    static String shown(String text) {
+        return text.replaceAll("\\[file: (?:[^\\]\\n]*/)?([^\\]\\n/]+)\\]", "\uD83D\uDCCE $1");
+    }
+
     private void submit(String text) {
+        if (text.trim().isEmpty() && !attached.isEmpty()) text = getContext().getString(R.string.attach_default);
         if (text.trim().isEmpty()) return;
+        if (!attached.isEmpty()) {
+            // the agent finds the files by these marks (see `termant-kit attach`)
+            StringBuilder with = new StringBuilder(text.trim());
+            for (String path : attached) with.append("\n[file: ").append(path).append("]");
+            text = with.toString();
+            attached.clear();
+            showAttached();
+        }
         input.setText("");
         InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getWindowToken(), 0);
@@ -604,7 +669,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private void addMine(Chat.Message m) {
         list.setGravity(Gravity.TOP);
         TextView bubble = new TextView(getContext());
-        bubble.setText(m.text);
+        bubble.setText(shown(m.text));
         bubble.setTextColor(ON_ACCENT);
         bubble.setTextSize(Ui.BODY);
         bubble.setLineSpacing(dp(2), 1);
@@ -680,6 +745,17 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             note.setTextSize(Ui.CAPTION);
             note.setGravity(Gravity.CENTER_VERTICAL);
             Ui.leading(note, R.drawable.ic_refresh, MUTED, 12, 6);
+            if (m.note.startsWith(Chat.UNDO_SIGN)) {
+                // the files this reply changed can be put back: a tap does it
+                note.setTextColor(ACCENT);
+                note.setContentDescription(c.getString(R.string.undo_changes));
+                note.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (chat != null && !chat.isBusy()) chat.send("undo");
+                    }
+                });
+            }
             if (!m.text.isEmpty() || !m.steps.isEmpty()) note.setPadding(0, dp(8), 0, 0);
             bubble.addView(note);
         }

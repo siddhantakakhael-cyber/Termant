@@ -1,0 +1,15 @@
+dog.jpg (768x576), seen by Mirage in 0.4 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: black and tan dog, red bicycle, white pickup, yellow bench, trees
+Scene: setting = outdoor patio; surface = wooden deck; lighting = daylight; time of day = day; location = parking area
+Things (9), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point:
+- pickup truck, 59%: top right, 5% of the picture; background; white, parked @581,124
+- dog, 59%: left, 14% of the picture; foreground; black and tan, standing, alert @221,366
+- bench, 42%: across the middle, 40% of the picture; foreground; yellow, wood @384,317
+- tree, 40%: across the top, 35% of the picture; background; green @385,103
+- tree, 36%: across the top, 21% of the picture; background; green @385,63
+- trash can, 35%: top left, 4% of the picture; black @42,115
+- bench, 34%: all over, 69% of the picture; background; yellow, wood @382,220
+- bicycle, 33%: top, 1% of the picture; background; red, parked @436,104
+- bicycle, 33%: middle, 22% of the picture; red, parked @342,293
+Maybe (this part is often wrong): dog standing on bench; bicycle on bench; pickup truck behind bench; bicycle behind pickup truck

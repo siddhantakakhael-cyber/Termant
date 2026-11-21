@@ -1,0 +1,163 @@
+#!/bin/bash
+# The team: helper agents that the main agent hands parts of a job to. Each helper is an
+# OpenCode "subagent" (one file in OpenCode's agents folder): it works in its own
+# conversation, at the same time as the others, and reports back. Six come with
+# Termant; the user or the agent can add more.
+#   team                                   the helpers there are
+#   team add NAME "what it is for" FILE [PROVIDER/MODEL]
+#   team show NAME        team remove NAME
+#   team refresh                           writes Termant's own helpers again (done before every chat)
+#   team note TEXT / team notes [WORDS]    the notebook all helpers share
+#   team seen KIND                         counts a kind of task; the third time it says: make a helper
+#   team model [PROVIDER/MODEL | off]      a lighter model for Termant's own helpers
+dir="${TERMANT_TEAM_DIR:-$HOME/.config/opencode/agents}"
+diary="$HOME/.config/termant/learned/journal.tsv"
+OWN="researcher writer coder checker planner coach"
+# a lighter model for the helpers that come with Termant (team model ...)
+helper_model_file="${TERMANT_KIT_DIR:+$TERMANT_KIT_DIR/data}"; helper_model_file="${helper_model_file:-$HOME/.config/termant}/helper-model"
+TAKEN="build plan general explore compaction summary title"
+MAX=20
+MAX_ABOUT=200
+MAX_TEXT=6000
+
+fail() { echo "team: $*" >&2; exit 1; }
+one_line() { printf '%s' "$1" | tr '\n\r\t' '   ' | sed 's/  */ /g; s/^ //; s/ $//'; }
+is_in() { case " $2 " in *" $1 "*) return 0 ;; esac; return 1; }
+field() { sed -n "2,/^---\$/ s/^$2: //p" "$1" | head -n 1; }
+# what a helper is for: written as a quoted string in the file
+about_of() { field "$1" description | sed 's/^"//; s/"$//; s/\\"/"/g; s/\\\\/\\/g'; }
+quoted() { printf '"%s"' "$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')"; }
+mine() { # the names of the helpers made here
+  local f name
+  for f in "$dir"/*.md; do
+    [ -f "$f" ] || continue
+    name=$(basename "$f" .md)
+    is_in "$name" "$OWN" || echo "$name"
+  done
+}
+
+HANDS_OFF='Do not touch the screen (`phone tap`, `phone type`, `phone swipe`, `phone key`, `phone app`, `phone screen`): there is one screen and the main agent has it. Do not ask the user anything (`phone ask`); if something is missing, say so in your report. Never send a message, pay, post, or delete the user'"'"'s files: say in your report what should be done, and the main agent asks the user. If you must change a file of the user, run `safe keep FILE` first. The team has one notebook: `team notes` shows what the others found, and `team note "..."` writes a fact that others need. Your last message is your report to the main agent: short, only what it needs.'
+
+# write NAME ABOUT TEXT [MODEL]
+write() {
+  mkdir -p "$dir" || fail "cannot use $dir"
+  {
+    echo '---'
+    echo "description: $(quoted "$2")"
+    echo 'mode: subagent'
+    [ -n "$4" ] && echo "model: $4"
+    echo '---'
+    printf '%s\n' "$3"
+    echo
+    printf '%s\n' "$HANDS_OFF"
+  } > "$dir/$1.md.tmp" && mv "$dir/$1.md.tmp" "$dir/$1.md"
+}
+
+refresh() {
+  local light=
+  [ -s "$helper_model_file" ] && light=$(head -n 1 "$helper_model_file" | tr -d ' \r\n')
+  printf '%s' "$light" | grep -Eq '^[A-Za-z0-9._-]+/[A-Za-z0-9._:/@#-]+$' || light=
+  write researcher 'Finds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.' \
+'You are the researcher of Termant'"'"'s team on this Android phone. Another agent gave you one question or topic. Find it out: search the web and read the pages; for how-tos also search YouTube with `learn youtube search WORDS` and read what a video says with `learn youtube read ID`. Report what you found: the facts or the steps in short, each with the link it came from, and say plainly what you could not find or are not sure of. Do not change or make files.' "$light"
+  write writer 'Writes or rewrites text: a letter, a report, a summary, a translation, a document. Give it the facts, the language and tone, and the file to save to (or it returns the text).' \
+'You are the writer of Termant'"'"'s team on this Android phone. Another agent told you what to write. Write it in the language and tone that was asked, from the facts you were given; do not invent facts, and mark what is missing as [missing: ...]. If you were given a file name, save the text there; otherwise return the whole text in your report.' "$light"
+  write coder 'Writes a program or script, runs it and fixes it until it works. Give it exactly what the program must do and the folder to work in.' \
+'You are the coder of Termant'"'"'s team on this Android phone (its Ubuntu). Another agent told you what program or script to make. Make it in the folder you were told (or the working folder), run it, and fix what fails until it works. Keep to your own files: other helpers may be working in the same folder. Report the files you made, how to run them, and what your test showed.' "$light"
+  write checker 'Checks finished work against what was asked: reads the files, runs the program, and lists what is wrong or missing. Give it the request and where the work is. It changes nothing.' \
+'You are the checker of Termant'"'"'s team on this Android phone. Another agent gave you a request and the work that was done for it. Check the work against the request: read the files, run the program, try the hard cases. Change nothing. Report one line for each thing that is wrong or missing (with the file and place), most serious first; if everything is right, say that in one line.' "$light"
+  write planner 'Plans a big job before anyone starts: splits it into steps, says which helper does each, what can run at the same time, and what to ask the user first. Give it the whole request. It changes nothing.' \
+'You are the planner of Termant'"'"'s team on this Android phone. Another agent gave you a big request. Do not do the work. Write the plan: numbered steps, for each step who does it (the main agent, researcher, writer, coder, checker, or a helper made here: `team` lists them) and what exactly they are given; mark the steps that can run at the same time; name the files each step writes so that no two write the same file; list what must be asked of the user before starting; end with how the result is checked. At most 12 steps, each one line. Change nothing.' "$light"
+  write coach 'Looks back at a job that went badly (failed steps, a wrong first try, the user had to correct it) and writes down the lesson so that it does not happen again. Give it what was asked, what was tried and what went wrong.' \
+'You are the coach of Termant'"'"'s team on this Android phone. Another agent tells you about a job that went badly: what was asked, what it tried, what went wrong, and how it was solved in the end. Find the one or two lessons that would have saved the trouble. Keep each where it will be found next time: a way of doing a thing as a skill (write the steps to a file, then `learn skill NAME "what it is" FILE`; `learn skills` shows the ones there, improve one instead of making a second); a short rule as a note (`learn note "When ..., do ..."`). Do not keep what was only bad luck, and nothing with keys or passwords. Report in two lines what you kept.' "$light"
+}
+
+line() { # line NAME: "- name: what it is for [model m]"
+  local model
+  model=$(field "$dir/$1.md" model)
+  echo "- $1: $(about_of "$dir/$1.md")${model:+ [model $model]}"
+}
+
+case "$1" in
+  ''|list)
+    [ -f "$dir/researcher.md" ] || refresh
+    echo "Helpers that come with Termant: 6"
+    for name in $OWN; do line "$name"; done
+    names=$(mine)
+    if [ -n "$names" ]; then
+      echo "Helpers made here: $(printf '%s\n' "$names" | wc -l | tr -d ' ')"
+      for name in $names; do line "$name"; done
+    else
+      echo 'Helpers made here: none yet. Make one: team add NAME "what it is for" FILE'
+    fi
+    ;;
+  add)
+    name=$(printf '%s' "$2" | tr 'A-Z' 'a-z')
+    about=$(one_line "$3")
+    file=$4
+    model=$5
+    [ -n "$name" ] && [ -n "$file" ] || fail 'use:  team add NAME "what it is for" FILE [PROVIDER/MODEL]   (FILE holds the helper'"'"'s instructions)'
+    printf '%s' "$name" | grep -Eq '^[a-z][a-z0-9-]{1,29}$' || fail 'a helper'"'"'s name is 2 to 30 small letters, digits or dashes and starts with a letter, like "poet" or "hindi-teacher".'
+    if is_in "$name" "$OWN $TAKEN"; then fail "\"$name\" is a helper that is already there and cannot be changed. Choose another name."; fi
+    [ ${#about} -ge 10 ] || fail "say in one sentence what this helper is for; the main agent picks helpers by that sentence."
+    [ ${#about} -le $MAX_ABOUT ] || fail "what it is for is ${#about} letters; keep it to one sentence of at most $MAX_ABOUT."
+    [ -f "$file" ] || fail "there is no file $file. Write the helper's instructions to a file first."
+    text=$(cat "$file")
+    [ ${#text} -ge 20 ] || fail "the instructions are too short. Write how this helper must work, in a few sentences."
+    [ ${#text} -le $MAX_TEXT ] || fail "the instructions are ${#text} letters; the most is $MAX_TEXT."
+    if [ -n "$model" ]; then
+      printf '%s' "$model" | grep -Eq '^[A-Za-z0-9._-]+/[A-Za-z0-9._:/@#-]+$' || fail 'the model must be written as provider/model, like "opencode/big-pickle". Leave it out to use the chat'"'"'s model.'
+    fi
+    was=Made
+    if [ -f "$dir/$name.md" ]; then
+      was=Changed
+    elif [ "$(mine | wc -l)" -ge $MAX ]; then
+      fail "there are already $MAX helpers made here. Remove one first:  team remove NAME"
+    fi
+    write "$name" "$about" "$text" "$model" || fail "could not save the helper."
+    # the diary of what was learned ("learn today") names it too
+    if mkdir -p "$(dirname "$diary")" 2>/dev/null; then
+      printf '%s\t%s\t%s\t%s\t%s\n' "$(date +%F)" helper "$name" "$about" "" >> "$diary"
+    fi
+    echo "$was the helper \"$name\": $about It can be used from the next message on."
+    ;;
+  show)
+    name=$(printf '%s' "$2" | tr 'A-Z' 'a-z')
+    [ -n "$name" ] || fail "use:  team show NAME"
+    [ -f "$dir/researcher.md" ] || refresh
+    [ -f "$dir/$name.md" ] || fail "there is no helper \"$name\". See them with:  team"
+    model=$(field "$dir/$name.md" model)
+    echo "Helper $name${model:+ (model $model)}"
+    echo "For: $(about_of "$dir/$name.md")"
+    echo
+    awk 'n >= 2 { print } /^---$/ { n++ }' "$dir/$name.md"
+    ;;
+  remove)
+    name=$(printf '%s' "$2" | tr 'A-Z' 'a-z')
+    [ -n "$name" ] || fail "use:  team remove NAME"
+    if is_in "$name" "$OWN"; then fail "\"$name\" comes with Termant and stays."; fi
+    printf '%s' "$name" | grep -Eq '^[a-z][a-z0-9-]{1,29}$' && [ -f "$dir/$name.md" ] || fail "there is no helper \"$name\". See them with:  team"
+    rm -f "$dir/$name.md" && echo "Removed the helper \"$name\"."
+    ;;
+  refresh)
+    refresh
+    ;;
+  note|notes|seen|model)
+    exec termant-kit team "$@"
+    ;;
+  *)
+    cat <<'EOF'
+team: helper agents that the main agent hands parts of a job to
+  team                                   the helpers there are
+  team add NAME "what it is for" FILE [PROVIDER/MODEL]
+                                         makes a helper; FILE holds its instructions
+  team show NAME                         one helper with its instructions
+  team remove NAME                       removes a helper that was made here
+  team note "a fact"                     writes into the notebook that all helpers share
+  team notes [WORDS]                     reads it (team notes clear empties it)
+  team seen KIND                         counts a kind of task that was just done; the
+                                         third time it says to make a helper for it
+  team model PROVIDER/MODEL | off        a lighter model for the helpers that come with Termant
+EOF
+    [ "$1" = help ] || [ "$1" = --help ] || exit 1
+    ;;
+esac

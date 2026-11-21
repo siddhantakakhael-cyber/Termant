@@ -14,11 +14,11 @@
 
 <a href="https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk"><img src="https://img.shields.io/badge/Download-Termant.apk-ff7a45?style=for-the-badge&logo=android&logoColor=white" alt="Download Termant.apk" height="44"></a>
 
-<sub>Android 7.0 or newer · under 1 MB · no account, no API key</sub>
+<sub>Android 7.0 or newer · about 2 MB · no account, no API key</sub>
 
 <br>
 
-[Features](#features) · [Install](#install) · [Things to say](#things-to-say) · [Web terminal](#web-terminal) · [Documentation](#documentation) · [Build](#build-from-source)
+[Features](#features) · [Install](#install) · [Things to say](#things-to-say) · [Windows app](#windows-app) · [Web terminal](#web-terminal) · [Documentation](#documentation) · [Build](#build-from-source)
 
 </div>
 
@@ -32,7 +32,8 @@ you want in Hindi, Hinglish or English; the agent writes and runs the code,
 installs what it needs with `apt`, and can use the phone itself: alarms, the
 torch, other apps, rules that run on their own.
 
-The same repository holds a **web terminal**: an Ubuntu terminal in the
+The same repository holds a **[Windows app](#windows-app)**, where the same
+agent works on your PC, and a **web terminal**: an Ubuntu terminal in the
 browser, hosted on your own server with Docker.
 
 ## Features
@@ -66,7 +67,8 @@ browser, hosted on your own server with Docker.
 **It can use the phone**
 
 - Alarms, timers, torch, notifications, speech, clipboard, battery.
-- With Screen control turned on: opens any app, reads the screen, taps, types and swipes.
+- With Screen control turned on: opens any app, reads the screen, taps, types and swipes. Where an app tells nothing about its screen (games, pictures), it reads a picture of it on the phone with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage) model (Latin letters only, Android 11 or newer).
+- Looks at a photo and says what is in it and where: the scene, each thing with its place (left, top right, across the bottom), the writing. It happens on the phone with the same small model; names can be wrong, the places are about right.
 - A small card over other apps shows what the agent is doing, with a stop button, and asks you when it needs a decision.
 
 </td>
@@ -76,6 +78,10 @@ browser, hosted on your own server with Docker.
 
 - Rules: "every night at 11 turn Wi-Fi off", "when charging starts, run the backup".
 - It learns: short notes about you and scripts it keeps as its own tools, across chats.
+- It teaches itself: asked for something it does not know, it searches YouTube, reads what a video says, does the task and keeps the steps as a skill. Ask "aaj kya seekha?".
+- A team of agents: on a big job the main agent hands parts to helpers (researcher, writer, coder, checker) that work at the same time; you can make helpers of your own ("ek agent banao jo ...").
+- Pictures and files in the chat (the **+** button): a picture goes to a model that can see, PDF, Word, Excel and zip files are read by the agent. An **Undo** line puts changed files back. Work by itself at night (`phone job`), watches, notifications, tidying folders, filling forms, a daily quiz and a work diary: see [the guide](docs/android.md#pictures-and-files-in-the-chat-undo-and-work-by-itself).
+- It speaks with ElevenLabs if you give it keys; several keys take turns when one has used up its limit.
 - It checks in: asks how the exam went the next day, by notification you can answer.
 - Hindi (Hinglish) or English interface, dark or light theme.
 
@@ -132,6 +138,27 @@ Older versions and release notes are on the [Releases page](https://github.com/s
 | `yaad rakho, mujhe chhote jawab pasand hain` | A note is kept for every later chat |
 | `Search the web for the newest stable Python version` | The agent searches and names its source |
 
+## Windows app
+
+The same agent as a desktop program for Windows 10 and 11 (64-bit). It works on
+the PC itself: it opens programs, types, presses keys, clicks, takes
+screenshots, sets alarms and timers, keeps rules, and has PowerShell and
+Command Prompt tabs. Windows that do not say what is in them are read from a
+picture, on the PC itself, with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage)
+model. The same model looks at a photo and says what is in it and where
+(`pc look photo.jpg`). It learns from YouTube by itself and keeps skills, reads
+and changes Word documents (`pc word`), speaks with ElevenLabs keys that
+take turns, and hands parts of a big job to helper agents that work at the
+same time. It is an early version (0.4.0).
+
+<img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
+
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.4.0/Termant-Setup.exe)** and open it.
+2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
+3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
+
+Everything it does, the `pc` command and how it is tested: [docs/windows.md](docs/windows.md).
+
 ## Web terminal
 
 A real Ubuntu 24.04 root shell in the browser, on your own machine. Packages,
@@ -163,6 +190,7 @@ so put it behind HTTPS before exposing it to the internet. Details:
 | ↳ [Models and keys](docs/android.md#settings-model-workspace-your-own-api-key) | Auto-switch, free limits, your own API key, MCP servers |
 | ↳ [GitHub, web search, screen control](docs/android.md#tools-for-the-agent-github-web-search-screen-control) | The tools you can give the agent |
 | ↳ [Over other apps](docs/android.md#over-other-apps-what-the-agent-is-doing-and-its-questions) | The status card and the agent's questions |
+| [Windows app](docs/windows.md) | Installing it, what it does, the `pc` command, how it is tested |
 | [Web terminal](docs/web-terminal.md) | Running it, settings, security, what deletes your data |
 
 ## Good to know
@@ -171,7 +199,7 @@ so put it behind HTTPS before exposing it to the internet. Details:
 - **What the agent can touch.** It runs as root inside Ubuntu and can change or delete anything there, and in `/sdcard` if you allowed storage. It reaches the rest of the phone only through the `phone` command, and other apps only when you turn on Screen control.
 - **No root means limits.** No `systemd`, no Docker, no ports below 1024. Programs run through [PRoot](https://proot-me.github.io/), which is slower than native.
 - **64-bit phones for the agent.** Ubuntu runs on ARM64, 32-bit ARM and x86-64; OpenCode has no 32-bit build.
-- **Testing.** Every build is tested automatically on an Android 14 x86-64 emulator: Ubuntu is set up, `apt install` runs, the app restarts, and the agent gets a reply from a free model. ARM phones use the same code with ARM builds of the same components, but that test does not cover them.
+- **Testing.** Every build is tested automatically on an Android 14 x86-64 emulator: Ubuntu is set up, `apt install` runs, the app restarts, and the agent gets a reply from a free model. ARM phones use the same code with ARM builds of the same components, but that test does not cover them, except the reader of pictures, which is also run on an ARM server (it must read a screenshot and find the dog in a photo).
 - **Signing.** Release APKs are signed with a public test key (`android/keystore/README.md`), so install only APKs from this repository's Releases page.
 
 ## How it works
@@ -196,13 +224,21 @@ docs/               guides and screenshots
 
 ## Build from source
 
-**Android app:** Android SDK and NDK, JDK 17.
+**Android app:** Android SDK and NDK, JDK 17, python3 with pip.
 
 ```sh
 android/build.sh        # writes android/Termant.apk
 ```
 
 Or let the **Android APK** workflow in GitHub Actions build and test it.
+
+**Windows app:** Node.js 22 or newer, on Windows.
+
+```sh
+cd windows
+npm ci
+npm run dist            # writes windows/dist/Termant-Setup.exe
+```
 
 **Web terminal without Docker:** Node.js 18 or newer.
 
@@ -216,9 +252,11 @@ TERMANT_PASSWORD=secret npm start
 The Android app is licensed under the **GNU GPL v3** ([`android/LICENSE`](android/LICENSE)),
 to stay compatible with Termux, whose terminal it includes
 ([`android/vendor/termux`](android/vendor/termux/README.md)). The web terminal
-(`server.js`, `public/`) is **MIT**, as its `package.json` says.
+(`server.js`, `public/`) and the Windows app (`windows/`) are **MIT**, as their
+`package.json` files say.
 
 Termant stands on [Termux](https://github.com/termux/termux-app),
 [PRoot](https://proot-me.github.io/), [OpenCode](https://github.com/sst/opencode),
-[Ubuntu](https://ubuntu.com/) and [xterm.js](https://xtermjs.org/). It is not
-affiliated with any of them.
+[Ubuntu](https://ubuntu.com/), [xterm.js](https://xtermjs.org/) and, for reading
+pictures of the screen, [Mirage and the Cactus engine](https://github.com/cactus-compute/cactus)
+(Apache 2.0). It is not affiliated with any of them.

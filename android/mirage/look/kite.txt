@@ -1,0 +1,11 @@
+kite.jpg (1352x900), seen by Mirage in 0.4 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: people, green kite, ocean, sand, green hill, sky
+Scene: setting = beach; background = ocean and sky; surface = sand; lighting = overcast; weather = cloudy; time of day = day; sky = gray; location = coast; atmosphere = calm
+Things (8), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point:
+- person x4, 62-69%: 2 bottom left, 1 top left, 1 left
+- ocean, 55%: across the bottom, 45% of the picture; background; gray @680,664
+- kite, 44%: top, under 1% of the picture; green, oval @632,114
+- sky, 35%: across the top, 43% of the picture; gray @677,215
+- hill, 32%: across the middle, 7% of the picture; background; green @681,439
+Maybe (this part is often wrong): person flying kite; person holding kite

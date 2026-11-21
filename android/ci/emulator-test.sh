@@ -9,10 +9,12 @@ mkdir -p "$OUT"
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png" || true; }
 run_as() { adb shell run-as "$PKG" "$@"; }
+fake_model=
 finish() {
   shot "final"
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null 2>&1
   adb logcat -d -t 4000 > "$OUT/logcat.txt" 2>&1 || true
+  [ -n "$fake_model" ] && kill "$fake_model" 2>/dev/null  # a test that leaves it running keeps the job open
   echo "RESULT: $1" | tee "$OUT/verdict.txt"
   [ "$1" = PASS ]
   exit $?
@@ -95,6 +97,11 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t2.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t3.sh'" < android/ci/guest-test3.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t4.sh'" < android/ci/guest-test4.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t5.sh'" < android/ci/guest-test5.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/learn-check.sh'" < android/ci/learn-check.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_web.py'" < android/ci/fake_web.py
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/team-check.sh'" < android/ci/team-check.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_model.py'" < android/ci/fake_model.py
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/kit-check.sh'" < android/ci/kit-check.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
@@ -192,6 +199,9 @@ sleep 2
 shot 10-chat-rule
 run_as cat files/rules.json > "$OUT/rules.json"
 grep -q '"trigger":"at 23:00","command":"phone wifi off"' "$OUT/rules.json" || finish "FAIL chat: the agent did not create the 23:00 Wi-Fi rule"
+# which way the first three messages went: OpenCode started for the message, or the server Termant keeps
+run_as cat files/rootfs/root/.cache/termant/server.history > "$OUT/server-history-3.txt" 2>/dev/null
+echo "the first chat messages went: $(tr '\n' ';' < "$OUT/server-history-3.txt")"
 
 echo "Model and workspace"
 tap_on 'content-desc="Model"' || finish "FAIL model chip not found"
@@ -699,6 +709,73 @@ run_as cat "$feed" 2>/dev/null | grep -m 3 'session.text.delta' | cut -c 1-600 >
 cat "$OUT/stream-event-types.txt"
 grep -q 'stream: [1-9][0-9]* pieces' "$OUT/stream.txt" || finish "FAIL streaming: no reply arrived piece by piece"
 
+echo "Helper agents in the chat: the main agent hands two parts of a job to helpers"
+# OpenCode is the real one. The model is a pretend one on the test machine (fake_model.py),
+# so that the result does not hang on whether a real model chooses to use helpers.
+rm -f "$OUT/fake-model-port" "$OUT/helpers-model-asked.txt"
+python3 android/ci/fake_model.py "$OUT/fake-model-port" "$OUT/helpers-model-asked.txt" 'touch /root/helper-ran.txt' 0.0.0.0 > "$OUT/fake-model.log" 2>&1 < /dev/null &
+fake_model=$!
+for _ in $(seq 1 50); do [ -s "$OUT/fake-model-port" ] && break; sleep 0.2; done
+[ -s "$OUT/fake-model-port" ] || finish "FAIL helpers: the pretend model did not start"
+KEYS=files/rootfs/root/.config/termant/keys.env
+keys_before=$(mktemp)
+sleep 2
+adb shell am force-stop "$PKG"
+run_as cat shared_prefs/termant.xml > "$OUT/prefs-before-helpers.xml"
+grep -q '</map>' "$OUT/prefs-before-helpers.xml" || finish "FAIL helpers: could not read the settings"
+had_keys=; run_as test -f "$KEYS" && had_keys=1 && run_as cat "$KEYS" > "$keys_before"
+# the keys file is read before every chat message: it points OpenCode at the pretend model (10.0.2.2 is the test machine)
+{
+  cat "$keys_before"
+  echo "export OPENCODE_CONFIG_CONTENT='{\"provider\":{\"termanttest\":{\"npm\":\"@ai-sdk/openai-compatible\",\"name\":\"Termant test\",\"options\":{\"baseURL\":\"http://10.0.2.2:$(cat "$OUT/fake-model-port")/v1\",\"apiKey\":\"x\"},\"models\":{\"fake\":{\"name\":\"Fake\"}}}}}'"
+} | adb shell "run-as $PKG sh -c 'mkdir -p files/rootfs/root/.config/termant && cat > $KEYS'"
+change_prefs model=termanttest/fake switched= switched_at= free_limit_until= || finish "FAIL helpers: could not prepare the settings"
+run_as rm -f files/rootfs/root/helper-ran.txt
+# a helper of the user's own, as "team add poet ..." writes it
+adb shell "run-as $PKG sh -c 'mkdir -p files/rootfs/root/.config/opencode/agents && cat > files/rootfs/root/.config/opencode/agents/poet.md'" <<'POET'
+---
+description: "Writes one short line of verse on a given subject."
+mode: subagent
+---
+POET-MARK You write one short line of verse about the subject you are given.
+
+Do not touch the screen. Do not ask the user anything. Your last message is your report to the main agent.
+POET
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+tap_on 'content-desc="Start a new chat"' || finish "FAIL helpers: New chat button not found"
+sleep 2
+ask 'TEAM%splease' || finish "FAIL helpers: could not send the request"
+for i in 1 2 3; do sleep 2; shot "23b-helpers-$i"; done
+wait_for_reply 100 || { shot 23c-helpers-timeout; adb logcat -d -s Termant:I | tail -30; cat "$OUT/helpers-model-asked.txt"; finish "FAIL helpers: no reply"; }
+sleep 2
+shot 23d-helpers-done
+cp "$OUT/chat.json" "$OUT/chat-helpers.json"
+# the newest "activity:" line is that of this reply
+adb logcat -d -s Termant:I | grep 'activity:' | tail -n 1 > "$OUT/helpers-activity.txt"
+cat "$OUT/helpers-activity.txt" "$OUT/helpers-model-asked.txt"
+python3 - "$OUT/chat-helpers.json" <<'PY' || finish "FAIL helpers: the chat does not show the two helpers and what they reported"
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+print("helpers: reply:", m)
+ok = (not m["failed"] and "RESEARCH REPORT: chai is tea." in m["text"] and "POEM REPORT: garam chai" in m["text"]
+      and "Helper researcher: Find out about chai" in m["steps"] and "Helper poet: A poem about chai" in m["steps"]
+      and not any(s.startswith("Helper: ") for s in m["steps"]))
+sys.exit(0 if ok else 1)
+PY
+run_as test -f files/rootfs/root/helper-ran.txt || finish "FAIL helpers: the helper did not run its command"
+grep -q 'activity: .*helper' "$OUT/helpers-activity.txt" || finish "FAIL helpers: the app did not notice that helper agents were working"
+# Back to the real models and the settings from before.
+kill $fake_model 2>/dev/null; fake_model=
+run_as rm -f files/rootfs/root/.config/opencode/agents/poet.md
+sleep 2
+adb shell am force-stop "$PKG"
+if [ -n "$had_keys" ]; then adb shell "run-as $PKG sh -c 'cat > $KEYS'" < "$keys_before"; else run_as rm -f "$KEYS"; fi
+rm -f "$keys_before"
+adb shell "run-as $PKG sh -c 'cat > shared_prefs/termant.xml'" < "$OUT/prefs-before-helpers.xml"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+
 echo "Voice button: this emulator has no speech service, so only that nothing breaks"
 tap_on 'content-desc="Speak"' || finish "FAIL microphone button not found"
 sleep 3
@@ -867,13 +944,24 @@ tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button
 sleep 3
 # What the user does by hand in Android's Accessibility settings.
 adb shell settings put secure enabled_accessibility_services "$PKG/$PKG.ScreenService"
+# A photo for `phone look`: a dog in front of a bicycle, with a pickup truck behind (from the darknet
+# project's examples; fetched at a fixed revision, not kept in this repository). One copy goes into
+# Ubuntu, one into the phone's Pictures as its newest picture.
+curl -sSL --fail --retry 3 -o "$OUT/dog.jpg" https://raw.githubusercontent.com/pjreddie/darknet/f6afaabcdf85f77e7aff2ec55c020c0e297c77f9/data/dog.jpg \
+  && [ "$(sha256sum < "$OUT/dog.jpg" | cut -d' ' -f1)" = "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866" ] || finish "FAIL the test photo could not be fetched"
+adb push "$OUT/dog.jpg" /data/local/tmp/dog.jpg >/dev/null
+run_as cp /data/local/tmp/dog.jpg files/rootfs/root/dog.jpg || adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/dog.jpg'" < "$OUT/dog.jpg"
+adb shell mkdir -p /sdcard/Pictures
+adb push "$OUT/dog.jpg" /sdcard/Pictures/termant-test-photo.jpg >/dev/null
+adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/termant-test-photo.jpg >/dev/null 2>&1
+rm -f "$OUT/dog.jpg"
 adb shell settings put secure accessibility_enabled 1
 sleep 6
 adb logcat -d -s Termant:I | grep 'screen control:' > "$OUT/screen-control.txt"
 cat "$OUT/screen-control.txt"
 grep -q 'screen control: on' "$OUT/screen-control.txt" || finish "FAIL Android did not start the screen control service"
 type_line 'sh%st5.sh'
-wait_for_end files/rootfs/root/result5.txt 40 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
+wait_for_end files/rootfs/root/result5.txt 220 || { run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"; shot 35-screen-timeout; finish "FAIL screen control test did not finish"; }
 run_as cat files/rootfs/root/result5.txt > "$OUT/result5.txt"
 cat "$OUT/result5.txt"
 sleep 2
@@ -883,6 +971,53 @@ grep -q '^App: ' "$OUT/result5.txt" || finish "FAIL phone screen did not describ
 grep -q '^apps-exit=0' "$OUT/result5.txt" || finish "FAIL phone apps"
 grep -q '^app-exit=0' "$OUT/result5.txt" || finish "FAIL phone app"
 grep -q '^app-opened=yes' "$OUT/result5.txt" || finish "FAIL phone app did not bring the Settings app to the screen"
+run_as cat files/rootfs/root/screen-ocr.txt > "$OUT/screen-ocr.txt" 2>/dev/null
+adb logcat -d -s Termant:I | grep 'mirage:' > "$OUT/mirage-log.txt"; cat "$OUT/mirage-log.txt"
+grep -q '^ocr-exit=0' "$OUT/result5.txt" || finish "FAIL phone screen ocr"
+grep -q '^Read from a picture of the screen by Mirage' "$OUT/screen-ocr.txt" || finish "FAIL phone screen ocr did not read a picture of the screen"
+grep -q '^ocr-item=[0-9]' "$OUT/result5.txt" || finish "FAIL the picture of Settings was read without its \"Network & internet\""
+grep -q '^ocr-tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap on an item seen in the picture"
+grep -q '^ocr-tap-opened=yes' "$OUT/result5.txt" || finish "FAIL the tap on \"Network & internet\" as seen in the picture did not open that page"
+grep -q '^ocr-again-exit=0' "$OUT/result5.txt" || finish "FAIL the second phone screen ocr"
+# what is in a photo and where
+for f in look-file look-screen look-last; do run_as cat files/rootfs/root/$f.txt > "$OUT/$f.txt" 2>/dev/null; done
+grep -q '^look-file-exit=0' "$OUT/result5.txt" || finish "FAIL phone look FILE"
+grep -q '^look-file-head=yes' "$OUT/result5.txt" || finish "FAIL phone look FILE did not name the picture and its size"
+grep -q '^look-file-dog=yes' "$OUT/result5.txt" || finish "FAIL phone look did not find the dog in the photo"
+grep -q '^look-file-dog-left=yes' "$OUT/result5.txt" || finish "FAIL phone look did not place the dog on the left of the photo"
+grep -q '^look-relative=yes' "$OUT/result5.txt" || finish "FAIL phone look with a file name relative to the folder"
+grep -q '^look-missing-exit=1' "$OUT/result5.txt" || finish "FAIL phone look accepted a file that is not there"
+grep -q '^look-not-a-picture-exit=1' "$OUT/result5.txt" || finish "FAIL phone look accepted a file that is no picture"
+grep -q '^look-usage-exit=1' "$OUT/result5.txt" || finish "FAIL phone look accepted two files"
+grep -q '^look-screen-exit=0' "$OUT/result5.txt" || finish "FAIL phone look (the screen)"
+grep -q '^look-screen-head=yes' "$OUT/result5.txt" || finish "FAIL phone look did not look at a picture of the screen"
+grep -q '^look-last-exit=0' "$OUT/result5.txt" || finish "FAIL phone look last"
+grep -q '^look-last-head=yes' "$OUT/result5.txt" || finish "FAIL phone look last did not take the newest picture on the phone"
+grep -q '^look-last-dog=yes' "$OUT/result5.txt" || finish "FAIL phone look last did not find the dog"
+run_as cat files/rootfs/root/learn-check.txt > "$OUT/learn-check.txt" 2>/dev/null
+run_as cat files/rootfs/root/youtube-search.txt > "$OUT/youtube-search.txt" 2>/dev/null
+run_as cat files/rootfs/root/youtube-read.txt > "$OUT/youtube-read.txt" 2>/dev/null
+grep -q '^learn-check-exit=0' "$OUT/result5.txt" || finish "FAIL learning (YouTube, skills, today, ElevenLabs keys) inside Ubuntu"
+run_as cat files/rootfs/root/team-check.txt > "$OUT/team-check.txt" 2>/dev/null
+grep -q '^team-check-exit=0' "$OUT/result5.txt" || finish "FAIL helper agents (the team command, OpenCode with helpers) inside Ubuntu"
+grep -q '^team-real-run=yes' "$OUT/result5.txt" || finish "FAIL helper agents: OpenCode did not run with helpers inside Ubuntu"
+grep -q '^team-add-exit=0' "$OUT/result5.txt" || finish "FAIL team add"
+run_as cat files/rootfs/root/kit-check.txt > "$OUT/kit-check.txt" 2>/dev/null
+grep -q '^kit-check-exit=0' "$OUT/result5.txt" || finish "FAIL the kit (undo, tidy, study, readfile, me, watch, diary, attached files) inside Ubuntu"
+grep -q '^every-rule-exit=0' "$OUT/result5.txt" || finish "FAIL phone rule add every 20m"
+grep -q '^bad-every-exit=1' "$OUT/result5.txt" || finish "FAIL a rule for every 5 minutes was accepted"
+grep -q '^bad-job-exit=1' "$OUT/result5.txt" || finish "FAIL phone job without a task was accepted"
+grep -q '^notifications-said=yes' "$OUT/result5.txt" || finish "FAIL phone notifications did not say how to allow it"
+grep -q '^sms-alone-said=yes' "$OUT/result5.txt" || finish "FAIL phone sms in a job the agent does alone was not held back"
+grep -q '^voice-add-exit=0' "$OUT/result5.txt" || finish "FAIL phone voice add"
+grep -q '^say-exit=0' "$OUT/result5.txt" || finish "FAIL phone say with ElevenLabs keys"
+grep -q '^say-second-key=yes' "$OUT/result5.txt" || finish "FAIL phone say did not move on to the second ElevenLabs key"
+grep -q '^say-skips-used-up-key=yes' "$OUT/result5.txt" || finish "FAIL phone say asked the used-up ElevenLabs key again"
+grep -q '^voice-report=yes' "$OUT/result5.txt" || finish "FAIL phone voice did not report the keys"
+grep -q '^play-exit=0' "$OUT/result5.txt" || finish "FAIL phone play"
+grep -q '^play-length=yes' "$OUT/result5.txt" || finish "FAIL phone play did not play the one-second sound"
+grep -q '^play-not-a-sound-exit=1' "$OUT/result5.txt" || finish "FAIL phone play accepted a file that is no sound"
+grep -q '^play-missing-exit=1' "$OUT/result5.txt" || finish "FAIL phone play accepted a file that is not there"
 grep -q '^swipe-exit=0' "$OUT/result5.txt" || finish "FAIL phone swipe"
 grep -q '^swipe-moved=yes' "$OUT/result5.txt" || finish "FAIL after a swipe the screen was described as before it"
 grep -q '^tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap by words"
@@ -1030,5 +1165,11 @@ adb shell cat /sdcard/ui.xml | tr '>' '\n' | grep -o 'text="[^"]*\(pehle\|Abhi\|
 cat "$OUT/history-hindi.txt"
 grep -q ' ago"' "$OUT/history-hindi.txt" && finish "FAIL the chat list still says 'ago' in Hindi"
 grep -q 'pehle\|Abhi' "$OUT/history-hindi.txt" || finish "FAIL the chat list shows no time in Hindi"
+
+# Which way every chat message of this test went. At least one must have used the
+# server that Termant keeps between messages, or keeping it does not work on a phone.
+run_as cat files/rootfs/root/.cache/termant/server.history > "$OUT/server-history.txt" 2>/dev/null
+echo "chat messages that started OpenCode themselves: $(grep -c ' own$' "$OUT/server-history.txt"), that used the kept server: $(grep -c ' kept$' "$OUT/server-history.txt")"
+grep -q ' kept$' "$OUT/server-history.txt" || finish "FAIL no chat message used the kept OpenCode server"
 
 finish PASS

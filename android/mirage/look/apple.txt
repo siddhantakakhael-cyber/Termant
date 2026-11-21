@@ -1,0 +1,9 @@
+apple.jpg (512x512), seen by Mirage in 0.4 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: orange pumpkin with stem, green grass, yellow-green grass
+Scene: setting = outdoor; background = green grass; lighting = bright; style = photograph
+Things (3), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point:
+- pumpkin, 82%: all over, 69% of the picture; orange, round, whole @253,275
+- grass, 40%: across the bottom, 13% of the picture; green @256,475
+- stem, 39%: top, 1% of the picture; top of pumpkin; brown, thin @213,34
+Maybe (this part is often wrong): stem attached to pumpkin; pumpkin on grass

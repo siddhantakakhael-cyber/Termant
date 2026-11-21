@@ -65,6 +65,7 @@ final class Rules {
                     + "  phone rule run ID                   run it now, to test it\n"
                     + "triggers:\n"
                     + "  at HH:MM          every day at that time (24-hour)\n"
+                    + "  every 30m         again and again: 15m to 24h (m or h)\n"
                     + "  charging          the charger is plugged in\n"
                     + "  unplugged         the charger is removed\n"
                     + "  battery-below N   the battery drops under N percent\n"
@@ -179,6 +180,15 @@ final class Rules {
         }
     }
 
+    /** The minutes of an "every 30m" trigger. */
+    static long everyMinutes(String trigger) {
+        try {
+            return Math.max(15, Long.parseLong(trigger.substring(6, trigger.length() - 1)));
+        } catch (RuntimeException e) {
+            return 60;
+        }
+    }
+
     /** A timed rule's alarm went off. */
     void onAlarm(int id) {
         Rule r = find(id);
@@ -205,11 +215,16 @@ final class Rules {
     }
 
     private void schedule(Rule r) {
-        if (!r.trigger.startsWith("at ")) return;
+        if (!r.trigger.startsWith("at ") && !r.trigger.startsWith("every ")) return;
         AlarmManager am = (AlarmManager) service.getSystemService(Context.ALARM_SERVICE);
         PendingIntent fire = alarmIntent(r);
         am.cancel(fire);
         if (!r.enabled) return;
+        if (r.trigger.startsWith("every ")) {
+            long minutes = everyMinutes(r.trigger);
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + minutes * 60000, fire);
+            return;
+        }
         int[] time = PhoneBridge.parseTime(r.trigger.substring(3));
         Calendar when = Calendar.getInstance();
         when.set(Calendar.HOUR_OF_DAY, time[0]);
@@ -229,7 +244,8 @@ final class Rules {
         PowerManager pm = (PowerManager) service.getSystemService(Context.POWER_SERVICE);
         final PowerManager.WakeLock awake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "termant:rule");
         awake.acquire(RUN_LIMIT_MINUTES * 60 * 1000);
-        final String command = r.command;
+        // nobody is watching a rule: a command that would ask the user (safe rm of a folder) knows by this
+        final String command = "export TERMANT_UNATTENDED=1; " + r.command;
         new Thread("termant-rule-" + r.id) {
             @Override
             public void run() {
@@ -376,6 +392,11 @@ final class Rules {
             int[] time = PhoneBridge.parseTime(args.get(3));
             if (time == null) throw new PhoneBridge.Refused("phone rule: time must look like 23:00");
             trigger = String.format(Locale.US, "at %02d:%02d", time[0], time[1]);
+        } else if (kind.equals("every") && split == 4 && args.get(3).matches("\\d{1,4}[mh]")) {
+            String span = args.get(3);
+            long minutes = Long.parseLong(span.substring(0, span.length() - 1)) * (span.endsWith("h") ? 60 : 1);
+            if (minutes < 15 || minutes > 24 * 60) throw new PhoneBridge.Refused("phone rule: every 15m to 24h (shorter would drain the battery)");
+            trigger = "every " + minutes + "m";
         } else if (kind.equals("battery-below") && split == 4 && args.get(3).matches("\\d{1,2}")) {
             trigger = "battery-below " + Integer.parseInt(args.get(3));
         } else if (split == 3 && (kind.equals("charging") || kind.equals("unplugged")
@@ -418,6 +439,10 @@ final class Rules {
     /** The trigger in words, for people. */
     static String describe(String trigger) {
         if (trigger.startsWith("at ")) return "Every day at " + trigger.substring(3);
+        if (trigger.startsWith("every ")) {
+            long minutes = everyMinutes(trigger);
+            return minutes % 60 == 0 ? "Every " + (minutes / 60) + " hour(s)" : "Every " + minutes + " minutes";
+        }
         if (trigger.startsWith("battery-below ")) return "Battery below " + trigger.substring(14) + "%";
         switch (trigger) {
             case "charging":

@@ -5,15 +5,63 @@ if ! read -r port token 2>/dev/null < /etc/termant/bridge; then
   echo "phone: the Termant app is not running" >&2
   exit 1
 fi
+[ $# -gt 0 ] || set -- help
+# A text message costs money and cannot be taken back. Sent by the agent in a chat, the user
+# says yes on the screen first; in a job the agent does alone there is nobody to say yes.
+# Typed by the user, or run by a rule the user set up, it goes out as before.
+if [ "$1" = sms ] && [ -n "$TERMANT_CHAT" ] && [ -z "$TERMANT_UNATTENDED" ]; then
+  if [ -e "$HOME/.cache/termant/alone" ]; then
+    echo "phone sms: not sent. This job runs by itself and nobody is there to say yes to a message." >&2
+    echo "Say in your report which message is waiting, so the user can ask for it in the chat." >&2
+    exit 1
+  fi
+  shift; set -- sms-ask "$@"
+fi
+# phone voice ...: the ElevenLabs keys live in Ubuntu
+if [ "$1" = voice ]; then shift; exec termant-web voice "$@"; fi
+# phone say TEXT: with ElevenLabs keys saved, their voice speaks (the keys take turns when one is
+# used up) and the phone plays it; without keys, or when none can speak, the phone's own voice
+spoken=
+if [ "$1" = say ] && [ $# -ge 2 ] && [ -s "$HOME/.config/termant/voice.keys" ]; then
+  if made=$(termant-web voice speak "${@:2}"); then
+    spoken=$(printf '%s\n' "$made" | sed -n 2p)
+    set -- play "$(printf '%s\n' "$made" | sed -n 1p)"
+  else
+    echo "phone say: ElevenLabs did not speak, so the phone's own voice is used." >&2
+  fi
+fi
+# phone look FILE: the app cannot see Ubuntu's files, so the picture itself is sent along
+picture=
+kind=look
+if [ "$1" = play ]; then
+  [ $# -eq 2 ] || { echo "usage: phone play FILE" >&2; exit 1; }
+  kind=play
+  picture=$2
+  [ -f "$picture" ] && [ -r "$picture" ] || { echo "phone play: there is no such file: $picture" >&2; exit 1; }
+  size=$(stat -c %s -- "$picture" 2>/dev/null) || size=0
+  [ "$size" -gt 0 ] || { echo "phone play: the file is empty: $picture" >&2; exit 1; }
+  [ "$size" -le 33554432 ] || { echo "phone play: the file is bigger than 32 MB: $picture" >&2; exit 1; }
+elif [ "$1" = look ] && [ $# -ge 2 ] && [ "$2" != last ]; then
+  [ $# -eq 2 ] || { echo "usage: phone look [FILE | last]" >&2; exit 1; }
+  picture=$2
+  [ -f "$picture" ] && [ -r "$picture" ] || { echo "phone look: there is no such file: $picture" >&2; exit 1; }
+  size=$(stat -c %s -- "$picture" 2>/dev/null) || size=0
+  [ "$size" -gt 0 ] || { echo "phone look: the file is empty: $picture" >&2; exit 1; }
+  [ "$size" -le 33554432 ] || { echo "phone look: the file is bigger than 32 MB: $picture" >&2; exit 1; }
+fi
 { exec 3<>"/dev/tcp/127.0.0.1/$port"; } 2>/dev/null || {
   echo "phone: cannot reach the Termant app (open the app and try again)" >&2
   exit 1
 }
-[ $# -gt 0 ] || set -- help
-printf '%s\0' "$token" "$#" "$@" >&3
+if [ -n "$picture" ]; then
+  printf '%s\0' "$token" 4 "$kind" - "$(basename -- "$picture")" "$size" >&3
+  cat -- "$picture" >&3
+else
+  printf '%s\0' "$token" "$#" "$@" >&3
+fi
 IFS= read -r status <&3
 if [ "$status" = OK ]; then
-  cat <&3
+  if [ -n "$spoken" ]; then cat <&3 >/dev/null; echo "$spoken"; else cat <&3; fi
   exit 0
 fi
 cat <&3 >&2

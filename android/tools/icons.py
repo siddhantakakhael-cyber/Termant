@@ -3,6 +3,7 @@
 
     python3 android/tools/icons.py                 writes android/res/drawable/ic_*.xml
     python3 android/tools/icons.py --preview x.png  also draws them all into one picture (needs Pillow)
+    python3 android/tools/icons.py --js windows/ui/icons.js   also writes them for the Windows app
 
 Every icon lives on a 24 x 24 grid and is a set of strokes (round ends, round
 corners) plus, for a few, filled shapes. The paths are written as in SVG; the
@@ -317,6 +318,15 @@ def main():
     print('%d icons written to android/res/drawable' % len(ICONS))
     if '--preview' in sys.argv:
         preview(sys.argv[sys.argv.index('--preview') + 1])
+    if '--js' in sys.argv:
+        # the same icons for the Windows app, as SVG paths in a script
+        import json
+        target = sys.argv[sys.argv.index('--js') + 1]
+        table = {name: {'s': strokes, 'f': fills} for name, (strokes, fills) in sorted(ICONS.items())}
+        with open(target, 'w') as f:
+            f.write('// Made by android/tools/icons.py --js; change the icons there.\n')
+            f.write('window.ICONS = ' + json.dumps(table, indent=1) + ';\n')
+        print('icons for the Windows app:', target)
 
 
 if __name__ == '__main__':
