@@ -290,6 +290,24 @@ class Agent {
     });
   }
 
+  /** What each model can take in (see attach.js), or null when OpenCode did not say. */
+  modelFacts() {
+    return new Promise((resolve) => {
+      if (!this.installed()) return resolve(null);
+      execFile(this.bin, ['api', '--standalone', 'GET', '/api/model'], {
+        timeout: 90000, windowsHide: true, env: this.env(), maxBuffer: 32 * 1024 * 1024, cwd: this.dir,
+      }, (error, stdout) => {
+        try {
+          const text = String(stdout || '');
+          const facts = require('./attach').factsFrom(JSON.parse(text.slice(text.indexOf('{'))).data);
+          resolve(Object.keys(facts).length ? facts : null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+  }
+
   /**
    * Sends one message. onEvent gets {kind:'step'|'text'|'status'|'session', ...} while the agent works.
    * Resolves to {text, steps, failed, session, stopped}.
@@ -378,13 +396,15 @@ class Agent {
     else kept.child.kill('SIGTERM');
   }
 
-  runOnce({ text, session, model, cwd, onEvent, log }, kept) {
+  runOnce({ text, session, model, cwd, onEvent, log, files }, kept) {
     return new Promise((resolve) => {
       const s = this.settings();
       const args = ['run', '--format', 'json'].concat(kept ? ['--server', kept.url] : ['--standalone']);
       if (s.auto !== false) args.push('--auto');
       if (session) args.push('--session', session);
       if (model) args.push('--model', model);
+      // pictures and files the user sent with the message, handed to the model itself
+      for (const file of files || []) args.push('--file', file);
       args.push(text);
       try {
         fs.mkdirSync(cwd, { recursive: true });

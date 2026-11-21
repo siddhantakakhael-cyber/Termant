@@ -36,6 +36,13 @@ function fakeModel() {
       const said = reports.map((r) => r.replace(/<\/?subagent[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
       return { who: 'main', text: 'TEAM RESULT (' + reports.length + '): ' + said.join(' | ') };
     }
+    if (users.some((u) => u.includes('LOOK'))) {
+      // how many pictures came with the message itself, and whether a text file's words are in it
+      const last = messages.filter((m) => m.role === 'user').pop().content;
+      const parts = Array.isArray(last) ? last : [];
+      return { who: 'main', text: 'SAW pictures=' + parts.filter((p) => p && p.type === 'image_url').length +
+        ' words=' + (users.some((u) => u.includes('WORDS-IN-THE-FILE')) ? 'yes' : 'no') };
+    }
     if (results.length) return { who: 'main', text: 'I started two helpers.' };
     if (tools.includes('subagent') && users.some((u) => u.includes('TEAM'))) {
       return { who: 'main', calls: [
@@ -127,11 +134,11 @@ if (require.main === module) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'termant-team-'));
     const team = new Team(dir);
 
-    check('four helpers come with Termant', team.list().map((h) => h.name).join(' ') === 'researcher writer coder checker' && team.list().every((h) => !h.own));
+    check('six helpers come with Termant', team.list().map((h) => h.name).join(' ') === 'researcher writer coder checker planner coach' && team.list().every((h) => !h.own));
     let told = team.add('Poet', '  Writes one short line\n of verse on a given subject. ', POET.text);
-    check('a helper is made', /^Made the helper "poet": Writes one short line of verse on a given subject\./.test(told) && team.list().length === 5 && team.list()[4].own, told);
+    check('a helper is made', /^Made the helper "poet": Writes one short line of verse on a given subject\./.test(told) && team.list().length === 7 && team.list()[6].own, told);
     told = team.add('poet', POET.about, POET.text, 'opencode/big-pickle');
-    check('the same name changes the helper', /^Changed the helper "poet"/.test(told) && team.list().length === 5 && team.list()[4].model === 'opencode/big-pickle', told);
+    check('the same name changes the helper', /^Changed the helper "poet"/.test(told) && team.list().length === 7 && team.list()[6].model === 'opencode/big-pickle', told);
     check('a helper of Termant cannot be replaced', refused(() => team.add('checker', POET.about, POET.text), /already there/));
     check('a name of OpenCode cannot be taken', refused(() => team.add('build', POET.about, POET.text), /already there/));
     check('a wrong name is refused', refused(() => team.add('My Agent', POET.about, POET.text), /small letters/));
@@ -140,18 +147,18 @@ if (require.main === module) {
     check('too long instructions are refused', refused(() => team.add('x1', POET.about, 'a'.repeat(6001)), /6001 letters/));
     check('a wrong model is refused', refused(() => team.add('x1', POET.about, POET.text, 'gpt five'), /provider\/model/));
     const config = team.config();
-    check('OpenCode gets every helper as a subagent', Object.keys(config).join(' ') === 'researcher writer coder checker poet' &&
+    check('OpenCode gets every helper as a subagent', Object.keys(config).join(' ') === 'researcher writer coder checker planner coach poet' &&
       Object.values(config).every((a) => a.mode === 'subagent' && a.description && a.prompt) && config.poet.model === 'opencode/big-pickle' && !('model' in config.checker));
     check('every helper is told to leave the screen alone', Object.values(config).every((a) => a.prompt.includes('Do not touch the screen')));
-    check('the list names them all', /Helpers that come with Termant: 4\n- researcher: /.test(team.listText()) && /Helpers made here: 1\n- poet: .*\[model opencode\/big-pickle\]/.test(team.listText()), team.listText());
+    check('the list names them all', /Helpers that come with Termant: 6\n- researcher: /.test(team.listText()) && /Helpers made here: 1\n- poet: .*\[model opencode\/big-pickle\]/.test(team.listText()), team.listText());
     check('one helper is shown', /^Helper poet \(model opencode\/big-pickle\)\nFor: Writes one short line/.test(team.show('poet')) && /POET-MARK/.test(team.show('poet')) && /^Helper checker\n/.test(team.show('checker')));
     check('a helper of Termant stays', refused(() => team.remove('writer'), /comes with Termant/));
     check('an unknown helper cannot be removed', refused(() => team.remove('nobody'), /no helper "nobody"/));
     for (let i = 0; i < 19; i++) team.add('helper-' + i, POET.about, POET.text);
-    check('at most 20 helpers of one\'s own', refused(() => team.add('one-more', POET.about, POET.text), /already 20/) && team.list().length === 24);
+    check('at most 20 helpers of one\'s own', refused(() => team.add('one-more', POET.about, POET.text), /already 20/) && team.list().length === 26);
     for (let i = 0; i < 19; i++) team.remove('helper-' + i);
-    check('helpers are removed', team.list().length === 5);
-    check('a broken file is an empty list', (fs.writeFileSync(team.file, '{oops'), team.list().length === 4));
+    check('helpers are removed', team.list().length === 7);
+    check('a broken file is an empty list', (fs.writeFileSync(team.file, '{oops'), team.list().length === 6));
     team.add('poet', POET.about, POET.text);
 
     let step = describeTool({ tool: 'subagent', state: { input: { agent: 'researcher', description: 'Find out about chai', prompt: 'long' } } });

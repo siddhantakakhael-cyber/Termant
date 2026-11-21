@@ -234,7 +234,7 @@ module.exports = async function selftest(ctx) {
       r = await pc('team', 'add', 'poet', helper.about, helperFile);
       check('pc team add makes a helper', r.code === 0 && /Made the helper "poet": Writes one short line of verse/.test(r.out), JSON.stringify(r));
       r = await pc('team');
-      check('pc team lists the helpers', r.code === 0 && /Helpers that come with Termant: 4/.test(r.out) && /- researcher: /.test(r.out) && /Helpers made here: 1/.test(r.out) && /- poet: Writes one short line/.test(r.out), JSON.stringify(r));
+      check('pc team lists the helpers', r.code === 0 && /Helpers that come with Termant: 6/.test(r.out) && /- researcher: /.test(r.out) && /Helpers made here: 1/.test(r.out) && /- poet: Writes one short line/.test(r.out), JSON.stringify(r));
       r = await pc('team', 'show', 'poet');
       check('pc team show prints the instructions', r.code === 0 && /POET-MARK/.test(r.out), JSON.stringify(r));
       r = await pc('team', 'add', 'checker', helper.about, helperFile);
@@ -345,6 +345,20 @@ module.exports = async function selftest(ctx) {
         check('helpers: the chat shows who got which part', await js('[...document.querySelectorAll(".step code")].some((c) => c.textContent === "Helper researcher: Find out about chai")'),
           JSON.stringify(reply).slice(0, 500));
         await shot('helpers');
+
+        // ---- a picture sent with a message: the pretend model says what reached it
+        const picture = path.join(dir, 'attached.png');
+        fs.writeFileSync(picture, require('./attach-test').png());
+        check('files: the button to add a picture or file is there', await js('!!document.querySelector("#attach svg")'));
+        await js('document.getElementById("new-chat").click()');
+        await sleep(500);
+        await js('window.termant.call("chat:send", ' + JSON.stringify({ text: 'LOOK at this', files: [picture] }) + ').then(() => true)');
+        await until(() => !!ctx.busy(), 5000);
+        await until(() => !ctx.busy(), 240000);
+        reply = (ctx.current() && ctx.current().messages.slice(-1)[0]) || { text: 'no reply' };
+        check('files: a picture sent with a message reaches the model', /SAW pictures=1/.test(reply.text || ''), JSON.stringify(reply).slice(0, 500));
+        check('files: the message names the file, not its path', await js('[...document.querySelectorAll(".msg.user .bubble")].some((b) => b.textContent.includes("attached.png") && !b.textContent.includes("[file:"))'));
+        await shot('attached');
         delete process.env.OPENCODE_CONFIG_CONTENT;
         agent.stopServer();
         Object.assign(ctx.settings(), real);

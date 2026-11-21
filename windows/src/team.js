@@ -50,6 +50,22 @@ const BUILTIN = [
       'Report one line for each thing that is wrong or missing (with the file and place), most serious first; if everything is right, say that in one line. ' +
       HANDS_OFF,
   },
+  {
+    name: 'planner',
+    about: 'Plans a big job before anyone starts: splits it into steps, says which helper does each, what can run at the same time, and what to ask the user first. Give it the whole request. It changes nothing.',
+    text: 'You are the planner of Termant\'s team on this Windows PC. Another agent gave you a big request. Do not do the work. ' +
+      'Write the plan: numbered steps, for each step who does it (the main agent, researcher, writer, coder, checker, or a helper made here: `pc team` lists them) and what exactly they are given; ' +
+      'mark the steps that can run at the same time; name the files each step writes so that no two write the same file; list what must be asked of the user before starting; end with how the result is checked. ' +
+      'At most 12 steps, each one line. Change nothing. ' + HANDS_OFF,
+  },
+  {
+    name: 'coach',
+    about: 'After a job that went badly: finds the lesson and keeps it as a note or a skill, so the same trouble does not come again. Give it what was asked, what was tried, what went wrong and how it was solved.',
+    text: 'You are the coach of Termant\'s team on this Windows PC. Another agent tells you about a job that went badly: what was asked, what it tried, what went wrong, and how it was solved in the end. ' +
+      'Find the one or two lessons that would have saved the trouble. Keep each where it will be found next time: a way of doing a thing as a skill ' +
+      '(write the steps to a file, then `pc skill save NAME "what it is" FILE`; `pc skill list` shows the ones there, improve one instead of making a second); ' +
+      'a short rule as a note (`pc note add "When ..., do ..."`). Do not keep what was only bad luck, and nothing with keys or passwords. Report in two lines what you kept. ' + HANDS_OFF,
+  },
 ];
 
 function oneLine(text) {

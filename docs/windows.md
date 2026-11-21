@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.3.0).** It is built and tested automatically on a Windows
+> **Early version (0.4.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.3.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.4.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -30,6 +30,7 @@ To remove it: Windows **Settings → Apps → Installed apps → Termant → Uni
 | | |
 | --- | --- |
 | **Chat** | Ask for anything; the answer shows each command the agent ran. Earlier chats are kept in the list on the left. |
+| **Pictures and files** | The **+** in the message box adds pictures or files to a message. A picture goes to the model itself; if the chosen model cannot see pictures, the first free model that can is asked for that message, and the answer says so. Small text files go into the message. Other files (Word, zip, Excel) the agent opens itself. |
 | **Models** | Free models work with no account. Pick one from the chip at the top right, or leave it on automatic. If a model does not answer, Termant tries other free ones. With your own API key (Settings), that company's models appear too. |
 | **PC control** | The agent uses the `pc` command: open programs and links, list and switch windows, type, press keys, click, read what a window shows, take screenshots, volume, brightness, clipboard, lock, sleep, shut down. |
 | **Terminal** | Up to 8 tabs of PowerShell, Command Prompt, or Ubuntu if you have WSL. The `pc` command works there too. |
@@ -216,6 +217,14 @@ back; the main agent puts the results together and answers you.
 | `writer` | Writes or rewrites text: a letter, a report, a summary, a translation |
 | `coder` | Writes a program or script and makes it run |
 | `checker` | Checks finished work against what was asked and lists what is wrong |
+| `planner` | Splits a big job into steps and says which helper does each |
+| `coach` | Looks at a job that went badly and keeps the lesson as a note or a skill |
+
+New in 0.4.0: for a big job the agent is told to show a plan first and start
+after your yes; `researcher`, `writer` and `checker` run one after the other
+for written work, with faults going back to the writer; and paying, sending
+and deleting are asked first, by helpers too. These are instructions to the
+model, not locks.
 
 OpenCode's own `general` and `explore` helpers are there as well.
 
@@ -303,6 +312,15 @@ message to OpenCode asking the model took 1.5 to 1.7 seconds before, and 0.2
 seconds with the kept server. The model's own thinking time is not changed by
 this, and it is usually the larger part.
 
+## Not on Windows yet
+
+The Android app got more in its version 0.22.0 than this one: Undo for
+changed files, jobs at night, watches, reading notifications, tidying
+folders, details for forms, the daily quiz, the work diary, the team's
+notebook and a small model for easy parts. None of these are in the Windows
+app yet. A PDF is handed only to a model that reads PDFs (no free one does
+today); there is no PDF reader in the app.
+
 ## How it is tested
 
 Every change is built and tested by the **Windows app** workflow on a Windows
@@ -337,6 +355,11 @@ Server 2025 machine with a real desktop:
    that hands two parts of a job to two helpers (`windows/test/team-test.js`):
    both must be started, work at the same time, one must run a command by
    itself, and both reports must come back into the answer in the chat.
+8. Files with a message (`windows/test/attach-test.js`): which model is asked
+   for a picture, a PDF, a text file and an archive; then a picture is sent
+   through the chat to the pretend model, which must say that one picture
+   reached it. The file dialog of the **+** button is not opened by the
+   test, and no real model was asked what a picture shows.
 
 What the test machine cannot check: sound (it has no speakers, so volume, mute
 and `pc say` are only tried), brightness, battery, Wi-Fi, voice dictation, and

@@ -281,7 +281,7 @@
       const column = el('div', { class: 'column' });
       chat.messages.forEach((m, index) => {
         if (m.user) {
-          column.appendChild(el('div', { class: 'msg user' }, el('div', { class: 'bubble' }, m.text)));
+          column.appendChild(el('div', { class: 'msg user' }, el('div', { class: 'bubble' }, shown(m.text))));
           return;
         }
         const last = index === chat.messages.length - 1;
@@ -298,6 +298,7 @@
         }
         if (m.note === 'stopped') node.appendChild(el('div', { class: 'note' }, t('stopped')));
         else if (m.note && m.note.startsWith('model:')) node.appendChild(el('div', { class: 'note' }, t('switched', m.note.slice(6))));
+        else if (m.note && m.note.startsWith('saw:')) node.appendChild(el('div', { class: 'note' }, t('seen_by', m.note.slice(4))));
         if (m.learned && m.learned.length) {
           node.appendChild(el('div', { class: 'learned' }, el('b', null, t('learned_now')), m.learned.map((line) => el('div', null, line))));
         }
@@ -327,6 +328,35 @@
     $('mic').title = t('voice');
     $('mic').setAttribute('aria-label', t('voice'));
     clear($('mic')).appendChild(icon('mic'));
+    $('attach').title = t('attach');
+    $('attach').setAttribute('aria-label', t('attach'));
+    clear($('attach')).appendChild(icon('plus'));
+    showAttached();
+  }
+
+  // The pictures and files that go with the next message (full paths).
+  const attached = [];
+  const baseName = (file) => String(file).split(/[\\/]/).pop();
+
+  function showAttached() {
+    const row = $('attached');
+    row.hidden = !attached.length;
+    clear(row).append(...attached.map((file) => el('button', {
+      class: 'chip', type: 'button', title: t('attach_remove', baseName(file)),
+      onclick: () => { attached.splice(attached.indexOf(file), 1); showAttached(); },
+    }, icon('file'), el('span', null, baseName(file)), icon('close'))));
+  }
+
+  async function pickFiles() {
+    const files = await call('pick:files');
+    for (const file of files || []) if (!attached.includes(file) && attached.length < 10) attached.push(file);
+    showAttached();
+    $('input').focus();
+  }
+
+  /** "[file: C:\\Users\\me\\a.png]" in a message is shown as the file's name. */
+  function shown(text) {
+    return String(text || '').replace(/\[file: (?:[^\]\n]*[\\/])?([^\]\n\\/]+)\]/g, '\uD83D\uDCCE $1');
   }
 
   function grow() {
@@ -338,10 +368,12 @@
   function submit() {
     if (S.working) return call('chat:stop');
     const text = $('input').value.trim();
-    if (!text) return;
+    if (!text && !attached.length) return;
     $('input').value = '';
     grow();
-    call('chat:send', text);
+    if (attached.length) call('chat:send', { text: text || t('attach_default'), files: attached.splice(0) });
+    else call('chat:send', text);
+    showAttached();
   }
 
   async function pickModel() {
@@ -766,6 +798,7 @@
       }
     });
     $('mic').addEventListener('click', () => { $('input').focus(); api.call('voice'); });
+    $('attach').addEventListener('click', () => pickFiles());
     $('tab-add').addEventListener('click', () => addTerminal());
     for (const b of document.querySelectorAll('#menu, .menu-button')) b.addEventListener('click', () => $('app').classList.toggle('menu-open'));
     $('layer').addEventListener('mousedown', (e) => {

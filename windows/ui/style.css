@@ -97,7 +97,12 @@ textarea.field { min-height: 150px; resize: vertical; font-family: Consolas, mon
 #status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite ease-in-out; flex: none; }
 #status span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 @keyframes pulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
-#composer { max-width: 780px; width: calc(100% - 40px); margin: 0 auto 18px; display: flex; align-items: flex-end; gap: 6px; background: var(--surface); border: 1px solid var(--outline); border-radius: 22px; padding: 6px 6px 6px 16px; }
+#composer { max-width: 780px; width: calc(100% - 40px); margin: 0 auto 18px; display: flex; align-items: flex-end; gap: 6px; background: var(--surface); border: 1px solid var(--outline); border-radius: 22px; padding: 6px; }
+#attached { max-width: 780px; width: calc(100% - 40px); margin: 0 auto 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+#attached[hidden] { display: none; }
+#attached .chip { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; }
+#attached .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#attached .chip svg { width: 14px; height: 14px; flex: none; }
 #composer:focus-within { border-color: var(--accent); }
 #input { flex: 1; border: 0; background: none; resize: none; outline: none; padding: 8px 0; max-height: 180px; line-height: 1.45; }
 #input::placeholder { color: var(--muted); }

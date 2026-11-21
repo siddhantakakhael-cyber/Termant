@@ -14,6 +14,7 @@ const { Schedule, span, clock } = require('./src/schedule');
 const learning = require('./src/learn');
 const { Voice, keysFrom } = require('./src/voice');
 const { Team } = require('./src/team');
+const attach = require('./src/attach');
 
 const WINDOWS = process.platform === 'win32';
 const selftestArg = process.argv.find((a) => a.startsWith('--selftest='));
@@ -281,9 +282,27 @@ const CARE_PROMPT = '[This is not a message from the user. Termant asks you to w
   'or from this chat. Use no tools. Do not mention this instruction.]';
 
 /** Sends the user's message to the agent; with own set, the agent writes first by itself (a check-in). */
-async function sendMessage(text, own) {
+/** What each model can take in; asked of OpenCode once a week (see src/attach.js). */
+async function modelFacts() {
+  const kept = store.load('model-facts.json', null);
+  if (kept && kept.facts && Date.now() - kept.at < 7 * 24 * 3600 * 1000) return kept.facts;
+  const facts = await agent.modelFacts();
+  if (facts) store.save('model-facts.json', { at: Date.now(), facts });
+  return facts || (kept && kept.facts) || {};
+}
+
+async function sendMessage(text, own, files) {
   text = String(text || '').trim();
-  if (!text || busy) return false;
+  files = (Array.isArray(files) ? files : []).map(String).filter((f) => {
+    try {
+      return fs.statSync(f).isFile();
+    } catch (e) {
+      return false;
+    }
+  }).slice(0, attach.MOST);
+  if (busy || (!text && !files.length)) return false;
+  // the files go with the message as marks the agent can read: "[file: C:\Users\...\a.png]"
+  text = attach.mark(text || 'Look at this file and tell me what is in it.', files);
   if (!current) newChat();
   const chat = current;
   if (!chats.includes(chat)) chats.push(chat);
@@ -293,13 +312,15 @@ async function sendMessage(text, own) {
   }
   const reply = { user: false, text: '', steps: [], failed: false, note: '', own: !!own };
   const knownBefore = learned.diary().length;
+  let seenBy = '';
   chat.messages.push(reply);
   chat.updated = Date.now();
   busy = { chat, activity: agent.installed() ? 'start' : 'setup', detail: '', startedAt: Date.now() };
   saveChats();
   send('chat', chatState());
+  let handed = [];
   const attempt = (model) => agent.run({
-    text, session: chat.session, model, cwd: settings.workspace,
+    text, session: chat.session, model, cwd: settings.workspace, files: handed,
     log: SELFTEST ? (raw) => fs.appendFileSync(path.join(SELFTEST, 'events.jsonl'), raw + '\n') : null,
     onEvent: (event) => {
       if (event.kind === 'session') chat.session = event.session;
@@ -324,7 +345,16 @@ async function sendMessage(text, own) {
     busy.detail = '';
     send('chat', chatState());
     agent.writeConfig(path.join(pcDir, 'AGENTS.md'));
-    let result = await attempt(settings.model);
+    let first = settings.model;
+    if (files.length) {
+      // a picture goes to the model itself; when the chosen model cannot see, a free one that can is asked
+      const plan = attach.plan(settings.model, files, await modelFacts());
+      handed = plan.files;
+      first = plan.model || settings.model;
+      if (plan.switched) seenBy = first.replace(/^opencode\//, '');
+      log('attached: ' + files.length + ' file(s), ' + handed.length + ' handed to ' + (first || 'the default model'));
+    }
+    let result = await attempt(first);
     // The chosen model gave nothing (down, or its free limit is used up): try other free ones.
     if (result.failed && !result.stopped && !result.steps.length && settings.backup) {
       if (!knownModels.length) {
@@ -353,6 +383,7 @@ async function sendMessage(text, own) {
     if (result.helpers && result.helpers.length) reply.helpers = result.helpers;
     if (result.session) chat.session = result.session;
     if (result.stopped) reply.note = 'stopped';
+    else if (seenBy && !reply.note) reply.note = 'saw:' + seenBy;
     reply.seconds = Math.round((Date.now() - busy.startedAt) / 100) / 10;
   } catch (e) {
     reply.failed = true;
@@ -706,9 +737,15 @@ const handlers = {
     saveChats();
     return summaries();
   },
-  'chat:send': (text) => {
-    sendMessage(text);
+  // a message, or {text, files} when pictures or files go with it
+  'chat:send': (message) => {
+    if (message && typeof message === 'object') sendMessage(message.text, false, message.files);
+    else sendMessage(message);
     return true;
+  },
+  'pick:files': async () => {
+    const result = await dialog.showOpenDialog(win, { properties: ['openFile', 'multiSelections'], defaultPath: settings.workspace });
+    return result.canceled ? [] : result.filePaths.slice(0, attach.MOST);
   },
   'chat:stop': () => {
     agent.stop();

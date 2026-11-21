@@ -149,11 +149,11 @@ model. The same model looks at a photo and says what is in it and where
 (`pc look photo.jpg`). It learns from YouTube by itself and keeps skills, reads
 and changes Word documents (`pc word`), speaks with ElevenLabs keys that
 take turns, and hands parts of a big job to helper agents that work at the
-same time. It is an early version (0.3.0).
+same time. It is an early version (0.4.0).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.3.0/Termant-Setup.exe)** and open it.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.4.0/Termant-Setup.exe)** and open it.
 2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
 3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
 
