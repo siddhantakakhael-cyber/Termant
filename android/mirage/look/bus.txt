@@ -1,0 +1,22 @@
+bus.jpg (810x1080), seen by Mirage in 0.4 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: man in beige coat, woman in black dress, white and blue bus, yellow building, green sign
+Scene: setting = city street; background = building; surface = pavement; lighting = daylight; time of day = day; location = urban street; atmosphere = casual
+Things (9), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point:
+- man, 76%: left, 11% of the picture; foreground; beige coat, standing, smiling @127,647
+- bus, 56%: across the middle, 48% of the picture; white and blue, parked @413,515
+- man, 54%: right, 6% of the picture; foreground; dark suit, standing @747,633
+- woman, 45%: middle, 8% of the picture; black dress, standing, smiling @294,616
+- sign, 43%: top left, under 1% of the picture; on building; green @20,290
+- logo, 40%: middle, 2% of the picture; on bus; blue and white @412,599
+- tree, 38%: top right, 3% of the picture; background; green @731,228
+- window, 36%: top, 1% of the picture; on bus; dark @366,163
+- window, 30%: top left, 2% of the picture; on bus; dark @178,126
+Also there, place not marked: building (background; yellow)
+Writing (letters can be wrong):
+- "BMAGMD)": top @458,338
+- "n minibis 100scléelricu sics plan": top right @652,341
+- "eléctricamEMT": right @686,443
+- "cero": right @584,563
+- "emisiones": right @616,594
+Maybe (this part is often wrong): man standing on bus; woman standing on bus; window part of bus; logo attached to bus; sign attached to building

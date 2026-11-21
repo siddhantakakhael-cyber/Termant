@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Runs the reader of pictures as built for one kind of processor, on this machine, on a real
-# screenshot of the phone (docs/screenshots/question.png), and checks what it read.
+# Runs the reader of pictures as built for one kind of processor, on this machine: on a real
+# screenshot of the phone (docs/screenshots/question.png) it must read the writing, and in a
+# photo it must find the dog and where it is.
 #   mirage-check.sh <libmirage.so> <work dir>
 set -uo pipefail
 program="$1"; work="$2"; mkdir -p "$work"
@@ -38,4 +39,33 @@ for want in 'Termant asks' 'Alpha' 'Beta' 'Type something else' 'Network & inter
 done
 [ "$code" = 0 ] || failed=1
 [ "$failed" = 0 ] && echo "PASS the reader read the screenshot on $(uname -m)"
+
+# The same program, asked for all it sees (options "{}"), on a photo: a dog in front of a bicycle
+# (from the darknet project's examples; fetched at a fixed revision, not kept in this repository).
+curl -sSL --fail --retry 3 -o "$work/dog.jpg" https://raw.githubusercontent.com/pjreddie/darknet/f6afaabcdf85f77e7aff2ec55c020c0e297c77f9/data/dog.jpg || exit 1
+echo "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866  $work/dog.jpg" | sha256sum --check --quiet || exit 1
+PYTHONPATH="$work/py" python3 - "$work/dog.jpg" "$work/dog.req" <<'PY'
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert('RGB')
+with open(sys.argv[2], 'wb') as f:
+    f.write(f'{im.width} {im.height}\n'.encode()); f.write(im.tobytes())
+PY
+start=$(date +%s%N)
+"$program" "$model" '{}' < "$work/dog.req" > "$work/dog.json" 2> "$work/errors.txt"; code=$?
+echo "exit $code, $(( ($(date +%s%N) - start) / 1000000 )) ms for the photo (with loading the model)"
+cat "$work/errors.txt"
+[ "$code" = 0 ] || failed=1
+python3 - "$work/dog.json" <<'PY' || failed=1
+import json, sys
+answer = json.load(open(sys.argv[1], encoding='utf-8'))
+things = answer.get('objects', [])
+for o in things: print(f" | {o.get('name')} {o.get('score')} {o.get('bbox')} {o.get('position')}")
+dogs = [o for o in things if o.get('name') == 'dog']
+if not dogs: sys.exit('FAIL no dog found in the photo')
+left, top, right, bottom = dogs[0]['bbox']
+if not (left + right < 2000 / 3 * 2 and top + bottom > 2000 / 3): sys.exit('FAIL the dog is not where it is in the photo (left, lower half)')
+if 'scene' not in answer: sys.exit('FAIL no scene in the answer')
+print('PASS the reader found the dog in the photo, and where it is')
+PY
 exit $failed

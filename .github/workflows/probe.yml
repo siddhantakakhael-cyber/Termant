@@ -10,13 +10,13 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: bash .github/probe/photos.sh || true
+      - run: bash .github/probe/look.sh > look.log 2>&1 || true
       - name: Publish
         if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p probe-out && cd probe-out
+          mkdir -p probe-out && cp look.log probe-out/ && cd probe-out
           git init -q && git add -A
           git -c user.name=ci -c user.email=ci@localhost commit -qm "probe ${GITHUB_SHA}"
           git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:refs/ci/termant-probe

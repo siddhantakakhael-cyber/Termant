@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   # Phones have ARM processors and the emulator below does not, so the reader of
-  # pictures is also built and run on an ARM machine: it must read a real screenshot.
+  # pictures is also built and run on an ARM machine: it must read a real screenshot
+  # and find the dog in a photo. Then the lines `phone look` makes are checked.
   reader-on-arm:
     name: Reader of pictures on an ARM machine
     runs-on: ubuntu-24.04-arm
@@ -20,6 +21,7 @@ jobs:
       - run: |
           android/tools/build_mirage.sh "$PWD/libs" "$PWD/work"
           bash android/ci/mirage-check.sh libs/arm64-v8a/libmirage.so "$PWD/work"
+          bash android/ci/look-check.sh "$PWD/work/look"
 
   build:
     needs: reader-on-arm

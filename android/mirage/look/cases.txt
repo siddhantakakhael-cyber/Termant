@@ -1,0 +1,9 @@
+bus 810 1080
+dog 768 576
+building 868 600
+messi 548 342
+kite 1352 900
+apple 512 512
+odd 2000 1000
+empty 64 48
+bare 300 200

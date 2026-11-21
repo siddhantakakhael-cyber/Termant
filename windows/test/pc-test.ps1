@@ -88,6 +88,49 @@ if ($m.Success) {
   Start-Sleep -Milliseconds 500
 }
 
+# ---- what is in a photo and where (Mirage)
+# Of answers of Mirage kept in files, look must make exactly the kept lines; the Android app is checked against the same files.
+$kept = Join-Path $PSScriptRoot '..\..\android\mirage\look'
+$wrong = @()
+foreach ($case in (Get-Content (Join-Path $kept 'cases.txt'))) {
+  $name, $w, $h = $case -split ' '
+  if (-not $name) { continue }
+  $r = Run look-answer (Join-Path $kept "$name.json") $w $h "$name.jpg" phone
+  $want = ([IO.File]::ReadAllText((Join-Path $kept "$name.txt"), [Text.Encoding]::UTF8)).Trim()
+  # letters outside ASCII can come changed through the pipe of this test: each run of them counts as one mark
+  $got = ($r.out -replace "`r", '') -replace '[^\x00-\x7F]+', '?'
+  if (($r.code -ne 0) -or ($got -cne (($want -replace "`r", '') -replace '[^\x00-\x7F]+', '?'))) {
+    $wrong += $name
+    Set-Content -Path (Join-Path $Out "look-$name.txt") -Value $r.out
+  }
+}
+Check 'look makes the kept lines of every kept answer of Mirage' ($wrong.Count -eq 0) "different: $($wrong -join ', ')"
+
+# a real photo: a dog in front of a bicycle (from the darknet project's examples, fetched at a fixed revision)
+$photo = Join-Path ([IO.Path]::GetTempPath()) 'termant dog.jpg'
+try {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+  $ProgressPreference = 'SilentlyContinue'
+  Invoke-WebRequest -UseBasicParsing -TimeoutSec 120 -OutFile $photo -Uri 'https://raw.githubusercontent.com/pjreddie/darknet/f6afaabcdf85f77e7aff2ec55c020c0e297c77f9/data/dog.jpg'
+} catch { Write-Output "the test photo could not be fetched: $($_.Exception.Message)" }
+$fetched = (Test-Path -LiteralPath $photo) -and ((Get-FileHash -LiteralPath $photo -Algorithm SHA256).Hash -eq '5A9522051C3CEC2BBD2F6323FCCBA32E8FBF3DDCC2B3E2FD46B04C720BC6F866')
+Check 'the test photo was fetched' $fetched ''
+if ($fetched) {
+  $r = Run look $photo
+  Add-Content -Path (Join-Path $Out 'look-photo.txt') -Value $r.out
+  Check 'look names the photo and its size' (($r.code -eq 0) -and ($r.out -match '(?m)^Picture termant dog\.jpg \(768x576\), seen by Mirage in \d+\.\d s\.')) "exit $($r.code): $(($r.out -split "`n" | Select-Object -First 3) -join ' | ')"
+  Check 'look finds the dog, on the left of the photo' ($r.out -match '(?m)^- dog, \d+%: left, ') (($r.out -split "`n" | Where-Object { $_ -match '^- ' }) -join ' | ')
+  Check 'look finds the bicycle' ($r.out -match '(?m)^- bicycle, ') '' -Soft
+  Check 'look tells the scene' ($r.out -match '(?m)^Scene: ') '' -Soft
+}
+$r = Run look
+Add-Content -Path (Join-Path $Out 'look-window.txt') -Value $r.out
+Check 'look without a file looks at the window in front' (($r.code -eq 0) -and ($r.out -match '(?m)^The window in front as a picture \(\d+x\d+\), seen by Mirage')) "exit $($r.code): $(($r.out -split "`n" | Select-Object -First 6) -join ' | ')"
+$r = Run look (Join-Path $Out 'no-such-photo.jpg')
+Check 'look refuses a file that is not there' (($r.code -eq 1) -and ($r.out -match 'no such file')) "exit $($r.code): $($r.out)"
+$r = Run look (Join-Path $PSScriptRoot 'pc-test.ps1')
+Check 'look refuses a file that is no picture' (($r.code -eq 1) -and ($r.out -match 'not a picture')) "exit $($r.code): $($r.out)"
+
 Expect 'key' 'Pressed' key ctrl+a delete | Out-Null
 Start-Sleep -Milliseconds 600
 $r = Run screen

@@ -867,6 +867,17 @@ tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL Terminal button
 sleep 3
 # What the user does by hand in Android's Accessibility settings.
 adb shell settings put secure enabled_accessibility_services "$PKG/$PKG.ScreenService"
+# A photo for `phone look`: a dog in front of a bicycle, with a pickup truck behind (from the darknet
+# project's examples; fetched at a fixed revision, not kept in this repository). One copy goes into
+# Ubuntu, one into the phone's Pictures as its newest picture.
+curl -sSL --fail --retry 3 -o "$OUT/dog.jpg" https://raw.githubusercontent.com/pjreddie/darknet/f6afaabcdf85f77e7aff2ec55c020c0e297c77f9/data/dog.jpg \
+  && [ "$(sha256sum < "$OUT/dog.jpg" | cut -d' ' -f1)" = "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866" ] || finish "FAIL the test photo could not be fetched"
+adb push "$OUT/dog.jpg" /data/local/tmp/dog.jpg >/dev/null
+run_as cp /data/local/tmp/dog.jpg files/rootfs/root/dog.jpg || adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/dog.jpg'" < "$OUT/dog.jpg"
+adb shell mkdir -p /sdcard/Pictures
+adb push "$OUT/dog.jpg" /sdcard/Pictures/termant-test-photo.jpg >/dev/null
+adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/termant-test-photo.jpg >/dev/null 2>&1
+rm -f "$OUT/dog.jpg"
 adb shell settings put secure accessibility_enabled 1
 sleep 6
 adb logcat -d -s Termant:I | grep 'screen control:' > "$OUT/screen-control.txt"
@@ -891,6 +902,21 @@ grep -q '^ocr-item=[0-9]' "$OUT/result5.txt" || finish "FAIL the picture of Sett
 grep -q '^ocr-tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap on an item seen in the picture"
 grep -q '^ocr-tap-opened=yes' "$OUT/result5.txt" || finish "FAIL the tap on \"Network & internet\" as seen in the picture did not open that page"
 grep -q '^ocr-again-exit=0' "$OUT/result5.txt" || finish "FAIL the second phone screen ocr"
+# what is in a photo and where
+for f in look-file look-screen look-last; do run_as cat files/rootfs/root/$f.txt > "$OUT/$f.txt" 2>/dev/null; done
+grep -q '^look-file-exit=0' "$OUT/result5.txt" || finish "FAIL phone look FILE"
+grep -q '^look-file-head=yes' "$OUT/result5.txt" || finish "FAIL phone look FILE did not name the picture and its size"
+grep -q '^look-file-dog=yes' "$OUT/result5.txt" || finish "FAIL phone look did not find the dog in the photo"
+grep -q '^look-file-dog-left=yes' "$OUT/result5.txt" || finish "FAIL phone look did not place the dog on the left of the photo"
+grep -q '^look-relative=yes' "$OUT/result5.txt" || finish "FAIL phone look with a file name relative to the folder"
+grep -q '^look-missing-exit=1' "$OUT/result5.txt" || finish "FAIL phone look accepted a file that is not there"
+grep -q '^look-not-a-picture-exit=1' "$OUT/result5.txt" || finish "FAIL phone look accepted a file that is no picture"
+grep -q '^look-usage-exit=1' "$OUT/result5.txt" || finish "FAIL phone look accepted two files"
+grep -q '^look-screen-exit=0' "$OUT/result5.txt" || finish "FAIL phone look (the screen)"
+grep -q '^look-screen-head=yes' "$OUT/result5.txt" || finish "FAIL phone look did not look at a picture of the screen"
+grep -q '^look-last-exit=0' "$OUT/result5.txt" || finish "FAIL phone look last"
+grep -q '^look-last-head=yes' "$OUT/result5.txt" || finish "FAIL phone look last did not take the newest picture on the phone"
+grep -q '^look-last-dog=yes' "$OUT/result5.txt" || finish "FAIL phone look last did not find the dog"
 grep -q '^swipe-exit=0' "$OUT/result5.txt" || finish "FAIL phone swipe"
 grep -q '^swipe-moved=yes' "$OUT/result5.txt" || finish "FAIL after a swipe the screen was described as before it"
 grep -q '^tap-exit=0' "$OUT/result5.txt" || finish "FAIL phone tap by words"

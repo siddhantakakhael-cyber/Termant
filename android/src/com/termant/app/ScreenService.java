@@ -253,6 +253,19 @@ public final class ScreenService extends AccessibilityService {
         }
     }
 
+    /** What Mirage sees in a picture of the screen: the scene, the things and where they are, the writing. */
+    String look() throws Exception {
+        Bitmap picture = picture();
+        try {
+            long[] ms = new long[1];
+            org.json.JSONObject answer = Mirage.see(this, picture, ms);
+            return Look.text(answer, picture.getWidth(), picture.getHeight(), "The screen as a picture", ms[0], "phone",
+                    " (phone tap X Y taps there)");
+        } finally {
+            picture.recycle();
+        }
+    }
+
     /** A picture of the whole screen, without Termant's own card. It is never saved. */
     private Bitmap picture() throws Exception {
         if (Build.VERSION.SDK_INT < 30) throw new java.io.IOException("it needs Android 11 or newer");

@@ -7,6 +7,13 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ClipData;
+import android.content.ContentUris;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
+import android.provider.MediaStore;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +35,7 @@ import android.speech.tts.TextToSpeech;
 import android.system.Os;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -76,6 +84,9 @@ final class PhoneBridge {
                     + "  phone app NAME              open an app by its name (phone apps lists them)\n"
                     + "  phone screen                what is on the screen now, as a numbered list\n"
                     + "  phone screen ocr            the same, and reads a picture of the screen too (for games, drawings, photos)\n"
+                    + "  phone look FILE             what is in a photo and where: the scene, each thing with its place, the writing\n"
+                    + "  phone look last             the same for the newest picture on the phone (camera, screenshot, download)\n"
+                    + "  phone look                  the same for what the screen shows now (a photo in the gallery, a video, a game)\n"
                     + "  phone tap N | TEXT | X Y    tap item N of that list, the item with these words, or a point\n"
                     + "  phone type TEXT             type into the text box that has the cursor\n"
                     + "  phone swipe up|down|left|right   up shows what is further below\n"
@@ -88,6 +99,9 @@ final class PhoneBridge {
                     + "  phone care ...              write to the user first, now or later (phone care help)\n"
                     + "  phone wake on|off           keep running with the screen off\n"
                     + "  phone info                  phone model and Android version\n";
+
+    /** A picture file sent for `phone look` is at most this big. */
+    private static final int MOST_PICTURE_BYTES = 32 * 1024 * 1024;
 
     private final TermService service;
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -167,10 +181,27 @@ final class PhoneBridge {
             if (!token.equals(given) || count < 1 || count > 64) return;
             List<String> args = new ArrayList<>();
             for (int i = 0; i < count; i++) args.add(field(in));
+            // "look - NAME SIZE": the bytes of a picture file in Ubuntu follow
+            boolean picture = count == 4 && "look".equals(args.get(0)) && "-".equals(args.get(1));
+            int size = picture ? Integer.parseInt(args.get(3)) : 0;
+            if (picture && (size < 1 || size > MOST_PICTURE_BYTES)) return;
 
             String status = "OK", text;
             try {
-                text = run(args);
+                if (picture) {
+                    byte[] sent = new byte[size];
+                    for (int got = 0; got < size; ) {
+                        int n = in.read(sent, got, size - got);
+                        if (n < 0) throw new IOException("short request");
+                        got += n;
+                    }
+                    text = look(args.get(2), sent);
+                } else {
+                    text = run(args);
+                }
+            } catch (OutOfMemoryError e) {
+                status = "ERR";
+                text = "phone: the phone has too little free memory for this";
             } catch (Refused e) {
                 status = "ERR";
                 text = e.getMessage();
@@ -347,6 +378,21 @@ final class PhoneBridge {
                 String how = args.size() > 1 ? args.get(1) : "";
                 if (!how.isEmpty() && !how.equals("ocr")) throw new Refused("usage: phone screen [ocr]");
                 return screen().describe(250, how.equals("ocr") ? ScreenService.PICTURE : ScreenService.PICTURE_IF_NEEDED);
+            }
+            case "look": {
+                if (args.size() == 1) {
+                    try {
+                        return screen().look();
+                    } catch (IOException e) {
+                        throw new Refused("phone look: " + e.getMessage());
+                    }
+                }
+                if (args.size() == 2 && args.get(1).equals("last")) {
+                    String[] name = new String[1];
+                    byte[] file = newest(name);
+                    return look(name[0] + ", the newest on the phone", file);
+                }
+                throw new Refused("usage: phone look [FILE | last]");
             }
             case "tap": {
                 ScreenService screen = screen();
@@ -618,6 +664,96 @@ final class PhoneBridge {
                 return text == null ? "" : text.toString();
             }
         });
+    }
+
+    // ------------------------------------------------------------ what is in a picture
+
+    /** What Mirage sees in a picture file (its bytes): the scene, the things and where they are, the writing. */
+    private String look(String name, byte[] file) throws Refused {
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(file, 0, file.length, o);
+        int w = o.outWidth, h = o.outHeight;
+        if (w < 8 || h < 8) {
+            throw new Refused("phone look: " + name + " is not a picture Android can open (JPEG, PNG, WebP, GIF, BMP; HEIC on newer phones)");
+        }
+        // the model looks at a small picture anyway: a big photo is opened at a half, a quarter... of its size
+        o = new BitmapFactory.Options();
+        o.inSampleSize = 1;
+        while (Math.max(w, h) / (o.inSampleSize * 2) >= 1024) o.inSampleSize *= 2;
+        o.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        Bitmap picture;
+        try {
+            picture = BitmapFactory.decodeByteArray(file, 0, file.length, o);
+        } catch (OutOfMemoryError e) {
+            picture = null;
+        }
+        if (picture == null) throw new Refused("phone look: " + name + " could not be opened");
+        // a photo is stored as the camera was held; turn it the way it is looked at
+        int turn = 0;
+        try {
+            int held = new ExifInterface(new ByteArrayInputStream(file))
+                    .getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            turn = held == ExifInterface.ORIENTATION_ROTATE_90 ? 90 : held == ExifInterface.ORIENTATION_ROTATE_180 ? 180
+                    : held == ExifInterface.ORIENTATION_ROTATE_270 ? 270 : 0;
+        } catch (Exception e) {
+            // no such note in the file
+        }
+        try {
+            if (turn != 0) {
+                Matrix m = new Matrix();
+                m.postRotate(turn);
+                Bitmap turned = Bitmap.createBitmap(picture, 0, 0, picture.getWidth(), picture.getHeight(), m, true);
+                if (turned != picture) picture.recycle();
+                picture = turned;
+                if (turn != 180) {
+                    int t = w;
+                    w = h;
+                    h = t;
+                }
+            }
+            long[] ms = new long[1];
+            org.json.JSONObject answer = Mirage.see(service, picture, ms);
+            return Look.text(answer, w, h, "Picture " + clip(name, 80), ms[0], "phone", " (in the picture's own pixels)");
+        } catch (IOException e) {
+            throw new Refused("phone look: " + e.getMessage());
+        } finally {
+            picture.recycle();
+        }
+    }
+
+    private static String clip(String s, int limit) {
+        return s.length() > limit ? s.substring(0, limit) : s;
+    }
+
+    /** The newest picture in the phone's gallery: its bytes, and its name in name[0]. */
+    private byte[] newest(String[] name) throws Refused {
+        if (!Ubuntu.hasStorageAccess(service)) {
+            throw new Refused("phone look last: Termant may not read the phone's pictures yet. In Termant open the menu and"
+                    + " choose \"Allow phone storage (/sdcard)\", then try again.");
+        }
+        try (Cursor c = service.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                new String[]{MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME}, null, null,
+                MediaStore.Images.Media.DATE_ADDED + " DESC, " + MediaStore.Images.Media._ID + " DESC")) {
+            if (c == null || !c.moveToFirst()) throw new Refused("phone look last: there is no picture on the phone");
+            Uri picture = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, c.getLong(0));
+            name[0] = c.getString(1) == null ? "picture" : c.getString(1);
+            try (InputStream in = service.getContentResolver().openInputStream(picture)) {
+                if (in == null) throw new IOException("it cannot be opened");
+                ByteArrayOutputStream all = new ByteArrayOutputStream();
+                byte[] buf = new byte[64 * 1024];
+                int n;
+                while ((n = in.read(buf)) > 0) {
+                    all.write(buf, 0, n);
+                    if (all.size() > MOST_PICTURE_BYTES) throw new IOException("it is bigger than 32 MB");
+                }
+                return all.toByteArray();
+            }
+        } catch (Refused e) {
+            throw e;
+        } catch (Exception e) {
+            throw new Refused("phone look last: the newest picture could not be read: " + e.getMessage());
+        }
     }
 
     private static ScreenService screen() throws Refused {

@@ -27,7 +27,8 @@ import java.util.Locale;
 
 /**
  * Reads the writing in a picture of the screen, on the phone itself, for apps
- * that do not tell Android what they show (games, drawings, pictures).
+ * that do not tell Android what they show (games, drawings, pictures); and
+ * says what is in a photo and where ({@link #see}).
  *
  * The reading is done by Mirage, a small vision model by Cactus Compute
  * (Apache 2.0). Its engine is a small program inside the app (libmirage.so,
@@ -44,6 +45,8 @@ final class Mirage {
     private static final long MODEL_BYTES = 21611043L;
     /** A part is made this small at most before it is read: the model looks at a small picture anyway. */
     private static final int LONG_SIDE = 640;
+    /** A photo is looked at whole, and made this small at most. */
+    private static final int SEE_SIDE = 1024;
     private static final long TIME_LIMIT_MS = 120000;
 
     /** One piece of writing and where it is on the screen. */
@@ -139,60 +142,125 @@ final class Mirage {
         return parts;
     }
 
+    /** The reader program, running: pictures go in, for each one line of JSON comes out. */
+    private static final class Reader {
+        private final Process process;
+        private final Thread guard;
+        private final OutputStream to;
+        private final BufferedReader from;
+
+        /** @param options what the model shall give, as its JSON; null for the writing only */
+        Reader(Context c, String options) throws IOException {
+            File program = program(c);
+            if (!program.isFile()) throw new IOException("this phone's processor is not supported");
+            File model = model(c);
+            Process started;
+            try {
+                started = (options == null ? new ProcessBuilder(program.getPath(), model.getPath())
+                        : new ProcessBuilder(program.getPath(), model.getPath(), options)).start();
+            } catch (IOException e) {
+                throw new IOException("this phone cannot run the reader (a 32-bit system, probably)");
+            }
+            process = started;
+            guard = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(TIME_LIMIT_MS);
+                        process.destroy();
+                    } catch (InterruptedException e) {
+                        // finished in time
+                    }
+                }
+            }, "mirage-guard");
+            guard.setDaemon(true);
+            guard.start();
+            to = new BufferedOutputStream(process.getOutputStream(), 1 << 16);
+            from = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"));
+        }
+
+        /** What the model says about a picture of this width and height, given as its pixels. */
+        JSONObject ask(int[] pixels, int w, int h) throws IOException, org.json.JSONException {
+            byte[] rgb = new byte[w * h * 3];
+            for (int i = 0, o = 0; i < pixels.length; i++) {
+                int p = pixels[i];
+                rgb[o++] = (byte) (p >> 16);
+                rgb[o++] = (byte) (p >> 8);
+                rgb[o++] = (byte) p;
+            }
+            to.write((w + " " + h + "\n").getBytes("US-ASCII"));
+            to.write(rgb);
+            to.flush();
+            String line = from.readLine();
+            if (line == null) throw new IOException(whyStopped(process));
+            return new JSONObject(line);
+        }
+
+        void close() {
+            guard.interrupt();
+            try {
+                to.close();
+            } catch (IOException e) {
+                // it has stopped already
+            }
+            process.destroy();
+        }
+    }
+
+    /** The pixels of a part of the picture, made no longer than the given side. */
+    private static int[] pixels(Bitmap picture, Rect part, int side, int[] size) {
+        float scale = Math.min(1f, side / (float) Math.max(part.width(), part.height()));
+        int w = Math.max(8, Math.round(part.width() * scale)), h = Math.max(8, Math.round(part.height() * scale));
+        Bitmap cut = Bitmap.createBitmap(picture, part.left, part.top, part.width(), part.height());
+        Bitmap small = cut.getWidth() == w && cut.getHeight() == h ? cut : Bitmap.createScaledBitmap(cut, w, h, true);
+        int[] pixels = new int[w * h];
+        small.getPixels(pixels, 0, w, 0, 0, w, h);
+        if (small != cut) small.recycle();
+        if (cut != picture) cut.recycle();
+        size[0] = w;
+        size[1] = h;
+        return pixels;
+    }
+
+    /**
+     * All that Mirage sees in a picture (a photo, or the screen as one): the
+     * scene, the things with a box around each, the writing, and what the
+     * things do with each other. {@link Look} makes lines of it.
+     *
+     * @param ms receives how long it took
+     */
+    static JSONObject see(Context c, Bitmap picture, long[] ms) throws IOException {
+        Reader reader = new Reader(c, "{}");
+        long start = android.os.SystemClock.elapsedRealtime();
+        try {
+            int[] size = new int[2];
+            int[] pixels = pixels(picture, new Rect(0, 0, picture.getWidth(), picture.getHeight()), SEE_SIDE, size);
+            JSONObject answer = reader.ask(pixels, size[0], size[1]);
+            ms[0] = android.os.SystemClock.elapsedRealtime() - start;
+            JSONArray things = answer.optJSONArray("objects");
+            android.util.Log.i("Termant", "mirage: saw " + (things == null ? 0 : things.length()) + " things in a picture of "
+                    + size[0] + "x" + size[1] + " in " + ms[0] + " ms");
+            return answer;
+        } catch (org.json.JSONException e) {
+            throw new IOException("the reader gave an answer that cannot be understood");
+        } finally {
+            reader.close();
+        }
+    }
+
     /** The writing in this picture of the whole screen. */
     static Reading read(Context c, Bitmap screen) throws IOException {
-        File program = program(c);
-        if (!program.isFile()) throw new IOException("this phone's processor is not supported");
-        File model = model(c);
+        Reader reader = new Reader(c, null);
         long start = android.os.SystemClock.elapsedRealtime();
         Reading reading = new Reading();
         List<Piece> found = new ArrayList<>();
-        final Process process;
         try {
-            process = new ProcessBuilder(program.getPath(), model.getPath()).start();
-        } catch (IOException e) {
-            throw new IOException("this phone cannot run the reader (a 32-bit system, probably)");
-        }
-        Thread guard = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(TIME_LIMIT_MS);
-                    process.destroy();
-                } catch (InterruptedException e) {
-                    // finished in time
-                }
-            }
-        }, "mirage-guard");
-        guard.setDaemon(true);
-        guard.start();
-        try {
-            OutputStream to = new BufferedOutputStream(process.getOutputStream(), 1 << 16);
-            BufferedReader from = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"));
+            int[] size = new int[2];
             for (Rect part : parts(screen.getWidth(), screen.getHeight())) {
-                float scale = Math.min(1f, LONG_SIDE / (float) Math.max(part.width(), part.height()));
-                int w = Math.max(8, Math.round(part.width() * scale)), h = Math.max(8, Math.round(part.height() * scale));
-                Bitmap cut = Bitmap.createBitmap(screen, part.left, part.top, part.width(), part.height());
-                Bitmap small = cut.getWidth() == w && cut.getHeight() == h ? cut : Bitmap.createScaledBitmap(cut, w, h, true);
-                int[] pixels = new int[w * h];
-                small.getPixels(pixels, 0, w, 0, 0, w, h);
-                if (small != cut) small.recycle();
-                if (cut != screen) cut.recycle();
+                int[] pixels = pixels(screen, part, LONG_SIDE, size);
                 if (plain(pixels)) continue;
-                byte[] rgb = new byte[w * h * 3];
-                for (int i = 0, o = 0; i < pixels.length; i++) {
-                    int p = pixels[i];
-                    rgb[o++] = (byte) (p >> 16);
-                    rgb[o++] = (byte) (p >> 8);
-                    rgb[o++] = (byte) p;
-                }
-                to.write((w + " " + h + "\n").getBytes("US-ASCII"));
-                to.write(rgb);
-                to.flush();
-                String line = from.readLine();
-                if (line == null) throw new IOException(whyStopped(process));
+                JSONArray texts = reader.ask(pixels, size[0], size[1]).optJSONArray("text");
                 reading.parts++;
-                JSONArray texts = new JSONObject(line).optJSONArray("text");
                 for (int i = 0; texts != null && i < texts.length(); i++) {
                     JSONObject t = texts.getJSONObject(i);
                     String text = t.optString("string").trim();
@@ -211,12 +279,10 @@ final class Mirage {
                     found.add(new Piece(text, score, box, !cutOff));
                 }
             }
-            to.close();
         } catch (org.json.JSONException e) {
             throw new IOException("the reader gave an answer that cannot be understood");
         } finally {
-            guard.interrupt();
-            process.destroy();
+            reader.close();
         }
         reading.pieces.addAll(tidy(found, screen.getHeight()));
         reading.ms = android.os.SystemClock.elapsedRealtime() - start;

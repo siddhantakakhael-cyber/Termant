@@ -240,8 +240,11 @@ public class TermantVision {
     return different < 12;
   }
   // The writing in the picture, as the engine's JSON.
-  public static string Read(byte[] rgb, int width, int height) {
-    int n = cactus_describe(rgb, width, height, Encoding.UTF8.GetBytes("{\"sections\":[\"text\"]}\0"), null, null, buffer, buffer.Length);
+  public static string Read(byte[] rgb, int width, int height) { return Describe(rgb, width, height, "{\"sections\":[\"text\"]}"); }
+  // What the engine sees in the picture, as its JSON. The options say what it shall give; "{}" is all:
+  // the scene, the things with a box around each, the writing, what the things do with each other.
+  public static string Describe(byte[] rgb, int width, int height, string options) {
+    int n = cactus_describe(rgb, width, height, Encoding.UTF8.GetBytes(options + "\0"), null, null, buffer, buffer.Length);
     if (n < 0) throw new Exception(Error());
     int end = Array.IndexOf(buffer, (byte)0);
     return Encoding.UTF8.GetString(buffer, 0, end < 0 ? n : end);
@@ -324,6 +327,240 @@ function Read-Picture($window, $whole) {
       Write-Output "[Text] `"$($_.text)`" @ $([int](($_.x1 + $_.x2) / 2)),$([int](($_.y1 + $_.y2) / 2))"
     }
   } catch { Write-Output "(A picture of it could not be read: $($_.Exception.Message))" }
+}
+
+# ---------------------------------------------------------------- what is in a picture
+# With the options "{}" Mirage tells all it sees in a picture: the scene, the things with a box around
+# each, the writing, and what the things do with each other. The box is about right; Mirage's own words
+# for the place ("left foreground") mix up left and right now and then. So the place is worked out here
+# from the box, and of Mirage's words only those stay that say something else ("on bus", "background").
+# The Android app makes the same lines (android/src/com/termant/app/Look.java); android/mirage/look
+# holds answers of Mirage and the lines both must make of them.
+$LookPlain = @('left', 'right', 'center', 'centre', 'middle', 'top', 'bottom', 'upper', 'lower', 'edge', 'and',
+  'foreground', 'background', 'corner', 'side', 'far', 'of', 'the', 'in', 'at', 'on')
+$LookCells = @('top left', 'top', 'top right', 'left', 'middle', 'right', 'bottom left', 'bottom', 'bottom right')
+$LookObject = [System.Management.Automation.PSCustomObject]
+$LookSplit = [StringSplitOptions]::None
+function Look-Prop($o, $name) {
+  if ($o -isnot $LookObject) { return $null }
+  $p = $o.PSObject.Properties[$name]
+  if ($null -eq $p) { return $null }
+  $v = $p.Value
+  return ,$v
+}
+function Look-List($o, $name) {
+  $v = Look-Prop $o $name
+  if ($v -is [array]) { return ,$v }
+  return ,@()
+}
+function Look-IsNumber($v) { return ($v -is [int] -or $v -is [long] -or $v -is [double] -or $v -is [decimal] -or $v -is [single]) }
+function Look-Number($v) { if (Look-IsNumber $v) { return [double]$v }; return [double]0 }
+# Without line breaks and the like, and not longer than the limit.
+function Look-Clean([string]$s, [int]$limit) {
+  $b = New-Object System.Text.StringBuilder
+  foreach ($c in $s.ToCharArray()) { if ([int]$c -lt 32) { [void]$b.Append(' ') } else { [void]$b.Append($c) } }
+  $t = $b.ToString().Trim([char]' ')
+  if ($t.Length -gt $limit) { return $t.Substring(0, $limit) }
+  return $t
+}
+# A value as a word: writing as it is, a whole number as its digits, anything else as nothing.
+function Look-Word($v, [int]$limit = 80) {
+  if ($v -is [string]) { return (Look-Clean $v $limit) }
+  if ($v -is [int] -or $v -is [long]) { return ([string]$v) }
+  return ''
+}
+# How a thing looks: the values of its description (colour, clothing, posture...), in Mirage's order.
+function Look-Looks($o) {
+  $d = Look-Prop $o 'description'
+  if ($d -isnot $LookObject) { return '' }
+  $parts = New-Object System.Collections.ArrayList
+  foreach ($p in $d.PSObject.Properties) { $w = Look-Word $p.Value; if ($w) { [void]$parts.Add($w) } }
+  return ($parts -join ', ')
+}
+# Of Mirage's words for the place, what the box does not say already.
+function Look-Position([string]$said) {
+  if (-not $said) { return '' }
+  $fore = $false; $back = $false
+  foreach ($w in ($said.ToLowerInvariant() -split '\s+')) {
+    if (-not $w) { continue }
+    if ($LookPlain -cnotcontains $w) { return $said }
+    if ($w -ceq 'foreground') { $fore = $true }
+    if ($w -ceq 'background') { $back = $true }
+  }
+  if ($fore) { return 'foreground' }
+  if ($back) { return 'background' }
+  return ''
+}
+# Left, top, right, bottom on a scale of 0 to 1000; nothing when it is no box.
+function Look-Box($o) {
+  $b = Look-Prop $o 'bbox'
+  if ($b -isnot [array] -or $b.Count -lt 4) { return $null }
+  $box = New-Object 'double[]' 4
+  for ($i = 0; $i -lt 4; $i++) {
+    if (-not (Look-IsNumber $b[$i])) { return $null }
+    $box[$i] = [Math]::Min([double]1000, [Math]::Max([double]0, [double]$b[$i]))
+  }
+  if ($box[2] -le $box[0] -or $box[3] -le $box[1]) { return $null }
+  return ,$box
+}
+function Look-Third([double]$sum) { if ($sum * 3 -lt 2000) { return 0 }; if ($sum * 3 -lt 4000) { return 1 }; return 2 }
+function Look-Column($b) { return (Look-Third ($b[0] + $b[2])) }
+function Look-Row($b) { return (Look-Third ($b[1] + $b[3])) }
+function Look-Cell($b) { return ((Look-Row $b) * 3 + (Look-Column $b)) }
+function Look-Place($b) {
+  $w = $b[2] - $b[0]; $h = $b[3] - $b[1]
+  if ($w * $h -ge 600000) { return 'all over' }
+  if ($w -ge 800) { return 'across the ' + @('top', 'middle', 'bottom')[(Look-Row $b)] }
+  if ($h -ge 800) { return 'down the ' + @('left', 'middle', 'right')[(Look-Column $b)] }
+  return $LookCells[(Look-Cell $b)]
+}
+function Look-Share($b) {
+  $p = [int][Math]::Floor(($b[2] - $b[0]) * ($b[3] - $b[1]) / 10000.0 + 0.5)
+  if ($p -lt 1) { return 'under 1%' }
+  return ([string]$p + '%')
+}
+function Look-Percent([double]$score) { return [int][Math]::Floor($score * 100 + 0.5) }
+function Look-Sentence($maybe, $names, $who, $does, $whom) {
+  if ($null -eq $who) { return }
+  $verb = (Look-Word $does).Replace('_', ' ')
+  if (-not $names.ContainsKey([string]$who) -or -not $verb) { return }
+  $s = $names[[string]$who] + ' ' + $verb
+  if ($null -ne $whom) {
+    if (-not $names.ContainsKey([string]$whom)) { return }
+    $s += ' ' + $names[[string]$whom]
+  }
+  if (-not $maybe.Contains($s)) { [void]$maybe.Add($s) }
+}
+# The lines about a picture. $answer: what Mirage answered; $W, $H: the picture's size in pixels;
+# $what: how the picture is called in the first line; $tap: added to the heading of the things, to say what
+# a point is good for; $ox, $oy: where the picture's top left corner is on the screen (for the points).
+function Look-Text($answer, [int]$W, [int]$H, [string]$what, [long]$ms, [string]$device, [string]$tap, [int]$ox, [int]$oy) {
+  $out = New-Object System.Collections.ArrayList
+  $tenths = [long][Math]::Floor(($ms % 1000) / 100.0)
+  [void]$out.Add($what + ' (' + $W + 'x' + $H + '), seen by Mirage in ' + [long][Math]::Floor($ms / 1000.0) + '.' + $tenths + ' s.')
+  [void]$out.Add('Mirage is a small model on this ' + $device + ': the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.')
+
+  $reasoning = Look-Prop $answer 'reasoning'
+  if ($reasoning -is [string]) {
+    $parts = $reasoning.Split([string[]]@(' | '), $LookSplit)
+    if ($parts.Count -ge 2 -and $parts[0].StartsWith('lang:', [StringComparison]::Ordinal)) {
+      $short = Look-Clean $parts[1] 300
+      if ($short) { [void]$out.Add('In short: ' + $short) }
+    }
+  }
+
+  $scene = Look-Prop $answer 'scene'
+  if ($scene -is $LookObject) {
+    $s = New-Object System.Collections.ArrayList
+    foreach ($p in $scene.PSObject.Properties) {
+      $v = Look-Word $p.Value
+      if ($v) { [void]$s.Add((Look-Clean $p.Name 40).Replace('_', ' ') + ' = ' + $v) }
+    }
+    if ($s.Count -gt 0) { [void]$out.Add('Scene: ' + ($s -join '; ')) }
+  }
+
+  # ---- the things: each with its box; the same box under two names is one thing "a or b"
+  $names = New-Object 'System.Collections.Generic.Dictionary[string,string]'
+  $things = New-Object System.Collections.ArrayList
+  foreach ($o in (Look-List $answer 'objects')) {
+    if ($o -isnot $LookObject) { continue }
+    $name = Look-Word (Look-Prop $o 'name')
+    $box = Look-Box $o
+    if (-not $name -or $null -eq $box) { continue }
+    $id = Look-Prop $o 'id'
+    if ($null -ne $id -and -not $names.ContainsKey([string]$id)) { $names[[string]$id] = $name }
+    $same = $null
+    foreach ($t in $things) {
+      if ($t.box[0] -eq $box[0] -and $t.box[1] -eq $box[1] -and $t.box[2] -eq $box[2] -and $t.box[3] -eq $box[3]) { $same = $t; break }
+    }
+    if ($null -ne $same) {
+      if ($same.name.Split([string[]]@(' or '), $LookSplit) -cnotcontains $name) { $same.name = $same.name + ' or ' + $name }
+      continue
+    }
+    [void]$things.Add(@{
+      name = $name; score = (Look-Number (Look-Prop $o 'score')); box = $box
+      position = (Look-Position (Look-Word (Look-Prop $o 'position'))); looks = (Look-Looks $o); at = $things.Count
+    })
+  }
+  $groups = New-Object 'System.Collections.Generic.Dictionary[string,object]'
+  $order = New-Object System.Collections.ArrayList
+  foreach ($t in $things) {
+    if (-not $groups.ContainsKey($t.name)) { $groups[$t.name] = New-Object System.Collections.ArrayList; [void]$order.Add($t.name) }
+    [void]$groups[$t.name].Add($t)
+  }
+  $byScore = @{ Expression = { $_.score }; Descending = $true }, @{ Expression = { $_.at }; Descending = $false }
+  $lines = New-Object System.Collections.ArrayList
+  foreach ($name in $order) {
+    $g = @($groups[$name].ToArray() | Sort-Object -Property $byScore)
+    if ($g.Count -lt 4) {
+      foreach ($t in $g) {
+        $b = $t.box
+        $s = '- ' + $name + ', ' + (Look-Percent $t.score) + '%: ' + (Look-Place $b) + ', ' + (Look-Share $b) + ' of the picture'
+        if ($t.position) { $s += '; ' + $t.position }
+        if ($t.looks) { $s += '; ' + $t.looks }
+        $s += ' @' + ($ox + [long][Math]::Floor(($b[0] + $b[2]) * $W / 2000.0)) + ',' + ($oy + [long][Math]::Floor(($b[1] + $b[3]) * $H / 2000.0))
+        [void]$lines.Add(@{ score = $t.score; at = $t.at; text = $s })
+      }
+    } else {
+      # many of one kind (the windows of a house): one line, with how many are where
+      $count = New-Object 'int[]' 9
+      foreach ($t in $g) { $c = Look-Cell $t.box; $count[$c] = $count[$c] + 1 }
+      $cells = @(0..8 | Where-Object { $count[$_] -gt 0 } | Sort-Object -Property @{ Expression = { $count[$_] }; Descending = $true }, @{ Expression = { $_ }; Descending = $false })
+      $where = New-Object System.Collections.ArrayList
+      foreach ($c in $cells) { [void]$where.Add([string]$count[$c] + ' ' + $LookCells[$c]) }
+      $s = '- ' + $name + ' x' + $g.Count + ', ' + (Look-Percent $g[$g.Count - 1].score) + '-' + (Look-Percent $g[0].score) + '%: ' + ($where -join ', ')
+      [void]$lines.Add(@{ score = $g[0].score; at = $g[0].at; text = $s })
+    }
+  }
+  $sorted = @($lines.ToArray() | Sort-Object -Property $byScore)
+  if ($sorted.Count -gt 0) {
+    [void]$out.Add('Things (' + $things.Count + '), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point' + $tap + ':')
+    for ($i = 0; $i -lt $sorted.Count -and $i -lt 30; $i++) { [void]$out.Add($sorted[$i].text) }
+    if ($sorted.Count -gt 30) { [void]$out.Add('(' + ($sorted.Count - 30) + ' more left out)') }
+  }
+
+  # ---- what Mirage names without a box
+  $also = New-Object System.Collections.ArrayList
+  foreach ($o in (Look-List $answer 'regions')) {
+    if ($o -isnot $LookObject) { continue }
+    $name = Look-Word (Look-Prop $o 'name')
+    if (-not $name) { continue }
+    $id = Look-Prop $o 'id'
+    if ($null -ne $id -and -not $names.ContainsKey([string]$id)) { $names[[string]$id] = $name }
+    if ($groups.ContainsKey($name)) { continue }
+    $extra = New-Object System.Collections.ArrayList
+    foreach ($x in @((Look-Word (Look-Prop $o 'count')), (Look-Word (Look-Prop $o 'position')), (Look-Looks $o))) { if ($x) { [void]$extra.Add($x) } }
+    if ($extra.Count -gt 0) { [void]$also.Add($name + ' (' + ($extra -join '; ') + ')') } else { [void]$also.Add($name) }
+  }
+  if ($also.Count -gt 0) { [void]$out.Add('Also there, place not marked: ' + (@($also.ToArray() | Select-Object -First 12) -join ', ')) }
+
+  # ---- the writing
+  $writing = New-Object System.Collections.ArrayList
+  foreach ($t in (Look-List $answer 'text')) {
+    if ($t -isnot $LookObject) { continue }
+    $s = Look-Word (Look-Prop $t 'string') 120
+    $b = Look-Box $t
+    if (-not $s -or $null -eq $b) { continue }
+    if ($s.Length -lt 2 -and (Look-Number (Look-Prop $t 'score')) -lt 0.5) { continue }   # mostly an icon taken for a letter
+    [void]$writing.Add('- "' + $s + '": ' + $LookCells[(Look-Cell $b)] + ' @' + ($ox + [long][Math]::Floor(($b[0] + $b[2]) * $W / 2000.0)) + ',' + ($oy + [long][Math]::Floor(($b[1] + $b[3]) * $H / 2000.0)))
+  }
+  if ($writing.Count -gt 0) {
+    [void]$out.Add('Writing (letters can be wrong):')
+    for ($i = 0; $i -lt $writing.Count -and $i -lt 40; $i++) { [void]$out.Add($writing[$i]) }
+  }
+
+  # ---- who does what with what
+  $maybe = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($e in (Look-List $answer 'events')) {
+    if ($e -is $LookObject) { Look-Sentence $maybe $names (Look-Prop $e 'actor') (Look-Prop $e 'action') (Look-Prop $e 'target') }
+  }
+  foreach ($e in (Look-List $answer 'relations')) {
+    if ($e -is $LookObject -and $null -ne (Look-Prop $e 'object')) { Look-Sentence $maybe $names (Look-Prop $e 'subject') (Look-Prop $e 'predicate') (Look-Prop $e 'object') }
+  }
+  if ($maybe.Count -gt 0) { [void]$out.Add('Maybe (this part is often wrong): ' + (@($maybe.ToArray() | Select-Object -First 8) -join '; ')) }
+
+  if ($sorted.Count -eq 0 -and $also.Count -eq 0 -and $writing.Count -eq 0) { [void]$out.Add('Nothing was recognised in it.') }
+  return ,$out.ToArray()
 }
 
 switch ($cmd) {
@@ -482,6 +719,75 @@ switch ($cmd) {
     # A program that names fewer than three of its parts is read from a picture of its window as well.
     if ($picture -or $named -lt 3) { Read-Picture $h $whole }
     elseif ($lines.Count -eq 0) { Write-Output '(This window gives no readable text. Try: pc screen ocr)' }
+  }
+  'look' {
+    # What is in a picture and where: the scene, each thing with its place, the writing.
+    #   pc look FILE     a picture file        pc look     the window in front        pc look full     the whole screen
+    $file = $null
+    if ($rest.Count -gt 0 -and -not ($rest.Count -eq 1 -and $rest[0] -eq 'full')) {
+      $file = Words
+      if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { Fail "pc look: there is no such file: $file" }
+      $file = (Resolve-Path -LiteralPath $file).Path
+    }
+    try {
+      Vision
+      $ox = 0; $oy = 0
+      if ($file) {
+        try { $source = [System.Drawing.Image]::FromFile($file) }
+        catch { throw "$([IO.Path]::GetFileName($file)) is not a picture Windows can open (JPEG, PNG, BMP, GIF, TIFF)" }
+        # a photo is stored as the camera was held; turn it the way it is looked at
+        if ($source.PropertyIdList -contains 274) {
+          switch ([int]$source.GetPropertyItem(274).Value[0]) {
+            3 { $source.RotateFlip([System.Drawing.RotateFlipType]::Rotate180FlipNone) }
+            6 { $source.RotateFlip([System.Drawing.RotateFlipType]::Rotate90FlipNone) }
+            8 { $source.RotateFlip([System.Drawing.RotateFlipType]::Rotate270FlipNone) }
+          }
+        }
+        $what = 'Picture ' + [IO.Path]::GetFileName($file); $tap = " (in the picture's own pixels)"
+      } else {
+        Native
+        Add-Type -AssemblyName System.Windows.Forms
+        $area = [System.Windows.Forms.SystemInformation]::VirtualScreen
+        $what = 'The whole screen as a picture'
+        if ($rest.Count -eq 0) {
+          $r = New-Object TermantWin+RECT
+          if ([TermantWin]::GetWindowRect([TermantWin]::GetForegroundWindow(), [ref]$r)) {
+            $front = [System.Drawing.Rectangle]::Intersect((New-Object System.Drawing.Rectangle $r.L, $r.T, ($r.R - $r.L), ($r.B - $r.T)), $area)
+            if ($front.Width -ge 40 -and $front.Height -ge 40) { $area = $front; $what = 'The window in front as a picture' }
+          }
+        }
+        $source = New-Object System.Drawing.Bitmap $area.Width, $area.Height, ([System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
+        $g = [System.Drawing.Graphics]::FromImage($source)
+        $g.CopyFromScreen($area.X, $area.Y, 0, 0, $source.Size)
+        $g.Dispose()
+        $ox = $area.X; $oy = $area.Y; $tap = ' (pc click X Y clicks there)'
+      }
+      $pw = $source.Width; $ph = $source.Height
+      if ($pw -lt 8 -or $ph -lt 8) { throw 'the picture is too small' }
+      # the model looks at a small picture anyway: a big one is made 1024 points long at most
+      $scale = [Math]::Min(1.0, 1024.0 / [Math]::Max($pw, $ph))
+      $sw = [Math]::Max(8, [int][Math]::Floor($pw * $scale)); $sh = [Math]::Max(8, [int][Math]::Floor($ph * $scale))
+      $small = New-Object System.Drawing.Bitmap $sw, $sh, ([System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
+      $g = [System.Drawing.Graphics]::FromImage($small)
+      $g.Clear([System.Drawing.Color]::White)
+      $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBilinear
+      $g.DrawImage($source, 0, 0, $sw, $sh)
+      $g.Dispose(); $source.Dispose()
+      $started = Get-Date
+      $rgb = [TermantVision]::Rgb($small, (New-Object System.Drawing.Rectangle 0, 0, $sw, $sh))
+      $small.Dispose()
+      $answer = ConvertFrom-Json ([TermantVision]::Describe($rgb, $sw, $sh, '{}'))
+      $ms = [long]((Get-Date) - $started).TotalMilliseconds
+      $lines = Look-Text $answer $pw $ph $what $ms 'PC' $tap $ox $oy
+    } catch { Fail "pc look: the picture could not be looked at: $($_.Exception.Message)" }
+    $lines | ForEach-Object { Write-Output $_ }
+  }
+  'look-answer' {
+    # For the tests only: the lines that `pc look` makes of an answer of Mirage kept in a file.
+    Need 5 'look-answer <answer.json> <width> <height> <name> <device>'
+    $answer = ConvertFrom-Json ([IO.File]::ReadAllText((Resolve-Path -LiteralPath $rest[0]).Path, [Text.Encoding]::UTF8))
+    $lines = Look-Text $answer ([int]$rest[1]) ([int]$rest[2]) $rest[3] 430 $rest[4] '' 0 0
+    $lines | ForEach-Object { Write-Output $_ }
   }
   'screenshot' {
     Native
@@ -643,6 +949,8 @@ Keyboard, mouse, screen
   pc click <x> <y> [right|double]              pc move <x> <y>      pc scroll <lines>
   pc screen         what the window in front shows, with the point to click for each thing
   pc screen ocr     the same, and always reads a picture of the window too (pc screen ocr full: the whole screen)
+  pc look <file>    what is in a photo and where: the scene, each thing with its place, the writing
+  pc look           the same for the window in front as a picture (pc look full: the whole screen)
   pc screenshot [file.png]
 
 Sound, display, power

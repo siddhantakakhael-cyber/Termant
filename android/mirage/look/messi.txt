@@ -1,0 +1,14 @@
+messi.jpg (548x342), seen by Mirage in 0.4 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: soccer player in red and blue jersey, white ball, blurred crowd, yellow clearing
+Scene: setting = soccer stadium; surface = grass field; lighting = stadium lights; time of day = night; atmosphere = action
+Things (4), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point:
+- soccer player, 76%: middle, 47% of the picture; red and blue jersey, dribbling, focused @261,200
+- soccer ball, 73%: bottom, 1% of the picture; white, black and yellow @361,311
+- crowd, 44%: all over, 68% of the picture; background; blurred @273,132
+- text, 32%: middle, under 1% of the picture; on jersey; white @227,149
+Also there, place not marked: clearing (foreground; yellow)
+Writing (letters can be wrong):
+- "unicef": middle @228,150
+- "WEEKmedia": bottom right @510,311
+Maybe (this part is often wrong): soccer player dribbling soccer ball; soccer player standing on clearing

@@ -1,7 +1,12 @@
-// The reader of pictures: Termant sends it screenshots, it answers with what
-// the Mirage model sees in each (the writing, with a box around every piece).
+// The reader of pictures: Termant sends it pictures, it answers with what the
+// Mirage model sees in each.
 //
-//   libmirage.so <mirage.cact>
+//   libmirage.so <mirage.cact> [options]
+//
+// Without options it gives the writing only, with a box around every piece
+// (for reading the screen). With the options "{}" it gives all it sees: the
+// scene, the things with a box around each, the writing, and what the things
+// do with each other (for looking at a photo).
 //
 // On standard input, for each picture: a line "<width> <height>\n" and then
 // width*height*3 bytes of packed RGB. On standard output: one line of JSON per
@@ -25,7 +30,8 @@ static int fail(int code, const char* what, const char* why) {
 }
 
 int main(int argc, char** argv) {
-  if (argc < 2) return fail(2, "usage: libmirage.so <mirage.cact>", NULL);
+  if (argc < 2) return fail(2, "usage: libmirage.so <mirage.cact> [options]", NULL);
+  const char* options = argc > 2 ? argv[2] : "{\"sections\":[\"text\"]}";
   FILE* f = fopen(argv[1], "rb");
   if (!f) return fail(2, "the model file cannot be opened", NULL);
   fseek(f, 0, SEEK_END);
@@ -45,7 +51,7 @@ int main(int argc, char** argv) {
     size_t size = (size_t)w * (size_t)h * 3;
     unsigned char* rgb = malloc(size);
     if (!rgb || fread(rgb, 1, size, stdin) != size) return fail(4, "the picture ended early", NULL);
-    int r = cactus_describe(rgb, w, h, "{\"sections\":[\"text\"]}", NULL, NULL, answer, ANSWER);
+    int r = cactus_describe(rgb, w, h, options, NULL, NULL, answer, ANSWER);
     free(rgb);
     if (r < 0) return fail(5, "reading failed", cactus_last_error());
     for (char* p = answer; *p; p++) if (*p == '\n' || *p == '\r') *p = ' ';

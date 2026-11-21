@@ -25,6 +25,25 @@ if [ -n "$seen" ]; then
 fi
 start=$(date +%s); phone screen ocr > /root/screen-ocr2.txt 2>&1; echo "ocr-again-exit=$? in $(( $(date +%s) - start )) s"
 grep 'Read from a picture' /root/screen-ocr2.txt
+echo "== look: what is in a photo and where (Mirage)"
+ls -l /root/dog.jpg
+start=$(date +%s); phone look /root/dog.jpg > /root/look-file.txt 2>&1; echo "look-file-exit=$? in $(( $(date +%s) - start )) s"
+cat /root/look-file.txt
+grep -q '^Picture dog.jpg (768x576), seen by Mirage' /root/look-file.txt && echo "look-file-head=yes"
+grep -q '^- dog, [0-9]*%: ' /root/look-file.txt && echo "look-file-dog=yes"
+grep -q '^- dog, [0-9]*%: left, ' /root/look-file.txt && echo "look-file-dog-left=yes"
+grep -q '^- bicycle, ' /root/look-file.txt && echo "look-file-bicycle=yes"
+(cd /root && phone look dog.jpg 2>&1 | head -n 1 | grep -q '^Picture dog.jpg' && echo "look-relative=yes")
+phone look /root/no-such-picture.jpg; echo "look-missing-exit=$?"
+phone look /usr/local/bin/phone; echo "look-not-a-picture-exit=$?"
+phone look one two; echo "look-usage-exit=$?"
+echo "-- the screen as a picture"
+phone look > /root/look-screen.txt 2>&1; echo "look-screen-exit=$?"; cat /root/look-screen.txt
+grep -q '^The screen as a picture ([0-9]*x[0-9]*), seen by Mirage' /root/look-screen.txt && echo "look-screen-head=yes"
+echo "-- the newest picture on the phone"
+phone look last > /root/look-last.txt 2>&1; echo "look-last-exit=$?"; head -n 9 /root/look-last.txt
+grep -q '^Picture termant-test-photo.jpg, the newest on the phone (768x576)' /root/look-last.txt && echo "look-last-head=yes"
+grep -q '^- dog, ' /root/look-last.txt && echo "look-last-dog=yes"
 echo "== swipe"; phone swipe up > /root/screen3.txt 2>&1; echo "swipe-exit=$?"; head -n 14 /root/screen3.txt
 # the list must be the scrolled one, not the one remembered from before
 [ "$(grep '^[0-9]' /root/screen2.txt)" != "$(grep '^[0-9]' /root/screen3.txt)" ] && echo "swipe-moved=yes"
