@@ -2,7 +2,8 @@
 # Checks Termant's kit (android/assets/guest/kit): undo and the bin (safe), tidying a folder,
 # question cards (study), reading files of many kinds (readfile), the user's details (me),
 # watches, the work diary, the team notebook, which model gets a message with files, and
-# pictures made from words (draw) against a pretend picture service (fake_draw.py).
+# pictures made from words (draw) against a pretend picture service (fake_draw.py), and
+# APILayer's APIs (apilayer) against a pretend APILayer (fake_apilayer.py, with saved real pages).
 # Runs inside Termant's Ubuntu and on any Linux with python3.
 #   kit-check.sh [FOLDER WITH kit]     prints PASS/FAIL lines and a RESULT line
 work=$(mktemp -d)
@@ -11,7 +12,7 @@ opencode=$(PATH="$HOME/.opencode/bin:$PATH" command -v opencode 2>/dev/null)
 mkdir -p "$work/bin"
 if [ -n "$1" ]; then kit=$1/kit; else kit=$(command -v termant-kit); fi
 [ -f "$kit" ] || { echo "RESULT: FAIL (no kit)"; exit 2; }
-for name in termant-kit safe tidy study readfile me watch diary draw; do cp "$kit" "$work/bin/$name"; done
+for name in termant-kit safe tidy study readfile me watch diary draw apilayer; do cp "$kit" "$work/bin/$name"; done
 chmod 755 "$work/bin"/*
 # a stand-in for the phone command: answers questions, makes and removes rules
 cat > "$work/bin/fakephone" <<'P'
@@ -39,7 +40,8 @@ hasnt() { ! has "$1"; }
 refused() { [ "$code" -ne 0 ] && has "$1"; }
 run() { out=$("$@" 2>&1); code=$?; }
 fake_draw=
-trap '[ -n "$fake_draw" ] && kill $fake_draw 2>/dev/null; rm -rf "$work"' EXIT
+fake_apilayer=
+trap '[ -n "$fake_draw" ] && kill $fake_draw 2>/dev/null; [ -n "$fake_apilayer" ] && kill $fake_apilayer 2>/dev/null; rm -rf "$work"' EXIT
 d="$work/files"; mkdir -p "$d"
 
 # ---- safe: copies, the bin, undo
@@ -416,6 +418,197 @@ if [ -s "$work/draw-port" ]; then
   unset TERMANT_DRAW_POLLINATIONS TERMANT_DRAW_HORDE TERMANT_DRAW_GAP TERMANT_DRAW_POLL TERMANT_DRAW_WAIT
 else
   echo "FAIL draw: the pretend picture service did not start"; failed=$((failed+1))
+fi
+
+# ---- apilayer: APILayer's APIs with the user's key (here: a pretend APILayer; its pages are real ones, saved)
+if [ -f "$here/fake_apilayer.py" ] && [ -f "$here/apilayer-pages/list.html" ]; then
+  python3 "$here/fake_apilayer.py" "$work/al-port" "$work/al.log" > "$work/al-server.txt" 2>&1 < /dev/null & fake_apilayer=$!
+  i=0; while [ ! -s "$work/al-port" ] && [ $i -lt 100 ]; do sleep 0.1; i=$((i+1)); done
+fi
+if [ -s "$work/al-port" ]; then
+  at="http://127.0.0.1:$(cat "$work/al-port")"
+  export TERMANT_APILAYER_MARKET="$at" TERMANT_APILAYER="$at/gw"
+  unset TERMANT_CHAT APILAYER_KEY
+  good=goodkey0123456789goodkey01234567
+  keyfile="$TERMANT_KIT_DIR/data/apilayer.json"
+  rm -f "$TERMANT_KIT_DIR/cache/drawn.txt"
+  run apilayer help
+  check "apilayer help says how the key is saved" has "apilayer key THE_KEY" && check "and that nothing there draws" has "that is \`draw\`"
+
+  # the list of APIs, from the marketplace
+  run apilayer list
+  check "apilayer list reads the marketplace's list" has "APIs the user's APILayer key can call (26)" && check "and says where it is from" has "(from the marketplace, read just now)"
+  check "an API is listed with the name for calls and what it does" has "exchangerates_data   Exchange Rates Data API: Real-Time, Intraday & Historical Market Data API."
+  check "the free plan is named" has "[free: 100 a month]" && check "and an API that has none" has "URL Shortener API: URL Shortener service with an API which provides extensive analytics backend. [no free plan]"
+  check "other companies' services are only counted" has "6 more are listed in the marketplace" && check "and not shown as callable" hasnt "  pika "
+  check "the marketplace is asked under the tool's own name (it refuses Python's)" [ "$(grep -c '^GET /get-api-data' "$work/al.log")" -eq 1 ]
+  run apilayer list
+  check "the list is kept for a day, not fetched again" [ "$(grep -c '^GET /get-api-data' "$work/al.log")" -eq 1 ] && check "and the kept one says when it was read" has "(from the marketplace, read "
+  run apilayer list currency
+  check "apilayer list WORD keeps the APIs about it" has "  currency_data " && check "also fixer" has "  fixer " && check "not the others" hasnt "  whois "
+  check "a listed service of another company is shown apart" has "each is another company's service" && check "by name" has "  coinlayer "
+  check "the marketplace's own search is asked too" grep -q '^GET /get-api-data?sort_by=&q=currency' "$work/al.log"
+  run apilayer list zzqqnothing
+  check "a word no API is about is refused" refused "no API is about \"zzqqnothing\""
+  # the marketplace cannot be read: first the list kept from before, then the one in the tool
+  python3 - "$TERMANT_KIT_DIR/cache/apilayer-list.json" <<'PY'
+import json, sys
+kept = json.load(open(sys.argv[1])); kept["when"] -= 3 * 86400
+json.dump(kept, open(sys.argv[1], "w"))
+PY
+  TERMANT_APILAYER_MARKET="$at/down" run apilayer list
+  check "when the marketplace is down the list read before is used" has "(26)" && check "and that is said" has "it could not be read now"
+  rm -f "$TERMANT_KIT_DIR/cache/apilayer-list.json"
+  TERMANT_APILAYER_MARKET="$at/down" run apilayer list
+  check "with nothing kept, the list inside the tool is used" has "APIs the user's APILayer key can call (60)" && check "and that is said too" has "the list kept in this tool, of 22 Nov 2026 (the marketplace could not be read now: HTTP 503"
+  check "the tool's list has the sixty APIs" has "  world_news " && check "with their free plans" has "Geography API: Searchable database of countries, cities, calling codes, currencies and a lot more. [free: 30000 a month]"
+
+  # one API: plan, endpoints, parameters, the command for each
+  run apilayer about exchangerates_data
+  check "apilayer about names the API" has "Exchange Rates Data API (exchangerates_data): Real-Time, Intraday & Historical Market Data API."
+  check "the free plan and where to subscribe" has "Free plan: 100 requests a month, no card. To use it the user presses \"Subscribe for Free\" once at https://marketplace.apilayer.com/exchangerates_data-api"
+  check "that no key is saved yet" has "Key: none saved yet (apilayer key THE_KEY)"
+  check "its endpoints" has "Endpoints (6):" && check "with what each does" has "  GET /latest   Returns real-time exchange rate data"
+  check "a parameter, whether it is needed, and what it is" has "      amount           required, string, name=value: The amount to be converted."
+  check "a value that goes into the address" has "      date             required, string, in the address, in place of {date}"
+  check "and the command that calls it" has "      -> apilayer get exchangerates_data/convert amount=... from=... to=..."
+  check "a plan written only in a comment of the page is not taken for one" hasnt "requests a day"
+  run apilayer about image_to_text
+  check "an endpoint that takes a file says so" has "      body             required, file, --file FILE" && check "in its command too" has "      -> apilayer post image_to_text/upload --file FILE"
+  run apilayer about geo city
+  check "apilayer about NAME WORD keeps the endpoints about it" has "Endpoints (2 of 14):" && check "those only" hasnt "/country/lang/"
+  run apilayer about short_url
+  check "an API without a free plan says what the cheapest costs" has "No free plan: the cheapest is Starter Plan at \$1.99 a month (30,000 Requests / Monthly)"
+  run apilayer about Pika-API
+  check "another company's service is named as one" [ "$code" -eq 0 ] && check "that the key does not open" has "This one is not behind APILayer's gateway" && check "with its page" has "https://marketplace.apilayer.com/pika-api"
+  run apilayer about exchangerate_data
+  check "a name that is not an API is refused" refused "there is no API named exchangerate_data" && check "with the names near it" has "Near it: exchangerates_data"
+  n=$(grep -c '^GET /exchangerates_data-api' "$work/al.log")
+  run apilayer about exchangerates_data latest
+  check "what was read about an API is kept for a day" [ "$(grep -c '^GET /exchangerates_data-api' "$work/al.log")" -eq "$n" ] && check "and still answers" has "Endpoints (1 of 6):"
+  TERMANT_APILAYER_MARKET="$at/down" run apilayer about world_news
+  check "an API that cannot be read now is not invented" refused "so what world_news offers could not be read now" && check "only what the tool's list knows is said" has "From the list kept in this tool: World News API"
+
+  # the key
+  : > "$work/al.log"
+  run apilayer get exchangerates_data/latest base=USD symbols=INR
+  check "without a key nothing is asked" refused "no APILayer key is saved, so nothing was asked" && check "really nothing" [ ! -s "$work/al.log" ]
+  check "it says where the free key comes from" has "press \"Subscribe for Free\"" && check "how to save it" has "apilayer key THE_KEY" && check "and not to make up an answer" has "do not make up an answer"
+  run apilayer key "https://app.apilayer.com/auth/github/callback#access_token=eyJhbGciOi.eyJ1c2VyIjo.c2lnbmF0dXJl"
+  check "a sign-in link is not taken for the key" refused "that is not the API key" && check "it says what the link is" has "whoever has it is signed in as the user" && check "and saves nothing" [ ! -e "$keyfile" ]
+  run apilayer key eyJhbGciOi.eyJ1c2VyIjo.c2lnbmF0dXJl
+  check "nor is a sign-in token by itself" refused "Nothing was saved"
+  run apilayer key "my key"
+  check "something that cannot be a key is refused" refused "does not look like an APILayer key"
+  run apilayer key
+  check "apilayer key says when none is saved" refused "no key is saved"
+  run apilayer key wrongwrongwrongwrongwrongwrong00
+  check "apilayer key saves a key" has "Saved the key wron...00 (32 letters)" && check "without printing it whole" hasnt "wrongwrongwrongwrongwrongwrong00"
+  check "only the user can read the saved key" [ "$(stat -c %a "$keyfile")" = 600 ]
+  run apilayer get exchangerates_data/latest base=USD
+  check "a key APILayer does not know is said to be wrong" refused "APILayer does not know this key (HTTP 401: Invalid authentication credentials)" && check "the key is not printed whole there either" hasnt "wrongwrongwrongwrongwrongwrong00"
+  run apilayer key nosubscription0123456789abcdefgh
+  run apilayer get exchangerates_data/latest base=USD
+  check "an API the user has not subscribed to is explained" refused "Most likely the user has not subscribed to this API" && check "with the page where that is done" has "https://marketplace.apilayer.com/exchangerates_data-api once and press \"Subscribe for Free\""
+  run apilayer key usedup0123456789usedup0123456789
+  run apilayer get exchangerates_data/latest base=USD
+  check "requests that are used up are explained" refused "The requests of this plan are used up (HTTP 429"
+  run apilayer used
+  check "and counted" has "exchangerates_data   0 of 100 left this month"
+
+  # calls
+  run apilayer key "$good"
+  : > "$work/al.log"
+  run apilayer get exchangerates_data/latest base=USD symbols=INR
+  check "apilayer get prints the answer" [ "$code" -eq 0 ] && check "as it came" has '"INR": 83.512345'
+  check "the key goes in the apikey header, the values in the address" grep -q "^GET /gw/exchangerates_data/latest?base=USD&symbols=INR key=$good " "$work/al.log"
+  check "it says how many requests are left" has "apilayer: 99 of 100 requests are left this month for exchangerates_data."
+  out=$(apilayer get exchangerates_data/latest base=USD symbols=INR 2>/dev/null)
+  check "the count is not mixed into the answer" python3 -c 'import json,sys; assert json.loads(sys.argv[1])["rates"]["INR"] == 83.512345' "$out"
+  run apilayer get exchangerates_data-api/latest base=EUR
+  check "the name of the API's page works as its name" has '"base": "EUR"'
+  run apilayer get "$TERMANT_APILAYER/exchangerates_data/latest" base=GBP
+  check "the gateway's whole address works too" has '"base": "GBP"'
+  run apilayer get "https://example.com/exchangerates_data/latest" base=GBP
+  check "another address is not called" refused "only APILayer's gateway is called" && check "the key did not go there" [ "$(grep -c example "$work/al.log")" -eq 0 ]
+  run apilayer get exchangerates_data/latest
+  check "a request the API does not accept gives its reason" refused "exchangerates_data did not accept the request (HTTP 400: The base currency is missing.)"
+  run apilayer get nosuch/thing
+  check "an API that is not there is said" refused "APILayer has nothing at nosuch/thing (HTTP 404: no Route matched with those values)"
+  run apilayer get exchangerates_data/latest loose
+  check "a word that is not name=value is refused" refused "is neither name=value nor an option"
+  run apilayer get exchangerates_data/symbols
+  check "a long answer is cut" has "... (cut here: 6000 of " && check "to about that much" [ "${#out}" -lt 7000 ]
+  f=$(printf '%s' "$out" | sed -n 's/.*The whole answer is in \(.*\); read the part.*/\1/p')
+  check "and kept whole in a file" python3 -c 'import json,sys; assert len(json.load(open(sys.argv[1]))["symbols"]) == 400' "$f"
+  run apilayer get exchangerates_data/symbols --all
+  check "--all prints it whole" hasnt "cut here" && check "all of it" has '"C399"'
+  run apilayer get exchangerates_data/latest base=USD --out "$work/rates.json"
+  check "--out saves the answer" has "Saved: $work/rates.json" && check "where it was told" grep -q '"base": "USD"' "$work/rates.json"
+
+  # answers that are files
+  run apilayer get screenshot url=https://example.com
+  check "a picture that comes back is saved" has "/pictures/screenshot-" && check "and described" has "(a picture, 64x40, "
+  f=$(printf '%s\n' "$out" | sed -n 's/^Saved: \(.*\) (a picture.*/\1/p')
+  check "the file is the picture" [ "$(head -c 4 "$f" | tail -c 3)" = PNG ]
+  check "typed by hand, it is not listed for a chat" [ ! -e "$TERMANT_KIT_DIR/cache/drawn.txt" ]
+  TERMANT_CHAT=1 run apilayer get screenshot url=https://example.com --out "$work/shot.png"
+  check "in a chat the picture is listed for the reply, from the home folder" [ "$(cat "$TERMANT_KIT_DIR/cache/drawn.txt" 2>/dev/null)" = "$HOME/pictures/shot.png	" ] && check "which is said" has "The chat shows this picture under your answer by itself"
+  check "and it is where it was told to be as well" [ -s "$work/shot.png" ]
+  rm -f "$TERMANT_KIT_DIR/cache/drawn.txt"
+  run apilayer get url_to_pdf url=https://example.com
+  check "a PDF that comes back is saved" has "/apilayer/url_to_pdf-" && check "as a PDF" has ".pdf (PDF, "
+
+  # sending things
+  printf '\211PNG\r\n\032\nabcd' > "$work/card.png"
+  run apilayer post image_to_text/upload --file "$work/card.png"
+  check "post --file sends the file" has '"got_bytes": 12' && check "as what it is" has '"got_type": "image/png"' && check "and prints the answer" has '"all_text": "HELLO FROM THE PICTURE"'
+  run apilayer post image_to_text/upload --file "$work/none.png"
+  check "a file that is not there is refused" refused "there is no file"
+  run apilayer post echo/a/b x=1 "q=new delhi" --text "नमस्ते hello"
+  check "post --text sends the words" has '"body": "नमस्ते hello"' && check "as text" has '"type": "text/plain; charset=utf-8"' && check "a value with a space arrives whole" has '"q": "new delhi"'
+  run apilayer put echo/c --json '{"a": 1}' --header encryption_key=secret
+  check "put --json sends JSON" has '"method": "PUT"' && check "named as JSON" has '"type": "application/json"' && check "--header sends a header" has '"encryption_key": "secret"'
+  run apilayer post echo/e --form a=1 --form "b=two words"
+  check "--form sends a form" has '"body": "a=1&b=two+words"'
+  run apilayer delete echo/d
+  check "delete works" has '"method": "DELETE"'
+  run apilayer post echo/e --json '{bad'
+  check "--json that is not JSON is refused before anything is sent" refused "is not JSON"
+  run apilayer get echo/e --text hello
+  check "get with something to send is refused" refused "use post"
+  run apilayer fetch echo/e
+  check "a command that is not there is refused" refused "there is no \`fetch\`"
+
+  # a key for one API only, the count, a gateway that is down
+  run apilayer key usedup0123456789usedup0123456789 for screenshot
+  check "a key can be saved for one API" has "for screenshot only"
+  run apilayer get screenshot url=https://example.com
+  check "that API is asked with its own key" refused "used up"
+  run apilayer get exchangerates_data/latest base=USD
+  check "the others with the main one" [ "$code" -eq 0 ]
+  run apilayer key
+  check "apilayer key lists the keys without showing them" has "A key is saved: good...67 (32 letters)" && check "both" has "A key for screenshot only: used...89" && check "never whole" hasnt "$good"
+  run apilayer key remove screenshot
+  check "the key for one API can be removed" has "Removed the key for screenshot."
+  run apilayer used
+  check "apilayer used says what is left for each API" has "of 100 left this month" && check "by name" has "image_to_text "
+  TERMANT_APILAYER="$at/down/gw" run apilayer get exchangerates_data/latest base=USD
+  check "a gateway that is down is said" refused "exchangerates_data answered HTTP 503"
+  TERMANT_APILAYER="http://127.0.0.1:1" run apilayer get exchangerates_data/latest base=USD
+  check "a gateway that cannot be reached is said" refused "APILayer could not be reached" && check "without an answer made up" has "do not make up an answer"
+  APILAYER_KEY=usedup0123456789usedup0123456789 run apilayer get exchangerates_data/latest base=USD
+  check "the saved key comes before one in APILAYER_KEY" [ "$code" -eq 0 ]
+  run apilayer key remove
+  check "apilayer key remove forgets the key" has "Removed the key."
+  run apilayer get exchangerates_data/latest base=USD
+  check "after that nothing is asked again" refused "no APILayer key is saved"
+  run termant-kit apilayer help
+  check "termant-kit apilayer is the same command" has "apilayer about NAME"
+  kill $fake_apilayer 2>/dev/null; fake_apilayer=
+  unset TERMANT_APILAYER TERMANT_APILAYER_MARKET
+else
+  echo "FAIL apilayer: the pretend APILayer did not start"; failed=$((failed+1))
 fi
 unset TERMANT_TURN
 

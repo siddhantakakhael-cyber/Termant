@@ -19,6 +19,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [A team of helper agents](#a-team-of-helper-agents)
 - [Pictures and files in the chat, Undo, and work by itself](#pictures-and-files-in-the-chat-undo-and-work-by-itself)
 - [A picture from words: draw](#a-picture-from-words-draw)
+- [APILayer: ready-made APIs with your own key](#apilayer-ready-made-apis-with-your-own-key)
 - [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
 - [Faster answers](#faster-answers)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
@@ -436,7 +437,7 @@ changed in some other way is not kept.
   of a free limit is left is not known to the app.
 
 Tested: the commands themselves, on Linux and inside Ubuntu in the emulator
-(`android/ci/kit-check.sh`, 125 checks then; 175 now with `draw`), and with
+(`android/ci/kit-check.sh`, 125 checks then; 302 now with `draw` and `apilayer`), and with
 the real OpenCode and a pretend model: a picture reaches the model, a change made with `safe` is
 undone from the chat script, `rm -rf /sdcard/...` is refused for the agent.
 Not tested on a real phone: the file picker, the notification list, a night
@@ -523,6 +524,71 @@ with "Open in gallery" and "Share", and the picture still there after the app
 is closed and opened again. Not tested: a real phone, what the gallery and
 share buttons open on a real phone, Android 7 to 9, and how well a real model
 turns your request into good words for the picture.
+
+## APILayer: ready-made APIs with your own key
+
+New in 0.24.0. [APILayer](https://apilayer.com) is a marketplace of ready-made
+APIs: currency rates, news, text from a picture (OCR), a web page as a PDF or
+a screenshot, the place of an IP address, checking an e-mail address or a
+phone number, holidays, recipes, and more. With your own key the agent can
+call any of the 60 APIs that sit behind APILayer's gateway. Ask in the chat:
+"aaj dollar ka rate kya hai", "is photo ka text nikalo", "is page ka PDF
+banao", and the agent finds the right API, reads its documentation and asks.
+
+**Your key, once:**
+
+1. Make an account at [apilayer.com](https://apilayer.com) (free, no card).
+2. On the page of each API you want, press **Subscribe for Free**. A key only
+   answers for the APIs you subscribed to.
+3. Copy the API key from your account page and send it as one chat message:
+
+```
+apilayer key YOUR_KEY
+```
+
+That message is handled by the app itself. It is not sent to any AI model;
+the key is saved on the phone only (in Ubuntu, readable by you alone) and is
+shown afterwards only as `abcd...yz`. `apilayer key remove` forgets it. The
+link you use to sign in to APILayer is not a key; the tool refuses it.
+
+By hand in any tab:
+
+```
+apilayer list currency                  # which APIs are about currency
+apilayer about exchangerates_data       # its free plan, endpoints, parameters, ready commands
+apilayer get exchangerates_data/latest base=USD symbols=INR
+apilayer post image_to_text/upload --file ~/photo.jpg
+apilayer get screenshot url=https://example.com      # a picture: shown in the chat, kept in ~/pictures
+apilayer used                           # how many requests are left this month
+```
+
+What to know:
+
+- **Free plans are small.** Most give 100 requests a month; a few give more
+  (geo 30,000; ip_to_location and user_agent 10,000; spoonacular, whois,
+  bad_words and others 3,000). Two have no free plan: `short_url` and
+  `temp_mail`. `apilayer about NAME` shows the plan as the page states it
+  that day.
+- **Only the 60 gateway APIs.** The marketplace lists 118 more (ipstack,
+  Pika, Coinlayer and others); those are other companies' services with
+  their own sites and keys, and `apilayer` only points to their page.
+- **No picture from words.** APILayer has no API that draws from a
+  description; that stays with [`draw`](#a-picture-from-words-draw).
+- **When it does not work, it says why**: no key, wrong key, not subscribed
+  to that API, this month's requests used up, or no such endpoint. The agent
+  is told not to make up an answer in those cases.
+- The list and the documentation are read from APILayer's own pages and kept
+  for a day; if the site cannot be reached, a list from 22 November 2026
+  that ships with the app is used.
+
+**How it was tested.** No APILayer key was available, so no real call with a
+key has been made. The tests use a pretend APILayer built from real pages
+saved on 22 November 2026; what a working key gets back there is invented.
+Real, without a key: the tool read the list and the documentation of all 60
+APIs (302 endpoints), and the gateway's answers to no key, a wrong key and an
+unknown API are the real ones. The sentences for "not subscribed" (403) and
+"used up" (429) and the counting of requests left follow APILayer's
+documented behaviour but were not seen live.
 
 ## ElevenLabs voice with several keys
 

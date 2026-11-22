@@ -191,6 +191,7 @@ final class Ubuntu {
             {"kit", "usr/local/bin/watch", "x"},
             {"kit", "usr/local/bin/diary", "x"},
             {"kit", "usr/local/bin/draw", "x"},
+            {"kit", "usr/local/bin/apilayer", "x"},
             {"termant-web", "usr/local/bin/termant-web", "x"},
             {"termant-server", "usr/local/bin/termant-server", "x"},
             {"server.sh", "usr/local/lib/termant/server.sh", ""},

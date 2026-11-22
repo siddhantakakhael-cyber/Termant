@@ -94,6 +94,10 @@ final class Chat {
                     + " : > \"$HOME/.cache/termant/alone\" ;; *) rm -f \"$HOME/.cache/termant/alone\" ;; esac\n"
                     // "undo" (typed, or the line under a reply tapped) puts the files back at once, without a model
                     + "case \"$1\" in undo|Undo|UNDO) if put=$(safe undo 2>&1); then echo " + MARKER + "; echo \"$put\"; exit 0; fi ;; esac\n"
+                    // "apilayer key THE_KEY" typed as a message saves the key at once, so that it never
+                    // reaches a model. Only letters, numbers and the signs of a link are let through, unquoted.
+                    + "case \"$1\" in [Aa]pilayer\\ key|[Aa]pilayer\\ key\\ *) case \"$1\" in *[!A-Za-z0-9_\\ .:/#=-]*) ;; *)"
+                    + " echo " + MARKER + "; set -f; apilayer key ${1#* key} 2>&1; exit 0 ;; esac ;; esac\n"
                     + "where=--standalone; srv=; feed=; url=\n"
                     // The server Termant kept from the message before is used when it is there
                     // (server.sh): then this message does not wait for OpenCode to start.
@@ -883,7 +887,11 @@ final class Chat {
                         messages.remove(reply);
                     }
                     quiet = false;
-                    if (exit == 0) {
+                    // A reply the script gave without a model ("undo", "apilayer key ...") began no
+                    // OpenCode session: the next message must not carry on in another chat's.
+                    boolean noModel = session.isEmpty() && !output.contains(SESSION_MARKER);
+                    if (exit == 0 && noModel) android.util.Log.i("Termant", "chat " + Chat.this.id + ": answered without a model");
+                    if (exit == 0 && !noModel) {
                         continues = true;
                         Config.setLastChat(context, Chat.this.id);
                         int at = output.indexOf(SESSION_MARKER);

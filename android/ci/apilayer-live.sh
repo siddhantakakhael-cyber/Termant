@@ -2,7 +2,8 @@
 # Asks the real APILayer (the marketplace pages and the gateway api.apilayer.com) the way the
 # `apilayer` tool does (android/assets/guest/kit) and writes down what it answered. There is no
 # key here, so this shows only what a caller without a key, or with a wrong one, is told, and
-# whether the list of APIs can be read. It never fails a build: it is a record.
+# whether the list of APIs and each API's documentation can still be read (summary.txt,
+# about-all.txt). It never fails a build: it is a record.
 #   apilayer-live.sh FOLDER_WITH_kit OUT_FOLDER
 kit=$1/kit
 out=$2
@@ -24,34 +25,15 @@ gateway() { # NAME, then curl arguments
 {
   date -u
   echo "== the marketplace pages"
-  page market-home.html "https://marketplace.apilayer.com/"
-  page market-search.html "https://marketplace.apilayer.com/?q=currency"
-  page market-none.html "https://marketplace.apilayer.com/?q=zzqqxxnothing"
   page api-exchangerates.html "https://marketplace.apilayer.com/exchangerates_data-api"
-  page api-image-to-text.html "https://marketplace.apilayer.com/image_to_text-api"
   page api-pika.html "https://marketplace.apilayer.com/pika-api"
-  page api-ipstack.html "https://marketplace.apilayer.com/ipstack-api"
   page api-none.html "https://marketplace.apilayer.com/zzqqxxnothing-api"
   echo "== the pieces the pages load afterwards: the list, and an API's documentation"
   page list-all.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=&view_by=list_view"
-  page list-all-grid.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=&view_by="
-  page list-currency.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=currency&view_by=list_view"
   page list-none.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=zzqqxxnothing&view_by=list_view"
   page docs-exchangerates.html "https://marketplace.apilayer.com/exchangerates_data-api/tabs/api_docs"
   page docs-image-to-text.html "https://marketplace.apilayer.com/image_to_text-api/tabs/api_docs"
-  page docs-pika.html "https://marketplace.apilayer.com/Pika%20Image%20Generation%20API/tabs/api_docs"
-  page docs-pika-2.html "https://marketplace.apilayer.com/pika-api/tabs/api_docs"
-  page docs-ipstack.html "https://marketplace.apilayer.com/IPstack/tabs/api_docs"
-  page docs-none.html "https://marketplace.apilayer.com/zzqqxxnothing-api/tabs/api_docs"
-  echo "== every API behind the gateway: its page and its documentation, kept whole"
-  mkdir -p "$out/all"
-  for slug in $(tr '\n' ' ' < "$out/list-all.html" | sed 's/<div class="product /\n/g' | grep 'assets.apilayer.com/apis/' | grep -o 'href="/[^"?]*' | sed 's|href="/||' | sort -u); do
-    curl -s -L -m 60 -A "termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)" -o "$out/all/$slug.page.html" "https://marketplace.apilayer.com/$slug"
-    curl -s -L -m 60 -A "termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)" -o "$out/all/$slug.docs.html" "https://marketplace.apilayer.com/$slug/tabs/api_docs"
-    sleep 0.2
-  done
-  ls "$out/all" | wc -l
-  tar -czf "$out/all.tar.gz" -C "$out" all && rm -rf "$out/all"
+  page docs-pika.html "https://marketplace.apilayer.com/pika-api/tabs/api_docs"
   echo "== the same page asked by Python, as the tool asks"
   python3 - <<'PY'
 import urllib.request, urllib.error
@@ -74,17 +56,32 @@ PY
   gateway gw-post-wrong-key -X POST -H "apikey: 0000000000000000000000000000wrong" --data-binary "hello" "https://api.apilayer.com/sentiment/analysis"
   if apilayer help 2>/dev/null | grep -q "apilayer key"; then
     echo "== the tool"
-    try() { local name=$1 began=$SECONDS; shift; echo "-- $name: apilayer $*"; apilayer "$@" 2>&1 | head -n 60; echo "$name: exit=${PIPESTATUS[0]} seconds=$((SECONDS - began))" | tee -a "$out/summary.txt"; }
+    try() { local name=$1 began=$SECONDS; shift; echo "-- $name: apilayer $*"; apilayer "$@" 2>&1 | head -n 70; echo "$name: exit=${PIPESTATUS[0]} seconds=$((SECONDS - began))" | tee -a "$out/summary.txt"; }
     try no-key get exchangerates_data/latest base=USD symbols=INR
     try list-currency list currency
-    try list-all list
-    try about about exchangerates_data
+    try list-picture list picture
+    try about-exchangerates about exchangerates_data
     try about-image-to-text about image_to_text
     try about-pika about pika
     try about-none about zzqqxxnothing
+    apilayer list > "$out/list.txt" 2>&1
+    echo "list: exit=$? callable=$(grep -c '^  ' "$out/list.txt") $(tail -n 2 "$out/list.txt" | tr '\n' ' ')" | tee -a "$out/summary.txt"
+    # every API the key can call: can its page and its documentation be read today?
+    read_ok=0; read_bad=0; no_plan=0
+    for name in $(grep '^  ' "$out/list.txt" | awk '{print $1}'); do
+      about=$(apilayer about "$name" 2>&1); code=$?
+      endpoints=$(printf '%s\n' "$about" | sed -n 's/^Endpoints (\([0-9]*\).*/\1/p' | head -n 1)
+      plan=$(printf '%s\n' "$about" | grep -m 1 -E '^(Free plan|No free plan)' | cut -c1-60)
+      [ -n "$plan" ] || no_plan=$((no_plan + 1))
+      if [ "$code" -eq 0 ] && [ -n "$endpoints" ]; then read_ok=$((read_ok + 1)); else read_bad=$((read_bad + 1)); fi
+      printf '%-22s exit=%s endpoints=%-3s %s\n' "$name" "$code" "${endpoints:--}" "$plan" >> "$out/about-all.txt"
+      sleep 0.3
+    done
+    echo "about-all: read=$read_ok not-read=$read_bad without-a-plan-line=$no_plan" | tee -a "$out/summary.txt"
     apilayer key 0000000000000000000000000000wrong > /dev/null 2>&1
     try wrong-key get exchangerates_data/latest base=USD symbols=INR
     try no-such-api get zzqqxxnothing/latest
+    try post-wrong-key post sentiment/analysis --text "I am happy today"
   fi
 } > "$out/apilayer-live.txt" 2>&1
 tail -n 80 "$out/apilayer-live.txt"

@@ -11,6 +11,7 @@ One file, several commands; the name it is called by picks the tool:
   watch     look for something every few minutes, then do something once
   diary     what the agent did, how long it took
   draw      a picture made from words
+  apilayer  APILayer's APIs (rates, news, text from a picture, ...) with the user's key
   termant-kit TOOL ...   any of the above, and: team (notes, seen, model), attach, models
 
 `TOOL help` explains each one.
@@ -1666,8 +1667,620 @@ Pictures are kept in ~/pictures, with a copy in the phone's gallery (Pictures/Te
             "just say in one line what you drew.")
 
 
+# ---------------------------------------------------------------- apilayer: APILayer's APIs, with the user's key
+
+# APILayer is a marketplace of APIs. Sixty of them stand behind one gateway and answer to one key
+# (the header "apikey"); the others listed there are other companies' services with keys of their own.
+APILAYER = os.environ.get("TERMANT_APILAYER", "https://api.apilayer.com").rstrip("/")
+APILAYER_MARKET = os.environ.get("TERMANT_APILAYER_MARKET", "https://marketplace.apilayer.com").rstrip("/")
+# the marketplace refuses a caller that does not say who it is (Python's own name gets HTTP 403)
+APILAYER_AGENT = "termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)"
+APILAYER_SHOWN = 6000
+APILAYER_SITE = "https://marketplace.apilayer.com"
+# The APIs behind the gateway as the marketplace listed them on 2026-11-22: name for calls | title |
+# what it does | requests a month on the free plan (empty: no free plan). `apilayer list` reads the
+# marketplace when it can and falls back on this.
+APILAYER_KNOWN = """\
+404_watch|404 Watch API|Link checker API with advanced features and reporting capabilities.|100
+adv_scraper|Advanced Scraper API|Advanced web scraper API with rotating IPs (from 170+ countries), browser rendering and JS execution capabilities.|100
+app_store|App Store API|Unofficial API to scrape and parse the application data from the iTunes/Mac App Store.|100
+bad_words|Bad Words API|Detects bad words, swear words by performing profanity check in a given text.|3000
+bank_data|Bank Data API|Instant IBAN and SWIFT number validation across the globe.|100
+bincheck|BIN Checker API|Checks and verifies BIN (Bank Identification Number). Available for both credit card and debit cards.|100
+checkiday|Checkiday - National Holiday API|Industry-leading Holiday API. Over 5,000 holidays and thousands of descriptions. Trusted by the World’s leading companies.|100
+cron_monitoring|Cron Job Monitoring API|Receive alerts when your cron jobs and scheduled tasks don't run on time. Simple and effective monitoring for your scheduled tasks.|100
+currency_data|Currency Data API|Reliable Exchange Rates & Currency Conversion for your Business.|100
+disposable_email|Disposable Email Detection API|Detects disposable, fake and throwaway email addresses in lightning speed.|100
+dns_lookup|DNS Lookup API|API to programmatically perform DNS lookups.|600
+domain_discovery|Domain Name Discovery API|Find the perfect domain name for your website with NLP, improved search and automated whois lookups.|100
+dymt|"Did you Mean This?" API|Google's famed did you mean this feature is a powerful feature to guide your users for corrections easily. This API features a fast and convenient…|3000
+email_verification|Email Verification API|Validates and verifies an email address assessing deliverability and quality.|100
+exchangerates_data|Exchange Rates Data API|Real-Time, Intraday & Historical Market Data API.|100
+face_pixelizer|Face Pixelizer API|Applies computer vision methods called face blurring and pixelization to anonymize faces in images.|100
+financelayer|Finance News API|Real-time Finance News API using the JSON payload to extract dynamic financial data.|100
+fixer|Fixer API|Foreign exchange rates and currency conversion JSON API.|100
+form_api|Form API|Create your own form endpoints, collect all submissions instantly, manage with an API.|100
+geo|Geography API|Searchable database of countries, cities, calling codes, currencies and a lot more.|30000
+google_search|Google Search Results API|Scrapes Google Search engine result pages (SERPs) and extracts results in JSON format.|100
+image_labeling|Image Labeling API|Tags and classifies visual content using machine learning at a glance.|100
+image_optimizer|Image Optimizer API|Reduces and optimizes file size of given image file.|100
+image_quality|Image Quality Assessment API|Performs a blind/referenceless image spatial quality evaluator (BRISQUE) algorithm on the image and predicts an image quality score.|100
+image_to_text|Image to Text API|Recognizes and reads the text embedded in images.|100
+image_upload|Image Upload API|Image Upload API is an image manipulation and optimization REST API.|100
+ip_to_location|IP to Location API|Locate and identify website visitors' info (latitude, logintude, connection, currency, timezone etc...) by IP address.|10000
+keyword|Keyword Extraction API|Extract the most relevant words and expressions from text. Keyword extraction helps you find out what's relevant in a sea of unstructured data.…|100
+mem_db|In Memory DB API|Use the power of Redis as an API. It supports data structures such as strings, hashes, lists, sets, sorted sets with almost complete commands…|3000
+meta_tags|Meta Tags API|Scrapes, parses and retrieves META tags of any URL as well as many other useful information.|100
+minor_detection|Minor Detection API|Classifies images and detects children, teenagers and babies automatically.|100
+nlp|NLP API|Enterprise grade "natural language processing" (NLP) tools with a simple, yet powerful API.|100
+nudity_detection|Nudity Detection API|Accepts an image file as binary data or a URL and flags it as naked content respectively, in real-time.|100
+number_verification|Number Verification API|Global Phone Number Validation & Lookup JSON API.|100
+odds|The Odds API|Get bookmaker odds and scores for a wide range of sports in a simple API.|500
+paraphraser|Paraphraser API|Rewrite and enhance any sentence, paragraph, or article using AI, make it original content.|100
+reachability|Reachability API|Check reachability of any site/webpage from any country in the world.|3000
+resume_parser|Resume Parser API|Parses any resume/CV into JSON text using Natural Language Processing (NLP) techniques.|100
+scraper|Scraper API (Lite Edition)|Scrape websites bypassing rate limitations. Ability to simulate originating IP from any country. Fast and simple.|1500
+screenshot|Screenshot API|Takes a screenshot of a website as it is displayed on a Chrome browser, just by passing its url only.|100
+sentiment|Sentiment Analysis API|Given a text, it can be automatically classified in categories.These categories can be user defined (positive, negative) or whichever classes you…|100
+short_url|URL Shortener API|URL Shortener service with an API which provides extensive analytics backend.|
+siteshot|Site-Shot API|Web page screenshot service provides powerful API to automate website screenshot generation.|20
+skills|Skills API|Searchable database of 70000+ skills well-organized and categorized.|3000
+smart_crop|Smart Image Cropping API|Smart image cropping API that can intelligently identify important elements of an image and retain it during cropping.|100
+social_asset|Social Media Assets Generator API|Resizes and creates images with all appropriate sizes for any social media service.|100
+spamchecker|Spam Check API|Performs robust scoring algorithms to a given text and classifies it as spam or not.|3000
+spell|Spell Checker API|A quick and fast implementation of a spell checker for English language.|3000
+spoonacular|Spoonacular API|The spoonacular Nutrition, Recipe, and Food API allows you to access over 365,000 recipes and 86,000 food products.|3000
+tax_data|Tax Data API|Instant VAT number and tax validation across the globe.|100
+temp_mail|Temporary Mail API|Temporary Disposable E-mail, fast and easy API.|
+text_to_emotion|Text to Emotion API|Discover the emotions in textual messages automatically using NLP.|100
+therundown|TheRundown API|TheRundown is the leading platform for real-time odds, scores, stats, and unrivaled insights into the sports betting marketplace.|750
+unogs|uNoGS API|uNoGS (unofficial Netflix online Global Search) allows anyone to search the global Netflix catalog.|3000
+url_to_pdf|Web page to PDF API|Convert any web page URL to PDF.|100
+user_agent|User Agent API|Detect any browser, device & OS from user agent strings and generate new ones randomly.|10000
+vault|Vault API|Full featured encrypted data store and key management backend.|3000
+violence_detection|Violence Detection API|Classifies images as violent or not. It predicts if images are depicting killing, shooting, blood and gore.|100
+whois|Whois API|API to perform a Whois query programmatically and get results in JSON format.|3000
+world_news|World News API|The World News API gives you access to thousands of news sources in over 50 languages from over 150 countries. News are semantically tagged allowing…|1500
+"""
+
+
+def plain(markup):
+    """The words of a piece of HTML."""
+    import html
+    return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", markup))).strip()
+
+
+def apilayer_known():
+    return {row[0]: row for row in (line.split("|") for line in APILAYER_KNOWN.splitlines()) if len(row) == 4}
+
+
+def apilayer_name(text):
+    """exchangerates_data from "Exchangerates_Data-api", from its page's address, or from a path."""
+    name = text.strip().rstrip("/").split("?")[0]
+    name = name.rsplit("/", 1)[-1] if name.startswith("http") else name.strip("/").split("/")[0]
+    name = name.lower().replace(" ", "_")
+    return name[:-4] if name.endswith("-api") else name
+
+
+def apilayer_state():
+    state = load("apilayer.json", {})
+    return state if isinstance(state, dict) else {}
+
+
+def apilayer_keep(state):
+    save("apilayer.json", state)
+    try:
+        os.chmod(os.path.join(DATA, "apilayer.json"), 0o600)
+    except OSError:
+        pass
+
+
+def apilayer_key(state, name):
+    return (state.get("keys") or {}).get(name) or state.get("key") or os.environ.get("APILAYER_KEY", "").strip()
+
+
+def hidden(key):
+    return "%s...%s (%d letters)" % (key[:4], key[-2:], len(key))
+
+
+def market(path):
+    """(the page, "") or (None, why not)."""
+    code, body, _ = web(APILAYER_MARKET + path, headers={"User-Agent": APILAYER_AGENT, "Accept": "text/html"}, timeout=60)
+    if code != 200:
+        return None, why(code, body)
+    return body.decode("utf-8", "replace"), ""
+
+
+def apilayer_cards(page):
+    """[[name, title, what it does, "key" or "other"]] from the marketplace's list."""
+    known, found = apilayer_known(), []
+    for card in re.split(r'<div class="product ', page)[1:]:
+        link = re.search(r'href="/([^"?#/]+)', card)
+        logo = re.search(r'<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"', card)
+        what = re.search(r"text-info-list-overflow[^>]*>(.*?)</div>", card, re.S)
+        if not link or not logo:
+            continue
+        name = apilayer_name(link.group(1))
+        # the gateway's own APIs keep their logo under /apis/, the listed ones under /api_listings/
+        behind = "/apis/" in logo.group(1) or ("/api_listings/" not in logo.group(1) and name in known)
+        found.append([name, plain(logo.group(2)), plain(what.group(1)) if what else "", "key" if behind else "other"])
+    return found
+
+
+def apilayer_all(fresh=False):
+    """(the list, where it is from): the marketplace's list, kept for a day; the built-in one without it."""
+    kept = os.path.join(CACHE, "apilayer-list.json")
+    try:
+        with open(kept, encoding="utf-8") as f:
+            old = json.load(f)
+    except (OSError, ValueError):
+        old = None
+    if old and not fresh and time.time() - old.get("when", 0) < DAY:
+        return old["list"], "the marketplace, read %s" % time.strftime("%d %b %H:%M", time.localtime(old["when"]))
+    page, reason = market("/get-api-data?sort_by=&q=&view_by=list_view")
+    cards = apilayer_cards(page) if page else []
+    if sum(1 for c in cards if c[3] == "key") >= 20:
+        try:
+            os.makedirs(CACHE, exist_ok=True)
+            with open(kept, "w", encoding="utf-8") as f:
+                json.dump({"when": time.time(), "list": cards}, f, ensure_ascii=False)
+        except OSError:
+            pass
+        return cards, "the marketplace, read just now"
+    if old:
+        return old["list"], "the marketplace, read %s (it could not be read now)" % time.strftime("%d %b", time.localtime(old["when"]))
+    rows = [[r[0], r[1], r[2], "key"] for r in apilayer_known().values()]
+    return rows, "the list kept in this tool, of 22 Nov 2026 (the marketplace could not be read now: %s)" % (
+        reason or "its page has changed")
+
+
+def apilayer_docs(name):
+    """What the marketplace says of one API, kept for a day:
+    {title, what, kind, plans: [[name, price, requests]], about, endpoints: [{method, path, what, params}]}"""
+    kept = os.path.join(CACHE, "apilayer-about-%s.json" % re.sub(r"[^a-z0-9_]", "_", name))
+    try:
+        with open(kept, encoding="utf-8") as f:
+            old = json.load(f)
+    except (OSError, ValueError):
+        old = None
+    if old and time.time() - old.get("when", 0) < DAY:
+        return old, ""
+    page, reason = market("/%s-api" % name)
+    if page is None:
+        return (old, "") if old else (None, "the marketplace " + reason)
+    if not re.search(r"window\.service_name\s*=", page):
+        return None, "none"
+    title = re.search(r"<h1[^>]*>(.*?)</h1>\s*(?:<div[^>]*>(.*?)</div>)?", page, re.S)
+    facts = {"when": time.time(), "title": plain(title.group(1)) if title else name,
+             "what": plain(title.group(2) or "") if title else "", "plans": [], "endpoints": [], "about": ""}
+    for plan in re.split(r'<div class="plan ', re.sub(r"<!--.*?-->", "", page, flags=re.S))[1:]:
+        called = re.search(r'class="d-block h3">(.*?)</span>', plan, re.S)
+        price = re.search(r"plan-price[^>]*>(.*?)</span>", plan, re.S)
+        requests = re.search(r'media-body">\s*([\d,.]+\s*Requests\s*/\s*\w+)', plan)
+        if called and price:
+            facts["plans"].append([plain(called.group(1)), plain(price.group(1)), plain(requests.group(1)) if requests else ""])
+    about = re.search(r"<article[^>]*>(.*?)</article>", page, re.S)
+    if about:
+        facts["about"] = plain(re.sub(r"<pre.*?</pre>", " ", about.group(1), flags=re.S))
+    docs, _ = market("/%s-api/tabs/api_docs" % name)
+    for card in re.split(r'id="endpointHeading\d+"', docs or "")[1:]:
+        head = re.search(r'text-uppercase">\s*(\w+)\s*</span>\s*([^<]*?)\s*</div>', card, re.S)
+        if not head:
+            continue
+        path = head.group(2).strip() or "/"
+        if path.startswith("/%s/" % name):  # one or two are written with the API's name in front
+            path = path[len(name) + 1:]
+        said = re.search(r'<p class="pb-4">(.*?)</p>', card, re.S)
+        params = []
+        for p in re.findall(r'<strong class="text-dark">(.*?)</strong>.*?\((required|optional)\).*?<p class="mb-1 pb-1">(.*?)</p>'
+                            r'.*?Location: </span>\s*<span class="text-muted">(.*?)</span>'
+                            r'.*?Data Type: </span>\s*<span class="text-muted">(.*?)</span>', card, re.S):
+            params.append([plain(p[0]), p[1], plain(p[2]), plain(p[3]).lower(), plain(p[4]).lower()])
+        facts["endpoints"].append({"method": head.group(1).lower(), "path": path, "what": plain(said.group(1)) if said else "",
+                                   "params": params})
+    facts["kind"] = "key" if facts["endpoints"] or name in apilayer_known() else "other"
+    try:
+        os.makedirs(CACHE, exist_ok=True)
+        with open(kept, "w", encoding="utf-8") as f:
+            json.dump(facts, f, ensure_ascii=False)
+    except OSError:
+        pass
+    return facts, ""
+
+
+def apilayer_example(name, e):
+    """The command that calls this endpoint, with ... where a value goes."""
+    parts = ["apilayer", e["method"], name + ("" if e["path"] == "/" else e["path"])]
+    bodies = [p for p in e["params"] if p[3] == "body"]
+    for p in e["params"]:
+        if p[3] == "query" and p[1] == "required":
+            parts.append(p[0] + "=...")
+        elif p[3] == "header":
+            parts.append("--header %s=..." % p[0])
+    if len(bodies) > 1:
+        parts += ["--form %s=..." % p[0] for p in bodies]
+    elif bodies:
+        parts.append({"file": "--file FILE", "json": "--json '{...}'"}.get(bodies[0][4], '--text "..."'))
+    return " ".join(parts)
+
+
+def apilayer_no_key(name):
+    return ("apilayer: no APILayer key is saved, so nothing was asked.\n"
+            "The user gets one for free, with no card: 1) sign up at https://apilayer.com  "
+            "2) open %s/%s-api and press \"Subscribe for Free\" (every API is subscribed to by itself)  "
+            "3) the key is on the account page, a code of about 32 letters and numbers.\n"
+            "Then: apilayer key THE_KEY   (the user can also type that line as a chat message, or in the "
+            "terminal; then the key does not pass through the model).\n"
+            "Tell the user plainly that this needs their key; do not make up an answer." % (APILAYER_SITE, name))
+
+
+def apilayer(args):
+    what = args[0] if args else "help"
+    if what in ("help", "--help", "-h"):
+        out("""apilayer: APILayer's APIs (currency rates, news, text from a picture, web page to PDF, IP to
+place, checking an e-mail or phone number, holidays, recipes, ...) with the user's own key
+  apilayer list [WORDS]             which APIs there are; with words, only those about them
+  apilayer about NAME [WORD]        one API: its free plan, its endpoints and their parameters,
+                                    and the command for each (WORD: only the endpoints about it)
+  apilayer get NAME/ENDPOINT [name=value ...]        ask; the answer is printed
+  apilayer post NAME/ENDPOINT [name=value ...] --text "..." | --file FILE | --json '{...}' | --form name=value
+                                    (also put, delete)   --header name=value   --out FILE   --all (do not cut a long answer)
+  apilayer key THE_KEY              save the user's key (apilayer key THE_KEY NAME: for that API only)
+  apilayer key                      whether a key is saved        apilayer key remove [NAME]
+  apilayer used                     how many requests are left, as the last answers said
+The key is free: an account at https://apilayer.com (no card), then "Subscribe for Free" on the page
+of each API that is wanted; most give 100 requests a month for nothing, some 3,000 or more.
+Only the APIs behind APILayer's gateway (about 60) answer to this key. The other ones listed in
+the marketplace are other companies' services with keys and addresses of their own.
+There is no API here that draws a picture from words: that is `draw`.""")
+        return
+    state = apilayer_state()
+    if what == "key":
+        rest = [a for a in args[1:] if a != "for"]
+        keys = state.get("keys") or {}
+        if not rest:
+            if state.get("key"):
+                out("A key is saved: %s" % hidden(state["key"]))
+            for name in sorted(keys):
+                out("A key for %s only: %s" % (name, hidden(keys[name])))
+            if not state.get("key") and not keys:
+                if os.environ.get("APILAYER_KEY", "").strip():
+                    out("No key is saved; the one in APILAYER_KEY is used.")
+                else:
+                    raise Refused("apilayer: no key is saved. apilayer key THE_KEY saves it (apilayer help says where it comes from).")
+            return
+        if rest[0] in ("remove", "forget", "delete"):
+            if len(rest) > 1:
+                name = apilayer_name(rest[1])
+                if name not in keys:
+                    raise Refused("apilayer: there is no key for %s only" % name)
+                del keys[name]
+                state["keys"] = keys
+                apilayer_keep(state)
+                out("Removed the key for %s." % name)
+            elif state.pop("key", None):
+                apilayer_keep(state)
+                out("Removed the key.")
+            else:
+                raise Refused("apilayer: no key is saved")
+            return
+        key = rest[0].strip()
+        if key.startswith("http") or "access_token" in key or "/" in key or (key.startswith("eyJ") and key.count(".") >= 2):
+            raise Refused("apilayer: that is not the API key. It looks like a sign-in link or a sign-in token: it opens "
+                          "the account for half an hour, and whoever has it is signed in as the user, so it must not be "
+                          "shared or saved. The API key is a code of about 32 letters and numbers, shown on the "
+                          "account page at https://apilayer.com after signing in.\nNothing was saved.")
+        if not re.fullmatch(r"[A-Za-z0-9_\-]{16,100}", key):
+            raise Refused("apilayer: that does not look like an APILayer key (a code of about 32 letters and "
+                          "numbers, no spaces). Nothing was saved.")
+        if len(rest) > 1:
+            name = apilayer_name(rest[1])
+            keys[name] = key
+            state["keys"] = keys
+            apilayer_keep(state)
+            out("Saved the key %s for %s only." % (hidden(key), name))
+        else:
+            state["key"] = key
+            apilayer_keep(state)
+            out("Saved the key %s. It stays on this phone (in Ubuntu) and goes only to api.apilayer.com." % hidden(key))
+            out("It is not tried out here: the first call shows whether it is right. "
+                "Each API must be subscribed to (free) on its page before it answers.")
+        return
+    if what == "used":
+        seen = state.get("seen") or {}
+        if not seen:
+            out("No call has been answered yet, so nothing is known.")
+            return
+        for name in sorted(seen):
+            s = seen[name]
+            out("%-20s %s of %s left this month%s  (as of %s)" % (
+                name, s.get("left", "?"), s.get("limit", "?"),
+                ", %s of %s today" % (s["left_day"], s["limit_day"]) if s.get("limit_day") else "",
+                time.strftime("%d %b %H:%M", time.localtime(s.get("when", 0)))))
+        return
+    if what == "list":
+        fresh = "--fresh" in args
+        words = [w.lower() for w in args[1:] if not w.startswith("--")]
+        rows, source = apilayer_all(fresh)
+        free = apilayer_known()
+
+        def about(row):
+            return all(w in (" ".join(row[:3])).lower() for w in words)
+        hits = [r for r in rows if about(r)]
+        if words:
+            # the marketplace's own search knows more than the two lines of each card (an API's category, its page)
+            import urllib.parse
+            page, _ = market("/get-api-data?sort_by=&q=%s&view_by=list_view" % urllib.parse.quote(" ".join(words)))
+            have = set(r[0] for r in hits)
+            hits += [c for c in (apilayer_cards(page) if page else []) if c[0] not in have]
+        mine = sorted((r for r in hits if r[3] == "key"), key=lambda r: r[0])
+        others = sorted((r for r in hits if r[3] != "key"), key=lambda r: r[0])
+        if words and not mine and not others:
+            raise Refused("apilayer: no API is about \"%s\" (%d were looked at; from %s). "
+                          "Try one plain word, or `apilayer list` for all." % (" ".join(words), len(rows), source))
+        if mine:
+            out("APIs the user's APILayer key can call (%d). `apilayer about NAME` shows how:" % len(mine))
+            for r in mine:
+                plan = free.get(r[0])
+                note = "" if not plan else (" [free: %s a month]" % plan[3] if plan[3] else " [no free plan]")
+                out("  %-20s %s: %s%s" % (r[0], r[1], one_line(r[2], 120), note))
+        elif words:
+            out("None of the APIs the key can call is about \"%s\"." % " ".join(words))
+        if others and words:
+            out("Listed in the marketplace too, but each is another company's service, with a key and an "
+                "address of its own (this tool does not call them; `apilayer about NAME` gives the link):")
+            for r in others:
+                out("  %-20s %s: %s" % (r[0], r[1], one_line(r[2], 120)))
+        elif others:
+            out("%d more are listed in the marketplace, each another company's service with a key of its own; "
+                "`apilayer list WORD` searches them too." % len(others))
+        out("(from %s)" % source)
+        return
+    if what == "about":
+        if len(args) < 2:
+            raise Refused("usage: apilayer about NAME   (apilayer list shows the names)")
+        name = apilayer_name(args[1])
+        word = " ".join(args[2:]).lower()
+        facts, reason = apilayer_docs(name)
+        if facts is None:
+            if reason != "none":
+                known = apilayer_known().get(name)
+                raise Refused("apilayer: %s, so what %s offers could not be read now.%s" % (
+                    reason, name, "\nFrom the list kept in this tool: %s: %s Calls go to `apilayer get %s/ENDPOINT`."
+                    % (known[1], known[2], name) if known else ""))
+            import difflib
+            rows, _ = apilayer_all()
+            near = difflib.get_close_matches(name, [r[0] for r in rows], 4, 0.5)
+            raise Refused("apilayer: there is no API named %s.%s `apilayer list WORD` searches." % (
+                name, " Near it: %s." % ", ".join(near) if near else ""))
+        out("%s (%s): %s" % (facts["title"], name, facts["what"]))
+        page = "%s/%s-api" % (APILAYER_SITE, name)
+        if facts["kind"] != "key":
+            out("This one is not behind APILayer's gateway: it is another company's service, with its own key, "
+                "address and prices. The key saved here does not open it, and this tool does not call it.")
+            out("Its page, with the links to its documentation and sign-up: %s" % page)
+            return
+        gratis = next((p for p in facts["plans"] if p[1].startswith("$0")), None)
+        if gratis:
+            out("Free plan: %s, no card. To use it the user presses \"Subscribe for Free\" once at %s" % (
+                gratis[2].replace(" / Monthly", " a month").replace(" / Daily", " a day").replace("Requests", "requests") or "yes", page))
+        elif facts["plans"]:
+            out("No free plan: the cheapest is %s at %s a month (%s). Page: %s" % (
+                facts["plans"][0][0], facts["plans"][0][1], facts["plans"][0][2], page))
+        else:
+            out("Page: %s" % page)
+        out("Key: %s" % ("saved" if apilayer_key(state, name) else "none saved yet (apilayer key THE_KEY)"))
+        shown = [e for e in facts["endpoints"] if not word or word in (e["path"] + " " + e["what"]).lower()]
+        if not facts["endpoints"]:
+            out("Its endpoints could not be read from the marketplace now; they are on the page above, under Documentation.")
+        elif not shown:
+            raise Refused("apilayer: %s has no endpoint about \"%s\" (it has %d; `apilayer about %s` lists them)" % (
+                name, word, len(facts["endpoints"]), name))
+        brief = len(shown) > 16
+        if shown:
+            out("")
+            out("Endpoints (%d%s)%s:" % (len(shown), " of %d" % len(facts["endpoints"]) if word else "",
+                                        ", briefly; `apilayer about %s WORD` shows the parameters of those about WORD" % name if brief else ""))
+        for e in shown:
+            out("  %s %s   %s" % (e["method"].upper(), e["path"], one_line(e["what"], 110 if brief else 300)))
+            if brief:
+                continue
+            # the required ones and those that are not name=value first, then the first optional ones
+            first = [p for p in e["params"] if p[1] == "required" or p[3] != "query"]
+            more = [p for p in e["params"] if p not in first]
+            for p in first + more[:max(0, 12 - len(first))]:
+                where = {"query": "name=value", "path": "in the address, in place of {%s}" % p[0], "header": "--header",
+                         "body": {"file": "--file FILE", "json": "--json"}.get(p[4], "--text, or --form with others")}.get(p[3], p[3])
+                out("      %-16s %s, %s, %s%s" % (p[0], p[1], p[4], where, ": " + one_line(p[2], 220) if p[2] else ""))
+            if len(more) > max(0, 12 - len(first)):
+                out("      and %d more optional name=value: %s" % (
+                    len(more) - max(0, 12 - len(first)), ", ".join(p[0] for p in more[max(0, 12 - len(first)):])))
+            out("      -> " + apilayer_example(name, e))
+        if facts["about"] and not word:
+            out("")
+            out("About it: " + one_line(facts["about"], 700))
+        return
+    if what not in ("get", "post", "put", "delete"):
+        raise Refused("apilayer: there is no `%s` (apilayer help)" % what)
+    if len(args) < 2:
+        raise Refused("usage: apilayer %s NAME/ENDPOINT [name=value ...]   (apilayer about NAME shows the endpoints)" % what)
+    import urllib.parse
+    target = args[1]
+    for front in (APILAYER, "https://api.apilayer.com"):
+        if target.startswith(front + "/"):
+            target = target[len(front):]
+    if "://" in target:
+        raise Refused("apilayer: only APILayer's gateway is called (api.apilayer.com). Write NAME/ENDPOINT, "
+                      "for example exchangerates_data/latest.")
+    target, _, asked = target.strip().lstrip("/").partition("?")
+    name = target.split("/")[0]
+    if not re.fullmatch(r"[A-Za-z0-9_\-]+", name):
+        raise Refused("apilayer: \"%s\" is not the name of an API (apilayer list shows the names)" % name)
+    if name.lower().endswith("-api"):  # the page is NAME-api, the calls go to NAME
+        target = name[:-4] + target[len(name):]
+        name = name[:-4]
+    pairs, form, headers, body, kind, saved_to, whole = [], [], {}, None, None, None, False
+    i = 2
+    while i < len(args):
+        a = args[i]
+        if a == "--all":
+            whole = True
+        elif a in ("--text", "--file", "--json", "--form", "--header", "--out"):
+            if i + 1 >= len(args):
+                raise Refused("apilayer: %s needs a value after it" % a)
+            value = args[i + 1]
+            i += 1
+            if a == "--out":
+                saved_to = os.path.abspath(os.path.expanduser(value))
+            elif a in ("--form", "--header"):
+                if "=" not in value:
+                    raise Refused("apilayer: %s takes name=value" % a)
+                k, v = value.split("=", 1)
+                if a == "--form":
+                    form.append((k, v))
+                else:
+                    headers[k.strip()] = v
+            elif body is not None:
+                raise Refused("apilayer: one of --text, --file and --json, not two")
+            elif a == "--text":
+                body, kind = value.encode("utf-8"), "text/plain; charset=utf-8"
+            elif a == "--json":
+                try:
+                    json.loads(value)
+                except ValueError as e:
+                    raise Refused("apilayer: what follows --json is not JSON (%s)" % e)
+                body, kind = value.encode("utf-8"), "application/json"
+            else:
+                path = os.path.expanduser(value)
+                if not os.path.isfile(path):
+                    raise Refused("apilayer: there is no file %s" % value)
+                if os.path.getsize(path) > DRAW_LIMIT:
+                    raise Refused("apilayer: %s is larger than 30 MB" % value)
+                with open(path, "rb") as f:
+                    body = f.read()
+                picture = picture_kind(body)
+                kind = ("image/" + {"jpg": "jpeg"}.get(picture, picture)) if picture else (
+                    "application/pdf" if body[:5] == b"%PDF-" else "application/octet-stream")
+        elif a.startswith("--"):
+            raise Refused("apilayer: there is no %s (apilayer help)" % a)
+        elif "=" in a:
+            pairs.append(tuple(a.split("=", 1)))
+        else:
+            raise Refused("apilayer: \"%s\" is neither name=value nor an option. A value with spaces goes in "
+                          "quotes: q=\"new delhi\"; a text to send goes after --text." % one_line(a, 60))
+        i += 1
+    if form:
+        if body is not None:
+            raise Refused("apilayer: --form cannot go together with --text, --file or --json")
+        body, kind = urllib.parse.urlencode(form).encode("utf-8"), "application/x-www-form-urlencoded"
+    if what == "get" and body is not None:
+        raise Refused("apilayer: get sends nothing but the address; use post for --text, --file, --json or --form")
+    key = apilayer_key(state, name)
+    if not key:
+        raise Refused(apilayer_no_key(name))
+    query = "&".join(x for x in (asked, urllib.parse.urlencode(pairs)) if x)
+    url = "%s/%s%s" % (APILAYER, urllib.parse.quote(target, safe="/:@,+~!$'()*;=-._"), "?" + query if query else "")
+    sent = {"apikey": key, "User-Agent": APILAYER_AGENT, "Accept": "*/*"}
+    if body is not None:
+        sent["Content-Type"] = kind
+    elif what in ("post", "put"):
+        body = b""
+    sent.update(headers)
+    code, data, got = web(url, data=body, headers=sent, timeout=150, method=what.upper())
+    if got.get("x-ratelimit-limit-month") or got.get("x-ratelimit-limit-day"):
+        seen = state.get("seen") or {}
+        seen[name] = {"left": got.get("x-ratelimit-remaining-month", "?"), "limit": got.get("x-ratelimit-limit-month", "?"),
+                      "left_day": got.get("x-ratelimit-remaining-day", ""), "limit_day": got.get("x-ratelimit-limit-day", ""),
+                      "when": int(time.time())}
+        state["seen"] = seen
+        apilayer_keep(state)
+    said = data.decode("utf-8", "replace")
+    try:
+        message = json.loads(said)
+        message = message.get("message") or message.get("error") or "" if isinstance(message, dict) else ""
+        message = one_line(json.dumps(message, ensure_ascii=False) if isinstance(message, (dict, list)) else message, 300)
+    except ValueError:
+        message = ""
+    if code == 0 or code >= 300:
+        page = "%s/%s-api" % (APILAYER_SITE, name)
+        if code == 0:
+            reason = "APILayer could not be reached (%s). Is the internet on?" % one_line(said or "no connection", 120)
+        elif code == 401:
+            reason = ("APILayer does not know this key (HTTP 401: %s). The saved key %s is wrong or was renewed; "
+                      "the right one is on the user's account page. apilayer key THE_KEY saves it."
+                      % (message or "no valid key", hidden(key)))
+        elif code == 403:
+            reason = ("The key may not use %s (HTTP 403: %s). Most likely the user has not subscribed to this API: "
+                      "they open %s once and press \"Subscribe for Free\"." % (name, message or "refused", page))
+        elif code == 404:
+            reason = ("APILayer has nothing at %s/%s (HTTP 404: %s). `apilayer about %s` shows the endpoints; "
+                      "`apilayer list` the names." % (name, target[len(name) + 1:], message or "not found", name))
+        elif code == 429:
+            reason = ("The requests of this plan are used up (HTTP 429: %s). They come back with the new month (or day); "
+                      "a larger plan is at %s." % (message or "too many requests", page))
+        elif code == 400:
+            reason = ("%s did not accept the request (HTTP 400: %s). `apilayer about %s` shows the parameters."
+                      % (name, message or one_line(said, 300) or "bad request", name))
+        else:
+            reason = "%s answered HTTP %d%s." % (name, code, ": " + (message or one_line(said, 300)) if (message or said.strip()) else "")
+        raise Refused("apilayer: no answer. %s\nTell the user plainly that this did not work and why; do not make up an answer." % reason)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    picture = picture_kind(data)
+    ending = picture or ("pdf" if data[:5] == b"%PDF-" else "zip" if data[:4] == b"PK\x03\x04" else None)
+    if ending is None and b"\x00" in data[:2000]:
+        ending = "bin"
+    if ending:
+        target_file = saved_to or os.path.join(HOME, "pictures" if picture else "apilayer", "%s-%s.%s" % (name, stamp, ending))
+        os.makedirs(os.path.dirname(target_file), exist_ok=True)
+        with open(target_file, "wb") as f:
+            f.write(data)
+        size = picture_size(target_file) if picture else None
+        out("Saved: %s (%s, %s%s)" % (target_file, "a picture" if picture else ending.upper() if ending != "bin" else "a file",
+                                     "%dx%d, " % size if size else "", size_text(len(data))))
+        if picture and os.environ.get("TERMANT_CHAT"):
+            # the chat shows the pictures listed here under the reply (see draw); files in the home folder only
+            try:
+                shown = target_file
+                if not shown.startswith(HOME + os.sep):
+                    shown = os.path.join(HOME, "pictures", os.path.basename(target_file))
+                    os.makedirs(os.path.dirname(shown), exist_ok=True)
+                    shutil.copyfile(target_file, shown)
+                os.makedirs(CACHE, exist_ok=True)
+                with open(os.path.join(CACHE, "drawn.txt"), "a", encoding="utf-8") as f:
+                    f.write(shown + "\t\n")
+                out("The chat shows this picture under your answer by itself: do not paste its path or a link.")
+            except OSError:
+                pass
+    else:
+        try:
+            text = json.dumps(json.loads(said), ensure_ascii=False, indent=1)
+        except ValueError:
+            text = said.strip()
+        if saved_to:
+            os.makedirs(os.path.dirname(saved_to), exist_ok=True)
+            with open(saved_to, "w", encoding="utf-8") as f:
+                f.write(text + "\n")
+        if len(text) > APILAYER_SHOWN and not whole:
+            kept = saved_to
+            if not kept:
+                kept = os.path.join(HOME, "apilayer", "%s-%s.%s" % (name, stamp, "json" if text[:1] in "{[" else "txt"))
+                os.makedirs(os.path.dirname(kept), exist_ok=True)
+                with open(kept, "w", encoding="utf-8") as f:
+                    f.write(text + "\n")
+            out(text[:APILAYER_SHOWN])
+            out("... (cut here: %d of %d letters shown. The whole answer is in %s; "
+                "read the part that is needed with grep or python3, or add --all.)" % (APILAYER_SHOWN, len(text), kept))
+        else:
+            out(text if text else "(%s answered with nothing, HTTP %d)" % (name, code))
+            if saved_to:
+                out("Saved: %s" % saved_to)
+    if got.get("x-ratelimit-limit-month"):
+        sys.stderr.write("apilayer: %s of %s requests are left this month for %s.\n" % (
+            got.get("x-ratelimit-remaining-month", "?"), got["x-ratelimit-limit-month"], name))
+
+
 TOOLS = {"safe": safe, "tidy": tidy, "study": study, "readfile": readfile, "me": me, "watch": watch,
-         "diary": diary, "draw": draw, "team": team, "attach": attach, "models": models}
+         "diary": diary, "draw": draw, "apilayer": apilayer, "team": team, "attach": attach, "models": models}
 
 
 def main():

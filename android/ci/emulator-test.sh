@@ -11,12 +11,14 @@ shot() { adb exec-out screencap -p > "$OUT/$1.png" || true; }
 run_as() { adb shell run-as "$PKG" "$@"; }
 fake_model=
 fake_draw=
+fake_apilayer=
 finish() {
   shot "final"
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null 2>&1
   adb logcat -d -t 4000 > "$OUT/logcat.txt" 2>&1 || true
   [ -n "$fake_model" ] && kill "$fake_model" 2>/dev/null  # a test that leaves it running keeps the job open
   [ -n "$fake_draw" ] && kill "$fake_draw" 2>/dev/null
+  [ -n "$fake_apilayer" ] && kill "$fake_apilayer" 2>/dev/null
   echo "RESULT: $1" | tee "$OUT/verdict.txt"
   [ "$1" = PASS ]
   exit $?
@@ -105,6 +107,10 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/team-check.sh'" < android/
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_model.py'" < android/ci/fake_model.py
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/kit-check.sh'" < android/ci/kit-check.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_draw.py'" < android/ci/fake_draw.py
+# the pretend APILayer and its saved pages, for the kit check inside Ubuntu (unpacked in guest-test5.sh)
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_apilayer.py'" < android/ci/fake_apilayer.py
+tar -C android/ci -czf "$OUT/apilayer-pages.tgz" apilayer-pages
+base64 -w 76 "$OUT/apilayer-pages.tgz" | adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/apilayer-pages.b64'"
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
@@ -726,6 +732,12 @@ python3 android/ci/fake_draw.py "$OUT/fake-draw-port" "$OUT/draw-asked.txt" 0.0.
 fake_draw=$!
 for _ in $(seq 1 50); do [ -s "$OUT/fake-draw-port" ] && break; sleep 0.2; done
 [ -s "$OUT/fake-draw-port" ] || finish "FAIL picture: the pretend picture service did not start"
+# and a pretend APILayer, for `apilayer` in the chat (further down)
+rm -f "$OUT/fake-apilayer-port" "$OUT/apilayer-asked.txt"
+python3 android/ci/fake_apilayer.py "$OUT/fake-apilayer-port" "$OUT/apilayer-asked.txt" 0.0.0.0 > "$OUT/fake-apilayer.log" 2>&1 < /dev/null &
+fake_apilayer=$!
+for _ in $(seq 1 50); do [ -s "$OUT/fake-apilayer-port" ] && break; sleep 0.2; done
+[ -s "$OUT/fake-apilayer-port" ] || finish "FAIL apilayer: the pretend APILayer did not start"
 KEYS=files/rootfs/root/.config/termant/keys.env
 keys_before=$(mktemp)
 sleep 2
@@ -739,6 +751,8 @@ had_keys=; run_as test -f "$KEYS" && had_keys=1 && run_as cat "$KEYS" > "$keys_b
   echo "export OPENCODE_CONFIG_CONTENT='{\"provider\":{\"termanttest\":{\"npm\":\"@ai-sdk/openai-compatible\",\"name\":\"Termant test\",\"options\":{\"baseURL\":\"http://10.0.2.2:$(cat "$OUT/fake-model-port")/v1\",\"apiKey\":\"x\"},\"models\":{\"fake\":{\"name\":\"Fake\"}}}}}'"
   # and `draw` at the pretend picture service: the first service answers with a picture
   echo "export TERMANT_DRAW_POLLINATIONS=http://10.0.2.2:$(cat "$OUT/fake-draw-port")/png TERMANT_DRAW_HORDE=http://10.0.2.2:$(cat "$OUT/fake-draw-port")/horde TERMANT_DRAW_GAP=0 TERMANT_DRAW_POLL=0.2"
+  # and `apilayer` at the pretend APILayer
+  echo "export TERMANT_APILAYER=http://10.0.2.2:$(cat "$OUT/fake-apilayer-port")/gw TERMANT_APILAYER_MARKET=http://10.0.2.2:$(cat "$OUT/fake-apilayer-port")"
 } | adb shell "run-as $PKG sh -c 'mkdir -p files/rootfs/root/.config/termant && cat > $KEYS'"
 change_prefs model=termanttest/fake switched= switched_at= free_limit_until= || finish "FAIL helpers: could not prepare the settings"
 run_as rm -f files/rootfs/root/helper-ran.txt
@@ -829,9 +843,45 @@ shot 23g-picture-kept
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
 adb shell "grep -q 'content-desc=\"Picture: sunrise-over-green-hills-' /sdcard/ui.xml" || finish "FAIL picture: after the app was opened again the chat has lost the picture"
 
+echo "APILayer in the chat: the key typed as a message is saved without a model, then the agent calls an API with it"
+# `apilayer`, the app and the chat are the real ones; APILayer is the pretend one, the model too.
+tap_on 'content-desc="Start a new chat"' || finish "FAIL apilayer: New chat button not found"
+sleep 2
+run_as rm -f files/rootfs/root/.config/termant/apilayer.json
+asked_before=$(wc -l < "$OUT/helpers-model-asked.txt")
+ask 'apilayer%skey%sgoodkey0123456789goodkey01234567' || finish "FAIL apilayer: could not send the key"
+wait_for_reply 40 || { shot 23h-apilayer-key-timeout; adb logcat -d -s Termant:I | tail -30; finish "FAIL apilayer: no reply to the key"; }
+sleep 2
+shot 23h-apilayer-key
+cp "$OUT/chat.json" "$OUT/chat-apilayer-key.json"
+python3 - "$OUT/chat-apilayer-key.json" <<'PY' || finish "FAIL apilayer: the key typed as a message was not saved by the app itself"
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+print("apilayer: reply to the key:", m)
+sys.exit(0 if not m["failed"] and "Saved the key good...67 (32 letters)" in m["text"] and "goodkey0123456789goodkey01234567" not in m["text"] else 1)
+PY
+[ "$(wc -l < "$OUT/helpers-model-asked.txt")" = "$asked_before" ] || { tail -n 5 "$OUT/helpers-model-asked.txt"; finish "FAIL apilayer: the message with the key went to a model"; }
+run_as cat files/rootfs/root/.config/termant/apilayer.json > "$OUT/apilayer-saved.json" 2>/dev/null
+grep -q '"key": "goodkey0123456789goodkey01234567"' "$OUT/apilayer-saved.json" || finish "FAIL apilayer: the key is not saved in Ubuntu"
+ask 'RUN%sapilayer%sget%sexchangerates_data/latest%sbase=USD%ssymbols=INR' || finish "FAIL apilayer: could not send the request"
+wait_for_reply 60 || { shot 23i-apilayer-timeout; adb logcat -d -s Termant:I | tail -30; finish "FAIL apilayer: no reply"; }
+sleep 2
+shot 23i-apilayer-answer
+cp "$OUT/chat.json" "$OUT/chat-apilayer.json"
+cat "$OUT/apilayer-asked.txt"
+python3 - "$OUT/chat-apilayer.json" <<'PY' || finish "FAIL apilayer: the reply does not carry what the API answered"
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+print("apilayer: reply:", m)
+sys.exit(0 if not m["failed"] and "83.512345" in m["text"] else 1)
+PY
+grep -q '^GET /gw/exchangerates_data/latest?base=USD&symbols=INR key=goodkey0123456789goodkey01234567 ' "$OUT/apilayer-asked.txt" || finish "FAIL apilayer: the gateway was not asked with the saved key"
+run_as rm -f files/rootfs/root/.config/termant/apilayer.json
+
 # Back to the real models and the settings from before.
 kill $fake_model 2>/dev/null; fake_model=
 kill $fake_draw 2>/dev/null; fake_draw=
+kill $fake_apilayer 2>/dev/null; fake_apilayer=
 run_as rm -f files/rootfs/root/.config/opencode/agents/poet.md
 sleep 2
 adb shell am force-stop "$PKG"
@@ -1068,12 +1118,14 @@ grep -q '^team-check-exit=0' "$OUT/result5.txt" || finish "FAIL helper agents (t
 grep -q '^team-real-run=yes' "$OUT/result5.txt" || finish "FAIL helper agents: OpenCode did not run with helpers inside Ubuntu"
 grep -q '^team-add-exit=0' "$OUT/result5.txt" || finish "FAIL team add"
 run_as cat files/rootfs/root/kit-check.txt > "$OUT/kit-check.txt" 2>/dev/null
-grep -q '^kit-check-exit=0' "$OUT/result5.txt" || finish "FAIL the kit (undo, tidy, study, readfile, me, watch, diary, draw, attached files) inside Ubuntu"
+grep -q '^kit-check-exit=0' "$OUT/result5.txt" || finish "FAIL the kit (undo, tidy, study, readfile, me, watch, diary, draw, apilayer, attached files) inside Ubuntu"
 grep -q '^gallery-exit=0' "$OUT/result5.txt" || finish "FAIL phone gallery did not put a picture into the phone's gallery"
 grep -q '^gallery-said=yes' "$OUT/result5.txt" || finish "FAIL phone gallery did not say where the copy is"
 grep -q '^gallery-not-a-picture-exit=1' "$OUT/result5.txt" || finish "FAIL phone gallery took a file that is no picture"
 grep -q '^draw-command=yes' "$OUT/result5.txt" || finish "FAIL draw is not a command in Ubuntu"
 grep -q '^phone-draw=yes' "$OUT/result5.txt" || finish "FAIL phone draw does not lead to draw"
+grep -q '^apilayer-command=yes' "$OUT/result5.txt" || finish "FAIL apilayer is not a command in Ubuntu"
+grep -q '^apilayer-no-key=yes' "$OUT/result5.txt" || finish "FAIL apilayer without a key does not say that it needs one"
 grep -q '^every-rule-exit=0' "$OUT/result5.txt" || finish "FAIL phone rule add every 20m"
 grep -q '^bad-every-exit=1' "$OUT/result5.txt" || finish "FAIL a rule for every 5 minutes was accepted"
 grep -q '^bad-job-exit=1' "$OUT/result5.txt" || finish "FAIL phone job without a task was accepted"
