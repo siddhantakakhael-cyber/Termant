@@ -472,7 +472,7 @@ asks them:
 
 | | [Pollinations](https://pollinations.ai) (asked first) | [AI Horde](https://aihorde.net) (asked when the first does not draw, or with `--slow`) |
 | --- | --- | --- |
-| Time | a few seconds | from a quarter of a minute to a few minutes (volunteers' computers, a queue) |
+| Time | 4 to 22 seconds in three builds | 10 seconds to a minute and a half in three builds; it can be minutes (volunteers' computers, a queue) |
 | Size | 768 a side (wide 768×432, tall 432×768) | 512 a side (wide 576×320, tall 320×576) |
 | Logo | its small logo in a corner | none |
 | How often | one picture in 45 seconds for one internet address; `draw` waits | as the queue allows |
@@ -481,8 +481,8 @@ These two were made by a build of 22 November 2026; every build asks the real
 services (`android/ci/draw-live.sh`) and keeps their answers. The first is by
 Pollinations, in 4 seconds, for "a cat drinking tea at a window, warm morning
 light, photo". The second is by AI Horde for "a small wooden boat on a calm
-lake, evening, photo"; it took about a minute and a half in one build and 14
-seconds in the next.
+lake, evening, photo"; it took about a minute and a half in that build and 14
+and 10 seconds in the next two.
 
 <img src="screenshots/draw-quick-service.jpg" width="300" alt="A cat sitting at a window, with the pollinations.ai logo in the corner"> <img src="screenshots/draw-slow-service.webp" width="300" alt="A red wooden boat on a calm lake in the evening">
 
