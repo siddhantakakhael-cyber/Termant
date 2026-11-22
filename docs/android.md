@@ -550,6 +550,8 @@ That message is handled by the app itself. It is not sent to any AI model;
 the key is saved on the phone only (in Ubuntu, readable by you alone) and is
 shown afterwards only as `abcd...yz`. `apilayer key remove` forgets it. The
 link you use to sign in to APILayer is not a key; the tool refuses it.
+Your own message with the key stays readable in that chat on your phone;
+delete the chat if you do not want it there.
 
 By hand in any tab:
 
@@ -584,7 +586,9 @@ What to know:
 **How it was tested.** No APILayer key was available, so no real call with a
 key has been made. The tests use a pretend APILayer built from real pages
 saved on 22 November 2026; what a working key gets back there is invented.
-Real, without a key: the tool read the list and the documentation of all 60
+On the test phone (an emulator) the key was sent as a chat message, was
+saved without any model being asked, and the next request was answered by
+the pretend APILayer with that key. Real, without a key: the tool read the list and the documentation of all 60
 APIs (302 endpoints), and the gateway's answers to no key, a wrong key and an
 unknown API are the real ones. The sentences for "not subscribed" (403) and
 "used up" (429) and the counting of requests left follow APILayer's
