@@ -195,6 +195,77 @@ $zip = [IO.Compression.ZipFile]::OpenRead($made)
 $names = ($zip.Entries | ForEach-Object { $_.FullName }) -join ' '
 $reader = New-Object IO.StreamReader($zip.GetEntry('word/document.xml').Open()); $after = $reader.ReadToEnd(); $reader.Dispose(); $zip.Dispose()
 Check 'the changed file is still a whole .docx' (($names -match '\[Content_Types\]\.xml') -and ($names -match '_rels/\.rels') -and ($after -match '<w:tbl>') -and ($after -match '<w:b ?/>')) "$names"
+# ---- AI marks in text and files (pc marks): with this PC's own Python first
+$ordinal = [StringComparison]::Ordinal
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$zw = [string][char]0x200B; $wj = [string][char]0x2060; $narrow = [string][char]0x202F
+$note = Join-Path $Out 'marked note.txt'
+$noteText = 'Namaste' + $zw + ' duniya' + $wj + ', yeh ek' + $narrow + "note hai.`r`n"
+[IO.File]::WriteAllText($note, $noteText, $utf8)
+Expect 'marks help' 'does not remove a logo' marks help | Out-Null
+$r = Run marks setup
+Check 'marks setup finds a Python on this PC' (($r.code -eq 0) -and ($r.out -match "Ready\. Python 3\.\d+\.\d+\S* \(this PC's\)")) "exit $($r.code): $($r.out)"
+$r = Run marks check $note
+Check 'marks check finds the invisible letters in a text' (($r.code -eq 0) -and ($r.out -match 'Kind: text') -and ($r.out -match 'U\+200B ZERO WIDTH SPACE') -and ($r.out -match 'U\+2060') -and ($r.out -match 'Result: marks found') -and ($r.out -match 'Not seen by this check') -and ($r.out -notmatch '(?m)^Note:')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+$r = Run marks clean $note
+$copy = Join-Path $Out 'marked note.cleaned.txt'
+$copyText = if (Test-Path -LiteralPath $copy) { [IO.File]::ReadAllText($copy, $utf8) } else { '' }
+Check 'marks clean makes a cleaned copy beside the file' (($r.code -eq 0) -and ($r.out -match 'Cleaned copy: .*marked note\.cleaned\.txt') -and ($r.out -match 'invisible letters removed: 2, odd spaces made plain: 1') -and ($r.out -match 'The original was not changed') -and [string]::Equals($copyText, "Namaste duniya, yeh ek note hai.`r`n", $ordinal)) "exit $($r.code): $($r.out -replace '\s+', ' ') :: copy has $($copyText.Length) letters"
+Check 'the original still has its marks' ([string]::Equals([IO.File]::ReadAllText($note, $utf8), $noteText, $ordinal)) "$((Get-Item -LiteralPath $note).Length) bytes"
+Expect 'the cleaned text has no marks' 'Result: no marks found' marks check $copy | Out-Null
+$r = Run marks clean $copy (Join-Path $Out 'again.txt')
+Check 'cleaning a clean text says that nothing was found' (($r.code -eq 0) -and ($r.out -match 'Nothing to remove was found')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+# a small PNG that says in its text notes that an AI tool made it
+$png = Join-Path $Out 'made by ai.png'
+[IO.File]::WriteAllBytes($png, [Convert]::FromBase64String('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAO3RFWHRwYXJhbWV0ZXJzAGEgY2F0LCBTdGVwczogMjAsIFNhbXBsZXI6IEV1bGVyIGEsIE1vZGVsOiBzZF94bKSKWcQAAAARdEVYdFNvZnR3YXJlAERBTEwtRSAzjNdsrgAAABFJREFUeJxjaHBQwIoYhpYEAPoDOAHK7tv6AAAAAElFTkSuQmCC'))
+$r = Run marks check $png
+Check 'marks check finds what a picture says about its making' (($r.code -eq 0) -and ($r.out -match 'Kind: image') -and ($r.out -match 'AI metadata: True') -and ($r.out -match 'DALL-E') -and ($r.out -match 'Result: marks found') -and ($r.out -match 'inside the picture')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+$pngCopy = Join-Path $Out 'clean picture.png'
+$r = Run marks clean $png $pngCopy
+$pngBytes = if (Test-Path -LiteralPath $pngCopy) { [IO.File]::ReadAllBytes($pngCopy) } else { [byte[]]@() }
+Check 'marks clean takes it out of the picture, into the file that was named' (($r.code -eq 0) -and ($r.out -match 'Cleaned copy: .*clean picture\.png') -and ($r.out -match 'drop chunk tEXt') -and ($pngBytes.Length -gt 60) -and ($pngBytes.Length -lt 174) -and ($pngBytes[1] -eq 0x50) -and ((Get-Item -LiteralPath $png).Length -eq 174)) "exit $($r.code): $($r.out -replace '\s+', ' ') :: $($pngBytes.Length) bytes"
+$r = Run marks check $pngCopy
+Check 'the cleaned picture has no marks' (($r.code -eq 0) -and ($r.out -match 'AI metadata: False') -and ($r.out -match 'Result: no marks found')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+$r = Run marks check $doc
+Check 'marks check reads a Word file' (($r.code -eq 0) -and ($r.out -match 'Format: docx') -and ($r.out -match 'Result: ')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+$r = Run marks check (Join-Path $Out 'missing.txt')
+Check 'marks: a missing file is refused' (($r.code -ne 0) -and ($r.out -match 'no such file')) "exit $($r.code): $($r.out)"
+$r = Run marks clean $note $note
+Check 'marks clean does not write over the original' (($r.code -ne 0) -and ($r.out -match 'must be another file') -and [string]::Equals([IO.File]::ReadAllText($note, $utf8), $noteText, $ordinal)) "exit $($r.code): $($r.out)"
+$odd = Join-Path $Out 'odd.bin'
+[IO.File]::WriteAllBytes($odd, [byte[]](0x4D, 0x5A, 0x90, 0x00, 0x62, 0x69, 0x6E, 0x00, 0x01, 0x02))
+$r = Run marks check $odd
+Check 'marks: a kind of file it does not know is refused' (($r.code -ne 0) -and ($r.out -match 'not known to the check')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+$r = Run marks nonsense
+Check 'marks: an unknown word shows the usage' (($r.code -ne 0) -and ($r.out -match 'pc marks check <file>')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+# the clipboard
+Set-Clipboard -Value ('Hello' + $zw + ' world')
+$r = Run marks clipboard check
+Check 'marks clipboard check finds the invisible letter' (($r.code -eq 0) -and ($r.out -match 'U\+200B') -and ($r.out -match 'marks found in the clipboard text')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+Check 'and leaves the clipboard as it was' ([string]::Equals([string](Get-Clipboard -Raw), ('Hello' + $zw + ' world'), $ordinal)) "$(([string](Get-Clipboard -Raw)).Length) letters"
+$r = Run marks clipboard
+Check 'marks clipboard cleans the text in the clipboard' (($r.code -eq 0) -and ($r.out -match 'The clipboard text is cleaned: invisible letters removed: 1, odd spaces made plain: 0') -and [string]::Equals([string](Get-Clipboard -Raw), 'Hello world', $ordinal)) "exit $($r.code): $($r.out -replace '\s+', ' ') :: $(([string](Get-Clipboard -Raw)).Length) letters"
+$r = Run marks clipboard
+Check 'a clean clipboard is left alone' (($r.code -eq 0) -and ($r.out -match 'Nothing to remove was found in the clipboard text \(11 letters\)')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+# ---- the same on a PC without Python: Termant fetches one for itself (22 MB), once
+$env:TERMANT_PYTHON = 'own'
+$r = Run marks setup
+$fetched = ($r.code -eq 0) -and ($r.out -match 'Getting one for Termant') -and ($r.out -match "Ready\. Python 3\.12\.\d+ \(Termant's own\)")
+Check 'without a Python on the PC, one is fetched for Termant' $fetched "exit $($r.code): $($r.out -replace '\s+', ' ')" -Soft
+if ($fetched) {
+  $r = Run marks setup
+  Check 'the second time nothing is fetched' (($r.code -eq 0) -and ($r.out -notmatch 'Getting one') -and ($r.out -match "\(Termant's own\)") -and ($r.out -match 'termant-pc-test\\python\\python\.exe')) "exit $($r.code): $($r.out)"
+  $r = Run marks check $note
+  Check "Termant's own Python finds the same marks" (($r.code -eq 0) -and ($r.out -match 'U\+200B ZERO WIDTH SPACE') -and ($r.out -match 'Result: marks found')) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+  $ownCopy = Join-Path $Out 'own python.png'
+  $r = Run marks clean $png $ownCopy
+  Check "and cleans the picture" (($r.code -eq 0) -and ($r.out -match 'drop chunk tEXt') -and (Test-Path -LiteralPath $ownCopy) -and ((Get-Item -LiteralPath $ownCopy).Length -eq $pngBytes.Length)) "exit $($r.code): $($r.out -replace '\s+', ' ')"
+  $leftovers = @(Get-ChildItem -LiteralPath $env:TERMANT_DATA -Force | Where-Object { $_.Name -match 'python\.(tar\.gz|new)' })
+  Check 'nothing of the download is left lying about' ($leftovers.Count -eq 0) "$(($leftovers | ForEach-Object { $_.Name }) -join ' ')"
+}
+Remove-Item Env:TERMANT_PYTHON -ErrorAction SilentlyContinue
+$pycache = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot '..\resources\marks') -Force | Where-Object { $_.Name -eq '__pycache__' })
+Check "nothing is written into Termant's own folder" ($pycache.Count -eq 0) "$($pycache.Count) __pycache__"
 Expect 'drag' 'Dragged from 300,300 to 340,300' drag 300 300 340 300 | Out-Null
 $r = Run skill list
 Check 'learning commands say that the app is not running' (($r.code -ne 0) -and ($r.out -match 'not running')) "exit $($r.code): $($r.out)"

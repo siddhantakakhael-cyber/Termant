@@ -3,6 +3,7 @@
 // skills (step-by-step how-tos kept as files) and a diary of what was learned and when.
 // Nothing here needs Electron, so `node test/learn-test.js` can run it anywhere.
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -361,6 +362,67 @@ class Learned {
     return (again ? 'Skill updated: ' : 'Skill learned: ') + name + ' (' + about + '). You will find it in every chat from now on.';
   }
 
+  /**
+   * Puts the skills that come with the app among the user's skills. folder: one NAME.md per skill,
+   * with the lines "what:", "from:" and "version:" above a line "---" and the steps below it.
+   * Each version of a skill is put there once: a skill the user removed stays away, and one the
+   * user changed, or had under that name already, is left as it is. Gives the names it put there.
+   */
+  addBuiltIn(folder) {
+    const seenFile = path.join(this.dir, 'builtin-skills.json');
+    let seen = {};
+    try {
+      seen = JSON.parse(fs.readFileSync(seenFile, 'utf8')) || {};
+    } catch (e) {
+      seen = {};
+    }
+    let files = [];
+    try {
+      files = fs.readdirSync(folder).filter((f) => f.endsWith('.md')).sort();
+    } catch (e) {
+      return [];
+    }
+    const mark = (text) => crypto.createHash('sha256').update(text).digest('hex');
+    const added = [];
+    let changed = false;
+    for (const file of files) {
+      const name = file.slice(0, -3);
+      const text = fs.readFileSync(path.join(folder, file), 'utf8').replace(/\r\n/g, '\n');
+      const cut = text.indexOf('\n---\n');
+      if (!SKILL_NAME.test(name) || cut < 0) continue;
+      const head = text.slice(0, cut);
+      const field = (key) => ((head.match(new RegExp('^' + key + ': (.*)$', 'm')) || [])[1] || '').trim();
+      const version = Number(field('version')) || 1;
+      const about = field('what');
+      const steps = text.slice(cut + 5).trim();
+      if (!about || about.length > MOST_ABOUT || steps.length < 20 || steps.length > MOST_SKILL_LETTERS) continue;
+      const target = path.join(this.skillsDir, name + '.md');
+      let now = null;
+      try {
+        now = fs.readFileSync(target, 'utf8');
+      } catch (e) {
+        now = null;
+      }
+      const had = seen[name];
+      if (had && had.version >= version) continue;
+      changed = true;
+      if (had ? (now === null || mark(now) !== had.mark) : now !== null) {
+        seen[name] = { version, mark: had ? had.mark : '' };
+        continue;
+      }
+      const made = '# ' + name + '\nwhat: ' + about + '\nfrom: ' + field('from') + '\nlearned: ' + day() + '\n---\n' + steps + '\n';
+      fs.mkdirSync(this.skillsDir, { recursive: true });
+      fs.writeFileSync(target, made);
+      seen[name] = { version, mark: mark(made) };
+      added.push(name);
+    }
+    if (changed) {
+      fs.mkdirSync(this.dir, { recursive: true });
+      fs.writeFileSync(seenFile, JSON.stringify(seen, null, 1));
+    }
+    return added;
+  }
+
   showSkill(name) {
     name = String(name || '').trim();
     const file = path.join(this.skillsDir, name + '.md');
@@ -383,7 +445,7 @@ class Learned {
   guide(showCommand) {
     const list = this.skills();
     if (!list.length) return '';
-    return '# Skills you taught yourself earlier\n\nBefore a task that one of these fits, read it with `' + showCommand +
+    return '# Skills you have (taught yourself earlier, or came with the app)\n\nBefore a task that one of these fits, read it with `' + showCommand +
       ' NAME` and follow it.\n\n' + list.map((s) => '- `' + s.name + '`: ' + s.about).join('\n') + '\n';
   }
 }

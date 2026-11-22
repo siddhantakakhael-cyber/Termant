@@ -225,6 +225,22 @@ module.exports = async function selftest(ctx) {
       check('pc skill show prints the steps', r.code === 0 && /2\. Insert > Table\./.test(r.out), JSON.stringify(r));
       r = await pc('skill', 'save', 'Bad Name', 'x', stepsFile);
       check('a wrong skill name is refused', r.code !== 0 && /name must be/.test(r.err + r.out), JSON.stringify(r));
+      // the skill that comes with the app, and the command it uses (the installed files, a real Python)
+      r = await pc('skill', 'list');
+      check('the skill that comes with the app is among the skills', r.code === 0 && /^remove-ai-marks: Find and remove the marks AI tools leave/m.test(r.out), JSON.stringify(r));
+      check('and is named in the agent\'s guide', fs.readFileSync(path.join(store.dir, 'agent', 'learned.md'), 'utf8').includes('- `remove-ai-marks`: '));
+      r = await pc('skill', 'show', 'remove-ai-marks');
+      check('pc skill show prints its steps', r.code === 0 && /pc marks clean/.test(r.out) && /from: https:\/\/github\.com\/guillaumemeyer\/watermarks-remover/.test(r.out), JSON.stringify(r).slice(0, 400));
+      const marked = path.join(dir, 'marked note.txt');
+      fs.writeFileSync(marked, 'Namaste\u200b duniya\u2060, yeh ek\u202fnote hai.\r\n');
+      r = await pc('marks', 'check', marked);
+      check('pc marks check finds invisible letters in a text file', r.code === 0 && /Kind: text/.test(r.out) && /U\+200B ZERO WIDTH SPACE/.test(r.out) && /Result: marks found/.test(r.out) && /Not seen by this check/.test(r.out), JSON.stringify(r).slice(0, 900));
+      r = await pc('marks', 'clean', marked);
+      const cleaned = path.join(dir, 'marked note.cleaned.txt');
+      check('pc marks clean makes a cleaned copy and keeps the original', r.code === 0 && /Cleaned copy: .*marked note\.cleaned\.txt/.test(r.out) && /invisible letters removed: 2, odd spaces made plain: 1/.test(r.out) && /The original was not changed/.test(r.out)
+        && fs.existsSync(cleaned) && fs.readFileSync(cleaned, 'utf8') === 'Namaste duniya, yeh ek note hai.\r\n' && fs.readFileSync(marked, 'utf8').includes('\u200b'), JSON.stringify(r).slice(0, 900));
+      r = await pc('marks', 'check', cleaned);
+      check('the copy has no marks', r.code === 0 && /Result: no marks found/.test(r.out), JSON.stringify(r).slice(0, 600));
       r = await pc('learned');
       check('pc learned tells what was learned today', r.code === 0 && /Learned today \(\d{4}-\d\d-\d\d\): 2/.test(r.out) && /- skill word-table: Make a table in Word \(from https:\/\/youtu\.be\/dQw4w9WgXcQ\)/.test(r.out) && /- note: The user likes chai/.test(r.out), JSON.stringify(r));
       // helper agents: made with the pc command, and in Settings

@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.4.0).** It is built and tested automatically on a Windows
+> **Early version (0.5.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.4.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.5.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -86,6 +86,8 @@ pc ask <question> [choices ...]
 pc rule add <at HH:MM | every 30m | startup | in 10m> do <command>
 pc rule list                pc rule remove <id>
 pc note add <text>          pc note list     pc note remove <number>
+
+pc marks check <file>       pc marks clean <file> [new file]     pc marks clipboard     pc marks setup
 ```
 
 ## Good to know
@@ -283,6 +285,65 @@ pc word set report.docx 3 "New text"            pc word delete report.docx 5
   `pc drag X1 Y1 X2 Y2` to select from one point to another, `pc key ctrl+b`,
   `pc type`. Old `.doc` files must be saved as `.docx` first.
 
+## Marks that AI tools leave: the remove-ai-marks skill
+
+New in 0.5.0. The skill `remove-ai-marks` from the project
+[watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover)
+(MIT licence, by Guillaume Meyer and contributors) comes with the app. It is
+in the skill list from the first start (`pc skill list`); `pc skill remove
+remove-ai-marks` takes it away for good. Ask in the chat: "is file se AI ka
+nishaan hatao", "is photo ka metadata saaf karo", "is text ke chhupe akshar
+hatao". Or by hand:
+
+```
+pc marks check "C:\Users\me\Pictures\photo.png"     what the file carries; nothing is changed
+pc marks clean "C:\Users\me\Pictures\photo.png"     makes photo.cleaned.png beside it; the original stays
+pc marks clean report.docx clean-report.docx        the same, into a file you name
+pc marks clipboard                                  cleans the text in the clipboard, ready to paste
+pc marks clipboard check                            only looks
+```
+
+**What it finds and removes**
+
+- In text (also inside Word, HTML and Markdown files): invisible letters such
+  as zero-width spaces, word joiners and tag letters, and odd spaces, which
+  are made plain spaces. Letters a script needs (emoji joiners, Indic and
+  Arabic joiners) are kept.
+- In files, what they say about how they were made: C2PA / Content
+  Credentials, EXIF, XMP and PNG text notes in pictures (PNG, JPEG, WebP,
+  AVIF, HEIC, GIF, TIFF, BMP, SVG); the properties of PDF, Word, Excel,
+  PowerPoint, EPUB and ODT files; the tags of MP3, WAV, FLAC, MP4 and MOV
+  files.
+
+**What it does not do**
+
+- It does not remove a logo, a stamp or writing that you can **see** on a
+  picture or a video. Nothing in it changes pixels.
+- It does not remove a watermark hidden in the pixels or the sound (Google's
+  SynthID and alike), and it cannot see or measure one in the choice of
+  words. For text, the skill lets the agent write the text again in its own
+  words when you ask; that is best effort, with no way here to check it.
+- A cleaned file is not proof of anything. The skill tells the agent never
+  to call something "human-written" or "undetectable", and not to help hide
+  the use of AI where it has to be told (school work, an employer's or a
+  platform's rule).
+
+**How it works here.** The upstream skill talks to a Python service of the
+same project. Termant ships eight Python files of that project unchanged
+(`windows/resources/marks`, from commit `5a62be6`; standard library only) and
+runs two of them directly, with no server. They need Python 3.10 or newer: the
+PC's own is used when there is one; otherwise Termant fetches a Python for
+itself once (22 MB, [python-build-standalone](https://github.com/astral-sh/python-build-standalone)
+3.12, checked against its SHA-256) into its own data folder. Nothing of your
+files leaves the PC.
+
+**Left out** of the upstream project: its HTTP server, the detectors and
+scores for statistical watermarks, the stylometry score, the pixel-level
+removers (CtrlRegen, MarkDiffusion) that need a graphics card and gigabytes
+of models, and its "stealer" module. PDFs with pictures inside are cleaned
+fully only when Ghostscript is installed on the PC; the tool says when
+something remains.
+
 ## ElevenLabs voice with several keys
 
 **Settings → Voice (ElevenLabs) → ElevenLabs keys**: paste your keys, one per
@@ -365,6 +426,13 @@ Server 2025 machine with a real desktop:
    reached it. The file dialog of the **+** button is not opened by the
    test, and no real model was asked what a picture shows.
 
+9. `pc marks`: a text file with three invisible letters, a PNG whose text notes
+   name an AI tool, a Word file and the clipboard are checked and cleaned with
+   the test machine's own Python; the copies must be clean and the originals
+   unchanged. Then the same without the machine's Python: Termant must fetch
+   its own (this step is allowed to fail when the download does) and get the
+   same results. The installed app must list the skill and clean a text file.
+
 What the test machine cannot check: sound (it has no speakers, so volume, mute
 and `pc say` are only tried), brightness, battery, Wi-Fi, voice dictation, and
 the blue SmartScreen box. Also not checked:
@@ -380,6 +448,10 @@ the blue SmartScreen box. Also not checked:
 - **A real model that uses helpers.** The helpers were run with a pretend
   model that is made to hand work over. Whether a real model does so when it
   should, and how good the helpers' work then is, was not tested.
+- **Real marked files.** `pc marks` was tried on small files made for the
+  test, not on a real picture with Content Credentials (C2PA), a real PDF or
+  a real video. Whether a real model follows the skill, and how good its
+  rewrite of a text is, was not tested.
 - **A model that learns.** That a model really searches YouTube and saves a
   skill when it does not know something was not tested; it is told to in its
   rules.

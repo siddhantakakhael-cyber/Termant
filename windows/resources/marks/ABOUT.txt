@@ -1,0 +1,17 @@
+These Python files are not Termant's own. They are copied, unchanged, from
+
+  https://github.com/guillaumemeyer/watermarks-remover
+  folder service/scripts, commit 5a62be6338d2812372b1da440e55c82922f97d53 (1 November 2026)
+  MIT licence, Copyright (c) 2026 Guillaume Meyer and contributors (see LICENSE)
+
+They are the part of that project that looks for and removes AI provenance marks
+in text and files with Python's standard library only: invisible Unicode in text,
+and C2PA / EXIF / XMP / document properties in pictures, PDFs, Office files, audio
+and video. `pc marks` (termant-pc.ps1) runs inspect_file.py and clean_file.py.
+
+Left out on purpose: the HTTP server, the statistical-watermark detectors and
+scorers, the stylometry score, the pixel-level removers (CtrlRegen, MarkDiffusion),
+the "stealer" module, benchmarks and tests.
+
+To update: copy the same eight files from a newer commit, change the commit above,
+and run windows/test/pc-test.ps1.

@@ -802,6 +802,198 @@ function Look-Text($answer, [int]$W, [int]$H, [string]$what, [long]$ms, [string]
   return ,$out.ToArray()
 }
 
+# ---------------------------------------------------------------- AI marks in text and files (pc marks)
+# The looking and the cleaning are done by Python files of another project, kept unchanged in the
+# folder `marks` beside this script (marks\ABOUT.txt says which). They need Python 3.10 or newer:
+# the PC's own, or else one that is fetched once into Termant's folder.
+$MarksPython = @{
+  url = 'https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.12.16%2B20261110-x86_64-pc-windows-msvc-install_only_stripped.tar.gz'
+  sha = '355ee61b8207b91574491b1c6dc9b0ebb4408fc56bfafe498f3ef439314b52dc'
+}
+# One argument, quoted the way Windows programs read their command line.
+function Quote-Arg([string]$a) {
+  if ($a -ne '' -and $a -notmatch '[\s"]') { return $a }
+  $a = [regex]::Replace($a, '(\\*)"', '$1$1\"')
+  $a = [regex]::Replace($a, '(\\+)$', '$1$1')
+  return '"' + $a + '"'
+}
+# Runs a program and gives back its exit code and what it printed (as UTF-8), without a window.
+function Run-Program([string]$exe, [string[]]$arguments, [int]$seconds = 900) {
+  $info = New-Object System.Diagnostics.ProcessStartInfo
+  $info.FileName = $exe
+  $info.Arguments = (@($arguments | ForEach-Object { Quote-Arg $_ }) -join ' ')
+  $info.UseShellExecute = $false; $info.CreateNoWindow = $true
+  $info.RedirectStandardOutput = $true; $info.RedirectStandardError = $true
+  $info.StandardOutputEncoding = [Text.Encoding]::UTF8; $info.StandardErrorEncoding = [Text.Encoding]::UTF8
+  $info.EnvironmentVariables['PYTHONUTF8'] = '1'
+  $info.EnvironmentVariables['PYTHONIOENCODING'] = 'utf-8'
+  $info.EnvironmentVariables['PYTHONDONTWRITEBYTECODE'] = '1'
+  foreach ($name in @('PYTHONHOME', 'PYTHONPATH', 'PYTHONSTARTUP')) { $info.EnvironmentVariables.Remove($name) }
+  $p = New-Object System.Diagnostics.Process
+  $p.StartInfo = $info
+  [void]$p.Start()
+  $err = $p.StandardError.ReadToEndAsync(); $out = $p.StandardOutput.ReadToEndAsync()
+  if (-not $p.WaitForExit($seconds * 1000)) { try { $p.Kill() } catch {}; throw "it did not finish in $seconds seconds" }
+  $p.WaitForExit()
+  return @{ code = $p.ExitCode; out = [string]$out.Result; err = [string]$err.Result }
+}
+# The version of a Python when it is 3.10 or newer, else nothing.
+function Marks-Try([string]$exe, [string[]]$before) {
+  try {
+    $r = Run-Program $exe (@($before) + @('-c', 'import sys; print(sys.version.split()[0]); sys.exit(0 if sys.version_info >= (3, 10) else 3)')) 30
+    if ($r.code -eq 0 -and $r.out.Trim() -match '^3\.\d+') { return $r.out.Trim() }
+  } catch {}
+  return $null
+}
+# A Python to run the files with: @{ exe; before; version; whose }. TERMANT_PYTHON names one to use;
+# TERMANT_PYTHON=own leaves the PC's Pythons aside (the tests use it).
+function Marks-Python {
+  $ownDir = Join-Path (Data-Dir) 'python'
+  $own = Join-Path $ownDir 'python.exe'
+  $tries = @()
+  if ($env:TERMANT_PYTHON -and $env:TERMANT_PYTHON -ne 'own') { $tries += @{ exe = $env:TERMANT_PYTHON; before = @(); whose = 'named by TERMANT_PYTHON' } }
+  if (Test-Path -LiteralPath $own) { $tries += @{ exe = $own; before = @(); whose = "Termant's own" } }
+  if ($env:TERMANT_PYTHON -ne 'own') {
+    foreach ($name in @('py.exe', 'python.exe', 'python3.exe')) {
+      $found = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($found) {
+        $before = @(); if ($name -eq 'py.exe') { $before = @('-3') }
+        $tries += @{ exe = $found.Source; before = $before; whose = "this PC's" }
+      }
+    }
+  }
+  foreach ($t in $tries) {
+    $version = Marks-Try $t.exe $t.before
+    if ($version) { $t.version = $version; return $t }
+  }
+  if (-not [Environment]::Is64BitOperatingSystem) { throw 'this PC has no Python 3.10 or newer, and the one Termant can fetch needs 64-bit Windows. Install Python from https://www.python.org/downloads/ and try again.' }
+  $tar = Join-Path $env:SystemRoot 'System32\tar.exe'
+  if (-not (Test-Path -LiteralPath $tar)) { throw 'this PC has no Python 3.10 or newer, and this Windows is too old to unpack one. Install Python from https://www.python.org/downloads/ (tick "Add python.exe to PATH") and try again.' }
+  [Console]::Out.WriteLine('(This PC has no Python 3.10 or newer. Getting one for Termant, 22 MB, once.)')
+  $dir = Data-Dir
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  $pack = Join-Path $dir 'python.tar.gz'; $new = Join-Path $dir 'python.new'
+  Fetch $MarksPython $pack
+  if (Test-Path -LiteralPath $new) { Remove-Item -LiteralPath $new -Recurse -Force }
+  New-Item -ItemType Directory -Force -Path $new | Out-Null
+  $r = Run-Program $tar @('-xzf', $pack, '-C', $new) 600
+  Remove-Item -LiteralPath $pack -Force
+  if ($r.code -ne 0 -or -not (Test-Path -LiteralPath (Join-Path $new 'python\python.exe'))) {
+    Remove-Item -LiteralPath $new -Recurse -Force -ErrorAction SilentlyContinue
+    throw "the Python that was fetched could not be unpacked ($(($r.err -replace '\s+', ' ').Trim()))"
+  }
+  if (Test-Path -LiteralPath $ownDir) { Remove-Item -LiteralPath $ownDir -Recurse -Force }
+  Move-Item -LiteralPath (Join-Path $new 'python') -Destination $ownDir
+  Remove-Item -LiteralPath $new -Recurse -Force -ErrorAction SilentlyContinue
+  $version = Marks-Try $own @()
+  if (-not $version) { throw 'the Python that was fetched does not start on this PC' }
+  return @{ exe = $own; before = @(); whose = "Termant's own"; version = $version }
+}
+function Marks-Run($python, [string]$name, [string[]]$arguments) {
+  $file = Join-Path (Join-Path $PSScriptRoot 'marks') $name
+  if (-not (Test-Path -LiteralPath $file)) { throw "the file $name is missing from Termant's folder; install Termant again" }
+  return Run-Program $python.exe (@($python.before) + @('-B', '-X', 'utf8', $file) + @($arguments))
+}
+function Marks-Said($r) { return ((@($r.err, $r.out) | Where-Object { $_ -and $_.Trim() }) -join "`n").Trim() }
+function Marks-File([string]$path) {
+  if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { Fail "pc marks: no such file: $path" }
+  return (Resolve-Path -LiteralPath $path).ProviderPath
+}
+# What the check cannot see, said with every answer so that nobody takes "no marks" for more than it is.
+function Marks-Limits([string]$report) {
+  if ($report -match '(?m)^Kind: text') { return 'Not seen by this check: a watermark that sits in the choice of the words themselves (SynthID-Text and alike).' }
+  if ($report -match '(?m)^Kind: (image|av)') { return 'Not seen and not removed: a watermark inside the picture or the sound itself (SynthID and alike). Only what is written beside it in the file is.' }
+  return 'Not seen and not removed: watermarks inside pictures themselves (SynthID and alike), and one in the choice of the words.'
+}
+function Marks-Command {
+  $what = if ($rest.Count -gt 0) { $rest[0] } else { 'help' }
+  $usage = @'
+pc marks: the marks AI tools leave in text and files (for your own content)
+  pc marks check <file>             what the file carries; nothing is changed
+  pc marks clean <file> [new file]  a cleaned copy (default: NAME.cleaned.EXT beside it); the original stays
+  pc marks clipboard                cleans the text in the clipboard (pc marks clipboard check: only looks)
+  pc marks setup                    gets ready: finds Python on this PC, or fetches one for Termant (22 MB, once)
+It finds and removes: invisible letters in text (zero-width, odd spaces, tag letters), and what a file
+says about how it was made: C2PA / Content Credentials, EXIF, XMP, PNG text notes, the properties of
+PDF, Word, Excel, PowerPoint, EPUB and ODT files, and the tags of MP3, WAV, FLAC, MP4 and MOV files.
+It does not remove a logo or writing you can see on a picture, and not a watermark hidden in the
+pixels, the sound or the choice of words (SynthID and alike).
+'@
+  if ($what -eq 'help' -or $what -eq '--help') { Write-Output $usage; return }
+  if (@('check', 'clean', 'clipboard', 'setup') -notcontains $what) { [Console]::Error.WriteLine($usage); exit 1 }
+  try { $python = Marks-Python } catch { Fail "pc marks: $($_.Exception.Message)" }
+  if ($what -eq 'setup') {
+    Write-Output "Ready. Python $($python.version) ($($python.whose)): $($python.exe)"
+    return
+  }
+  if ($what -eq 'check') {
+    Need 2 'marks check <file>'
+    $full = Marks-File $rest[1]
+    try { $r = Marks-Run $python 'inspect_file.py' @($full) } catch { Fail "pc marks: $($_.Exception.Message)" }
+    if ($r.code -ne 0 -and $r.code -ne 1) { Fail "pc marks: the file could not be read. $(Marks-Said $r)" }
+    $report = (@($r.out -split "`r?`n") | Where-Object { $_ -and $_ -notmatch '^Note:' }) -join "`n"
+    if ($report -match '(?m)^Kind: unknown') { Fail "pc marks: this kind of file is not known to the check (it knows text, pictures, PDF, Office, EPUB, ODT, audio and video files).`n$report" }
+    Write-Output $report
+    if ($r.code -eq 1) { Write-Output "Result: marks found. For a cleaned copy: pc marks clean `"$full`"" }
+    else { Write-Output 'Result: no marks found in this file.' }
+    Write-Output (Marks-Limits $report)
+    return
+  }
+  if ($what -eq 'clean') {
+    Need 2 'marks clean <file> [new file]'
+    $full = Marks-File $rest[1]
+    if ($rest.Count -gt 2) { $dest = [IO.Path]::GetFullPath([IO.Path]::Combine((Get-Location).ProviderPath, $rest[2])) }
+    else { $dest = Join-Path ([IO.Path]::GetDirectoryName($full)) ([IO.Path]::GetFileNameWithoutExtension($full) + '.cleaned' + [IO.Path]::GetExtension($full)) }
+    if ([string]::Equals($dest, $full, [StringComparison]::OrdinalIgnoreCase)) { Fail 'pc marks: the cleaned copy must be another file than the original; the original is kept.' }
+    $began = Get-Date
+    try { $r = Marks-Run $python 'clean_file.py' @($full, '-o', $dest) } catch { Fail "pc marks: $($_.Exception.Message)" }
+    $made = (Test-Path -LiteralPath $dest -PathType Leaf) -and ((Get-Item -LiteralPath $dest).LastWriteTime -ge $began.AddSeconds(-2))
+    if ($r.code -eq 2 -or -not $made) { Fail "pc marks: nothing was cleaned. $(Marks-Said $r)" }
+    $said = @((Marks-Said $r) -split "`r?`n" | Where-Object { $_ -and $_ -notmatch '^(wrote|already clean)' })
+    $nothing = ($r.err -match '(?m)^already clean') -or ($r.err -match 'removed=0 replaced=0\s*$' -and $said.Count -eq 0)
+    if ($nothing) { Write-Output "Nothing to remove was found; the copy is the same as the original: $dest" }
+    else { Write-Output "Cleaned copy: $dest" }
+    $counts = [regex]::Match($r.err, '(?m)^wrote .* removed=(\d+) replaced=(\d+)')
+    if ($counts.Success -and -not $nothing) { Write-Output "  - invisible letters removed: $($counts.Groups[1].Value), odd spaces made plain: $($counts.Groups[2].Value)" }
+    foreach ($line in $said) { Write-Output $line }
+    if ($r.code -eq 1) { Write-Output 'Some marks may remain in the copy (see above); check it with pc marks check.' }
+    Write-Output 'The original was not changed.'
+    Write-Output 'Not removed: a logo or writing that can be seen, and a watermark inside the pixels, the sound or the choice of words (SynthID and alike).'
+    return
+  }
+  # the clipboard
+  $only = ($rest.Count -gt 1 -and $rest[1] -eq 'check')
+  $text = Get-Clipboard -Raw
+  if (-not $text) { Fail 'pc marks: the clipboard holds no text.' }
+  $src = Join-Path ([IO.Path]::GetTempPath()) ("termant-marks-" + [Guid]::NewGuid().ToString('N') + '.txt')
+  $outFile = $src + '.clean.txt'
+  try {
+    [IO.File]::WriteAllText($src, $text, (New-Object System.Text.UTF8Encoding($false)))
+    if ($only) {
+      $r = Marks-Run $python 'inspect_file.py' @($src, '--as', 'text')
+      if ($r.code -ne 0 -and $r.code -ne 1) { Fail "pc marks: the text could not be read. $(Marks-Said $r)" }
+      $report = (@($r.out -split "`r?`n") | Where-Object { $_ -and $_ -notmatch '^(Note|File):' }) -join "`n"
+      Write-Output $report
+      if ($r.code -eq 1) { Write-Output 'Result: marks found in the clipboard text. pc marks clipboard cleans it.' }
+      else { Write-Output 'Result: no marks found in the clipboard text.' }
+      Write-Output (Marks-Limits 'Kind: text')
+      return
+    }
+    $r = Marks-Run $python 'clean_file.py' @($src, '-o', $outFile, '--as', 'text')
+    if ($r.code -ne 0 -or -not (Test-Path -LiteralPath $outFile)) { Fail "pc marks: the text could not be cleaned. $(Marks-Said $r)" }
+    $clean = [IO.File]::ReadAllText($outFile, [Text.Encoding]::UTF8)
+    $counts = [regex]::Match($r.err, 'removed=(\d+) replaced=(\d+)')
+    if ([string]::Equals($clean, $text, [StringComparison]::Ordinal)) { Write-Output "Nothing to remove was found in the clipboard text ($($text.Length) letters); it was left as it is." }
+    else {
+      Set-Clipboard -Value $clean
+      Write-Output "The clipboard text is cleaned: invisible letters removed: $($counts.Groups[1].Value), odd spaces made plain: $($counts.Groups[2].Value). Paste it where it is needed."
+    }
+    Write-Output (Marks-Limits 'Kind: text')
+  } finally {
+    Remove-Item -LiteralPath $src, $outFile -Force -ErrorAction SilentlyContinue
+  }
+}
+
 switch ($cmd) {
   # ---------------------------------------------------------------- programs and windows
   'open' {
@@ -1192,6 +1384,7 @@ switch ($cmd) {
     Write-Output "Dragged from $x1,$y1 to $x2,$y2"
   }
   'word' { Word-Command }
+  'marks' { Marks-Command }
   'youtube' {
     $what = if ($rest.Count -gt 0) { $rest[0] } else { '' }
     if ($what -eq 'search') { Need 2 'youtube search <words>'; App '/youtube' @{ action = 'search'; query = ($rest[1..($rest.Count - 1)] -join ' ') } }
@@ -1305,6 +1498,11 @@ Word documents (.docx; works without Word, and inside Word when the file is open
   pc word new <file> [text]   pc word add <file> [--bold] <text>      (\n in the text starts a new paragraph)
   pc word replace <file> <old> <new>
   pc word set <file> <number> <text>           pc word delete <file> <number>
+
+Marks of AI tools in text and files (your own content; needs Python, fetched once if the PC has none)
+  pc marks check <file>       what the file carries: invisible letters, C2PA, EXIF, XMP, document properties
+  pc marks clean <file> [new file]             a cleaned copy; the original stays
+  pc marks clipboard          cleans the text in the clipboard      pc marks setup      pc marks help
 '@
     if ($cmd -ne 'help') { exit 1 }
   }

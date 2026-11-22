@@ -136,6 +136,36 @@ server.listen(0, '127.0.0.1', async () => {
     check('a skill is removed', known.removeSkill('word-table') === 'Skill removed: word-table' && known.listText() === 'No skills yet.');
     check('removing a missing skill is refused', /There is no skill/.test(await refused(() => known.removeSkill('word-table'))));
 
+    // skills that come with the app
+    const shipped = path.join(__dirname, '..', 'resources', 'skills');
+    const mine = new learn.Learned(path.join(dir, 'with-built-in'));
+    const before = mine.sinceText(1);
+    check('the skill that comes with the app is put among the skills', JSON.stringify(mine.addBuiltIn(shipped)) === '["remove-ai-marks"]' && /^remove-ai-marks: Find and remove the marks AI tools leave/.test(mine.listText()), mine.listText());
+    const marks = mine.showSkill('remove-ai-marks');
+    check('it can be read, names its source and the command', marks.includes('from: https://github.com/guillaumemeyer/watermarks-remover') && marks.includes('pc marks check') && marks.includes('pc marks clean') && marks.includes('learned: ' + learn.day()), marks.slice(0, 300));
+    check('it says what it does not do and what must not be claimed', /does not remove a logo, stamp or writing that can be SEEN/.test(marks) && /Never say that the content is now "human-written", "undetectable"/.test(marks));
+    check('it fits a skill and is plain ASCII', marks.split('\n---\n')[1].length < 6000 && !/[^\x00-\x7f]/.test(marks));
+    check('the guide names it', mine.guide('pc skill show').includes('- `remove-ai-marks`: Find and remove the marks'));
+    check('it is not counted as learned today', mine.sinceText(1) === before);
+    check('a second start adds nothing', mine.addBuiltIn(shipped).length === 0);
+    mine.removeSkill('remove-ai-marks');
+    check('removed by the user, it does not come back', mine.addBuiltIn(shipped).length === 0 && mine.listText() === 'No skills yet.');
+    const newer = path.join(dir, 'shipped-newer');
+    fs.mkdirSync(newer, { recursive: true });
+    fs.writeFileSync(path.join(newer, 'remove-ai-marks.md'), fs.readFileSync(path.join(shipped, 'remove-ai-marks.md'), 'utf8').replace('version: 1', 'version: 2').replace('## Steps', '## Steps (newer)'));
+    check('nor with a newer version of the app', mine.addBuiltIn(newer).length === 0 && mine.listText() === 'No skills yet.');
+    const kept = new learn.Learned(path.join(dir, 'kept'));
+    kept.addBuiltIn(shipped);
+    check('a newer version replaces the one that was put there', JSON.stringify(kept.addBuiltIn(newer)) === '["remove-ai-marks"]' && kept.showSkill('remove-ai-marks').includes('## Steps (newer)'));
+    const own = new learn.Learned(path.join(dir, 'own'));
+    own.addBuiltIn(shipped);
+    own.saveSkill('remove-ai-marks', 'My own way', '1. Do it my way.\n2. Then stop.');
+    check('one the user changed is left alone', own.addBuiltIn(newer).length === 0 && own.showSkill('remove-ai-marks').includes('Do it my way'));
+    const had = new learn.Learned(path.join(dir, 'had'));
+    had.saveSkill('remove-ai-marks', 'Mine from before', '1. Mine from before.\n2. Stop.');
+    check('a skill of that name the user had already is left alone', had.addBuiltIn(shipped).length === 0 && had.showSkill('remove-ai-marks').includes('Mine from before'));
+    check('a folder that is not there adds nothing', new learn.Learned(path.join(dir, 'none')).addBuiltIn(path.join(dir, 'no-such-folder')).length === 0);
+
     const keys = keysFrom('key-used-up-1\nkey-wrong-22, key-good-333\nkey-good-333\nshort');
     check('keys are read one per line, doubles and scraps dropped', keys.length === 3, keys);
     const voice = new Voice(dir);

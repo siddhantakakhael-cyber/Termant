@@ -96,6 +96,12 @@ function start() {
   notes = store.load('notes.json', []);
   knownModels = store.load('models.json', []);
   learned = new learning.Learned(store.dir);
+  try {
+    const added = learned.addBuiltIn(path.join(pcDir, 'skills'));
+    if (added.length) log('skills that came with the app: ' + added.join(', '));
+  } catch (e) {
+    log('skills that came with the app: ' + e.message);
+  }
   voice = new Voice(store.dir);
   team = new Team(store.dir);
   agent = new Agent(path.join(store.dir, 'agent'), pcDir, () => settings, () => team.config());
