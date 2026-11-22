@@ -43,6 +43,15 @@ gateway() { # NAME, then curl arguments
   page docs-pika-2.html "https://marketplace.apilayer.com/pika-api/tabs/api_docs"
   page docs-ipstack.html "https://marketplace.apilayer.com/IPstack/tabs/api_docs"
   page docs-none.html "https://marketplace.apilayer.com/zzqqxxnothing-api/tabs/api_docs"
+  echo "== every API behind the gateway: its page and its documentation, kept whole"
+  mkdir -p "$out/all"
+  for slug in $(grep -o 'src="https://assets.apilayer.com/apis/[^"]*"[^>]*>' -A 40 "$out/list-all.html" | grep -o 'href="/[^"?]*' | sed 's|href="/||' | sort -u); do
+    curl -s -L -m 60 -A "termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)" -o "$out/all/$slug.page.html" "https://marketplace.apilayer.com/$slug"
+    curl -s -L -m 60 -A "termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)" -o "$out/all/$slug.docs.html" "https://marketplace.apilayer.com/$slug/tabs/api_docs"
+    sleep 0.2
+  done
+  ls "$out/all" | wc -l
+  tar -czf "$out/all.tar.gz" -C "$out" all && rm -rf "$out/all"
   echo "== the same page asked by Python, as the tool asks"
   python3 - <<'PY'
 import urllib.request, urllib.error
