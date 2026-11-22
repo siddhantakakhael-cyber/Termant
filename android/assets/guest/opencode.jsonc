@@ -13,6 +13,7 @@
     { "action": "shell", "resource": "me *", "effect": "allow" },
     { "action": "shell", "resource": "watch *", "effect": "allow" },
     { "action": "shell", "resource": "diary *", "effect": "allow" },
+    { "action": "shell", "resource": "draw *", "effect": "allow" },
     // Never, whoever asks: wiping the phone's storage or the system (delete files with `safe rm`).
     { "action": "shell", "resource": "rm /sdcard*", "effect": "deny" },
     { "action": "shell", "resource": "rm -* /sdcard*", "effect": "deny" },

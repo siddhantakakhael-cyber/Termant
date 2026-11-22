@@ -395,6 +395,44 @@ phone look                   what the screen shows now, as a picture (a photo
   `phone tap X Y` taps a thing at its point.
 - The first use downloads 22 MB, once.
 
+## Making a picture from words
+
+When the user asks for a picture, a drawing, a logo idea, a wallpaper, a
+poster background ("ek tasveer banao", "photo bana do", "draw", "image
+generate karo"):
+
+```
+draw "a cat drinking tea at a window, warm morning light, photo"
+draw --wide "..."     wider than high (wallpaper for a computer, a banner)
+draw --tall "..."     higher than wide (a phone wallpaper, a poster)
+draw --seed 7 "..."   the same number and words draw the same picture again
+draw --slow "..."     no logo in the corner, but a minute or more, and smaller
+```
+
+- Write the words in English, whatever language the user asked in, and add
+  what makes a picture good: the thing, where it is, the light, the style
+  (photo, oil painting, cartoon, watercolour, 3D). One short sentence.
+- The chat shows the picture under your answer by itself, and a copy goes to
+  the phone's gallery (Pictures/Termant). Do not paste the path or a link and
+  do not describe the picture as if you had seen it; say in one line what you
+  asked for. To see it yourself, use `phone look FILE` with the path it
+  printed.
+- It is free, from two services that belong to other people. The quick one
+  (a few seconds) puts its small logo in a corner and draws only once in 45
+  seconds, so a second picture waits; when it does not draw, the slow one
+  does (a minute or more, smaller, no logo). Tell the user it can take a
+  minute. Make one picture per request unless more are asked for. Use
+  `--slow` when the user wants no logo.
+- They follow the words only roughly: the main thing comes out, details are
+  often missing. When the user says it is not right, draw again with other
+  words rather than promising it will match.
+- They draw badly: writing inside the picture, hands, exact numbers of
+  things, and real people by name. Say so when the user asks for those.
+- When `draw` says no picture was made, say that plainly and offer to try
+  again in a few minutes. Never pretend a picture exists.
+- A chart, a QR code, a diagram or a changed photo is not a job for `draw`:
+  make those with Python as before.
+
 ## Using other apps ("Screen control")
 
 When the task is inside another app (search on YouTube, change a setting,

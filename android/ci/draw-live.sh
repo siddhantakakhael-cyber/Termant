@@ -25,8 +25,8 @@ try() { # NAME, then the draw arguments
   TERMANT_DRAW_GAP=0 try second-at-once --wide --out "$out/2-mountain.jpg" "snowy mountains at sunrise, oil painting"
   # and after the wait `draw` keeps by itself
   try third-after-the-wait --tall --out "$out/3-tree.jpg" "an old banyan tree in the rain, watercolour"
-  # the second service alone (the first one's address leads nowhere)
-  TERMANT_DRAW_POLLINATIONS=http://127.0.0.1:9 try horde-alone --out "$out/4-boat.jpg" "a small wooden boat on a calm lake, evening, photo"
+  # the slow service, asked first
+  try slow-service --slow --out "$out/4-boat.jpg" "a small wooden boat on a calm lake, evening, photo"
   echo "== what the services say when asked plainly"
   echo "-- image.pollinations.ai without a key"
   curl -s -m 90 -o "$out/raw-pollinations" -D - "https://image.pollinations.ai/prompt/a%20red%20apple%20on%20a%20table?width=256&height=256&seed=5" | head -n 25

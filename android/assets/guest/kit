@@ -1559,10 +1559,12 @@ def draw(args):
                                 the thing, the place, the light, the style (photo, painting, cartoon)
   draw --wide "..."             wider than high          draw --tall "..."    higher than wide
   draw --out FILE "..."         save it under this name  draw --seed 7 "..."  the same number draws the same again
+  draw --slow "..."             ask the slow service first: no logo in the corner, a minute or more
   draw last                     where the newest picture is
-The first service is quick but draws only now and then for one address; then a second one
-is asked, which takes a minute or more and draws smaller. Pictures are kept in ~/pictures,
-with a copy in the phone's gallery (Pictures/Termant).""")
+Two services draw. Pollinations is quick (a few seconds, 768 a side, its logo in a corner) but
+draws for one address only every 45 seconds; `draw` waits for it up to a minute. When it does
+not draw, AI Horde is asked: volunteers' computers, a minute or more, 512 a side, no logo.
+Pictures are kept in ~/pictures, with a copy in the phone's gallery (Pictures/Termant).""")
         return
     if what == "last":
         newest = load("draw.json", {}).get("last")
@@ -1570,12 +1572,14 @@ with a copy in the phone's gallery (Pictures/Termant).""")
             raise Refused("draw: no picture has been made yet")
         out(newest)
         return
-    shape, target, seed, words = "square", None, None, []
+    shape, target, seed, words, slow = "square", None, None, [], False
     i = 0
     while i < len(args):
         a = args[i]
         if a in ("--wide", "--tall", "--square"):
             shape = a[2:]
+        elif a == "--slow":
+            slow = True
         elif a in ("--out", "--seed") and i + 1 < len(args):
             if a == "--out":
                 target = args[i + 1]
@@ -1601,19 +1605,24 @@ with a copy in the phone's gallery (Pictures/Termant).""")
         sys.stderr.flush()
 
     data, by, reasons = None, "", []
-    for name, ask, size in (("Pollinations", draw_pollinations, DRAW_SIZES[shape][0]),
-                            ("AI Horde", draw_horde, DRAW_SIZES[shape][1])):
+    services = [("Pollinations", draw_pollinations, DRAW_SIZES[shape][0]),
+                ("AI Horde", draw_horde, DRAW_SIZES[shape][1])]
+    if slow:
+        services.reverse()
+        say("Asking AI Horde, which takes a minute or more...")
+    for name, ask, size in services:
         if reasons:
-            say("%s did not draw (%s). Asking %s, which takes a minute or more..." % (by, reasons[-1], name))
+            say("%s did not draw (%s). Asking %s%s..." % (
+                by, reasons[-1].split(": ", 1)[1], name, ", which takes a minute or more" if name == "AI Horde" else ""))
         by = name
         data, reason = ask(prompt, size, seed, say)
         if data:
             break
-        reasons.append(reason)
+        reasons.append("%s: %s" % (name, reason))
     if not data:
-        hint = ("Is the internet on?" if all(r.startswith("could not be reached") for r in reasons)
+        hint = ("Is the internet on?" if all("could not be reached" in r for r in reasons)
                 else "Both are free services that are sometimes busy; try again in a few minutes.")
-        raise Refused("draw: no picture this time. Pollinations: %s. AI Horde: %s.\n%s "
+        raise Refused("draw: no picture this time. %s. %s.\n%s "
                       "Tell the user plainly that no picture was made; do not describe one." % (reasons[0], reasons[-1], hint))
     ending = picture_kind(data)
     if target:

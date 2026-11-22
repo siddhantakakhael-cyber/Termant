@@ -1,15 +1,17 @@
 #!/bin/bash
 # Checks Termant's kit (android/assets/guest/kit): undo and the bin (safe), tidying a folder,
 # question cards (study), reading files of many kinds (readfile), the user's details (me),
-# watches, the work diary, the team notebook, and which model gets a message with files.
+# watches, the work diary, the team notebook, which model gets a message with files, and
+# pictures made from words (draw) against a pretend picture service (fake_draw.py).
 # Runs inside Termant's Ubuntu and on any Linux with python3.
 #   kit-check.sh [FOLDER WITH kit]     prints PASS/FAIL lines and a RESULT line
 work=$(mktemp -d)
+here=$(cd "$(dirname "$0")" && pwd)
 opencode=$(PATH="$HOME/.opencode/bin:$PATH" command -v opencode 2>/dev/null)
 mkdir -p "$work/bin"
 if [ -n "$1" ]; then kit=$1/kit; else kit=$(command -v termant-kit); fi
 [ -f "$kit" ] || { echo "RESULT: FAIL (no kit)"; exit 2; }
-for name in termant-kit safe tidy study readfile me watch diary; do cp "$kit" "$work/bin/$name"; done
+for name in termant-kit safe tidy study readfile me watch diary draw; do cp "$kit" "$work/bin/$name"; done
 chmod 755 "$work/bin"/*
 # a stand-in for the phone command: answers questions, makes and removes rules
 cat > "$work/bin/fakephone" <<'P'
@@ -19,6 +21,10 @@ case "$1 $2" in
   "ask "*) echo "${FAKE_ANSWER:-Nahi}" ;;
   "rule add") echo "Rule 7 added: Every 15 minutes, run: ${*:6}" ;;
   "rule remove") echo "Rule $3 removed." ;;
+  "gallery "*)
+    [ -z "$FAKE_NO_GALLERY" ] || { echo "phone gallery: Termant may not write to the phone's pictures yet." >&2; exit 1; }
+    echo "A copy is in the phone's gallery: Pictures/Termant/$(basename "$2")"
+    echo "content://media/external/images/media/41" ;;
   *) echo ok ;;
 esac
 P
@@ -32,7 +38,8 @@ has() { printf '%s' "$out" | grep -qF -- "$1"; }
 hasnt() { ! has "$1"; }
 refused() { [ "$code" -ne 0 ] && has "$1"; }
 run() { out=$("$@" 2>&1); code=$?; }
-trap 'rm -rf "$work"' EXIT
+fake_draw=
+trap '[ -n "$fake_draw" ] && kill $fake_draw 2>/dev/null; rm -rf "$work"' EXIT
 d="$work/files"; mkdir -p "$d"
 
 # ---- safe: copies, the bin, undo
@@ -309,6 +316,105 @@ check "and nobody is asked" [ "$(grep -c '^ask ' "$TERMANT_KIT_DIR/phone.log")" 
 rm -f "$TERMANT_KIT_DIR/cache/alone"
 TERMANT_CHAT=1 FAKE_ANSWER=Haan run safe rm "$d/album2"
 check "in a chat with the user there, a yes deletes it" [ ! -e "$d/album2" ]
+
+# ---- draw: a picture made from words, by two free services (here: a pretend one that plays both)
+if [ -f "$here/fake_draw.py" ]; then
+  python3 "$here/fake_draw.py" "$work/draw-port" "$work/draw.log" > "$work/draw-server.txt" 2>&1 < /dev/null & fake_draw=$!
+  i=0; while [ ! -s "$work/draw-port" ] && [ $i -lt 100 ]; do sleep 0.1; i=$((i+1)); done
+fi
+if [ -s "$work/draw-port" ]; then
+  at="http://127.0.0.1:$(cat "$work/draw-port")"
+  export TERMANT_DRAW_GAP=0 TERMANT_DRAW_POLL=0.1 TERMANT_DRAW_WAIT=3
+  services() { export TERMANT_DRAW_POLLINATIONS="$at/$1" TERMANT_DRAW_HORDE="$at/$2"; }
+  drawn() { printf '%s\n' "$out" | sed -n 's/^Picture saved: \(.*\) (.*/\1/p' | head -n 1; }
+  kind() { head -c 12 "$1" 2>/dev/null | od -An -c | tr -d ' \n'; }
+  unset TERMANT_CHAT; export TERMANT_TURN=draw-by-hand
+
+  services ok horde
+  run draw "a cat drinking tea, photo"
+  check "draw saves the picture the first service gives" [ "$code" -eq 0 ] && check "and says where, how big and who drew it" has "(96x64, 522 bytes, drawn by Pollinations)"
+  f=$(drawn)
+  check "the picture is in ~/pictures, named after the words" [ "$f" != "${f#$HOME/pictures/a-cat-drinking-tea-photo-}" ]
+  check "it is a JPEG and ends in .jpg" [ "${f##*.}" = jpg ] && check "the file holds the picture" [ "$(stat -c %s "$f" 2>/dev/null)" = 522 ]
+  check "the phone's gallery gets a copy" grep -qxF "gallery $f" "$TERMANT_KIT_DIR/phone.log"
+  check "and draw says where the copy is" has "A copy is in the phone's gallery: Pictures/Termant/$(basename "$f")"
+  check "the first service was asked for the words and a square picture" grep -q "^GET /ok/prompt/a%20cat%20drinking%20tea%2C%20photo?width=768&height=768&seed=[0-9]*" "$work/draw.log"
+  check "the second service was left alone" [ "$(grep -c '/horde/' "$work/draw.log")" -eq 0 ]
+  check "typed by hand, nothing is listed for a chat" [ -z "$(ls "$TERMANT_KIT_DIR/cache" 2>/dev/null | grep '^drawn-')" ]
+  run draw last
+  check "draw last names the newest picture" [ "$out" = "$f" ]
+
+  services busy horde
+  TERMANT_CHAT=1 TERMANT_TURN=draw-turn run draw --wide --seed 7 "snowy mountains at sunrise"
+  check "when the first service is busy the second one draws" has "drawn by AI Horde" && check "and draw says why it changed over" has "Pollinations did not draw (busy: it draws for one address only now and then (HTTP 402))"
+  g=$(drawn)
+  check "a wide picture has the wide size the free queue allows" has "(576x320, "
+  check "the second service's picture is a PNG, named so" [ "${g##*.}" = png ] && check "and the file is a PNG" [ "$(kind "$g")" = '211PNG\r\n032\n\0\0\0\r' ]
+  check "the nameless free key and the app's name are sent" grep -q '^POST /horde/generate/async key=0000000000 agent=termant:1:' "$work/draw.log"
+  check "the request asks for a safe picture" grep -q '^POST /horde/generate/async .*"nsfw": false, "censor_nsfw": true' "$work/draw.log"
+  check "the seed that was given is used" grep -q '^POST /horde/generate/async .*"seed": "7"' "$work/draw.log"
+  check "it waits in the queue, looking again" [ "$(grep -c '^GET /horde/generate/check/' "$work/draw.log")" -ge 3 ]
+  check "in a chat the picture is listed for the reply, with its address on the phone" [ "$(cat "$TERMANT_KIT_DIR/cache/drawn-draw-turn.txt" 2>/dev/null)" = "$g	content://media/external/images/media/41" ]
+  check "the agent is told the chat shows it" has "The chat shows this picture under your answer by itself"
+
+  services wait horde
+  run draw --tall "an old banyan tree"
+  check "asked to wait a second, draw waits and asks again" has "drawn by Pollinations" && check "a tall picture is tall" has "(432x768, "
+
+  services html b64
+  run draw "a boat on a lake"
+  check "a web page instead of a picture is not taken for one" has "Pollinations did not draw (gave no picture)" && check "the second service's picture inside its answer is read" has "(512x512, "
+
+  services busy nomodel
+  run draw "a red kite"
+  check "when no computer has the chosen models, any model draws" has "drawn by AI Horde"
+  check "the second request names no models" grep -q '^POST /nomodel/generate/async .*"models": \[\]' "$work/draw.log"
+
+  before=$(ls "$HOME/pictures" | wc -l)
+  services down censored
+  run draw "a quiet street"
+  check "a picture held back as unsafe is not saved" refused "held the picture back as not safe to show" && check "nothing new is in ~/pictures" [ "$(ls "$HOME/pictures" | wc -l)" -eq "$before" ]
+  services busy faulted
+  run draw "a quiet street"
+  check "a failed worker is reported" refused "AI Horde: its worker failed"
+  services busy never
+  run draw "a quiet street"
+  check "a queue that never ends is given up after the wait" refused "was not ready after 3 s" && check "and the waiting request is taken back" grep -q '^DELETE /never/generate/status/' "$work/draw.log"
+  check "the agent is told not to describe a picture that was not made" has "Tell the user plainly that no picture was made"
+  services down down
+  run draw "a quiet street"
+  check "both services down: said plainly, with both reasons" refused "Pollinations: HTTP 503. AI Horde: HTTP 503"
+  export TERMANT_DRAW_POLLINATIONS=http://127.0.0.1:9 TERMANT_DRAW_HORDE=http://127.0.0.1:9
+  run draw "a quiet street"
+  check "no connection: asks whether the internet is on" refused "Is the internet on?"
+
+  services ok horde
+  : > "$work/draw.log"
+  run draw --slow "a boat on a lake"
+  check "draw --slow asks the slow service first" has "drawn by AI Horde" && check "and leaves the quick one alone" [ "$(grep -c '/ok/prompt/' "$work/draw.log")" -eq 0 ]
+  services ok down
+  run draw --slow "a boat on a lake"
+  check "draw --slow falls back to the quick service" has "AI Horde did not draw (HTTP 503" && check "which then draws" has "drawn by Pollinations"
+
+  services png horde
+  run draw --out "$d/made/kite.jpg" "a red kite over a field"
+  check "draw --out saves where asked, with the ending the picture really has" [ -f "$d/made/kite.png" ] && check "and says so" has "Picture saved: $d/made/kite.png (768x768, "
+  FAKE_NO_GALLERY=1 run draw "a red kite over a field"
+  check "when the gallery refuses, the picture is still saved" [ "$code" -eq 0 ] && check "and draw says it is only in Ubuntu" has "Not copied to the phone's gallery (phone gallery: Termant may not write"
+  run draw
+  check "draw alone explains itself" has 'draw "WHAT TO DRAW"'
+  run draw --big "a kite"
+  check "an unknown choice is refused" refused "there is no --big"
+  run draw "a"
+  check "one letter is not something to draw" refused 'usage: draw "what to draw"'
+  run termant-kit draw help
+  check "termant-kit draw is the same command" has "a picture made from words"
+  kill $fake_draw 2>/dev/null; fake_draw=
+  unset TERMANT_DRAW_POLLINATIONS TERMANT_DRAW_HORDE TERMANT_DRAW_GAP TERMANT_DRAW_POLL TERMANT_DRAW_WAIT
+else
+  echo "FAIL draw: the pretend picture service did not start"; failed=$((failed+1))
+fi
+unset TERMANT_TURN
 
 if [ -n "$opencode" ]; then
   export PATH="$(dirname "$opencode"):$PATH"

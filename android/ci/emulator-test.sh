@@ -10,11 +10,13 @@ mkdir -p "$OUT"
 shot() { adb exec-out screencap -p > "$OUT/$1.png" || true; }
 run_as() { adb shell run-as "$PKG" "$@"; }
 fake_model=
+fake_draw=
 finish() {
   shot "final"
   adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null 2>&1
   adb logcat -d -t 4000 > "$OUT/logcat.txt" 2>&1 || true
   [ -n "$fake_model" ] && kill "$fake_model" 2>/dev/null  # a test that leaves it running keeps the job open
+  [ -n "$fake_draw" ] && kill "$fake_draw" 2>/dev/null
   echo "RESULT: $1" | tee "$OUT/verdict.txt"
   [ "$1" = PASS ]
   exit $?
@@ -102,6 +104,7 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_web.py'" < android/ci
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/team-check.sh'" < android/ci/team-check.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_model.py'" < android/ci/fake_model.py
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/kit-check.sh'" < android/ci/kit-check.sh
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/fake_draw.py'" < android/ci/fake_draw.py
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest-test6.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
@@ -717,6 +720,12 @@ python3 android/ci/fake_model.py "$OUT/fake-model-port" "$OUT/helpers-model-aske
 fake_model=$!
 for _ in $(seq 1 50); do [ -s "$OUT/fake-model-port" ] && break; sleep 0.2; done
 [ -s "$OUT/fake-model-port" ] || finish "FAIL helpers: the pretend model did not start"
+# a pretend picture service too, for `draw` in the chat (further down)
+rm -f "$OUT/fake-draw-port" "$OUT/draw-asked.txt"
+python3 android/ci/fake_draw.py "$OUT/fake-draw-port" "$OUT/draw-asked.txt" 0.0.0.0 > "$OUT/fake-draw.log" 2>&1 < /dev/null &
+fake_draw=$!
+for _ in $(seq 1 50); do [ -s "$OUT/fake-draw-port" ] && break; sleep 0.2; done
+[ -s "$OUT/fake-draw-port" ] || finish "FAIL picture: the pretend picture service did not start"
 KEYS=files/rootfs/root/.config/termant/keys.env
 keys_before=$(mktemp)
 sleep 2
@@ -728,6 +737,8 @@ had_keys=; run_as test -f "$KEYS" && had_keys=1 && run_as cat "$KEYS" > "$keys_b
 {
   cat "$keys_before"
   echo "export OPENCODE_CONFIG_CONTENT='{\"provider\":{\"termanttest\":{\"npm\":\"@ai-sdk/openai-compatible\",\"name\":\"Termant test\",\"options\":{\"baseURL\":\"http://10.0.2.2:$(cat "$OUT/fake-model-port")/v1\",\"apiKey\":\"x\"},\"models\":{\"fake\":{\"name\":\"Fake\"}}}}}'"
+  # and `draw` at the pretend picture service: the first service answers with a picture
+  echo "export TERMANT_DRAW_POLLINATIONS=http://10.0.2.2:$(cat "$OUT/fake-draw-port")/png TERMANT_DRAW_HORDE=http://10.0.2.2:$(cat "$OUT/fake-draw-port")/horde TERMANT_DRAW_GAP=0 TERMANT_DRAW_POLL=0.2"
 } | adb shell "run-as $PKG sh -c 'mkdir -p files/rootfs/root/.config/termant && cat > $KEYS'"
 change_prefs model=termanttest/fake switched= switched_at= free_limit_until= || finish "FAIL helpers: could not prepare the settings"
 run_as rm -f files/rootfs/root/helper-ran.txt
@@ -765,8 +776,62 @@ sys.exit(0 if ok else 1)
 PY
 run_as test -f files/rootfs/root/helper-ran.txt || finish "FAIL helpers: the helper did not run its command"
 grep -q 'activity: .*helper' "$OUT/helpers-activity.txt" || finish "FAIL helpers: the app did not notice that helper agents were working"
+
+echo "A picture from words in the chat: the agent runs draw, the picture shows under the reply, the gallery has a copy"
+# The model is the pretend one (asked "RUN command" it runs that command); `draw`, the app and the
+# phone's gallery are the real ones. The picture comes from the pretend picture service.
+tap_on 'content-desc="Start a new chat"' || finish "FAIL picture: New chat button not found"
+sleep 2
+ask 'RUN%sdraw%s--wide%ssunrise%sover%sgreen%shills' || finish "FAIL picture: could not send the request"
+wait_for_reply 60 || { shot 23e-picture-timeout; adb logcat -d -s Termant:I | tail -30; finish "FAIL picture: no reply"; }
+sleep 3
+shot 23e-picture
+cp "$OUT/chat.json" "$OUT/chat-picture.json"
+cat "$OUT/draw-asked.txt"
+python3 - "$OUT/chat-picture.json" "$OUT/picture-path.txt" <<'PY' || finish "FAIL picture: the reply does not carry the picture that was drawn"
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+print("picture: reply:", m)
+pictures = m.get("pictures") or []
+ok = (not m["failed"] and len(pictures) == 1 and "drawn by Pollinations" in m["text"]
+      and "A copy is in the phone's gallery: Pictures/Termant/sunrise-over-green-hills-" in m["text"])
+if ok:
+    path, _, address = pictures[0].partition("\t")
+    print("picture: file", path, "address", address)
+    ok = (path.startswith("/root/pictures/sunrise-over-green-hills-") and path.endswith(".png")
+          and address.startswith("content://media/"))
+    open(sys.argv[2], "w").write(path)
+sys.exit(0 if ok else 1)
+PY
+run_as test -s "files/rootfs$(cat "$OUT/picture-path.txt")" || finish "FAIL picture: the picture's file is not in Ubuntu"
+grep -q '^GET /png/prompt/sunrise%20over%20green%20hills?width=768&height=432' "$OUT/draw-asked.txt" || finish "FAIL picture: the picture service was not asked for a wide picture of these words"
+adb shell content query --uri content://media/external/images/media --projection _display_name:relative_path:mime_type:_size > "$OUT/gallery.txt" 2>&1
+cat "$OUT/gallery.txt"
+grep -q "_display_name=$(basename "$(cat "$OUT/picture-path.txt")"), relative_path=Pictures/Termant/, mime_type=image/png" "$OUT/gallery.txt" || finish "FAIL picture: the phone's gallery has no copy in Pictures/Termant"
+adb logcat -d -s Termant:I | grep -q 'chat: pictures drawn: 1' || finish "FAIL picture: the app did not take the picture into the reply"
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'content-desc=\"Picture: sunrise-over-green-hills-' /sdcard/ui.xml" || finish "FAIL picture: the chat does not show the picture"
+tap_on 'content-desc="Picture: sunrise-over-green-hills-' || finish "FAIL picture: the picture cannot be tapped"
+sleep 3
+shot 23f-picture-open
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'text=\"Open in gallery\"' /sdcard/ui.xml" || finish "FAIL picture: opened large, it does not offer the gallery"
+adb shell "grep -q 'text=\"Share\"' /sdcard/ui.xml" || finish "FAIL picture: opened large, it does not offer to share"
+tap_on 'text="Close"' || adb shell input keyevent 4
+sleep 2
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'content-desc=\"Send\"' /sdcard/ui.xml" || finish "FAIL picture: the chat did not come back after the large picture"
+# the picture is still under the reply when the app is opened again (it is kept with the chat)
+adb shell am force-stop "$PKG"
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 8
+shot 23g-picture-kept
+adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb shell "grep -q 'content-desc=\"Picture: sunrise-over-green-hills-' /sdcard/ui.xml" || finish "FAIL picture: after the app was opened again the chat has lost the picture"
+
 # Back to the real models and the settings from before.
 kill $fake_model 2>/dev/null; fake_model=
+kill $fake_draw 2>/dev/null; fake_draw=
 run_as rm -f files/rootfs/root/.config/opencode/agents/poet.md
 sleep 2
 adb shell am force-stop "$PKG"
@@ -1003,7 +1068,12 @@ grep -q '^team-check-exit=0' "$OUT/result5.txt" || finish "FAIL helper agents (t
 grep -q '^team-real-run=yes' "$OUT/result5.txt" || finish "FAIL helper agents: OpenCode did not run with helpers inside Ubuntu"
 grep -q '^team-add-exit=0' "$OUT/result5.txt" || finish "FAIL team add"
 run_as cat files/rootfs/root/kit-check.txt > "$OUT/kit-check.txt" 2>/dev/null
-grep -q '^kit-check-exit=0' "$OUT/result5.txt" || finish "FAIL the kit (undo, tidy, study, readfile, me, watch, diary, attached files) inside Ubuntu"
+grep -q '^kit-check-exit=0' "$OUT/result5.txt" || finish "FAIL the kit (undo, tidy, study, readfile, me, watch, diary, draw, attached files) inside Ubuntu"
+grep -q '^gallery-exit=0' "$OUT/result5.txt" || finish "FAIL phone gallery did not put a picture into the phone's gallery"
+grep -q '^gallery-said=yes' "$OUT/result5.txt" || finish "FAIL phone gallery did not say where the copy is"
+grep -q '^gallery-not-a-picture-exit=1' "$OUT/result5.txt" || finish "FAIL phone gallery took a file that is no picture"
+grep -q '^draw-command=yes' "$OUT/result5.txt" || finish "FAIL draw is not a command in Ubuntu"
+grep -q '^phone-draw=yes' "$OUT/result5.txt" || finish "FAIL phone draw does not lead to draw"
 grep -q '^every-rule-exit=0' "$OUT/result5.txt" || finish "FAIL phone rule add every 20m"
 grep -q '^bad-every-exit=1' "$OUT/result5.txt" || finish "FAIL a rule for every 5 minutes was accepted"
 grep -q '^bad-job-exit=1' "$OUT/result5.txt" || finish "FAIL phone job without a task was accepted"
