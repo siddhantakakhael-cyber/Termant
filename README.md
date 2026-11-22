@@ -81,6 +81,7 @@ browser, hosted on your own server with Docker.
 - It teaches itself: asked for something it does not know, it searches YouTube, reads what a video says, does the task and keeps the steps as a skill. Ask "aaj kya seekha?".
 - A team of agents: on a big job the main agent hands parts to helpers (researcher, writer, coder, checker) that work at the same time; you can make helpers of your own ("ek agent banao jo ...").
 - Pictures and files in the chat (the **+** button): a picture goes to a model that can see, PDF, Word, Excel and zip files are read by the agent. An **Undo** line puts changed files back. Work by itself at night (`phone job`), watches, notifications, tidying folders, filling forms, a daily quiz and a work diary: see [the guide](docs/android.md#pictures-and-files-in-the-chat-undo-and-work-by-itself).
+- It makes pictures from words, free and without a key: "ek billi ki tasveer banao". The picture shows in the chat and goes to the gallery. Two free services draw it (quick with a small logo, or slow without); details and limits in [the guide](docs/android.md#a-picture-from-words-draw). Android only.
 - It speaks with ElevenLabs if you give it keys; several keys take turns when one has used up its limit.
 - It checks in: asks how the exam went the next day, by notification you can answer.
 - Hindi (Hinglish) or English interface, dark or light theme.

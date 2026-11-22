@@ -340,7 +340,7 @@ if [ -s "$work/draw-port" ]; then
   check "and draw says where the copy is" has "A copy is in the phone's gallery: Pictures/Termant/$(basename "$f")"
   check "the first service was asked for the words and a square picture" grep -q "^GET /ok/prompt/a%20cat%20drinking%20tea%2C%20photo?width=768&height=768&seed=[0-9]*" "$work/draw.log"
   check "the second service was left alone" [ "$(grep -c '/horde/' "$work/draw.log")" -eq 0 ]
-  check "typed by hand, nothing is listed for a chat" [ -z "$(ls "$TERMANT_KIT_DIR/cache" 2>/dev/null | grep '^drawn-')" ]
+  check "typed by hand, nothing is listed for a chat" [ ! -e "$TERMANT_KIT_DIR/cache/drawn.txt" ]
   run draw last
   check "draw last names the newest picture" [ "$out" = "$f" ]
 
@@ -354,7 +354,7 @@ if [ -s "$work/draw-port" ]; then
   check "the request asks for a safe picture" grep -q '^POST /horde/generate/async .*"nsfw": false, "censor_nsfw": true' "$work/draw.log"
   check "the seed that was given is used" grep -q '^POST /horde/generate/async .*"seed": "7"' "$work/draw.log"
   check "it waits in the queue, looking again" [ "$(grep -c '^GET /horde/generate/check/' "$work/draw.log")" -ge 3 ]
-  check "in a chat the picture is listed for the reply, with its address on the phone" [ "$(cat "$TERMANT_KIT_DIR/cache/drawn-draw-turn.txt" 2>/dev/null)" = "$g	content://media/external/images/media/41" ]
+  check "in a chat the picture is listed for the reply, with its address on the phone" [ "$(cat "$TERMANT_KIT_DIR/cache/drawn.txt" 2>/dev/null)" = "$g	content://media/external/images/media/41" ]
   check "the agent is told the chat shows it" has "The chat shows this picture under your answer by itself"
 
   services wait horde
@@ -399,6 +399,9 @@ if [ -s "$work/draw-port" ]; then
   services png horde
   run draw --out "$d/made/kite.jpg" "a red kite over a field"
   check "draw --out saves where asked, with the ending the picture really has" [ -f "$d/made/kite.png" ] && check "and says so" has "Picture saved: $d/made/kite.png (768x768, "
+  rm -f "$TERMANT_KIT_DIR/cache/drawn.txt"
+  TERMANT_CHAT=1 run draw --out "$d/made/field.png" "a red kite over a field"
+  check "in a chat a picture saved outside the home folder is listed by a copy the chat can read" [ "$(cut -f1 "$TERMANT_KIT_DIR/cache/drawn.txt" 2>/dev/null)" = "$HOME/pictures/field.png" ] && check "and the copy is there" cmp -s "$d/made/field.png" "$HOME/pictures/field.png"
   FAKE_NO_GALLERY=1 run draw "a red kite over a field"
   check "when the gallery refuses, the picture is still saved" [ "$code" -eq 0 ] && check "and draw says it is only in Ubuntu" has "Not copied to the phone's gallery (phone gallery: Termant may not write"
   run draw

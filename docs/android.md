@@ -18,6 +18,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [Learning by itself: YouTube, skills, "aaj kya seekha?"](#learning-by-itself-youtube-skills-aaj-kya-seekha)
 - [A team of helper agents](#a-team-of-helper-agents)
 - [Pictures and files in the chat, Undo, and work by itself](#pictures-and-files-in-the-chat-undo-and-work-by-itself)
+- [A picture from words: draw](#a-picture-from-words-draw)
 - [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
 - [Faster answers](#faster-answers)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
@@ -435,11 +436,93 @@ changed in some other way is not kept.
   of a free limit is left is not known to the app.
 
 Tested: the commands themselves, on Linux and inside Ubuntu in the emulator
-(`android/ci/kit-check.sh`, 125 checks), and with the real OpenCode and a
-pretend model: a picture reaches the model, a change made with `safe` is
+(`android/ci/kit-check.sh`, 125 checks then; 175 now with `draw`), and with
+the real OpenCode and a pretend model: a picture reaches the model, a change made with `safe` is
 undone from the chat script, `rm -rf /sdcard/...` is refused for the agent.
 Not tested on a real phone: the file picker, the notification list, a night
 job from start to end, and how well real models follow the new instructions.
+
+## A picture from words: draw
+
+New in 0.23.0. Ask in the chat: "ek billi ki tasveer banao jo khidki par
+baithi hai", "draw a boat on a lake", "mere phone ke liye wallpaper banao".
+The agent runs `draw`, the picture appears under its answer, and a copy goes
+to the phone's gallery, in **Pictures/Termant**. Tap the picture to see it
+large, open it in the gallery, or share it. It costs nothing and needs no
+account and no key.
+
+It also works by hand in any tab:
+
+```
+draw "a cat at a window, warm morning light, photo"
+draw --wide "..."      wider than high        draw --tall "..."   higher than wide
+draw --slow "..."      no logo, but slower    draw --seed 7 "..." the same picture again
+draw --out FILE "..."  save it under this name
+draw last              where the newest picture is
+phone draw "..."       the same command
+phone gallery FILE     put any picture file into the phone's gallery
+```
+
+Pictures are kept in `~/pictures` in Ubuntu. The words work best in English
+(the agent translates what you ask), with the thing, the place, the light and
+the style.
+
+**Who draws.** Two free services that belong to other people; Termant only
+asks them:
+
+| | [Pollinations](https://pollinations.ai) (asked first) | [AI Horde](https://aihorde.net) (asked when the first does not draw, or with `--slow`) |
+| --- | --- | --- |
+| Time | a few seconds | from a quarter of a minute to a few minutes (volunteers' computers, a queue) |
+| Size | 768 a side (wide 768×432, tall 432×768) | 512 a side (wide 576×320, tall 320×576) |
+| Logo | its small logo in a corner | none |
+| How often | one picture in 45 seconds for one internet address; `draw` waits | as the queue allows |
+
+These two were made by a build of 22 November 2026; every build asks the real
+services (`android/ci/draw-live.sh`) and keeps their answers. The first is by
+Pollinations, in 4 seconds, for "a cat drinking tea at a window, warm morning
+light, photo". The second is by AI Horde for "a small wooden boat on a calm
+lake, evening, photo"; it took about a minute and a half in one build and 14
+seconds in the next.
+
+<img src="screenshots/draw-quick-service.jpg" width="300" alt="A cat sitting at a window, with the pollinations.ai logo in the corner"> <img src="screenshots/draw-slow-service.webp" width="300" alt="A red wooden boat on a calm lake in the evening">
+
+In the chat, and after a tap on the picture (from the emulator test, where a
+pretend service draws the same sky, sun and field every time):
+
+<img src="screenshots/android-draw-chat.png" width="240" alt="The chat with the command the agent ran, its answer and the picture under it"> <img src="screenshots/android-draw-large.png" width="240" alt="The picture large, with the buttons Open in gallery, Share and Close">
+
+**What to expect, honestly.**
+
+- The pictures follow the words only roughly. The cat above sits at a window
+  in warm light, but it is not drinking tea. Writing inside a picture, hands,
+  an exact number of things and real people by name come out badly.
+- They are small (768 or 512 a side): fine for a chat, a status or a wallpaper
+  idea, not for printing.
+- The services are free today and can change, slow down or stop without
+  notice; nothing in Termant can fix that. When neither draws, `draw` says so
+  with the reason of each, and the agent is told to say that plainly and not
+  to describe a picture that does not exist. Your words are sent to those
+  services to make the picture.
+- Pollinations says its free pictures are for use that earns no money.
+- A chart, a QR code, a diagram or a change to one of your own photos is not
+  drawn this way: the agent makes those with Python, as before.
+- The gallery copy needs no storage permission on Android 10 and newer (the
+  emulator test runs on Android 14 without it). On Android 7 to 9 allow
+  "phone storage" in Termant's menu first, otherwise the picture is only in
+  the chat and in `~/pictures`; that path is written but not tested.
+
+**How it is tested.** `draw` is checked against a pretend picture service that
+plays both real ones (`android/ci/fake_draw.py`): a picture at once, "wait 1
+second", "pay or wait", a web page instead of a picture, a queue, a picture
+held back as unsafe, a failed worker, a queue that never ends, both down, no
+connection (50 of the checks in `android/ci/kit-check.sh`). On the emulator
+the agent runs `draw` in a real chat with the real OpenCode and a pretend
+model; the test then requires the picture under the reply, its file in
+Ubuntu, the copy in the phone's gallery (Pictures/Termant), the large view
+with "Open in gallery" and "Share", and the picture still there after the app
+is closed and opened again. Not tested: a real phone, what the gallery and
+share buttons open on a real phone, Android 7 to 9, and how well a real model
+turns your request into good words for the picture.
 
 ## ElevenLabs voice with several keys
 

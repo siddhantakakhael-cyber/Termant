@@ -66,13 +66,15 @@ final class Chat {
     static final String UNDO_SIGN = "\u21a9";
     /** Where the agent script copies OpenCode's event feed while a reply is written, as seen from inside Ubuntu. */
     private static final String STREAM_FILE = "/root/.cache/termant/events.txt";
+    /** Where `draw` (guest/kit) lists the pictures it made for the message being answered. */
+    private static final String DRAWN_FILE = "/root/.cache/termant/drawn.txt";
     /**
      * Runs inside Ubuntu; $1 message, $2 "--continue", "--session ID" or empty, $3 workspace folder,
      * $4 model or empty, $5 non-empty to also print which OpenCode session the reply belongs to,
      * $6 the file the reply is copied to word by word.
      */
     private static final String SCRIPT =
-            "rm -f \"$6.note\" \"$6.pictures\" 2>/dev/null\n"
+            "rm -f \"$6.note\" 2>/dev/null\n"
                     + "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
                     // TERMANT_CHAT tells Termant's own commands that the agent runs them (see guest/kit)
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1 TERMANT_CHAT=1\n"
@@ -147,9 +149,6 @@ final class Chat {
                     + "  [ -n \"$told\" ] && note=\"Model for the attached file: ${told#opencode/}\"\n"
                     + "  [ -n \"$changes\" ] && note=\"" + UNDO_SIGN + " Undo: $changes file change(s)${note:+ \u00b7 $note}\"\n"
                     + "  [ -n \"$note\" ] && [ -n \"$6\" ] && printf '%s\\n' \"$note\" > \"$6.note\"\n"
-                    // pictures drawn during this message (`draw` lists them): the chat shows them under the reply
-                    + "  drawn=\"$HOME/.cache/termant/drawn-$turn.txt\"\n"
-                    + "  if [ -s \"$drawn\" ]; then [ -n \"$6\" ] && cp \"$drawn\" \"$6.pictures\"; rm -f \"$drawn\"; fi\n"
                     + "fi\n"
                     + "if [ $code -eq 0 ] && [ -n \"$5\" ]; then\n"
                     + "  echo; echo " + SESSION_MARKER + "\n"
@@ -550,6 +549,7 @@ final class Chat {
         process = null;
         dropServer();
         Message last = messages.get(messages.size() - 1);
+        takePictures(last); // a picture drawn before the stop is still shown
         if (last.first && quiet) messages.remove(last); // a check-in that was cut off leaves nothing behind
         else if (last.text.isEmpty()) last.text = Lang.of(context).getString(R.string.chat_stopped);
         quiet = false;
@@ -613,6 +613,8 @@ final class Chat {
         final String known = session;
         final List<String> models = Config.attempts(context);
         carried.clear();
+        // `draw` lists the pictures it makes for this message here; they are shown under the reply
+        new File(Ubuntu.rootfs(context), DRAWN_FILE.substring(1)).delete();
         if (Config.freeLimitUntil(context) > 0 && !Config.onFreeAllowance(models.get(0))
                 && Config.onFreeAllowance(Config.activeModel(context))) {
             android.util.Log.i("Termant", "free limit: OpenCode's free models wait until "
@@ -871,10 +873,7 @@ final class Chat {
                 if (exit != null) {
                     String told = toldByScript();
                     if (!told.isEmpty()) reply.note = reply.note.isEmpty() ? told : told + " \u00b7 " + reply.note;
-                    for (String picture : drawnByScript()) {
-                        if (!reply.pictures.contains(picture)) reply.pictures.add(picture);
-                    }
-                    if (!reply.pictures.isEmpty()) android.util.Log.i("Termant", "chat: pictures drawn: " + reply.pictures.size());
+                    takePictures(reply);
                     busy = false;
                     process = null;
                     status = "";
@@ -917,11 +916,20 @@ final class Chat {
         }
     }
 
-    /** The pictures `draw` made during this message, as the chat script listed them (see Message.pictures). */
-    private List<String> drawnByScript() {
+    /** Puts the pictures `draw` made during this message under the reply (see Message.pictures). */
+    private void takePictures(Message reply) {
+        if (reply.user) return;
+        for (String picture : drawn()) {
+            if (!reply.pictures.contains(picture)) reply.pictures.add(picture);
+        }
+        if (!reply.pictures.isEmpty()) android.util.Log.i("Termant", "chat: pictures drawn: " + reply.pictures.size());
+    }
+
+    /** The pictures `draw` listed since this message began (the list is emptied in begin()). */
+    private List<String> drawn() {
         List<String> found = new ArrayList<>();
         try {
-            File f = new File(Ubuntu.rootfs(context), STREAM_FILE.substring(1) + ".pictures");
+            File f = new File(Ubuntu.rootfs(context), DRAWN_FILE.substring(1));
             if (!f.isFile() || f.length() > 20000) return found;
             for (String line : read(f).split("\n")) {
                 String path = line.split("\t", 2)[0].trim();

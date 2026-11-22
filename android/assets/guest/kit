@@ -1649,11 +1649,17 @@ Pictures are kept in ~/pictures, with a copy in the phone's gallery (Pictures/Te
     state["last"] = target
     save("draw.json", state)
     if os.environ.get("TERMANT_CHAT"):
-        # the chat reads this list when the reply is done and shows the pictures under it
+        # The app empties this list before each message and reads it when the reply is done:
+        # these pictures are shown under the reply. It reads files in the home folder only.
+        shown = target
         try:
+            if not target.startswith(HOME + os.sep):
+                shown = os.path.join(HOME, "pictures", os.path.basename(target))
+                os.makedirs(os.path.dirname(shown), exist_ok=True)
+                shutil.copyfile(target, shown)
             os.makedirs(CACHE, exist_ok=True)
-            with open(os.path.join(CACHE, "drawn-" + turn_id() + ".txt"), "a", encoding="utf-8") as f:
-                f.write(target + "\t" + address + "\n")
+            with open(os.path.join(CACHE, "drawn.txt"), "a", encoding="utf-8") as f:
+                f.write(shown + "\t" + address + "\n")
         except OSError:
             pass
         out("The chat shows this picture under your answer by itself: do not paste its path or a link, "

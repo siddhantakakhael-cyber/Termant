@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.termant.app"
-    android:versionCode="25"
-    android:versionName="0.22.0">
+    android:versionCode="26"
+    android:versionName="0.23.0">
 
     <!-- targetSdkVersion stays at 28 for the same reason as Termux: a Linux
          userland needs to map and run program files stored in app data. -->
