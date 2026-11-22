@@ -49,7 +49,7 @@ final class Config {
             "opencode/deepseek-v4.1-flash-free", "opencode/minimax-m3.1-flash-free",
     };
     /** Termant's own commands in Ubuntu (guest/kit); the agent may run them without asking. */
-    static final String[] KIT_TOOLS = {"safe", "tidy", "study", "readfile", "me", "watch", "diary"};
+    static final String[] KIT_TOOLS = {"safe", "tidy", "study", "readfile", "me", "watch", "diary", "draw"};
     /** Shell commands OpenCode refuses outright, for the main agent and its helpers. */
     static final String[] NEVER = {
             "rm /sdcard*", "rm -* /sdcard*", "rm /storage*", "rm -* /storage*",

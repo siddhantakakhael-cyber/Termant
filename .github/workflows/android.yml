@@ -26,6 +26,29 @@ jobs:
           bash android/ci/team-check.sh android/assets/guest
           bash android/ci/kit-check.sh android/assets/guest
 
+  # `draw` makes pictures with two free services that belong to other people. This asks the
+  # real ones and keeps their answers and pictures (refs/ci/termant-draw). It never fails the
+  # build: whether they drew today is a fact to read, not something this repository can fix.
+  draw-live:
+    name: The free picture services, really asked
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash android/ci/draw-live.sh android/assets/guest draw-out
+      - name: Publish what they answered
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p draw-out && cd draw-out
+          echo "${GITHUB_SHA} run ${GITHUB_RUN_ID}" > commit.txt
+          git init -q
+          git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "Picture services for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:refs/ci/termant-draw
+
   build:
     needs: reader-on-arm
     runs-on: ubuntu-latest

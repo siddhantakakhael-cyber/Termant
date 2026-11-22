@@ -411,7 +411,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         if (last < 0) return "";
         Chat.Message m = chat.messages.get(last);
         return last + "|" + busy + "|" + m.user + "|" + m.failed + "|" + m.text.isEmpty() + "|" + m.note
-                + "|" + chat.status + "|" + m.steps;
+                + "|" + chat.status + "|" + m.steps + "|" + m.pictures.size();
     }
 
     private void addWelcome() {
@@ -738,6 +738,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             bubble.addView(text);
             if (working) writing = text;
         }
+        // pictures the agent drew for this reply (`draw`)
+        for (String picture : m.pictures) addPicture(bubble, picture, !m.text.isEmpty() || !m.steps.isEmpty());
         if (!m.note.isEmpty()) {
             TextView note = new TextView(c);
             note.setText(m.note);
@@ -756,7 +758,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                     }
                 });
             }
-            if (!m.text.isEmpty() || !m.steps.isEmpty()) note.setPadding(0, dp(8), 0, 0);
+            if (!m.text.isEmpty() || !m.steps.isEmpty() || !m.pictures.isEmpty()) note.setPadding(0, dp(8), 0, 0);
             bubble.addView(note);
         }
         if (working) {
@@ -772,6 +774,177 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         size.topMargin = dp(18);
         size.rightMargin = dp(8);
         list.addView(bubble, size);
+    }
+
+    /** Pictures already read from their files; the list is rebuilt often and must not read them again each time. */
+    private static final android.util.LruCache<String, android.graphics.Bitmap> PICTURES =
+            new android.util.LruCache<String, android.graphics.Bitmap>(24 * 1024 * 1024) {
+                @Override
+                protected int sizeOf(String key, android.graphics.Bitmap value) {
+                    return value.getByteCount();
+                }
+            };
+
+    /** The picture in this file, made smaller when it is far larger than the screen; null when it cannot be read. */
+    static android.graphics.Bitmap picture(java.io.File file) {
+        String key = file.getPath() + "|" + file.length() + "|" + file.lastModified();
+        android.graphics.Bitmap have = PICTURES.get(key);
+        if (have != null) return have;
+        try {
+            android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            android.graphics.BitmapFactory.decodeFile(file.getPath(), o);
+            if (o.outWidth <= 0 || o.outHeight <= 0) return null;
+            int sample = 1;
+            while (Math.max(o.outWidth, o.outHeight) / sample > 1600) sample *= 2;
+            o = new android.graphics.BitmapFactory.Options();
+            o.inSampleSize = sample;
+            android.graphics.Bitmap read = android.graphics.BitmapFactory.decodeFile(file.getPath(), o);
+            if (read != null) PICTURES.put(key, read);
+            return read;
+        } catch (Exception | OutOfMemoryError e) {
+            return null;
+        }
+    }
+
+    private void addPicture(LinearLayout bubble, final String picture, boolean gapAbove) {
+        final Context c = getContext();
+        final java.io.File file = Chat.Message.pictureFile(c, picture);
+        android.graphics.Bitmap bitmap = file.isFile() ? picture(file) : null;
+        if (bitmap == null) {
+            // the file was deleted since, or is not a picture after all
+            TextView gone = new TextView(c);
+            gone.setText(c.getString(R.string.picture_gone, file.getName()));
+            gone.setTextColor(MUTED);
+            gone.setTextSize(Ui.CAPTION);
+            if (gapAbove) gone.setPadding(0, dp(8), 0, 0);
+            bubble.addView(gone);
+            return;
+        }
+        ImageView view = new ImageView(c);
+        view.setImageBitmap(bitmap);
+        view.setAdjustViewBounds(true);
+        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        view.setContentDescription(c.getString(R.string.picture_drawn, file.getName()));
+        view.setBackground(rounded(SURFACE, 14));
+        view.setClipToOutline(true);
+        view.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showPicture(file, Chat.Message.pictureAddress(picture));
+            }
+        });
+        // as wide as the page allows, never wider than the picture itself looks sharp
+        int page = getResources().getDisplayMetrics().widthPixels - dp(44);
+        int width = Math.min(page, dp(340));
+        int height = Math.round(width * (bitmap.getHeight() / (float) bitmap.getWidth()));
+        int most = dp(420);
+        if (height > most) {
+            width = Math.round(width * (most / (float) height));
+            height = most;
+        }
+        LayoutParams size = new LayoutParams(width, height);
+        if (gapAbove) size.topMargin = dp(10);
+        bubble.addView(view, size);
+    }
+
+    /** The picture over the whole screen, with "open in the gallery" and "share" when the gallery has a copy. */
+    private void showPicture(final java.io.File file, final String address) {
+        final Context c = getContext();
+        android.graphics.Bitmap bitmap = picture(file);
+        if (bitmap == null) return;
+        final android.app.Dialog dialog = new android.app.Dialog(c, android.R.style.Theme_Black_NoTitleBar);
+        LinearLayout page = new LinearLayout(c);
+        page.setOrientation(VERTICAL);
+        page.setBackgroundColor(0xff000000);
+        ImageView view = new ImageView(c);
+        view.setImageBitmap(bitmap);
+        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        view.setContentDescription(c.getString(R.string.picture_drawn, file.getName()));
+        view.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+        page.addView(view, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+
+        TextView where = new TextView(c);
+        where.setText(address.isEmpty() ? c.getString(R.string.picture_in_ubuntu, "~/pictures/" + file.getName())
+                : c.getString(R.string.picture_in_gallery, "Pictures/" + Gallery.FOLDER));
+        where.setTextColor(0xffb8b8b8);
+        where.setTextSize(Ui.CAPTION);
+        where.setGravity(Gravity.CENTER);
+        where.setPadding(dp(16), dp(10), dp(16), dp(6));
+        page.addView(where);
+
+        LinearLayout row = new LinearLayout(c);
+        row.setGravity(Gravity.CENTER);
+        row.setPadding(dp(12), dp(4), dp(12), dp(16));
+        if (!address.isEmpty()) {
+            final android.net.Uri uri = android.net.Uri.parse(address);
+            TextView open = pictureButton(c.getString(R.string.picture_open));
+            open.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        c.startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW)
+                                .setDataAndType(uri, "image/*")
+                                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION));
+                    } catch (Exception e) {
+                        android.util.Log.w("Termant", "picture: cannot open " + uri, e);
+                        android.widget.Toast.makeText(c, R.string.picture_no_app, android.widget.Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            row.addView(open, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)));
+            TextView share = pictureButton(c.getString(R.string.picture_share));
+            share.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        android.content.Intent send = new android.content.Intent(android.content.Intent.ACTION_SEND)
+                                .setType("image/*").putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        send.setClipData(android.content.ClipData.newRawUri("", uri));
+                        c.startActivity(android.content.Intent.createChooser(send, c.getString(R.string.picture_share)));
+                    } catch (Exception e) {
+                        android.util.Log.w("Termant", "picture: cannot share " + uri, e);
+                        android.widget.Toast.makeText(c, R.string.picture_no_app, android.widget.Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            LayoutParams shareSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44));
+            shareSize.leftMargin = dp(10);
+            row.addView(share, shareSize);
+        }
+        TextView close = pictureButton(c.getString(R.string.close));
+        close.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+        LayoutParams closeSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44));
+        if (!address.isEmpty()) closeSize.leftMargin = dp(10);
+        row.addView(close, closeSize);
+        page.addView(row);
+        dialog.setContentView(page);
+        dialog.show();
+    }
+
+    private TextView pictureButton(String text) {
+        TextView v = new TextView(getContext());
+        v.setText(text);
+        v.setGravity(Gravity.CENTER);
+        v.setTextColor(0xffffffff);
+        v.setTextSize(Ui.LABEL);
+        v.setTypeface(Ui.medium());
+        v.setSingleLine(true);
+        v.setClickable(true);
+        v.setPadding(dp(18), 0, dp(18), 0);
+        v.setBackground(new RippleDrawable(ColorStateList.valueOf(0x40ffffff), rounded(0xff2a2a2a, 22), rounded(0xffffffff, 22)));
+        return v;
     }
 
     /** "5 minutes ago", in the language chosen in the app (Android's own wording follows the phone's language). */

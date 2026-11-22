@@ -1,6 +1,8 @@
 #!/bin/bash
 # Control the Android phone from inside Ubuntu. Talks to the Termant app.
 #   phone help
+# phone draw "WHAT": a picture made from words (see `draw help`)
+if [ "$1" = draw ]; then shift; exec termant-kit draw "$@"; fi
 if ! read -r port token 2>/dev/null < /etc/termant/bridge; then
   echo "phone: the Termant app is not running" >&2
   exit 1
@@ -30,7 +32,7 @@ if [ "$1" = say ] && [ $# -ge 2 ] && [ -s "$HOME/.config/termant/voice.keys" ]; 
     echo "phone say: ElevenLabs did not speak, so the phone's own voice is used." >&2
   fi
 fi
-# phone look FILE: the app cannot see Ubuntu's files, so the picture itself is sent along
+# phone look FILE, play FILE, gallery FILE: the app cannot see Ubuntu's files, so the file itself is sent along
 picture=
 kind=look
 if [ "$1" = play ]; then
@@ -41,6 +43,15 @@ if [ "$1" = play ]; then
   size=$(stat -c %s -- "$picture" 2>/dev/null) || size=0
   [ "$size" -gt 0 ] || { echo "phone play: the file is empty: $picture" >&2; exit 1; }
   [ "$size" -le 33554432 ] || { echo "phone play: the file is bigger than 32 MB: $picture" >&2; exit 1; }
+elif [ "$1" = gallery ]; then
+  # phone gallery FILE: a copy of this picture goes into the phone's gallery
+  [ $# -eq 2 ] || { echo "usage: phone gallery FILE" >&2; exit 1; }
+  kind=gallery
+  picture=$2
+  [ -f "$picture" ] && [ -r "$picture" ] || { echo "phone gallery: there is no such file: $picture" >&2; exit 1; }
+  size=$(stat -c %s -- "$picture" 2>/dev/null) || size=0
+  [ "$size" -gt 0 ] || { echo "phone gallery: the file is empty: $picture" >&2; exit 1; }
+  [ "$size" -le 33554432 ] || { echo "phone gallery: the file is bigger than 32 MB: $picture" >&2; exit 1; }
 elif [ "$1" = look ] && [ $# -ge 2 ] && [ "$2" != last ]; then
   [ $# -eq 2 ] || { echo "usage: phone look [FILE | last]" >&2; exit 1; }
   picture=$2

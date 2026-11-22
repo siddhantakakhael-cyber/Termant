@@ -35,6 +35,23 @@ final class Chat {
         String note = "";
         /** The agent spoke first: a check-in nobody asked for (see Care). */
         boolean first;
+        /**
+         * Pictures made for this reply (`draw`), shown under it. Each is the file's path in Ubuntu;
+         * after a tab comes its address in the phone's gallery when a copy was put there.
+         */
+        final List<String> pictures = new ArrayList<>();
+
+        /** The file of picture i as the app reads it. */
+        static File pictureFile(Context c, String picture) {
+            String path = picture.split("\t", 2)[0];
+            return new File(Ubuntu.rootfs(c), path.startsWith("/") ? path.substring(1) : path);
+        }
+
+        /** The picture's address in the phone's gallery, or "" when it is only in Ubuntu. */
+        static String pictureAddress(String picture) {
+            String[] parts = picture.split("\t", 2);
+            return parts.length > 1 ? parts[1].trim() : "";
+        }
     }
 
     interface Listener {
@@ -55,7 +72,7 @@ final class Chat {
      * $6 the file the reply is copied to word by word.
      */
     private static final String SCRIPT =
-            "rm -f \"$6.note\" 2>/dev/null\n"
+            "rm -f \"$6.note\" \"$6.pictures\" 2>/dev/null\n"
                     + "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
                     // TERMANT_CHAT tells Termant's own commands that the agent runs them (see guest/kit)
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1 TERMANT_CHAT=1\n"
@@ -130,6 +147,9 @@ final class Chat {
                     + "  [ -n \"$told\" ] && note=\"Model for the attached file: ${told#opencode/}\"\n"
                     + "  [ -n \"$changes\" ] && note=\"" + UNDO_SIGN + " Undo: $changes file change(s)${note:+ \u00b7 $note}\"\n"
                     + "  [ -n \"$note\" ] && [ -n \"$6\" ] && printf '%s\\n' \"$note\" > \"$6.note\"\n"
+                    // pictures drawn during this message (`draw` lists them): the chat shows them under the reply
+                    + "  drawn=\"$HOME/.cache/termant/drawn-$turn.txt\"\n"
+                    + "  if [ -s \"$drawn\" ]; then [ -n \"$6\" ] && cp \"$drawn\" \"$6.pictures\"; rm -f \"$drawn\"; fi\n"
                     + "fi\n"
                     + "if [ $code -eq 0 ] && [ -n \"$5\" ]; then\n"
                     + "  echo; echo " + SESSION_MARKER + "\n"
@@ -851,6 +871,10 @@ final class Chat {
                 if (exit != null) {
                     String told = toldByScript();
                     if (!told.isEmpty()) reply.note = reply.note.isEmpty() ? told : told + " \u00b7 " + reply.note;
+                    for (String picture : drawnByScript()) {
+                        if (!reply.pictures.contains(picture)) reply.pictures.add(picture);
+                    }
+                    if (!reply.pictures.isEmpty()) android.util.Log.i("Termant", "chat: pictures drawn: " + reply.pictures.size());
                     busy = false;
                     process = null;
                     status = "";
@@ -891,6 +915,24 @@ final class Chat {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    /** The pictures `draw` made during this message, as the chat script listed them (see Message.pictures). */
+    private List<String> drawnByScript() {
+        List<String> found = new ArrayList<>();
+        try {
+            File f = new File(Ubuntu.rootfs(context), STREAM_FILE.substring(1) + ".pictures");
+            if (!f.isFile() || f.length() > 20000) return found;
+            for (String line : read(f).split("\n")) {
+                String path = line.split("\t", 2)[0].trim();
+                // only files inside Ubuntu, and only those that are there
+                if (!path.startsWith("/") || path.contains("/../") || found.size() >= 8) continue;
+                if (Message.pictureFile(context, line).isFile()) found.add(line.trim());
+            }
+        } catch (Exception e) {
+            // no pictures then
+        }
+        return found;
     }
 
     private void apply(Message reply, String raw, Integer exit) {
@@ -1262,7 +1304,8 @@ final class Chat {
                     title = said.length() > 80 ? said.substring(0, 80) : said;
                 }
                 list.put(new JSONObject().put("user", m.user).put("text", m.text).put("first", m.first)
-                        .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps)));
+                        .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps))
+                        .put("pictures", new JSONArray(m.pictures)));
             }
             // a chat the agent began: named after what it asked
             if (title.isEmpty() && !messages.isEmpty()) {
@@ -1305,6 +1348,8 @@ final class Chat {
                 m.first = j.optBoolean("first");
                 JSONArray steps = j.optJSONArray("steps");
                 for (int k = 0; steps != null && k < steps.length(); k++) m.steps.add(steps.getString(k));
+                JSONArray pictures = j.optJSONArray("pictures");
+                for (int k = 0; pictures != null && k < pictures.length(); k++) m.pictures.add(pictures.getString(k));
                 // a reply that was cut off when the app was closed
                 if (m.first && m.text.isEmpty()) continue;
                 if (!m.user && m.text.isEmpty()) m.text = Lang.of(context).getString(R.string.chat_stopped);

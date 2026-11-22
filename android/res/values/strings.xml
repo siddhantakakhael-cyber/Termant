@@ -31,6 +31,13 @@
     <string name="attach_default">Look at this file and tell me what is in it.</string>
     <string name="attach_failed">That file could not be added (too big, or it cannot be read).</string>
     <string name="undo_changes">Put the changed files back</string>
+    <string name="picture_drawn">Picture: %1$s</string>
+    <string name="picture_gone">The picture %1$s is no longer there.</string>
+    <string name="picture_in_gallery">A copy is in the phone\'s gallery, in %1$s</string>
+    <string name="picture_in_ubuntu">Kept in Ubuntu: %1$s</string>
+    <string name="picture_open">Open in gallery</string>
+    <string name="picture_share">Share</string>
+    <string name="picture_no_app">No app on this phone could take the picture.</string>
     <string name="ask_send">Send</string>
     <string name="ask_voice">Speak</string>
     <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>

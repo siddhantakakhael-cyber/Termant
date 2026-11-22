@@ -89,6 +89,8 @@ final class PhoneBridge {
                     + "  phone look FILE             what is in a photo and where: the scene, each thing with its place, the writing\n"
                     + "  phone look last             the same for the newest picture on the phone (camera, screenshot, download)\n"
                     + "  phone look                  the same for what the screen shows now (a photo in the gallery, a video, a game)\n"
+                    + "  phone draw \"WHAT\"           a picture made from words, free (draw help); shown in the chat\n"
+                    + "  phone gallery FILE          put a copy of a picture into the phone's gallery (Pictures/Termant)\n"
                     + "  phone tap N | TEXT | X Y    tap item N of that list, the item with these words, or a point\n"
                     + "  phone type TEXT             type into the text box that has the cursor\n"
                     + "  phone swipe up|down|left|right   up shows what is further below\n"
@@ -189,7 +191,9 @@ final class PhoneBridge {
             for (int i = 0; i < count; i++) args.add(field(in));
             // "look - NAME SIZE": the bytes of a picture file in Ubuntu follow
             // "play - NAME SIZE": the bytes of a sound file follow in the same way
-            boolean picture = count == 4 && ("look".equals(args.get(0)) || "play".equals(args.get(0))) && "-".equals(args.get(1));
+            // "gallery - NAME SIZE": and those of a picture for the phone's gallery
+            boolean picture = count == 4 && ("look".equals(args.get(0)) || "play".equals(args.get(0))
+                    || "gallery".equals(args.get(0))) && "-".equals(args.get(1));
             int size = picture ? Integer.parseInt(args.get(3)) : 0;
             if (picture && (size < 1 || size > MOST_PICTURE_BYTES)) return;
 
@@ -202,7 +206,13 @@ final class PhoneBridge {
                         if (n < 0) throw new IOException("short request");
                         got += n;
                     }
-                    text = "play".equals(args.get(0)) ? play(args.get(2), sent) : look(args.get(2), sent);
+                    if ("gallery".equals(args.get(0))) {
+                        String[] saved = Gallery.save(service, args.get(2), sent);
+                        // the second line is the picture's address on the phone (the chat opens and shares it by that)
+                        text = "A copy is in the phone's gallery: " + saved[0] + (saved[1].isEmpty() ? "" : "\n" + saved[1]);
+                    } else {
+                        text = "play".equals(args.get(0)) ? play(args.get(2), sent) : look(args.get(2), sent);
+                    }
                 } else {
                     text = run(args);
                 }

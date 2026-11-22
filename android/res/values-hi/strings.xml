@@ -28,6 +28,13 @@
     <string name="attach_default">Yeh file dekho aur batao isme kya hai.</string>
     <string name="attach_failed">Yeh file nahi jud payi (bahut badi hai, ya padhi nahi ja sakti).</string>
     <string name="undo_changes">Badli hui files wapas laayein</string>
+    <string name="picture_drawn">Tasveer: %1$s</string>
+    <string name="picture_gone">Tasveer %1$s ab nahi hai.</string>
+    <string name="picture_in_gallery">Ek copy phone ki gallery mein hai: %1$s</string>
+    <string name="picture_in_ubuntu">Ubuntu mein rakhi hai: %1$s</string>
+    <string name="picture_open">Gallery mein kholein</string>
+    <string name="picture_share">Share karein</string>
+    <string name="picture_no_app">Is phone ka koi app yeh tasveer nahi le paya.</string>
     <string name="ask_send">Bhejein</string>
     <string name="ask_voice">Bolkar likhein</string>
     <string name="voice_missing">Is phone mein voice typing app nahi hai. Keyboard ka microphone button istemal karein.</string>

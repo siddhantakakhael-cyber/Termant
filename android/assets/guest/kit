@@ -10,6 +10,7 @@ One file, several commands; the name it is called by picks the tool:
   me        the user's own details, for filling in forms
   watch     look for something every few minutes, then do something once
   diary     what the agent did, how long it took
+  draw      a picture made from words
   termant-kit TOOL ...   any of the above, and: team (notes, seen, model), attach, models
 
 `TOOL help` explains each one.
@@ -802,6 +803,15 @@ def picture_size(path):
         return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
     if head[:3] == b"GIF" and len(head) > 10:
         return int.from_bytes(head[6:8], "little"), int.from_bytes(head[8:10], "little")
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP" and len(head) > 30:
+        form = head[12:16]
+        if form == b"VP8X":
+            return int.from_bytes(head[24:27], "little") + 1, int.from_bytes(head[27:30], "little") + 1
+        if form == b"VP8 ":
+            return int.from_bytes(head[26:28], "little") & 0x3FFF, int.from_bytes(head[28:30], "little") & 0x3FFF
+        if form == b"VP8L":
+            bits = int.from_bytes(head[21:25], "little")
+            return (bits & 0x3FFF) + 1, ((bits >> 14) & 0x3FFF) + 1
     if head.startswith(b"\xff\xd8"):
         i = 2
         while i + 9 < len(head):
@@ -1377,8 +1387,272 @@ def models(args):
         out("%s  %s%s" % (name, ",".join(facts[name]["input"]), "  free" if facts[name].get("free") else ""))
 
 
+# ---------------------------------------------------------------- draw: a picture from words
+
+# Two services that draw without an account or a key. The first is quick; when it refuses
+# (it lets one address draw only now and then), the second is asked, which is slower.
+POLLINATIONS = os.environ.get("TERMANT_DRAW_POLLINATIONS", "https://image.pollinations.ai").rstrip("/")
+HORDE = os.environ.get("TERMANT_DRAW_HORDE", "https://aihorde.net/api/v2").rstrip("/")
+HORDE_AGENT = "termant:1:https://github.com/siddhantakakhael-cyber/Termant"
+# general models of the AI Horde, asked for first; when no worker has them, any model draws
+HORDE_MODELS = ["Dreamshaper", "ICBINP - I Can't Believe It's Not Photography", "stable_diffusion"]
+# {shape: (size at the first service, size at the second)}; the second gives at most 576 a side for nothing
+DRAW_SIZES = {"square": ((768, 768), (512, 512)), "wide": ((768, 432), (576, 320)), "tall": ((432, 768), (320, 576))}
+DRAW_LIMIT = 30 * 1000 * 1000
+
+
+def env_number(name, default):
+    try:
+        return float(os.environ.get(name, default))
+    except ValueError:
+        return float(default)
+
+
+def picture_kind(data):
+    """The ending for these bytes when they are a picture, else None."""
+    if data[:3] == b"\xff\xd8\xff":
+        return "jpg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    if data[:3] == b"GIF":
+        return "gif"
+    return None
+
+
+def web(url, data=None, headers=None, timeout=120, method=None):
+    """(status, body, headers); status 0 when the service could not be reached."""
+    import urllib.error
+    import urllib.request
+    request = urllib.request.Request(url, data=data, headers=headers or {}, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as r:
+            return r.status, r.read(DRAW_LIMIT), {k.lower(): v for k, v in r.headers.items()}
+    except urllib.error.HTTPError as e:
+        try:
+            body = e.read(4000)
+        except OSError:
+            body = b""
+        return e.code, body, {k.lower(): v for k, v in (e.headers or {}).items()}
+    except (OSError, ValueError) as e:
+        return 0, str(getattr(e, "reason", e)).encode("utf-8", "replace"), {}
+
+
+def why(code, body):
+    said = one_line(body.decode("utf-8", "replace"), 160)
+    if code == 0:
+        return "could not be reached (%s)" % (said or "no connection")
+    if code in (402, 429):
+        return "busy: it draws for one address only now and then (HTTP %d)" % code
+    return "HTTP %d%s" % (code, ": " + said if said and not said.startswith("<") else "")
+
+
+def draw_pollinations(prompt, size, seed, say):
+    """(picture bytes, None) or (None, why not)."""
+    from urllib.parse import quote
+    url = "%s/prompt/%s?width=%d&height=%d&seed=%d&nologo=true" % (
+        POLLINATIONS, quote(prompt, safe=""), size[0], size[1], seed)
+    state = load("draw.json", {})
+    gap = env_number("TERMANT_DRAW_GAP", 45) - (time.time() - state.get("asked", 0))
+    if 0 < gap <= 60:
+        # this service draws for one address only every 45 seconds
+        say("Waiting %d s (the free service draws one picture at a time)..." % round(gap))
+        time.sleep(gap)
+    for attempt in (1, 2):
+        state["asked"] = time.time()
+        save("draw.json", state)
+        code, body, heads = web(url, headers={"User-Agent": "Termant", "Accept": "image/*"}, timeout=180)
+        if code == 200 and picture_kind(body):
+            return body, None
+        try:
+            wait = float(heads.get("retry-after", ""))
+        except ValueError:
+            wait = None
+        if attempt == 1 and code in (402, 429) and wait is not None and wait <= 60:
+            say("The service asks to wait %d s..." % round(wait))
+            time.sleep(wait + 1)
+            continue
+        if code == 200:
+            return None, "gave no picture"
+        return None, why(code, body)
+    return None, "gave no picture"
+
+
+def draw_horde(prompt, size, seed, say):
+    """(picture bytes, None) or (None, why not). A queue of volunteers' computers: it takes a minute or more."""
+    import base64
+    heads = {"apikey": "0000000000", "Client-Agent": HORDE_AGENT, "Content-Type": "application/json",
+             "User-Agent": "Termant"}
+    limit = env_number("TERMANT_DRAW_WAIT", 300)
+    pause = env_number("TERMANT_DRAW_POLL", 4)
+    last = "gave no picture"
+    for models in (HORDE_MODELS, []):
+        asked = {"prompt": prompt + " ### low quality, blurry, deformed, watermark, text",
+                 "params": {"width": size[0], "height": size[1], "steps": 25, "n": 1, "sampler_name": "k_euler_a",
+                            "cfg_scale": 7, "seed": str(seed)},
+                 "nsfw": False, "censor_nsfw": True, "trusted_workers": False, "slow_workers": True,
+                 "r2": True, "shared": False, "models": models}
+        code, body, _ = web(HORDE + "/generate/async", data=json.dumps(asked).encode(), headers=heads, timeout=60)
+        try:
+            job = json.loads(body.decode("utf-8", "replace")).get("id") if code in (200, 202) else None
+        except (ValueError, AttributeError):
+            job = None
+        if not job:
+            return None, why(code, body)
+        began, told, possible = time.time(), 0, True
+        done = False
+        while time.time() - began < limit:
+            time.sleep(pause)
+            code, body, _ = web(HORDE + "/generate/check/" + job, headers=heads, timeout=30)
+            try:
+                state = json.loads(body.decode("utf-8", "replace")) if code == 200 else {}
+            except ValueError:
+                state = {}
+            if state.get("faulted"):
+                last = "its worker failed"
+                break
+            if state.get("done"):
+                done = True
+                break
+            if state.get("is_possible") is False:
+                possible = False
+                break
+            if time.time() - told > 20 and state:
+                told = time.time()
+                say("In the queue: place %s, about %s s more..." % (state.get("queue_position", "?"), state.get("wait_time", "?")))
+        if not done:
+            web(HORDE + "/generate/status/" + job, headers=heads, timeout=30, method="DELETE")
+            if not possible and models:
+                continue  # no worker has these models right now: any model then
+            if possible and last == "gave no picture":
+                last = "was not ready after %d s (its queue is long right now)" % round(limit)
+            return None, last
+        code, body, _ = web(HORDE + "/generate/status/" + job, headers=heads, timeout=60)
+        try:
+            made = (json.loads(body.decode("utf-8", "replace")).get("generations") or [{}])[0] if code == 200 else {}
+        except (ValueError, AttributeError, IndexError):
+            made = {}
+        if made.get("censored"):
+            return None, "held the picture back as not safe to show"
+        img = made.get("img") or ""
+        if img.startswith("http"):
+            code, data, _ = web(img, headers={"User-Agent": "Termant"}, timeout=120)
+            if code != 200:
+                return None, "made a picture that could not be fetched (%s)" % why(code, data)
+        else:
+            try:
+                data = base64.b64decode(img)
+            except ValueError:
+                data = b""
+        if picture_kind(data):
+            return data, None
+        return None, why(code, body) if code != 200 else "gave no picture"
+    return None, last
+
+
+def draw(args):
+    what = args[0] if args else "help"
+    if what in ("help", "--help", "-h"):
+        out("""draw: a picture made from words (free services, no account or key)
+  draw "WHAT TO DRAW"           a square picture; say it in English, with details:
+                                the thing, the place, the light, the style (photo, painting, cartoon)
+  draw --wide "..."             wider than high          draw --tall "..."    higher than wide
+  draw --out FILE "..."         save it under this name  draw --seed 7 "..."  the same number draws the same again
+  draw last                     where the newest picture is
+The first service is quick but draws only now and then for one address; then a second one
+is asked, which takes a minute or more and draws smaller. Pictures are kept in ~/pictures,
+with a copy in the phone's gallery (Pictures/Termant).""")
+        return
+    if what == "last":
+        newest = load("draw.json", {}).get("last")
+        if not newest or not os.path.exists(newest):
+            raise Refused("draw: no picture has been made yet")
+        out(newest)
+        return
+    shape, target, seed, words = "square", None, None, []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("--wide", "--tall", "--square"):
+            shape = a[2:]
+        elif a in ("--out", "--seed") and i + 1 < len(args):
+            if a == "--out":
+                target = args[i + 1]
+            else:
+                try:
+                    seed = int(args[i + 1])
+                except ValueError:
+                    raise Refused("draw: --seed takes a number")
+            i += 1
+        elif a.startswith("--"):
+            raise Refused("draw: there is no %s (draw help)" % a)
+        else:
+            words.append(a)
+        i += 1
+    prompt = one_line(" ".join(words), 900)
+    if len(prompt) < 3:
+        raise Refused('usage: draw "what to draw"   (draw help)')
+    if seed is None:
+        seed = int.from_bytes(os.urandom(4), "big") % 2000000000
+
+    def say(text):
+        sys.stderr.write(text + "\n")
+        sys.stderr.flush()
+
+    data, by, reasons = None, "", []
+    for name, ask, size in (("Pollinations", draw_pollinations, DRAW_SIZES[shape][0]),
+                            ("AI Horde", draw_horde, DRAW_SIZES[shape][1])):
+        if reasons:
+            say("%s did not draw (%s). Asking %s, which takes a minute or more..." % (by, reasons[-1], name))
+        by = name
+        data, reason = ask(prompt, size, seed, say)
+        if data:
+            break
+        reasons.append(reason)
+    if not data:
+        hint = ("Is the internet on?" if all(r.startswith("could not be reached") for r in reasons)
+                else "Both are free services that are sometimes busy; try again in a few minutes.")
+        raise Refused("draw: no picture this time. Pollinations: %s. AI Horde: %s.\n%s "
+                      "Tell the user plainly that no picture was made; do not describe one." % (reasons[0], reasons[-1], hint))
+    ending = picture_kind(data)
+    if target:
+        base, old = os.path.splitext(os.path.abspath(os.path.expanduser(target)))
+        target = base + "." + ending if old.lower().lstrip(".") not in (ending, "jpeg" if ending == "jpg" else ending) else base + old
+    else:
+        slug = re.sub(r"[^a-z0-9]+", "-", prompt.lower()).strip("-")[:40].strip("-") or "picture"
+        target = os.path.join(HOME, "pictures", "%s-%s.%s" % (slug, time.strftime("%Y%m%d-%H%M%S"), ending))
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    with open(target, "wb") as f:
+        f.write(data)
+    size = picture_size(target)
+    out("Picture saved: %s (%s%s, drawn by %s)" % (target, "%dx%d, " % size if size else "", size_text(len(data)), by))
+    # the phone's gallery gets a copy; the app answers with where it is and its address on the phone
+    address = ""
+    ok, said = phone("gallery", target, timeout=60)
+    lines = said.splitlines()
+    if ok and lines:
+        out(lines[0])
+        address = next((x.strip() for x in lines[1:] if x.startswith("content://")), "")
+    else:
+        out("Not copied to the phone's gallery (%s). It is in Ubuntu, at the path above." % one_line(said or "no answer", 160))
+    state = load("draw.json", {})
+    state["last"] = target
+    save("draw.json", state)
+    if os.environ.get("TERMANT_CHAT"):
+        # the chat reads this list when the reply is done and shows the pictures under it
+        try:
+            os.makedirs(CACHE, exist_ok=True)
+            with open(os.path.join(CACHE, "drawn-" + turn_id() + ".txt"), "a", encoding="utf-8") as f:
+                f.write(target + "\t" + address + "\n")
+        except OSError:
+            pass
+        out("The chat shows this picture under your answer by itself: do not paste its path or a link, "
+            "just say in one line what you drew.")
+
+
 TOOLS = {"safe": safe, "tidy": tidy, "study": study, "readfile": readfile, "me": me, "watch": watch,
-         "diary": diary, "team": team, "attach": attach, "models": models}
+         "diary": diary, "draw": draw, "team": team, "attach": attach, "models": models}
 
 
 def main():
