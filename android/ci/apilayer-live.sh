@@ -32,8 +32,17 @@ gateway() { # NAME, then curl arguments
   page api-pika.html "https://marketplace.apilayer.com/pika-api"
   page api-ipstack.html "https://marketplace.apilayer.com/ipstack-api"
   page api-none.html "https://marketplace.apilayer.com/zzqqxxnothing-api"
-  page sitemap.xml "https://marketplace.apilayer.com/sitemap.xml"
-  page robots.txt "https://marketplace.apilayer.com/robots.txt"
+  echo "== the pieces the pages load afterwards: the list, and an API's documentation"
+  page list-all.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=&view_by=list_view"
+  page list-all-grid.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=&view_by="
+  page list-currency.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=currency&view_by=list_view"
+  page list-none.html "https://marketplace.apilayer.com/get-api-data?sort_by=&q=zzqqxxnothing&view_by=list_view"
+  page docs-exchangerates.html "https://marketplace.apilayer.com/exchangerates_data-api/tabs/api_docs"
+  page docs-image-to-text.html "https://marketplace.apilayer.com/image_to_text-api/tabs/api_docs"
+  page docs-pika.html "https://marketplace.apilayer.com/Pika%20Image%20Generation%20API/tabs/api_docs"
+  page docs-pika-2.html "https://marketplace.apilayer.com/pika-api/tabs/api_docs"
+  page docs-ipstack.html "https://marketplace.apilayer.com/IPstack/tabs/api_docs"
+  page docs-none.html "https://marketplace.apilayer.com/zzqqxxnothing-api/tabs/api_docs"
   echo "== the same page asked by Python, as the tool asks"
   python3 - <<'PY'
 import urllib.request, urllib.error
@@ -54,7 +63,7 @@ PY
   gateway gw-no-such-api-no-key "https://api.apilayer.com/zzqqxxnothing/latest"
   gateway gw-root "https://api.apilayer.com/"
   gateway gw-post-wrong-key -X POST -H "apikey: 0000000000000000000000000000wrong" --data-binary "hello" "https://api.apilayer.com/sentiment/analysis"
-  if [ -x "$work/bin/apilayer" ] && apilayer help > /dev/null 2>&1; then
+  if apilayer help 2>/dev/null | grep -q "apilayer key"; then
     echo "== the tool"
     try() { local name=$1 began=$SECONDS; shift; echo "-- $name: apilayer $*"; apilayer "$@" 2>&1 | head -n 60; echo "$name: exit=${PIPESTATUS[0]} seconds=$((SECONDS - began))" | tee -a "$out/summary.txt"; }
     try no-key get exchangerates_data/latest base=USD symbols=INR
