@@ -45,7 +45,7 @@ gateway() { # NAME, then curl arguments
   page docs-none.html "https://marketplace.apilayer.com/zzqqxxnothing-api/tabs/api_docs"
   echo "== every API behind the gateway: its page and its documentation, kept whole"
   mkdir -p "$out/all"
-  for slug in $(grep -o 'src="https://assets.apilayer.com/apis/[^"]*"[^>]*>' -A 40 "$out/list-all.html" | grep -o 'href="/[^"?]*' | sed 's|href="/||' | sort -u); do
+  for slug in $(tr '\n' ' ' < "$out/list-all.html" | sed 's/<div class="product /\n/g' | grep 'assets.apilayer.com/apis/' | grep -o 'href="/[^"?]*' | sed 's|href="/||' | sort -u); do
     curl -s -L -m 60 -A "termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)" -o "$out/all/$slug.page.html" "https://marketplace.apilayer.com/$slug"
     curl -s -L -m 60 -A "termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)" -o "$out/all/$slug.docs.html" "https://marketplace.apilayer.com/$slug/tabs/api_docs"
     sleep 0.2
