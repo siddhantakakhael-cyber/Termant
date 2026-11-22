@@ -1,0 +1,33 @@
+name: APILayer, really asked
+
+# The `apilayer` tool (android/assets/guest/kit) reads the list of APIs from the marketplace
+# pages and calls the gateway with the user's key. Both belong to other people and change
+# without notice. This asks the real ones without a key and keeps their answers
+# (refs/ci/termant-apilayer). It never fails: what they said today is a fact to read.
+on:
+  push:
+    paths: ['android/assets/guest/kit', 'android/ci/apilayer-live.sh', '.github/workflows/apilayer.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apilayer-live:
+    name: The marketplace and the gateway, asked without a key
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash android/ci/apilayer-live.sh android/assets/guest apilayer-out
+      - name: Publish what they answered
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p apilayer-out && cd apilayer-out
+          echo "${GITHUB_SHA} run ${GITHUB_RUN_ID}" > commit.txt
+          git init -q
+          git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "APILayer for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:refs/ci/termant-apilayer
