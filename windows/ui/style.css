@@ -93,9 +93,11 @@ textarea.field { min-height: 150px; resize: vertical; font-family: Consolas, mon
 .idea:hover { border-color: var(--accent); }
 .idea svg.icon { color: var(--accent); width: 18px; height: 18px; }
 
-#status { max-width: 780px; width: 100%; margin: 0 auto; padding: 4px 20px 6px; color: var(--muted); font-size: 13px; display: flex; gap: 8px; align-items: center; }
-#status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite ease-in-out; flex: none; }
-#status span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#status { max-width: 780px; width: 100%; margin: 0 auto; padding: 4px 20px 6px; color: var(--muted); font-size: 13px; display: flex; gap: 8px; align-items: flex-start; }
+#status .dot { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite ease-in-out; flex: none; }
+#status .what { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+#status span, #status .printed { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#status .printed { display: block; font-size: 12px; background: none; padding: 0; color: var(--text); opacity: .85; }
 @keyframes pulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
 #composer { max-width: 780px; width: calc(100% - 40px); margin: 0 auto 18px; display: flex; align-items: flex-end; gap: 6px; background: var(--surface); border: 1px solid var(--outline); border-radius: 22px; padding: 6px; }
 #attached { max-width: 780px; width: calc(100% - 40px); margin: 0 auto 6px; display: flex; flex-wrap: wrap; gap: 6px; }

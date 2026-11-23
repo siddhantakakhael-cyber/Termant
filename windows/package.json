@@ -1,7 +1,7 @@
 {
   "name": "termant",
   "productName": "Termant",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "An AI agent that controls this PC, with a terminal",
   "main": "main.js",
   "author": "Termant",

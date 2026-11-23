@@ -119,7 +119,7 @@
     <string name="chat_no_answer">Agent ne koi jawab nahi diya. Internet connection check karke dobara koshish karein.</string>
     <string name="chat_setup_failed">Agent setup nahi ho paya. Internet connection check karke dobara koshish karein.</string>
     <string name="chat_welcome">Namaste. Kya karna hai?</string>
-    <string name="chat_welcome_text">Hindi ya English mein poochein. Main alarm aur timer laga sakta hoon, phone control kar sakta hoon, aur Ubuntu mein code likhkar chala sakta hoon. Pehli request par agent download hoga (lagbhag 100 MB).</string>
+    <string name="chat_welcome_text">Hindi ya English mein poochein. Main alarm aur timer laga sakta hoon, phone control kar sakta hoon, aur Ubuntu mein code likhkar chala sakta hoon. Pehli request par agent download hoga (lagbhag 120 MB).</string>
     <string name="notification_text_none">Taiyaar</string>
     <string name="menu_new">Naya session</string>
     <string name="menu_agent">AI agent (OpenCode)</string>

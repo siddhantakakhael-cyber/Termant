@@ -34,7 +34,7 @@ if (!SELFTEST && !app.requestSingleInstanceLock()) {
 
 let store, settings, agent, schedule, win, tray, quitting = false;
 let chats = [], current = null;
-let busy = null; // { chat, activity, detail, startedAt } while the agent works
+let busy = null; // { chat, activity, detail, output, startedAt } while the agent works; output is the newest line a running command printed
 let notes = [];
 let learned = null;
 let team = null;
@@ -230,7 +230,7 @@ function data() {
 function chatState() {
   return {
     chat: current,
-    busy: busy && busy.chat === current ? { activity: busy.activity, detail: busy.detail, startedAt: busy.startedAt } : null,
+    busy: busy && busy.chat === current ? { activity: busy.activity, detail: busy.detail, output: busy.output || '', startedAt: busy.startedAt } : null,
     working: !!busy,
   };
 }
@@ -336,6 +336,8 @@ async function sendMessage(text, own, files) {
       if (event.activity) {
         busy.activity = event.activity;
         busy.detail = event.detail || '';
+        // how far the command that runs now is: the newest line it printed (see src/progress.js)
+        busy.output = event.output || '';
       }
       send('chat', chatState());
     },
@@ -372,6 +374,7 @@ async function sendMessage(text, own, files) {
       for (const model of others) {
         busy.activity = 'switch';
         busy.detail = model.replace(/^opencode\//, '');
+        busy.output = '';
         reply.text = '';
         reply.steps = [];
         send('chat', chatState());

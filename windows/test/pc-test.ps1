@@ -252,6 +252,7 @@ $env:TERMANT_PYTHON = 'own'
 $r = Run marks setup
 $fetched = ($r.code -eq 0) -and ($r.out -match 'Getting one for Termant') -and ($r.out -match "Ready\. Python 3\.12\.\d+ \(Termant's own\)")
 Check 'without a Python on the PC, one is fetched for Termant' $fetched "exit $($r.code): $($r.out -replace '\s+', ' ')" -Soft
+if ($fetched) { Check 'the download says how far it is' ($r.out -match '\d+% of 2\d[.,]\d MB|\d[.,]\d MB downloaded') "$($r.out -replace '\s+', ' ')" }
 if ($fetched) {
   $r = Run marks setup
   Check 'the second time nothing is fetched' (($r.code -eq 0) -and ($r.out -notmatch 'Getting one') -and ($r.out -match "\(Termant's own\)") -and ($r.out -match 'termant-pc-test\\python\\python\.exe')) "exit $($r.code): $($r.out)"

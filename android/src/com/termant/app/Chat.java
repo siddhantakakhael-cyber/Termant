@@ -336,6 +336,11 @@ final class Chat {
     volatile int activity = ACT_START;
     volatile String activityDetail = "";
     volatile long activityAt;
+    /**
+     * The newest line the command that runs now has printed (how far a download is, which
+     * package is being unpacked); empty when nothing runs or it has printed nothing yet.
+     */
+    volatile String activityOutput = "";
 
     private static final String[] ACT_NAMES = {"start", "ask", "think", "write", "shell", "install", "phone",
             "screen", "github", "read", "edit", "find", "search", "fetch", "plan", "helper", "tool", "retry",
@@ -351,6 +356,97 @@ final class Chat {
         }
         activity = kind;
         activityDetail = about;
+        activityOutput = "";
+    }
+
+    /** What the running command printed last; it is shown only while a command is what the agent does. */
+    private synchronized void printing(String line) {
+        if (SHELL_RANK.contains(activity)) activityOutput = line;
+    }
+
+    /** Colours and cursor moves that programs print for a terminal. */
+    private static final Pattern ESCAPES = Pattern.compile(
+            "\u001b\\[[0-9;?]*[ -/]*[@-~]|\u001b\\][^\u0007]*\u0007|\u001b[@-_]");
+    private static final String CURL_TIME = "(--:--:--|\\d+:\\d\\d:\\d\\d)";
+    /** curl's meter: % Total, % Received, % Xferd, Dload, Upload, Total, Spent, Left, Speed. */
+    private static final Pattern CURL = Pattern.compile(
+            "^(\\d{1,3}) +(\\S+) +(\\d{1,3}) +(\\S+) +(\\d{1,3}) +(\\S+) +(\\S+) +(\\S+) +"
+                    + CURL_TIME + " +" + CURL_TIME + " +" + CURL_TIME + " +(\\S+)$");
+    /** `curl -#` and others that draw a bar with a percentage after it: "#########      13.7%". */
+    private static final Pattern BAR = Pattern.compile("^[#=>\\-. ]*?(\\d{1,3}(?:[.,]\\d)?) ?%$");
+    /** wget without a terminal: "1050K .......... .......... 12% 1.20M 3s". */
+    private static final Pattern WGET = Pattern.compile(
+            "^(\\d+)K(?: [.,]+)+ +(?:(\\d{1,3})% +)?([\\d.,]+[KMG]?)(?: (\\S+)|=\\S+)?$");
+    private static final Pattern AMOUNT = Pattern.compile("^(\\d+(?:[.,]\\d+)?)([kKMGTP]?)$");
+    private static final Pattern CLOCK = Pattern.compile("^(\\d+):(\\d\\d):(\\d\\d)$");
+
+    /** "22.3M" as curl and wget write an amount, as "22.3 MB". */
+    private static String amount(String text) {
+        Matcher m = AMOUNT.matcher(text);
+        if (!m.matches()) return text;
+        String unit = m.group(2);
+        return m.group(1) + " " + (unit.isEmpty() ? "B" : unit.equalsIgnoreCase("k") ? "kB" : unit + "B");
+    }
+
+    /** "0:00:12" as "12s", "0:01:05" as "1:05"; empty when the time is not known ("--:--:--"). */
+    private static String timeLeft(String text) {
+        Matcher m = CLOCK.matcher(text);
+        if (!m.matches()) return "";
+        try {
+            int hours = Integer.parseInt(m.group(1));
+            int minutes = Integer.parseInt(m.group(2));
+            int seconds = Integer.parseInt(m.group(3));
+            if (hours > 0) return hours + ":" + m.group(2) + ":" + m.group(3);
+            if (minutes > 0) return minutes + ":" + m.group(3);
+            return seconds + "s";
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
+    private static String curlSays(Matcher m) {
+        boolean sending = m.group(4).equals("0") && !m.group(6).equals("0");
+        String done = sending ? m.group(6) : m.group(4);
+        String percent = sending ? m.group(5) : m.group(3);
+        // without a known size, curl gives what has arrived so far as the total
+        boolean known = !m.group(2).equals("0") && (!m.group(2).equals(done) || percent.equals("100"));
+        StringBuilder b = new StringBuilder(known ? percent + "% of " + amount(m.group(2))
+                : amount(done) + (sending ? " sent" : " downloaded"));
+        if (!m.group(12).equals("0")) b.append(" \u00b7 ").append(amount(m.group(12))).append("/s");
+        String rest = timeLeft(m.group(11));
+        if (!rest.isEmpty()) b.append(" \u00b7 ").append(rest).append(" left");
+        return b.toString();
+    }
+
+    private static String wgetSays(Matcher m) {
+        StringBuilder b = new StringBuilder(m.group(2) != null ? m.group(2) + "%"
+                : amount(m.group(1) + "K") + " downloaded");
+        b.append(" \u00b7 ").append(amount(m.group(3))).append("/s");
+        if (m.group(4) != null) b.append(" \u00b7 ").append(m.group(4)).append(" left");
+        return b.toString();
+    }
+
+    /**
+     * The newest line in what a command has printed (the end of it is enough), short and readable:
+     * for a download "45% of 22.3 MB, 1100 kB/s, 12s left", else the line as the command printed it.
+     * A line that redraws itself (it ends with a return, not a new line) counts as lines.
+     * The same rules are in the Windows app (windows/src/progress.js, with its checks); keep the two alike.
+     */
+    static String newestLine(String printed) {
+        String[] lines = ESCAPES.matcher(printed == null ? "" : printed).replaceAll("").split("[\\r\\n]+");
+        for (int i = lines.length - 1; i >= 0; i--) {
+            String line = lines[i].replaceAll("[\\x00-\\x1f\\x7f]+", " ").replaceAll("\\s+", " ").trim();
+            // the two heading lines of curl's meter say nothing
+            if (line.isEmpty() || line.startsWith("% Total % Received") || line.startsWith("Dload Upload")) continue;
+            Matcher m = CURL.matcher(line);
+            if (m.matches()) return curlSays(m);
+            m = BAR.matcher(line);
+            if (m.matches()) return m.group(1) + "%";
+            m = WGET.matcher(line);
+            if (m.matches()) return wgetSays(m);
+            return line.length() > 160 ? line.substring(0, 160) : line;
+        }
+        return "";
     }
 
     private synchronized String trail(boolean clear) {
@@ -955,9 +1051,8 @@ final class Chat {
         String output = ANSI.matcher(raw).replaceAll("");
         int start = output.indexOf(MARKER);
         if (start < 0) {
-            // still installing the agent: show the latest line as progress
-            String[] lines = output.trim().split("\n");
-            status = lines[lines.length - 1].trim();
+            // still installing the agent: show the latest line as progress (a bar that redraws itself too)
+            status = newestLine(raw.length() > 4096 ? raw.substring(raw.length() - 4096) : raw);
             if (exit != null) {
                 reply.failed = true;
                 reply.text = Lang.of(context).getString(R.string.chat_setup_failed) + tail(output);
@@ -1047,6 +1142,15 @@ final class Chat {
         private final StringBuilder thought = new StringBuilder();
         private int pieces;
         private long firstAfter = -1;
+        /**
+         * The command that runs now: OpenCode's name for it and the file it prints into (the feed
+         * tells both when the command starts), when that file was last looked at, and what was shown.
+         */
+        private String shell;
+        private File printed;
+        private long lookedAt;
+        private String lastPrinted = "";
+        private int printedLines;
 
         Stream(int id, Message reply) {
             super("termant-stream");
@@ -1074,12 +1178,16 @@ final class Chat {
                     + (firstAfter < 0 ? "" : ", first after " + firstAfter + " ms")
                     + ", reply after " + (android.os.SystemClock.elapsedRealtime() - began) + " ms");
             android.util.Log.i("Termant", "activity: " + trail(true));
+            if (printedLines > 0) {
+                android.util.Log.i("Termant", "progress: " + printedLines + " lines of running commands shown");
+            }
         }
 
         @Override
         public void run() {
             while (!done) {
                 if (read()) show(text.toString());
+                look();
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
@@ -1115,6 +1223,64 @@ final class Chat {
         }
 
         /**
+         * A command started or ended ("shell.created" names the file it prints into, as seen
+         * from inside Ubuntu). Commands of helper agents are not followed.
+         */
+        private void shellEvent(String line) {
+            try {
+                JSONObject o = new JSONObject(line.substring(5));
+                JSONObject d = o.optJSONObject("data");
+                if (d == null) return;
+                String type = o.optString("type");
+                if ("shell.created".equals(type)) {
+                    JSONObject info = d.optJSONObject("info");
+                    if (info == null) return;
+                    JSONObject about = info.optJSONObject("metadata");
+                    String of = about == null ? "" : about.optString("sessionID");
+                    if (session == null || !session.equals(of)) return;
+                    String path = info.optString("file");
+                    if (!path.startsWith("/") || path.contains("/../")) return;
+                    shell = info.optString("id");
+                    printed = new File(Ubuntu.rootfs(context), path.substring(1));
+                    lookedAt = 0;
+                    lastPrinted = "";
+                } else if ("shell.exited".equals(type) && shell != null && shell.equals(d.optString("id"))) {
+                    shell = null;
+                    printed = null;
+                }
+            } catch (Exception e) {
+                // not a line about a command after all
+            }
+        }
+
+        /** Shows the newest line of what the running command has printed so far; looks twice a second. */
+        private void look() {
+            File from = printed;
+            if (from == null) return;
+            long now = android.os.SystemClock.elapsedRealtime();
+            if (now - lookedAt < 400) return;
+            lookedAt = now;
+            String newest;
+            try (java.io.RandomAccessFile in = new java.io.RandomAccessFile(from, "r")) {
+                long size = in.length();
+                int want = (int) Math.min(size, 4096L);
+                if (want == 0) return;
+                byte[] end = new byte[want];
+                in.seek(size - want);
+                in.readFully(end);
+                newest = newestLine(new String(end, StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                return; // not there yet, or gone already
+            }
+            if (newest.isEmpty()) return;
+            printing(newest);
+            if (!newest.equals(lastPrinted)) {
+                lastPrinted = newest;
+                printedLines++;
+            }
+        }
+
+        /**
          * Something a helper agent did. A helper is a session whose parent is this reply's
          * session; while it works, the indicator names it.
          */
@@ -1142,6 +1308,10 @@ final class Chat {
             if (!line.startsWith("data:")) return false;
             if (line.contains("\"type\":\"server.connected\"")) {
                 doing(ACT_ASK, "");
+                return false;
+            }
+            if (line.contains("\"type\":\"shell.")) {
+                shellEvent(line);
                 return false;
             }
             if (!line.contains("\"type\":\"session.") || !line.contains("\"sessionID\"")) return false;

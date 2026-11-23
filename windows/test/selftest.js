@@ -362,6 +362,33 @@ module.exports = async function selftest(ctx) {
           JSON.stringify(reply).slice(0, 500));
         await shot('helpers');
 
+        // ---- a command that runs for a while: the chat says how far it is while it runs.
+        // The pretend model runs "node slow.js", which prints a line every 0.7 s like a download does.
+        const progressTest = require('./progress-test');
+        fs.mkdirSync(ctx.settings().workspace, { recursive: true });
+        fs.writeFileSync(path.join(ctx.settings().workspace, 'slow.js'), progressTest.SLOW);
+        await js('document.getElementById("new-chat").click()');
+        await sleep(500);
+        const printed = [];
+        const watcher = setInterval(() => {
+          const b = ctx.busy();
+          if (b && b.output && printed[printed.length - 1] !== b.output) printed.push(b.output);
+        }, 100);
+        await js('document.getElementById("input").value = "RUN node slow.js"; document.getElementById("send").click()');
+        await until(() => !!ctx.busy(), 5000);
+        await until(() => !ctx.busy() || /^got [2-4] of 6 MB$/.test(ctx.busy().output || ''), 120000);
+        const during = ctx.busy() ? { activity: ctx.busy().activity, detail: ctx.busy().detail, output: ctx.busy().output } : null;
+        const onScreen = await js('[(document.querySelector("#status span") || {}).textContent || "", (document.querySelector("#status .printed") || {}).textContent || ""]');
+        await shot('progress');
+        await until(() => !ctx.busy(), 120000);
+        clearInterval(watcher);
+        reply = (ctx.current() && ctx.current().messages.slice(-1)[0]) || { text: 'no reply' };
+        check('progress: the command is named while it runs', !!during && during.activity === 'command' && during.detail === 'node slow.js', JSON.stringify(during));
+        check('progress: what the running command prints is followed', printed.filter((l) => /^got [1-5] of 6 MB$/.test(l)).length >= 3, JSON.stringify(printed));
+        check('progress: the newest line is on the screen under the command', /node slow\.js/.test(onScreen[0]) && /^got [1-6] of 6 MB$/.test(onScreen[1]), JSON.stringify(onScreen));
+        check('progress: the answer has what the command printed', !reply.failed && /got 6 of 6 MB/.test(reply.text || '') && (reply.steps || []).join('|') === 'node slow.js', JSON.stringify(reply).slice(0, 500));
+        check('progress: the line is gone when the work is done', await js('!document.querySelector("#status .printed")'));
+
         // ---- a picture sent with a message: the pretend model says what reached it
         const picture = path.join(dir, 'attached.png');
         fs.writeFileSync(picture, require('./attach-test').png());

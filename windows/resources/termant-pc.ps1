@@ -404,11 +404,38 @@ $MirageEngine = @{
   url = 'https://huggingface.co/Cactus-Compute/cactus/resolve/f4ab2741203a282c6e7b89983de2b5e5b2e805a8/releases/4.1.4/python/cactus_runtime-4.1.4-py3-none-win_amd64.whl'
   sha = '76f21737d93a5246afe2bfee65a5a338df35217cb6258c7aa9cc747e6ea2bb73'
 }
+# Downloads $what.url to $target and says once a second how far it is ("  40% of 21.3 MB"):
+# in the chat that line is shown while the download runs.
 function Fetch($what, $target) {
-  $ProgressPreference = 'SilentlyContinue'
   [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-  try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 300 -Uri $what.url -OutFile $target }
-  catch { throw "the download failed ($($_.Exception.Message)). It needs the internet once." }
+  $response = $null; $from = $null; $to = $null
+  try {
+    $request = [Net.HttpWebRequest]::Create($what.url)
+    $request.Timeout = 60000; $request.ReadWriteTimeout = 60000; $request.UserAgent = 'termant-pc'
+    $response = $request.GetResponse()
+    $total = [long]$response.ContentLength
+    $from = $response.GetResponseStream()
+    $to = [IO.File]::Create($target)
+    $buffer = New-Object byte[] 65536
+    $got = [long]0; $said = [DateTime]::MinValue
+    while (($n = $from.Read($buffer, 0, $buffer.Length)) -gt 0) {
+      $to.Write($buffer, 0, $n); $got += $n
+      if (([DateTime]::UtcNow - $said).TotalSeconds -ge 1) {
+        $said = [DateTime]::UtcNow
+        if ($total -gt 0) { [Console]::Out.WriteLine(('  {0}% of {1:N1} MB' -f [int][Math]::Floor(100 * $got / $total), ($total / 1MB))) }
+        else { [Console]::Out.WriteLine(('  {0:N1} MB downloaded' -f ($got / 1MB))) }
+      }
+    }
+  }
+  catch {
+    $why = $_.Exception; while ($why.InnerException) { $why = $why.InnerException }
+    throw "the download failed ($($why.Message)). It needs the internet once."
+  }
+  finally {
+    if ($to) { $to.Dispose() }
+    if ($from) { $from.Dispose() }
+    if ($response) { $response.Close() }
+  }
   if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -ne $what.sha) {
     Remove-Item -LiteralPath $target -Force
     throw 'the downloaded file is not the expected one'

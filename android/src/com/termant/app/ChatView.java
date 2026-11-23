@@ -1116,6 +1116,10 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             int kind = Math.max(0, Math.min(titles.length - 1, chat.activity));
             String name = status.isEmpty() ? titles[kind] : setupTitle;
             String detail = status.isEmpty() ? chat.activityDetail : status;
+            // a command that has printed something: its newest line says more than the command does
+            // (how far a download is, which package is being unpacked)
+            String printed = status.isEmpty() ? chat.activityOutput : "";
+            if (!printed.isEmpty()) detail = printed;
             boolean writing = false;
             if (followWriting && status.isEmpty() && kind == Chat.ACT_WRITE && detail.isEmpty()) {
                 // over another app the answer itself is not on screen: show its latest words

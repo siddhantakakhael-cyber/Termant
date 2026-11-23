@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.5.0).** It is built and tested automatically on a Windows
+> **Early version (0.6.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.5.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.6.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -344,6 +344,35 @@ of models, and its "stealer" module. PDFs with pictures inside are cleaned
 fully only when Ghostscript is installed on the PC; the tool says when
 something remains.
 
+## How far a download is: the newest line of a running command
+
+New in 0.6.0. Before, the chat named a command only when it had ended: during
+a long download or install it said "Thinking" and nothing else. Now:
+
+- A command is named in the status line **when it starts** ("Running a command
+  · curl.exe -L -o ...").
+- Under it, the chat shows the newest line the command has printed, and changes
+  it as the command goes on. `curl` downloads are put into words:
+  `45% of 22.3 MB · 1100 kB/s · 12s left`; `wget` too; everything else is shown
+  as the program prints it (the lines of `pip`, `npm`, `winget`, or your own
+  script).
+- Termant's own downloads say how far they are: the agent at the first message
+  (as before, "37 / 120 MB"), and now also the Python for `pc marks` and the
+  Mirage reader for `pc see` (`  40% of 21.3 MB`, one line a second).
+
+How it works: OpenCode writes what a command prints into a file while the
+command runs and names that file in the event feed of its server. Termant
+follows that feed while a message runs and reads the end of the file about
+twice a second. Nothing is sent anywhere.
+
+Limits. A program that prints nothing while it works shows nothing:
+`Invoke-WebRequest` is silent until it is done, and `curl -s` and `pip -q` are
+silent on purpose (the agent's guide now tells it to use `curl.exe` without
+`-s` for large files; whether a model follows that is up to the model).
+Commands that helper agents run are not followed. When the kept OpenCode
+server cannot be used (a rare fallback), the chat works as before: steps are
+listed when they have ended.
+
 ## ElevenLabs voice with several keys
 
 **Settings → Voice (ElevenLabs) → ElevenLabs keys**: paste your keys, one per
@@ -432,6 +461,16 @@ Server 2025 machine with a real desktop:
    unchanged. Then the same without the machine's Python: Termant must fetch
    its own (this step is allowed to fail when the download does) and get the
    same results. The installed app must list the skill and clean a text file.
+
+10. Progress of a running command (`windows/test/progress-test.js`): how the
+    lines of `curl`, `curl -#`, `wget`, `apt` and `pip` are put into one short
+    line; then the installed app lets a pretend model run a command that
+    prints six lines, one every 0.7 seconds, through the real OpenCode. The
+    command must be named while it runs, at least three of its lines must
+    appear while it is still running, the newest one must be on the screen
+    under the command, and it must be gone when the answer is there. The
+    download of Termant's own Python must say how far it is. No real model
+    and no slow real download was watched.
 
 What the test machine cannot check: sound (it has no speakers, so volume, mute
 and `pc say` are only tried), brightness, battery, Wi-Fi, voice dictation, and

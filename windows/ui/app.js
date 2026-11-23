@@ -316,7 +316,10 @@
     status.hidden = !busy;
     if (busy) {
       const what = t('act_' + busy.activity);
-      clear(status).append(el('div', { class: 'dot' }), el('span', null, what + (busy.detail ? ' · ' + busy.detail : '')));
+      // under what is being done: the newest line the running command printed (how far a download is)
+      clear(status).append(el('div', { class: 'dot' }), el('div', { class: 'what' },
+        el('span', null, what + (busy.detail ? ' · ' + busy.detail : '')),
+        busy.output ? el('code', { class: 'printed' }, busy.output) : null));
     }
     const send = $('send');
     const stop = !!S.working;

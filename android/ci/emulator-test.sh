@@ -142,6 +142,9 @@ type_line 'sh%st3.sh'
 wait_for_end files/rootfs/root/result3.txt 420 || { run_as cat files/rootfs/root/result3.txt > "$OUT/result3.txt"; shot 5-agent-timeout; finish "FAIL agent test did not finish"; }
 run_as cat files/rootfs/root/result3.txt > "$OUT/result3.txt"
 grep -q '^version-exit=0' "$OUT/result3.txt" || finish "FAIL OpenCode did not install or start"
+# its download (about 120 MB) says how far it is, one line for every percent, for the chat to show
+echo "agent-download-lines=$(grep -c '^Downloading the AI agent (OpenCode): [0-9]*%$' "$OUT/result3.txt")"
+grep -q '^Downloading the AI agent (OpenCode): [0-9]*%$' "$OUT/result3.txt" || finish "FAIL the agent's download did not say how far it is"
 
 echo "Phone control"
 adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
@@ -842,6 +845,29 @@ sleep 8
 shot 23g-picture-kept
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
 adb shell "grep -q 'content-desc=\"Picture: sunrise-over-green-hills-' /sdcard/ui.xml" || finish "FAIL picture: after the app was opened again the chat has lost the picture"
+
+echo "A command that runs for a while: the chat shows the newest line it has printed (how far a download is)"
+# The model is the pretend one; OpenCode, its event feed and the app are the real ones. The command
+# prints a line every 2 s, the way a download says how far it is.
+printf '%s\n' 'for i in 1 2 3 4 5 6; do echo "got $i of 6 MB"; sleep 2; done' > "$OUT/slow.sh"
+adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/slow.sh'" < "$OUT/slow.sh"
+tap_on 'content-desc="Start a new chat"' || finish "FAIL progress: New chat button not found"
+sleep 2
+ask 'RUN%sbash%s/root/slow.sh' || finish "FAIL progress: could not send the request"
+sleep 4
+shot 23d-progress
+wait_for_reply 40 || { shot 23d-progress-timeout; adb logcat -d -s Termant:I | tail -30; finish "FAIL progress: no reply"; }
+cp "$OUT/chat.json" "$OUT/chat-progress.json"
+python3 - "$OUT/chat-progress.json" <<'PY' || finish "FAIL progress: the command did not run to its end in the chat"
+import json, sys
+m = json.load(open(sys.argv[1]))["messages"][-1]
+print("progress: reply:", m)
+sys.exit(0 if not m["failed"] and "got 6 of 6 MB" in m["text"] and any("slow.sh" in step for step in m.get("steps", [])) else 1)
+PY
+adb logcat -d -s Termant:I | grep 'progress:' | tail -n 1 > "$OUT/progress.txt"
+cat "$OUT/progress.txt"
+# at least three of the six lines must have been seen while the command was still running
+grep -q 'progress: \([3-9]\|[1-9][0-9]\) lines of running commands shown' "$OUT/progress.txt" || finish "FAIL progress: the app did not follow what the running command printed"
 
 echo "APILayer in the chat: the key typed as a message is saved without a model, then the agent calls an API with it"
 # `apilayer`, the app and the chat are the real ones; APILayer is the pretend one, the model too.

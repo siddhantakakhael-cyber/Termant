@@ -20,6 +20,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [Pictures and files in the chat, Undo, and work by itself](#pictures-and-files-in-the-chat-undo-and-work-by-itself)
 - [A picture from words: draw](#a-picture-from-words-draw)
 - [APILayer: ready-made APIs with your own key](#apilayer-ready-made-apis-with-your-own-key)
+- [How far a download is: the newest line of a running command](#how-far-a-download-is-the-newest-line-of-a-running-command)
 - [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
 - [Faster answers](#faster-answers)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
@@ -40,7 +41,7 @@ apt update
 apt install python3 git nano
 ```
 
-- **AI agent chat is the home screen.** It uses [OpenCode](https://github.com/sst/opencode), an open-source agent that writes, edits and runs code for you. It comes with free models, so it works without an account or API key. First use downloads it (about 100 MB).
+- **AI agent chat is the home screen.** It uses [OpenCode](https://github.com/sst/opencode), an open-source agent that writes, edits and runs code for you. It comes with free models, so it works without an account or API key. First use downloads it (about 120 MB).
 - **Real Ubuntu with apt.** The same packages as on a PC, for ARM64, 32-bit ARM and x86-64 phones.
 - **Everything stays installed.** Ubuntu lives in the app's storage. Packages and files survive closing the app, reboots and app updates. Only uninstalling the app, clearing its data, or "Reinstall Ubuntu" removes them.
 - **Sessions keep running** in the background (see the notification), up to 8 tabs.
@@ -110,7 +111,7 @@ the same OpenCode session, so the agent still knows what was said).
 
 The real Ubuntu terminal is one tap away: **>_** at the top. **Chat**
 (or Back) in the terminal returns to the chat. The first chat message downloads
-the agent (OpenCode, about 100 MB).
+the agent (OpenCode, about 120 MB).
 
 ## Phone control
 
@@ -593,6 +594,45 @@ APIs (302 endpoints), and the gateway's answers to no key, a wrong key and an
 unknown API are the real ones. The sentences for "not subscribed" (403) and
 "used up" (429) and the counting of requests left follow APILayer's
 documented behaviour but were not seen live.
+
+## How far a download is: the newest line of a running command
+
+New in 0.25.0. Before, the chat said only *that* a command runs ("Installing ›
+apt-get install -y ffmpeg") and then stayed silent until it had ended, so a
+long download looked like the app had stopped. Now the line under the title
+shows the newest line the running command has printed, and changes as the
+command goes on:
+
+- `curl` downloads are put into words: `45% of 22.3 MB · 1100 kB/s · 12s left`,
+  or `10.1 MB downloaded · 1100 kB/s` when the server does not tell the size.
+- `wget` too: `12% · 1.20 MB/s · 3s left`.
+- Everything else is shown as the program prints it: `Get:12 http://ports.ubuntu.com
+  ... libavcodec60 [5,321 kB]`, `Unpacking ffmpeg ...`, `Downloading
+  numpy-2.1.0-...whl (16.3 MB)`, or the lines of your own script.
+- The first download of the agent itself (about 120 MB) says
+  `Downloading the AI agent (OpenCode): 37%`.
+
+The card over other apps shows the same line. When the command has ended, the
+line goes away and the command stays in the list of steps as before.
+
+How it works: OpenCode writes what a command prints into a file while the
+command runs, and names that file in its event feed. The app reads the end of
+that file twice a second. Nothing is sent anywhere.
+
+Limits. A program that prints nothing while it works shows nothing: `pip` and
+`git clone` name the file but give no percentage when no terminal is attached,
+and `curl -s`, `apt-get -qq` and `pip -q` are silent on purpose (the agent's
+guide now tells it not to use them for long downloads; whether a model follows
+that is up to the model). Commands that helper agents run are not followed.
+The line is cut after 160 letters.
+
+Tested on the emulator: the agent's own download printed a line for every
+percent (the real installer, the real 120 MB). In the chat, a command that
+prints six lines, one every two seconds, was run by a pretend model through
+the real OpenCode, and the app had to show at least three of the lines while
+the command was still running. Not tested: a real phone, a real model, and how
+the lines of `apt` and `pip` look in the chat (the wording rules for `curl` and
+`wget` are checked in the Windows app's tests, where the same rules live).
 
 ## ElevenLabs voice with several keys
 

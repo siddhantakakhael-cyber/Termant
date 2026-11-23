@@ -70,6 +70,7 @@ browser, hosted on your own server with Docker.
 - With Screen control turned on: opens any app, reads the screen, taps, types and swipes. Where an app tells nothing about its screen (games, pictures), it reads a picture of it on the phone with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage) model (Latin letters only, Android 11 or newer).
 - Looks at a photo and says what is in it and where: the scene, each thing with its place (left, top right, across the bottom), the writing. It happens on the phone with the same small model; names can be wrong, the places are about right.
 - A small card over other apps shows what the agent is doing, with a stop button, and asks you when it needs a decision.
+- While a command runs, the chat shows the newest line it has printed, so you see how far a download or an install is (`45% of 22.3 MB · 12s left`).
 
 </td>
 <td width="50%" valign="top">
@@ -116,7 +117,7 @@ browser, hosted on your own server with Docker.
 1. Download **[Termant.apk](https://github.com/siddhantakakhael-cyber/Termant/releases/latest/download/Termant.apk)** on the phone (Android 7.0 or newer).
 2. Open it and allow the install.
 3. Start Termant. The first start downloads the official Ubuntu base image from Canonical (about 30 MB) and checks its checksum.
-4. Send a message. The first one downloads the agent (OpenCode, about 100 MB).
+4. Send a message. The first one downloads the agent (OpenCode, about 120 MB).
 
 The terminal is one tap away (**>_** at the top), and there you are `root` in Ubuntu:
 
@@ -155,12 +156,13 @@ same time. A skill that comes with it, `remove-ai-marks` (from
 [watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover)),
 finds and removes the marks AI tools leave in your own text and files:
 invisible letters, C2PA, EXIF and document properties (`pc marks`); it does
-not remove a logo you can see or a watermark hidden in the pixels. It is an
-early version (0.5.0).
+not remove a logo you can see or a watermark hidden in the pixels. While a
+command runs, the chat names it and shows the newest line it has printed, so
+you see how far a download is. It is an early version (0.6.0).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.5.0/Termant-Setup.exe)** and open it.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.6.0/Termant-Setup.exe)** and open it.
 2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
 3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
 

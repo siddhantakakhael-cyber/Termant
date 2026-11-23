@@ -123,7 +123,7 @@
     <string name="chat_no_answer">The agent gave no answer. Check your internet connection and try again.</string>
     <string name="chat_setup_failed">The agent could not be set up. Check your internet connection and try again.</string>
     <string name="chat_welcome">Namaste. What should I do?</string>
-    <string name="chat_welcome_text">Ask in Hindi or English. I can set alarms and timers, control the phone, and write and run code in Ubuntu. The first request downloads the agent (about 100 MB).</string>
+    <string name="chat_welcome_text">Ask in Hindi or English. I can set alarms and timers, control the phone, and write and run code in Ubuntu. The first request downloads the agent (about 120 MB).</string>
     <string-array name="chat_ideas">
         <item>Mujhe subah 7 baje utha dena</item>
         <item>10 minute baad chai ka timer bajana</item>

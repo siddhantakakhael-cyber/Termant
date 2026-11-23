@@ -5,9 +5,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const http = require('http');
 const https = require('https');
 const zlib = require('zlib');
 const { spawn, execFile } = require('child_process');
+const { newestLine, tailOf } = require('./progress');
 
 const WINDOWS = process.platform === 'win32';
 const EXE = WINDOWS ? 'opencode.exe' : 'opencode';
@@ -310,6 +312,7 @@ class Agent {
 
   /**
    * Sends one message. onEvent gets {kind:'step'|'text'|'status'|'session', ...} while the agent works.
+   * A status carries the kind of work, what it is about, and (for a command that runs) `output`: the newest line it printed.
    * Resolves to {text, steps, failed, session, stopped}.
    */
   async run(options) {
@@ -396,6 +399,87 @@ class Agent {
     else kept.child.kill('SIGTERM');
   }
 
+  /**
+   * Follows the kept server's event feed while a message runs. `opencode run` names a command
+   * only once it has ended; the feed names it when it starts, and tells the file the command
+   * prints into. So onEvent gets {kind:'status', activity, detail, output}: what runs now and
+   * the newest line it has printed (how far a download is, ...). Returns the function that
+   * ends the following.
+   */
+  follow(kept, result, onEvent) {
+    const tools = new Map();
+    let session = result.session || '', doing = null, watch = null, last = '', buffer = '', request = null;
+    const own = (id) => !!id && id === (session || result.session);
+    const look = () => {
+      if (!watch || !doing) return;
+      const line = newestLine(tailOf(watch.file));
+      if (!line || line === last) return;
+      last = line;
+      result.followed = (result.followed || 0) + 1;
+      onEvent({ kind: 'status', activity: doing.activity, detail: doing.detail, output: line });
+    };
+    const take = (raw) => {
+      let event;
+      try {
+        event = JSON.parse(raw);
+      } catch (e) {
+        return;
+      }
+      const type = String(event.type || '');
+      const d = event.data || {};
+      if (type === 'session.execution.started' || type === 'session.step.started') {
+        // the first conversation that starts work is the one asked here; later ones are its helpers
+        if (!session) session = result.session || String(d.sessionID || '');
+      } else if (type === 'session.tool.input.started') {
+        if (own(d.sessionID) && tools.size < 500) tools.set(d.id, d.name);
+      } else if (type === 'session.tool.called') {
+        if (!own(d.sessionID)) return;
+        const input = d.input || {};
+        const step = describeTool({ tool: tools.get(d.id) || (input.command ? 'shell' : ''), state: { input } });
+        if (!step) return;
+        doing = { id: d.id, activity: step.activity, detail: step.detail };
+        watch = null;
+        last = '';
+        onEvent({ kind: 'status', activity: step.activity, detail: step.detail });
+      } else if (type === 'session.tool.success' || type === 'session.tool.failed') {
+        if (doing && doing.id === d.id) doing = watch = null;
+      } else if (type === 'shell.created') {
+        const info = d.info || {};
+        if (info.file && doing && own((info.metadata || {}).sessionID)) watch = { id: info.id, file: String(info.file) };
+      } else if (type === 'shell.exited') {
+        if (watch && watch.id === d.id) {
+          look();
+          watch = null;
+        }
+      }
+    };
+    const timer = setInterval(look, 400);
+    try {
+      request = http.get(kept.url + '/api/event', {
+        headers: { authorization: 'Basic ' + Buffer.from('opencode:' + kept.password).toString('base64'), accept: 'text/event-stream' },
+      }, (response) => {
+        response.setEncoding('utf8');
+        response.on('data', (chunk) => {
+          buffer += chunk;
+          let at;
+          while ((at = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, at).trim();
+            buffer = buffer.slice(at + 1);
+            if (line.startsWith('data:')) take(line.slice(5));
+          }
+        });
+        response.on('error', () => {});
+      });
+      request.on('error', () => {});
+    } catch (e) {
+      // without the feed the chat shows what it showed before: each step when it has ended
+    }
+    return () => {
+      clearInterval(timer);
+      if (request) request.destroy();
+    };
+  }
+
   runOnce({ text, session, model, cwd, onEvent, log, files }, kept) {
     return new Promise((resolve) => {
       const s = this.settings();
@@ -412,6 +496,7 @@ class Agent {
         cwd = os.homedir();
       }
       const result = { text: '', steps: [], failed: false, session: session || '', stopped: false, helpers: [] };
+      const unfollow = kept ? this.follow(kept, result, onEvent) : () => {};
       let child;
       try {
         const env = this.env();
@@ -420,6 +505,7 @@ class Agent {
         env.PWD = cwd;
         child = spawn(this.bin, args, { cwd, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
       } catch (e) {
+        unfollow();
         result.failed = true;
         result.text = String(e.message || e);
         return resolve(result);
@@ -482,6 +568,7 @@ class Agent {
         errors = (errors + chunk.toString('utf8')).slice(-4000);
       });
       const finish = (code) => {
+        unfollow();
         if (this.running && this.running.child === child) this.running = null;
         if (buffer.trim()) line(buffer.trim());
         if (result.stopped) return resolve(result);

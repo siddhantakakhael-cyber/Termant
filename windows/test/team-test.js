@@ -12,6 +12,7 @@ const path = require('path');
  * A pretend chat model that speaks the OpenAI chat protocol. Asked "TEAM ...", it starts the
  * researcher and the helper "poet" in one step; the researcher runs one command and reports,
  * the poet reports; then the main agent's answer repeats what the helpers reported.
+ * Asked "RUN command", the main agent runs that command and answers with what it printed.
  * Resolves to {url, config, model, asked, close}.
  */
 function fakeModel() {
@@ -35,6 +36,14 @@ function fakeModel() {
     if (reports.length) {
       const said = reports.map((r) => r.replace(/<\/?subagent[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
       return { who: 'main', text: 'TEAM RESULT (' + reports.length + '): ' + said.join(' | ') };
+    }
+    // "RUN command": the main agent runs that command, then answers with what it printed
+    const wanted = /^RUN (.+)$/m.exec(users[users.length - 1] || '');
+    if (wanted) {
+      const shell = ['shell', 'bash', 'powershell'].find((name) => tools.includes(name));
+      const since = messages.slice(messages.map((m) => m.role).lastIndexOf('user') + 1).filter((m) => m.role === 'tool');
+      if (!since.length && shell) return { who: 'main', calls: [[shell, { command: wanted[1].trim() }]] };
+      return { who: 'main', text: 'RAN: ' + since.map(textOf).join(' ').slice(0, 1500) };
     }
     if (users.some((u) => u.includes('LOOK'))) {
       // how many pictures came with the message itself, and whether a text file's words are in it
