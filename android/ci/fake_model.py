@@ -48,9 +48,11 @@ def answer(body):
         return {"who": "poet", "wait": 1.5, "text": "POEM REPORT: garam chai, meethi baat."}
     if not tools:
         return {"who": "title", "text": "Helpers"}
-    reports = [u for u in users if "<subagent " in u]
+    # A helper's report comes back in a user message: <subagent ...> in OpenCode up to 2.3,
+    # <background-result kind="subagent"> ... </background-result> in OpenCode 2.4 and later
+    reports = [u for u in users if "<subagent " in u or '<background-result kind="subagent"' in u]
     if reports:
-        said = [re.sub(r"\s+", " ", re.sub(r"</?subagent[^>]*>", " ", r)).strip() for r in reports]
+        said = [re.sub(r"\s+", " ", re.sub(r"</?(?:subagent|background-result)[^>]*>", " ", r)).strip() for r in reports]
         return {"who": "main", "text": "TEAM RESULT (%d): %s" % (len(reports), " | ".join(said))}
     asked = users[-1] if users else ""
     wanted = re.search(r"^RUN (.+)$", asked, re.M)

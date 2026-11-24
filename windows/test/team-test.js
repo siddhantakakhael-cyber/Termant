@@ -32,9 +32,11 @@ function fakeModel() {
     }
     if (system.includes('POET-MARK')) return { who: 'poet', wait: 1500, text: 'POEM REPORT: garam chai, meethi baat.' };
     if (!tools.length) return { who: 'title', text: 'Helpers' };
-    const reports = users.filter((u) => u.includes('<subagent '));
+    // A helper's report comes back in a user message: <subagent ...> in OpenCode up to 2.3,
+    // <background-result kind="subagent"> ... </background-result> in OpenCode 2.4 and later
+    const reports = users.filter((u) => u.includes('<subagent ') || u.includes('<background-result kind="subagent"'));
     if (reports.length) {
-      const said = reports.map((r) => r.replace(/<\/?subagent[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
+      const said = reports.map((r) => r.replace(/<\/?(?:subagent|background-result)[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
       return { who: 'main', text: 'TEAM RESULT (' + reports.length + '): ' + said.join(' | ') };
     }
     // "RUN command": the main agent runs that command, then answers with what it printed
