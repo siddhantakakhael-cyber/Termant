@@ -173,13 +173,13 @@ final class Voice {
 
     private func result(_ r: SFSpeechRecognitionResult) {
         let text = clean(r.bestTranscription.formattedString)
-        let final = r.isFinal
+        let isFinal = r.isFinal
         DispatchQueue.main.async { [weak self] in
-            self?.handle(text, final: final)
+            self?.handle(text, isFinal: isFinal)
         }
     }
 
-    private func handle(_ text: String, final: Bool) {
+    private func handle(_ text: String, isFinal: Bool) {
         // The words after the last "termant" in what was heard so far.
         if wakeOn, let after = wordsAfterWake(text) {
             tail = after
@@ -189,7 +189,7 @@ final class Voice {
             }
         }
         if mark == .armed {
-            if final {
+            if isFinal {
                 let message = clean(tail)
                 tail = ""
                 if message.count >= 3 { onCommand?(message) }
@@ -201,7 +201,7 @@ final class Voice {
                 setMark(.listening)
             }
         } else if oneShot {
-            if final {
+            if isFinal {
                 let message = clean(commandText.isEmpty ? text : commandText)
                 oneShot = false
                 stopEngine()
