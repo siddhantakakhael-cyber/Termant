@@ -1,0 +1,30 @@
+name: Termant
+options:
+  deploymentTarget:
+    iOS: "14.0"
+  bundleIdPrefix: in.termant
+targets:
+  Termant:
+    type: application
+    platform: iOS
+    sources:
+      - Termant
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: in.termant.app
+        PRODUCT_NAME: Termant
+        INFOPLIST_FILE: Termant/Info.plist
+        IPHONEOS_DEPLOYMENT_TARGET: "14.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: "NO"
+        CODE_SIGN_STYLE: Manual
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGNING_ALLOWED: "NO"
+schemes:
+  Termant:
+    build:
+      targets:
+        Termant: all
+    run:
+      config: Debug
