@@ -129,7 +129,7 @@ final class Voice {
         cancelTask()
         if engine.isRunning { engine.stop() }
         engine.inputNode.removeTap(onBus: 0)
-        AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+        try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
     }
 
     private func cancelTask() {

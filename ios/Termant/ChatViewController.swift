@@ -10,7 +10,7 @@ final class ChatViewController: UIViewController, WKNavigationDelegate {
     private var address = ""
 
     private let bar = UIView()
-    private let title = UILabel()
+    private let barTitle = UILabel()
     private let gear = UIButton(type: .system)
     private let mic = UIButton(type: .system)
     private let status = UILabel()
@@ -41,24 +41,24 @@ final class ChatViewController: UIViewController, WKNavigationDelegate {
         bar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bar)
 
-        title.text = "Termant"
-        title.font = .systemFont(ofSize: 17, weight: .semibold)
-        title.textColor = .white
-        title.translatesAutoresizingMaskIntoConstraints = false
+        barTitle.text = "Termant"
+        barTitle.font = .systemFont(ofSize: 17, weight: .semibold)
+        barTitle.textColor = .white
+        barTitle.translatesAutoresizingMaskIntoConstraints = false
 
         gear.setTitle("⚙︎", for: .normal)
         gear.tintColor = .white
         gear.translatesAutoresizingMaskIntoConstraints = false
         gear.addTarget(self, action: #selector(openSheet), for: .touchUpInside)
 
-        [title, gear].forEach { bar.addSubview($0) }
+        [barTitle, gear].forEach { bar.addSubview($0) }
         NSLayoutConstraint.activate([
             bar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bar.heightAnchor.constraint(equalToConstant: 48),
-            title.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 16),
-            title.centerYAnchor.constraint(equalTo: bar.centerYAnchor),
+            barTitle.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 16),
+            barTitle.centerYAnchor.constraint(equalTo: bar.centerYAnchor),
             gear.trailingAnchor.constraint(equalTo: bar.trailingAnchor, constant: -12),
             gear.centerYAnchor.constraint(equalTo: bar.centerYAnchor),
             gear.widthAnchor.constraint(equalToConstant: 30),
@@ -141,7 +141,7 @@ final class ChatViewController: UIViewController, WKNavigationDelegate {
     }
 
     private func addressLabelIs(_ a: String) {
-        title.text = "Termant" + (a.isEmpty ? "" : " · " + a)
+        barTitle.text = "Termant" + (a.isEmpty ? "" : " · " + a)
     }
 
     // ------------------------------------------------------------ the gear
@@ -262,7 +262,7 @@ final class ChatViewController: UIViewController, WKNavigationDelegate {
                     } else {
                         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
                         if code != 200 {
-                            self.say("The door said no (" + String(code) + "): log in on the page first")
+                            self.say("The door said no (" + "\(code)" + "): log in on the page first")
                         }
                     }
                 }
