@@ -1,0 +1,2 @@
+in.termant.app: 10593
+the app is still up after 6 s (pid 10593)

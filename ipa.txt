@@ -1,0 +1,11 @@
+-rw-r--r--  1 runner  staff  50882 Nov 24 05:54 Termant.ipa
+Archive:  Termant.ipa
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        0  11-24-2026 05:54   Payload/
+        0  11-24-2026 05:54   Payload/Termant.app/
+   197848  11-24-2026 05:54   Payload/Termant.app/Termant
+     1266  11-24-2026 05:54   Payload/Termant.app/Info.plist
+        8  11-24-2026 05:54   Payload/Termant.app/PkgInfo
+---------                     -------
+   199122                     5 files

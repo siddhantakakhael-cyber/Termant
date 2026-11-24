@@ -1,0 +1,13 @@
+05:53:33 script started; xcodegen: not-installed
+05:53:33 installing xcodegen
+05:53:39 xcodegen: Version: 2.46.0
+05:53:39 generating the project
+05:53:39 project generated
+05:53:39 building for a phone
+05:54:03 build ok
+05:54:04 packing the IPA
+05:54:04 IPA packed: 50882 bytes
+05:54:04 building for the simulator
+05:54:29 looking for a simulator
+05:56:47 launching on the simulator
+05:57:02 RESULT: PASS

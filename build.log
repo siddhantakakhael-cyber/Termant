@@ -1,0 +1,341 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild -project Termant.xcodeproj -scheme Termant -configuration Release -destination generic/platform=iOS -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY= build
+
+Build settings from command line:
+    CODE_SIGN_IDENTITY = 
+    CODE_SIGNING_ALLOWED = NO
+
+note: Using codesigning identity override: 
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'Termant' in project 'Termant' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: c7e466768f0ed9ff206fb60f635bb6e3
+Build description path: /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/XCBuildData/c7e466768f0ed9ff206fb60f635bb6e3.xcbuilddata
+ClangStatCache /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk /Users/runner/work/Termant/Termant/ios/build/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -o /Users/runner/work/Termant/Termant/ios/build/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache
+
+CreateBuildDirectory /Users/runner/work/Termant/Termant/ios/build/Build/Products
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    builtin-create-build-directory /Users/runner/work/Termant/Termant/ios/build/Build/Products
+
+CreateBuildDirectory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    builtin-create-build-directory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant-16d3943b9f65c2918c728d3e2d2df44a-VFS-iphoneos/all-product-headers.yaml
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant-16d3943b9f65c2918c728d3e2d2df44a-VFS-iphoneos/all-product-headers.yaml
+
+CreateBuildDirectory /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    builtin-create-build-directory /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos
+
+CreateBuildDirectory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    builtin-create-build-directory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    builtin-create-build-directory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos
+    cd /Users/runner/work/Termant/Termant/ios/Termant.xcodeproj
+    builtin-create-build-directory /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.hmap (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.DependencyStaticMetadataFileList (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.DependencyMetadataFileList (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-project-headers.hmap (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-own-target-headers.hmap (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-generated-files.hmap (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-all-target-headers.hmap (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-all-non-framework-target-headers.hmap (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_const_extract_protocols.json (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftFileList (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftConstValuesFileList (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.LinkFileList (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-OutputFileMap.json (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    write-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-OutputFileMap.json
+
+MkDir /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    /bin/mkdir -p /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app
+
+ProcessInfoPlistFile /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Info.plist /Users/runner/work/Termant/Termant/ios/Termant/Info.plist (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-infoPlistUtility /Users/runner/work/Termant/Termant/ios/Termant/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -requiredArchitecture arm64 -o /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Info.plist
+
+SwiftDriver Termant normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-SwiftDriver -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Termant -O -whole-module-optimization @/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -target arm64-apple-ios14.0 -g -module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -F /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /Users/runner/work/Termant/Termant/ios/build/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache -output-file-map /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-generated-files.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-own-target-headers.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-project-headers.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/include -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-Swift.h -working-directory /Users/runner/work/Termant/Termant/ios -no-emit-module-separately-wmo
+
+SwiftDriver\ Compilation Termant normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Termant -O -whole-module-optimization @/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -target arm64-apple-ios14.0 -g -module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -F /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /Users/runner/work/Termant/Termant/ios/build/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache -output-file-map /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-generated-files.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-own-target-headers.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-project-headers.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/include -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-Swift.h -working-directory /Users/runner/work/Termant/Termant/ios -no-emit-module-separately-wmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_float-105HU8YFCIQDCMATWE4BWX6FZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdarg-B5XBFGD3P37L3CX4LPWR62UHW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stddef-A5QOJMQ7VP2NQZ3FZWB30GTOU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdbool-9KID30AUAPGLY4D0V64C7TE6Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_AvailabilityInternal-XN1HU30Y8K3GM7Q9UATDTYNV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/SwiftShims-94LBTEDYWY5Z2ZD384K7SYG6F.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ptrauth-54SWFYBEJOIM282PCKQIWSL31.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_SwiftConcurrencyShims-9US5RP0CPG31G7X5OBKH46IK5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/DeveloperToolsSupport-CMTZ563V9IG0KZ1P08MIVHCZP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ptrcheck-73GS8XU5ASOZXMBQML1SO8VM0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_DarwinFoundation1-5AYY8RE1B3BMDTB6BEGMPZXYJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_DarwinFoundation2-92DXTRWA61CA0B96XKVHC3RAF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_limits-69HZDQR2GMQ2F25H78XZCZ3GH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdint-BIX5T3YUMVMV1X52TIPCFASI9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/sys_types-5ERXNUQQWI8OEEW7WLKTATCL9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_tgmath-9I87ZGEVLV9OC6FWX96DFIH5B.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_intrinsics-3YRLN1XITJGQPHJDF4YE8RW0K.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_DarwinFoundation3-8B7BVTW5LS8YBWMUOTCCJ97SQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdatomic-1S43P1P3HOJO4MZ3T3NMW5XUI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_inttypes-CQUPS5K0DKUOKTRVYGXDTM2VQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Darwin-A5ZO08SDNU4MOH11PY9MXG2RR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/simd-8SC4XFQWHB39GKDG29EF4WXHH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ObjectiveC-6V9CBBNVYT2QK7FJWUH2O55FH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/MachO-8RVAOD7F5T6LI6V4SVG2A9ZHZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/os_object-DEM7ZGIB9FOECOEIPQHGHOD8C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/os_workgroup-F3PBZPC65UIIWEUEUTU7O7FCW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Dispatch-6T4365CYD0TGKYSITWOOMABIN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/dnssd-7S2ZZL8LJWACIFUZWKANI64E1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreFoundation-774FUPTHYE56PLJ4TNSCXI2PN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/XPC-ATYZ2DKY6L61GFC47I3D057UM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/os-5PVJGFDY3G15IFGZE7LCNLD2Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CFNetwork-72O4UURONOHTDFA7AKZ4YGAVI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreAudioTypes-DQ9J6MWKXN8MQBRFEHLRCXFET.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreGraphics-3TPTCB9Q1X3OCPA68ERYJU636.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Spatial-CYIXB020DG5TMD40R0WEGFWL8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreAudio-DCGH79G6TQE1GXPFAWT6AREQE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Security-BMYNJIUUO2GSCXTC4A9DBSBHI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ImageIO-87BQC58SZE4BDM00TDZ6P5MBK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreText-DIVV9PSBEK0HZ7GMFU782DWDD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Foundation-78FYDN9UM0VZTUUR3MKERBSUM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Symbols-ET41A4ERTZEWHHJZTNX1BO372.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/IOSurface-5UW2K82BO1IVO1EVZV7ALGAXM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/DataDetection-DNDSU9O14OTMREV31J1N5JBLH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreTransferable-6FORTH284XUDRAM49Q1K93JBI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UserNotifications-DMZ4VDVHI50CE9HKR8KTO8IDB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Metal-CT0UMGUM0AIWTZGIBTSVQLKIN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/OpenGLES-2C32L60M6Q3P57PAFSPDWZQEQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Accessibility-37FAF0IF8HJKO1L6Q7CLCJ4RP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/FileProvider-6PFUFQ7F4HBHJLTJ6Y6ZA9G0M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/OSLog-7SCMQA217K8BF38UMNHEYHWRS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UIUtilities-5L31REGYEHA37MJGEMCX1V0R4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreMIDI-D59YORCV4SZ4M497O124TJ853.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreVideo-E1FL2X0ETX1067R4BG0ME30H6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UniformTypeIdentifiers-1KEBRYWA35EXMF8KSE33NEZ26.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Network-8KOH7ISSU60FL7SJ9X977YK78.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/QuartzCore-3MQO2F1F80WVFW1NQS53IHOMD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreMedia-3ZHJYRIR3Q1FKKGAD7NDXK1PM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AudioToolbox-AMLJB5Q1FJZ4O94EP5YXKRVPN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreImage-16QTF7SAGSWA0LSSVI0LWUC04.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/SwiftUICore-1KIPQ1Y0OB5KVIPESRE72LWZ3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AVRouting-74FWNLU2LLPWJGA81O4XYY92V.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/MediaToolbox-56IMNGSNE9QI4O9G9H09G7JC8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AVFAudio-BKTB9BF2LJOMLIKKFFGSOC0MC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UIKit-F4YSMVJ998952E19KF6VUTUB8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AVFoundation-2UDOJAD43BXUDLIA38Z9V3E0U.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Speech-2GUMCRRH1PLRZB6AKJR5XMOCZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/WebKit-4GGHV1JWJNPBRBA8ZT9YVCR7A.pcm
+
+SwiftCompile normal arm64 Compiling\ AppDelegate.swift,\ ChatViewController.swift,\ Voice.swift /Users/runner/work/Termant/Termant/ios/Termant/AppDelegate.swift /Users/runner/work/Termant/Termant/ios/Termant/ChatViewController.swift /Users/runner/work/Termant/Termant/ios/Termant/Voice.swift /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Metal.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreGraphics.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/DeveloperToolsSupport.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/_DarwinFoundation1.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Observation.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/FileProvider.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/_Concurrency.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Dispatch.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/os.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/_DarwinFoundation2.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/_Builtin_float.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/DataDetection.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/AVFAudio.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/System.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Swift.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Synchronization.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreText.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Network.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreFoundation.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/simd.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreVideo.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreMIDI.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/UIKit.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreImage.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Darwin.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreTransferable.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/AVFoundation.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/ObjectiveC.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Speech.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Distributed.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/_StringProcessing.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/_DarwinFoundation3.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreMedia.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/UniformTypeIdentifiers.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/WebKit.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Accessibility.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/CoreAudio.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Spatial.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Foundation.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/AudioToolbox.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Combine.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/OSLog.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/QuartzCore.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/XPC.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/Symbols.swiftmodule/arm64e-apple-ios.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos/prebuilt-modules/26.5/SwiftUICore.swiftmodule/arm64e-apple-ios.swiftmodule /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdarg-B5XBFGD3P37L3CX4LPWR62UHW.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Metal-CT0UMGUM0AIWTZGIBTSVQLKIN.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdatomic-1S43P1P3HOJO4MZ3T3NMW5XUI.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/DataDetection-DNDSU9O14OTMREV31J1N5JBLH.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/XPC-ATYZ2DKY6L61GFC47I3D057UM.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ImageIO-87BQC58SZE4BDM00TDZ6P5MBK.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/OpenGLES-2C32L60M6Q3P57PAFSPDWZQEQ.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UIUtilities-5L31REGYEHA37MJGEMCX1V0R4.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_limits-69HZDQR2GMQ2F25H78XZCZ3GH.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UIKit-F4YSMVJ998952E19KF6VUTUB8.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdbool-9KID30AUAPGLY4D0V64C7TE6Y.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/DeveloperToolsSupport-CMTZ563V9IG0KZ1P08MIVHCZP.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/os_object-DEM7ZGIB9FOECOEIPQHGHOD8C.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_DarwinFoundation2-92DXTRWA61CA0B96XKVHC3RAF.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CFNetwork-72O4UURONOHTDFA7AKZ4YGAVI.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stddef-A5QOJMQ7VP2NQZ3FZWB30GTOU.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_float-105HU8YFCIQDCMATWE4BWX6FZ.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_inttypes-CQUPS5K0DKUOKTRVYGXDTM2VQ.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AVFAudio-BKTB9BF2LJOMLIKKFFGSOC0MC.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_stdint-BIX5T3YUMVMV1X52TIPCFASI9.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Foundation-78FYDN9UM0VZTUUR3MKERBSUM.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreText-DIVV9PSBEK0HZ7GMFU782DWDD.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreMIDI-D59YORCV4SZ4M497O124TJ853.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Spatial-CYIXB020DG5TMD40R0WEGFWL8.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AudioToolbox-AMLJB5Q1FJZ4O94EP5YXKRVPN.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/os_workgroup-F3PBZPC65UIIWEUEUTU7O7FCW.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UniformTypeIdentifiers-1KEBRYWA35EXMF8KSE33NEZ26.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/UserNotifications-DMZ4VDVHI50CE9HKR8KTO8IDB.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/os-5PVJGFDY3G15IFGZE7LCNLD2Z.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ObjectiveC-6V9CBBNVYT2QK7FJWUH2O55FH.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Speech-2GUMCRRH1PLRZB6AKJR5XMOCZ.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/simd-8SC4XFQWHB39GKDG29EF4WXHH.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreAudioTypes-DQ9J6MWKXN8MQBRFEHLRCXFET.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreMedia-3ZHJYRIR3Q1FKKGAD7NDXK1PM.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/SwiftUICore-1KIPQ1Y0OB5KVIPESRE72LWZ3.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/WebKit-4GGHV1JWJNPBRBA8ZT9YVCR7A.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/QuartzCore-3MQO2F1F80WVFW1NQS53IHOMD.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_intrinsics-3YRLN1XITJGQPHJDF4YE8RW0K.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_Builtin_tgmath-9I87ZGEVLV9OC6FWX96DFIH5B.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ptrauth-54SWFYBEJOIM282PCKQIWSL31.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreTransferable-6FORTH284XUDRAM49Q1K93JBI.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/OSLog-7SCMQA217K8BF38UMNHEYHWRS.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreVideo-E1FL2X0ETX1067R4BG0ME30H6.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Accessibility-37FAF0IF8HJKO1L6Q7CLCJ4RP.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/MachO-8RVAOD7F5T6LI6V4SVG2A9ZHZ.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Security-BMYNJIUUO2GSCXTC4A9DBSBHI.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_SwiftConcurrencyShims-9US5RP0CPG31G7X5OBKH46IK5.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/IOSurface-5UW2K82BO1IVO1EVZV7ALGAXM.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/MediaToolbox-56IMNGSNE9QI4O9G9H09G7JC8.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/sys_types-5ERXNUQQWI8OEEW7WLKTATCL9.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Network-8KOH7ISSU60FL7SJ9X977YK78.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_AvailabilityInternal-XN1HU30Y8K3GM7Q9UATDTYNV.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreImage-16QTF7SAGSWA0LSSVI0LWUC04.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AVFoundation-2UDOJAD43BXUDLIA38Z9V3E0U.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/SwiftShims-94LBTEDYWY5Z2ZD384K7SYG6F.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/ptrcheck-73GS8XU5ASOZXMBQML1SO8VM0.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreFoundation-774FUPTHYE56PLJ4TNSCXI2PN.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Symbols-ET41A4ERTZEWHHJZTNX1BO372.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreAudio-DCGH79G6TQE1GXPFAWT6AREQE.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/AVRouting-74FWNLU2LLPWJGA81O4XYY92V.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/CoreGraphics-3TPTCB9Q1X3OCPA68ERYJU636.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Darwin-A5ZO08SDNU4MOH11PY9MXG2RR.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_DarwinFoundation1-5AYY8RE1B3BMDTB6BEGMPZXYJ.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/dnssd-7S2ZZL8LJWACIFUZWKANI64E1.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/FileProvider-6PFUFQ7F4HBHJLTJ6Y6ZA9G0M.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Dispatch-6T4365CYD0TGKYSITWOOMABIN.pcm /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/_DarwinFoundation3-8B7BVTW5LS8YBWMUOTCCJ97SQ.pcm /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-dependencies-1.json (in target 'Termant' from project 'Termant')
+
+CompileSwift normal arm64 (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling AppDelegate.swift, ChatViewController.swift, Voice.swift (in target 'Termant' from project 'Termant')
+
+SwiftDriver\ Compilation\ Requirements Termant normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Termant -O -whole-module-optimization @/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -target arm64-apple-ios14.0 -g -module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -swift-version 5 -I /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -F /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /Users/runner/work/Termant/Termant/ios/build/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache -output-file-map /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/Termant/Termant/ios/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-generated-files.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-own-target-headers.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant-project-headers.hmap -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/include -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-Swift.h -working-directory /Users/runner/work/Termant/Termant/ios -no-emit-module-separately-wmo
+
+SwiftMergeGeneratedHeaders /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources/Termant-Swift.h /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-Swift.h (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-Swift.h -o /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/DerivedSources/Termant-Swift.h
+
+Copy /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/arm64-apple-ios.swiftdoc /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftdoc (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftdoc /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/arm64-apple-ios.swiftdoc
+
+Copy /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/arm64-apple-ios.swiftmodule /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftmodule (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftmodule /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/arm64-apple-ios.swiftmodule
+
+Copy /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/arm64-apple-ios.abi.json /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.abi.json (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.abi.json /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/arm64-apple-ios.abi.json
+
+Copy /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftsourceinfo (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftsourceinfo /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo
+
+Ld /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Termant normal (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios14.0 -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk -Os -L/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos -L/Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -F/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/EagerLinkingTBDs/Release-iphoneos -F/Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos -filelist /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.LinkFileList -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_lto.o -Xlinker -dependency_info -Xlinker /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.swiftmodule @/Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant-linker-args.resp -o /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Termant
+
+ExtractAppIntentsMetadata (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.WTEENP/Metal.xctoolchain --module-name Termant --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 14.0 --bundle-identifier in.termant.app --output /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app --target-triple arm64-apple-ios14.0 --binary-file /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Termant --dependency-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant_dependency_info.dat --stringsdata-file /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftFileList --metadata-file-list /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Objects-normal/arm64/Termant.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-24 05:54:03.686 appintentsmetadataprocessor[7443:25039] Starting appintentsmetadataprocessor export
+2026-11-24 05:54:03.701 appintentsmetadataprocessor[7443:25039] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+GenerateDSYMFile /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app.dSYM /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Termant (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Termant -o /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app.dSYM
+
+CopySwiftLibs /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Termant --scan-folder /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Frameworks --scan-folder /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/PlugIns --scan-folder /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/SystemExtensions --scan-folder /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Extensions --platform iphoneos --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.WTEENP/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-concurrency --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Info.plist --temp-dir-path /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/ssu --bundle-id in.termant.app --product-path /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app --extracted-metadata-path /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Metadata.appintents --metadata-file-list /Users/runner/work/Termant/Termant/ios/build/Build/Intermediates.noindex/Termant.build/Release-iphoneos/Termant.build/Termant.DependencyMetadataFileList --source-file /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app/Info.plist --archive-ssu-assets
+2026-11-24 05:54:03.770 appintentsnltrainingprocessor[7445:25065] Parsing options for appintentsnltrainingprocessor
+2026-11-24 05:54:03.771 appintentsnltrainingprocessor[7445:25065] Starting AppIntents SSU YAML Generation
+2026-11-24 05:54:03.783 appintentsnltrainingprocessor[7445:25065] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-RegisterExecutionPolicyException /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app
+
+Validate /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    builtin-validationUtility /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app (in target 'Termant' from project 'Termant')
+    cd /Users/runner/work/Termant/Termant/ios
+    /usr/bin/touch -c /Users/runner/work/Termant/Termant/ios/build/Build/Products/Release-iphoneos/Termant.app
+
+** BUILD SUCCEEDED **
+
