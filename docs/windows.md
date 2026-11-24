@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.6.0).** It is built and tested automatically on a Windows
+> **Early version (0.7.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.6.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.7.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -373,6 +373,36 @@ Commands that helper agents run are not followed. When the kept OpenCode
 server cannot be used (a rare fallback), the chat works as before: steps are
 listed when they have ended.
 
+## Chat from the phone: the web chat
+
+New in 0.7.0. The chat of the PC is opened in a browser too — on a phone, or
+on a second PC — and it is the same chat, not a copy: a message sent from the
+phone appears in the window, and the answer is on both screens at the same
+time. No app is wanted; a browser is the phone.
+
+- **Settings → Web chat → Address**: open it in the phone's browser. The first
+  time a security notice appears, go on to the site: the certificate is made
+  by Termant itself, so a browser does not know it. The microphone works on
+  the https address.
+- **Password**: the one shown in Settings → Web chat; click it to change it.
+  After five wrong passwords, an address rests for a minute.
+- When Windows asks whether Termant may be used on the network, choose
+  **Allow**. The address is for the local network (the Wi-Fi of the house or
+  the shop), not for the internet.
+- A message of the phone is marked "From phone or browser" in the window.
+  While the agent works, the phone is told to wait, and the stop button works
+  from the phone too.
+- **Voice, from the phone**: press the microphone on the page and say
+  **"hey Termant"** — or the command right after it, in the same breath. The
+  answer is shown and is spoken by the browser's own voice. This is also how
+  an iPhone talks to Termant: there is no Termant app for iOS, and this page
+  works in Safari.
+- **Your name** (Settings → AI agent): with it filled in, Termant knows whose
+  it is; asked who it is, it names itself and the user in one line.
+
+What the phone's browser is not: it cannot send files, open the terminal or
+change rules — the chat is the one chat, and the rest is done on the PC.
+
 ## ElevenLabs voice with several keys
 
 **Settings → Voice (ElevenLabs) → ElevenLabs keys**: paste your keys, one per
@@ -471,6 +501,16 @@ Server 2025 machine with a real desktop:
     under the command, and it must be gone when the answer is there. The
     download of Termant's own Python must say how far it is. No real model
     and no slow real download was watched.
+
+11. The web chat (`windows/test/webchat-test.js`): the page, the password
+    (wrong, right, and a rest after five wrong ones), that the phone sees the
+    same chat the window has, that a message from the phone reaches the
+    agent, the "wait" while it works, the stop button, the logout and the
+    certificate in the app folder. Then the installed app is asked as the
+    phone: a message must go through to the pretend model, the answer must be
+    in the chat on the screen, and the phone must see the same answer.
+    Not tested: a real phone on a real network, the microphone (the browser's
+    own speech recognition) and the spoken answers.
 
 What the test machine cannot check: sound (it has no speakers, so volume, mute
 and `pc say` are only tried), brightness, battery, Wi-Fi, voice dictation, and

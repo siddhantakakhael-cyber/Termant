@@ -258,6 +258,11 @@ public class MainActivity extends Activity
             }
 
             @Override
+            public void onToggleWake() {
+                if (service != null) service.setWakeWord(!Config.wakeWord(MainActivity.this));
+            }
+
+            @Override
             public void onOpenLink(String url) {
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)));
@@ -771,12 +776,14 @@ public class MainActivity extends Activity
     }
 
     private void listen() {
+        if (service != null) service.pauseWake(); // the wake word must not hear this speech
         voiceInChat = chatPanel.getVisibility() == View.VISIBLE;
         voiceBefore = (voiceInChat ? chatPanel.draft() : askInput.getText().toString()).trim();
         if (voice == null) {
             voice = new Voice(this, new Voice.Listener() {
                 @Override
                 public void onListening(boolean listening) {
+                    if (!listening && service != null) service.resumeWake();
                     chatPanel.setListening(listening && voiceInChat);
                     boolean here = listening && !voiceInChat;
                     askMic.setBackground(pressable(here ? accent() : 0x00000000, 20));

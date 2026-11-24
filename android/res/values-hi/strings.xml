@@ -155,6 +155,11 @@
     <string name="voice_denied">Microphone ki ijazat nahi mili, isliye bolkar likhna kaam nahi karega.</string>
     <string name="voice_nothing">Samajh nahi aaya. Microphone dabakar dobara bolein.</string>
     <string name="voice_failed">Voice input ruk gaya (%1$s). Internet connection check karke dobara koshish karein.</string>
+    <string name="wake_title">"hey Termant" ke liye suno</string>
+    <string name="wake_note">Phone chhue bina "hey Termant" bolo, phir apna kaam; Termant karke chit mein jawab dega. Microphone ki ijazat ek baar chahiye — pehle chit ka microphone button dabayein. Jab tak sunta hai, notification mein likha rehta hai; "hey Termant" sunte hi bolein kahunega.</string>
+    <string name="wake_armed">Ab sun raha hoon — kaam bolein</string>
+    <string name="notification_wake">"hey Termant" ke liye sun raha hai</string>
+    <string name="notification_wake_off">hey Termant band hai (%1$s)</string>
     <!-- What the agent is doing right now; same order as Chat.ACT_*. -->
     <string-array name="activity_titles">
         <item>Agent shuru ho raha hai</item>

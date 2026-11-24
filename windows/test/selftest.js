@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const httpsLib = require('https');
 const { execFile } = require('child_process');
 
 const WINDOWS = process.platform === 'win32';
@@ -388,6 +389,55 @@ module.exports = async function selftest(ctx) {
         check('progress: the newest line is on the screen under the command', /node slow\.js/.test(onScreen[0]) && /^got [1-6] of 6 MB$/.test(onScreen[1]), JSON.stringify(onScreen));
         check('progress: the answer has what the command printed', !reply.failed && /got 6 of 6 MB/.test(reply.text || '') && (reply.steps || []).join('|') === 'node slow.js', JSON.stringify(reply).slice(0, 500));
         check('progress: the line is gone when the work is done', await js('!document.querySelector("#status .printed")'));
+
+        // ---- the web chat: a phone on the network talks to this same chat.
+        // The window is the phone: a request from this process is the phone's browser.
+        const webStatus = ctx.web();
+        check('web chat: the page is served', webStatus && webStatus.https && webStatus.password, JSON.stringify(webStatus));
+        if (webStatus && webStatus.https) {
+          const webPort = parseInt(webStatus.https.split(':').pop().replace(/[^0-9]/g, ''), 10);
+          const webRequest = (url, { method = 'GET', body, cookie } = {}) => new Promise((resolve) => {
+            const r = httpsLib.request({ host: '127.0.0.1', port: webPort, path: url, method, rejectUnauthorized: false,
+              headers: Object.assign(body ? { 'content-type': 'application/json' } : {}, cookie ? { cookie } : {}) }, (res) => {
+              let text = '';
+              res.on('data', (d) => { text += d; });
+              res.on('end', () => resolve({ code: res.statusCode, text, cookie: (res.headers['set-cookie'] || [])[0] || '' }));
+            });
+            r.on('error', (e) => resolve({ code: 0, text: e.message, cookie: '' }));
+            if (body) r.end(JSON.stringify(body));
+            else r.end();
+          });
+          let w = await webRequest('/');
+          check('web chat: the phone gets the page with the wake word', w.code === 200 && w.text.includes('id="login"') && w.text.includes('hey Termant'), 'code ' + w.code);
+          w = await webRequest('/api/state');
+          check('web chat: without the password the chat is hidden', w.code === 401, JSON.stringify(w.text));
+          w = await webRequest('/api/login', { method: 'POST', body: { password: 'wrong' } });
+          check('web chat: a wrong password is refused', w.code === 401, JSON.stringify(w.text));
+          w = await webRequest('/api/login', { method: 'POST', body: { password: webStatus.password } });
+          const webCookie = (w.cookie || '').split(';')[0];
+          check('web chat: the password from Settings opens it', w.code === 200 && /termant=/.test(webCookie), JSON.stringify(w.cookie));
+          w = await webRequest('/api/message', { method: 'POST', cookie: webCookie, body: { text: 'RUN echo pong' } });
+          check('web chat: a message from the phone is taken', w.code === 200, JSON.stringify(w.text));
+          await until(() => !!ctx.busy(), 5000);
+          if (ctx.busy()) {
+            w = await webRequest('/api/message', { method: 'POST', cookie: webCookie, body: { text: 'again' } });
+            check('web chat: while the phone waits, a second message is refused', w.code === 409 && /busy/.test(w.text), JSON.stringify(w.text));
+          } else {
+            check('web chat: the answer came before the phone could ask twice', true, 'not busy');
+          }
+          await until(() => !ctx.busy(), 120000);
+          const webChat = ctx.current();
+          const webMsgs = (webChat && webChat.messages) || [];
+          const lastUser = [...webMsgs].reverse().find((m) => m.user) || {};
+          const lastReply = webMsgs[webMsgs.length - 1] || {};
+          check('web chat: the phone\u2019s message is in the chat on the screen', lastUser.user && lastUser.from === 'web' && /pong/.test(lastUser.text), JSON.stringify(lastUser).slice(0, 200));
+          check('web chat: the answer appears in both', !lastReply.user && /pong/.test(lastReply.text || ''), JSON.stringify(lastReply).slice(0, 200));
+          w = await webRequest('/api/state', { cookie: webCookie });
+          const webState = {};
+          try { webState = JSON.parse(w.text); } catch (e) { /* not json */ }
+          check('web chat: the phone sees the same answer', webState.ok && (webState.messages || []).length >= 2 && webState.messages[webState.messages.length - 1].text.includes('pong'), JSON.stringify(webState.messages || []).slice(0, 200));
+          await shot('web-chat');
+        }
 
         // ---- a picture sent with a message: the pretend model says what reached it
         const picture = path.join(dir, 'attached.png');

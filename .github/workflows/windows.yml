@@ -40,6 +40,9 @@ jobs:
           cmd /c "node windows\test\progress-test.js > ci-out\progress-test.log 2>&1"
           if ($LASTEXITCODE -ne 0) { "TESTS_FAILED=progress of a running command" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
           Get-Content ci-out\progress-test.log | Select-Object -Last 5
+          cmd /c "node windows\test\webchat-test.js > ci-out\webchat-test.log 2>&1"
+          if ($LASTEXITCODE -ne 0) { "TESTS_FAILED=web chat" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
+          Get-Content ci-out\webchat-test.log | Select-Object -Last 5
           powershell -NoProfile -ExecutionPolicy Bypass -File windows\test\pc-test.ps1 ci-out\pc
           if ($LASTEXITCODE -ne 0) { "TESTS_FAILED=pc command" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
           exit 0

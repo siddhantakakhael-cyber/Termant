@@ -55,6 +55,9 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
 
         /** Opens Android's "display over other apps" page for Termant. */
         void onOpenOverlaySettings();
+
+        /** Waits for the words "hey Termant", or stops waiting. */
+        void onToggleWake();
     }
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
@@ -188,6 +191,15 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                 host.onOpenArena();
             }
         });
+        row(c.getString(R.string.wake_title),
+                c.getString(Config.wakeWord(c) ? R.string.on : R.string.off),
+                c.getString(R.string.wake_note), new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        host.onToggleWake();
+                        refresh();
+                    }
+                });
 
         heading(R.string.settings_tools, R.string.settings_tools_note);
         final Map<String, String> keys = Config.keys(c);

@@ -11,6 +11,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
   - [Limits](#limits)
   - [How it works](#how-it-works)
 - [Chat first](#chat-first)
+- [Listen for "hey Termant"](#listen-for-hey-termant)
 - [Phone control](#phone-control)
 - [Photos: what is in a picture, and where](#photos-what-is-in-a-picture-and-where)
 - [Automation rules](#automation-rules)
@@ -112,6 +113,32 @@ the same OpenCode session, so the agent still knows what was said).
 The real Ubuntu terminal is one tap away: **>_** at the top. **Chat**
 (or Back) in the terminal returns to the chat. The first chat message downloads
 the agent (OpenCode, about 120 MB).
+
+## Listen for "hey Termant"
+
+New in 0.26.0. **Settings → Listen for "hey Termant"**: while it is on, the
+phone waits for the words, and when you say **"hey Termant"** it waits for the
+task; say it and the task in the same breath works too. The task goes into the
+chat like a typed message, and the answer is there as usual. A notification
+says when it is waiting, and it appears for a moment when it has heard the
+words.
+
+- The microphone must be allowed once: tap the microphone button in the chat
+  once, and the permission stays for the wake word too.
+- The words are heard by the phone's own speech service, the same one the
+  microphone button uses (Google's, on most phones). A phone without a speech
+  service says so in the notification and turns the setting off again.
+- When you are dictating into the message box, the wake word is quiet, so it
+  does not hear your own words.
+- Whether the service keeps working with the screen locked is up to the phone
+  and its battery settings. The test machine has no microphone and no speech
+  service, so none of this is run in the tests: the tests can only see that
+  the app builds with the setting and that it starts off. What really happens
+  when you say the words has to be checked on a real phone.
+
+On an iPhone there is no Termant app; the same "hey Termant" voice works on
+the **web chat page** of the Windows app, opened in Safari on the same Wi-Fi
+(see [the Windows app](windows.md#chat-from-the-phone-the-web-chat)).
 
 ## Phone control
 

@@ -127,7 +127,7 @@ final class Voice implements RecognitionListener {
         listener.onListening(on);
     }
 
-    private static String words(Bundle results) {
+    static String words(Bundle results) {
         if (results == null) return "";
         ArrayList<String> heard = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         String text = heard == null || heard.isEmpty() || heard.get(0) == null ? "" : heard.get(0);

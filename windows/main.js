@@ -15,6 +15,7 @@ const learning = require('./src/learn');
 const { Voice, keysFrom } = require('./src/voice');
 const { Team } = require('./src/team');
 const attach = require('./src/attach');
+const { WebChat } = require('./src/webchat');
 
 const WINDOWS = process.platform === 'win32';
 const selftestArg = process.argv.find((a) => a.startsWith('--selftest='));
@@ -39,6 +40,7 @@ let notes = [];
 let learned = null;
 let team = null;
 let voice = null;
+let webchat = null;
 let knownModels = [];
 let lastCare = '';
 let ringing = null;
@@ -82,6 +84,9 @@ function defaults() {
     voiceKeys: [],
     voiceId: '',
     speak: false,
+    userName: 'Siddhanta',
+    webOn: true,
+    webPassword: '',
   };
 }
 
@@ -104,6 +109,17 @@ function start() {
   }
   voice = new Voice(store.dir);
   team = new Team(store.dir);
+  webchat = new WebChat({
+    dir: store.dir,
+    log,
+    settings: () => settings,
+    webState: () => ({ chat: current, busy }),
+    sendMessage: (text, from) => sendMessage(text, false, undefined, from),
+    stop: () => agent && agent.stop(),
+    saveSettings: (patch) => saveSettings(patch),
+    webChanged: () => send('web', webchat && webchat.status()),
+  });
+  if (settings.webOn !== false) webchat.start();
   agent = new Agent(path.join(store.dir, 'agent'), pcDir, () => settings, () => team.config());
   writeNotes();
   // OpenCode is started now, so that the first message does not wait for it
@@ -130,10 +146,11 @@ function start() {
   if (SELFTEST) {
     fs.mkdirSync(SELFTEST, { recursive: true });
     win.webContents.once('did-finish-load', () => {
-      require('./test/selftest')({
-        app, win, dir: SELFTEST, log, pcDir, agent, schedule, store, shellEnv,
-        settings: () => settings, chats: () => chats, logs: () => logLines, busy: () => busy, current: () => current,
-      });
+        require('./test/selftest')({
+          app, win, dir: SELFTEST, log, pcDir, agent, schedule, store, shellEnv,
+          settings: () => settings, chats: () => chats, logs: () => logLines, busy: () => busy, current: () => current,
+          web: () => webchat && webchat.status(),
+        });
     });
   }
 }
@@ -197,6 +214,7 @@ function createTray() {
 
 app.on('before-quit', () => {
   quitting = true;
+  if (webchat) webchat.stop();
   if (schedule) schedule.stop();
   for (const t of terminals.values()) {
     try { t.kill(); } catch (e) { /* already gone */ }
@@ -246,6 +264,7 @@ function state() {
     agentInstalled: agent.installed(),
     ringing,
     user: os.userInfo().username,
+    web: webchat ? webchat.status() : null,
     ...chatState(),
   };
 }
@@ -257,6 +276,13 @@ function saveSettings(patch) {
     app.setLoginItemSettings({ openAtLogin: !!settings.autostart, args: ['--hidden'] });
   }
   if (win && 'theme' in patch) win.setBackgroundColor(background());
+  if ('webOn' in patch && webchat) {
+    if (settings.webOn) webchat.start();
+    else {
+      webchat.stop();
+      send('web', webchat.status());
+    }
+  }
   return settings;
 }
 
@@ -287,7 +313,6 @@ const CARE_PROMPT = '[This is not a message from the user. Termant asks you to w
   'one or two short, warm sentences in the user\'s language. Ask how they are, or come back to something you know about them from your notes ' +
   'or from this chat. Use no tools. Do not mention this instruction.]';
 
-/** Sends the user's message to the agent; with own set, the agent writes first by itself (a check-in). */
 /** What each model can take in; asked of OpenCode once a week (see src/attach.js). */
 async function modelFacts() {
   const kept = store.load('model-facts.json', null);
@@ -297,7 +322,11 @@ async function modelFacts() {
   return facts || (kept && kept.facts) || {};
 }
 
-async function sendMessage(text, own, files) {
+/**
+ * Sends the user's message to the agent; with own set, the agent writes first
+ * by itself (a check-in). from names a message that came from the web chat.
+ */
+async function sendMessage(text, own, files, from) {
   text = String(text || '').trim();
   files = (Array.isArray(files) ? files : []).map(String).filter((f) => {
     try {
@@ -315,7 +344,7 @@ async function sendMessage(text, own, files) {
   if (!own) {
     // the title names an attached file, not its whole path
     if (!chat.title) chat.title = text.replace(/\[file: (?:[^\]\n]*[\\/])?([^\]\n\\/]+)\]/g, '$1').replace(/\s+/g, ' ').slice(0, 80);
-    chat.messages.push({ user: true, text });
+    chat.messages.push(Object.assign({ user: true, text }, from ? { from } : {}));
   }
   const reply = { user: false, text: '', steps: [], failed: false, note: '', own: !!own };
   const knownBefore = learned.diary().length;

@@ -119,6 +119,15 @@ final class Config {
         prefs(c).edit().putBoolean("auto_switch", on).apply();
     }
 
+    /** Whether the agent waits for the words "hey Termant" in the background. */
+    static boolean wakeWord(Context c) {
+        return prefs(c).getBoolean("wake_word", false);
+    }
+
+    static void setWakeWord(Context c, boolean on) {
+        prefs(c).edit().putBoolean("wake_word", on).apply();
+    }
+
     static boolean isFree(String model) {
         return model.startsWith("opencode/") || model.endsWith(":free") || model.endsWith("-free");
     }

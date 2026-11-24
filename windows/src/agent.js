@@ -241,7 +241,8 @@ class Agent {
     fs.mkdirSync(this.configDir, { recursive: true });
     if (guideSource) {
       let guide = fs.readFileSync(guideSource, 'utf8');
-      guide = guide.replace('{{WORKSPACE}}', () => s.workspace || '').replace('{{USER}}', () => os.userInfo().username);
+      guide = guide.replace('{{WORKSPACE}}', () => s.workspace || '').replace('{{USER}}', () => os.userInfo().username)
+        .replace('{{USER_NAME}}', () => (s.userName || '').trim() || 'the one this PC belongs to');
       fs.writeFileSync(this.guideFile, guide);
     }
     if (!fs.existsSync(this.learnedFile)) fs.writeFileSync(this.learnedFile, '');

@@ -1,7 +1,7 @@
 {
   "name": "termant",
   "productName": "Termant",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "An AI agent that controls this PC, with a terminal",
   "main": "main.js",
   "author": "Termant",
@@ -14,7 +14,8 @@
   "dependencies": {
     "@lydell/node-pty": "1.1.0",
     "@xterm/addon-fit": "0.10.0",
-    "@xterm/xterm": "5.5.0"
+    "@xterm/xterm": "5.5.0",
+    "selfsigned": "^5.5.0"
   },
   "devDependencies": {
     "electron": "45.4.1",
@@ -24,7 +25,7 @@
     "appId": "app.termant.windows",
     "productName": "Termant",
     "directories": { "output": "dist", "buildResources": "assets" },
-    "files": ["main.js", "preload.js", "src/**", "ui/**", "test/**", "assets/icon.png", "package.json"],
+    "files": ["main.js", "preload.js", "src/**", "ui/**", "web/**", "test/**", "assets/icon.png", "package.json"],
     "extraResources": [{ "from": "resources", "to": "pc" }],
     "asarUnpack": ["node_modules/@lydell/**"],
     "npmRebuild": false,

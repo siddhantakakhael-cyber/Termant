@@ -165,6 +165,11 @@
     <string name="voice_denied">The microphone was not allowed, so voice input cannot listen.</string>
     <string name="voice_nothing">Did not catch that. Tap the microphone and try again.</string>
     <string name="voice_failed">Voice input stopped (%1$s). Check the internet connection and try again.</string>
+    <string name="wake_title">Listen for "hey Termant"</string>
+    <string name="wake_note">Say "hey Termant", then the task, without touching the phone; Termant does it and answers in the chat. The microphone must be allowed once — tap the microphone button in the chat first. While it waits, the notification says so; when it hears the words, it says to speak.</string>
+    <string name="wake_armed">Now listening — say the task</string>
+    <string name="notification_wake">listening for "hey Termant"</string>
+    <string name="notification_wake_off">hey Termant is off (%1$s)</string>
     <!-- What the agent is doing right now; same order as Chat.ACT_*. -->
     <string-array name="activity_titles">
         <item>Starting the agent</item>

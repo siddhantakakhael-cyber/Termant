@@ -281,7 +281,11 @@
       const column = el('div', { class: 'column' });
       chat.messages.forEach((m, index) => {
         if (m.user) {
-          column.appendChild(el('div', { class: 'msg user' }, el('div', { class: 'bubble' }, shown(m.text))));
+          const fromWeb = m.from === 'web';
+          const u = el('div', { class: 'msg user' + (fromWeb ? ' from-web' : '') });
+          if (fromWeb) u.appendChild(el('div', { class: 'own' }, t('web_from')));
+          u.appendChild(el('div', { class: 'bubble' }, shown(m.text)));
+          column.appendChild(u);
           return;
         }
         const last = index === chat.messages.length - 1;
@@ -573,6 +577,11 @@
       row('theme', t('s_theme'), null, t(s.theme === 'light' ? 'light' : 'dark'), () => set({ theme: s.theme === 'light' ? 'dark' : 'light' })));
 
     section(t('s_agent'),
+      row('edit', t('s_name'), t('s_name_note'), s.userName || '', () => {
+        const field = el('input', { class: 'field', id: 'user-name', value: s.userName || '', spellcheck: 'false' });
+        dialog({ title: t('s_name'), text: t('s_name_note'), body: field, buttons: [{ text: t('cancel') }, { text: t('save'), kind: 'primary', run: () => set({ userName: field.value.trim() }) }] });
+        field.focus();
+      }),
       row('sparkle', t('s_model'), null, modelName(), pickModel),
       toggle('refresh', t('s_backup'), t('s_backup_note'), 'backup'),
       toggle('bolt', t('s_auto'), t('s_auto_note'), 'auto'),
@@ -608,6 +617,27 @@
         field.focus();
       }),
       toggle('bell', t('voice_speak'), t('voice_speak_note'), 'speak'));
+
+    // the web chat: this same chat, opened in a browser on a phone or another PC
+    const web = S.web || {};
+    section(t('s_webchat'),
+      toggle('globe', t('webchat_on'), t('webchat_note'), 'webOn'),
+      row('external', t('webchat_url'), web.https || t('webchat_none'), null, async () => {
+        const text = web.https || web.http || '';
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          toast(t('webchat_url'), t('copied'));
+        } catch (e) {
+          toast(t('webchat_url'), text);
+        }
+      }),
+      row('key', t('webchat_password'), web.password || '', () => {
+        const field = el('input', { class: 'field', id: 'web-password', value: web.password || '', spellcheck: 'false' });
+        dialog({ title: t('webchat_password'), text: t('webchat_password_note'), body: field, buttons: [{ text: t('cancel') }, { text: t('save'), kind: 'primary', run: () => set({ webPassword: field.value.trim() }) }] });
+        field.focus();
+      }));
+    page.appendChild(el('div', { class: 'hint' }, t('webchat_hint')));
 
     const known = (S.data && S.data.learned) || { today: [], skills: [] };
     page.appendChild(el('h2', null, t('s_learned')));
@@ -816,6 +846,7 @@
     api.on('chats', (list) => { S.chats = list; renderSide(); });
     api.on('data', (d) => { S.data = d; if (view === 'auto') renderAuto(); if (view === 'settings') renderSettings(); });
     api.on('settings', (s) => { S.settings = s; renderAll(); });
+    api.on('web', (w) => { S.web = w; if (view === 'settings') renderSettings(); });
     let speaking = null;
     api.on('voice', (sound) => {
       if (speaking) speaking.pause();
