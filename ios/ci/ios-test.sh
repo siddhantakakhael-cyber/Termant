@@ -56,8 +56,13 @@ cp -R "$APP" ipa/Payload/
 ( cd ipa && zip -qr Termant.ipa Payload )
 mv ipa/Termant.ipa Termant.ipa
 ls -la Termant.ipa | tee "$OUT/ipa.txt"
+unzip -l Termant.ipa | head -10 >> "$OUT/ipa.txt"
+unzip -l Termant.ipa | grep -q 'Payload/Termant.app/Termant$' \
+  || { step "the IPA has no executable inside"; finish FAIL; }
 SIZE=$(stat -f%z Termant.ipa)
-[ "$SIZE" -gt 100000 ] || { echo "the IPA is suspiciously small ($SIZE bytes)"; finish FAIL; }
+# a three-file app with no pictures is small on purpose; an empty one is not
+[ "$SIZE" -gt 20000 ] || { step "the IPA is suspiciously small ($SIZE bytes)"; finish FAIL; }
+step "IPA packed: $SIZE bytes"
 
 # 4. Smoke test on the simulator: install, launch, and it must stay up
 step "building for the simulator"
