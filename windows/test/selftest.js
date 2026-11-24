@@ -459,7 +459,8 @@ module.exports = async function selftest(ctx) {
       }
     }
   } catch (e) {
-    check('the test ran to its end', false, e.stack || e);
+    const renderer = ctx.rendererError && ctx.rendererError();
+    check('the test ran to its end', false, (e.stack || e) + (renderer ? ' | the page said: ' + renderer : ''));
   }
 
   const hard = results.filter((x) => !x.ok && !x.soft).length;

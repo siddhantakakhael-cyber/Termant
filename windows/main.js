@@ -149,7 +149,7 @@ function start() {
         require('./test/selftest')({
           app, win, dir: SELFTEST, log, pcDir, agent, schedule, store, shellEnv,
           settings: () => settings, chats: () => chats, logs: () => logLines, busy: () => busy, current: () => current,
-          web: () => webchat && webchat.status(),
+          web: () => webchat && webchat.status(), rendererError: () => rendererError,
         });
     });
   }
@@ -160,6 +160,9 @@ function start() {
 function background() {
   return settings.theme === 'light' ? '#f6f8fa' : '#0d1117';
 }
+
+/** The last error the window's page printed; the selftest reads it into its result. */
+let rendererError = '';
 
 function createWindow() {
   win = new BrowserWindow({
@@ -186,6 +189,9 @@ function createWindow() {
   win.webContents.on('will-navigate', (event, url) => {
     event.preventDefault();
     if (/^https?:/.test(url)) shell.openExternal(url);
+  });
+  win.webContents.on('console-message', (event, level, message) => {
+    if (level >= 2) { rendererError = String(message); log('renderer: ' + message); }
   });
 }
 

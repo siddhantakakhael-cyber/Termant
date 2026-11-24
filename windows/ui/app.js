@@ -622,7 +622,7 @@
     const web = S.web || {};
     section(t('s_webchat'),
       toggle('globe', t('webchat_on'), t('webchat_note'), 'webOn'),
-      row('external', t('webchat_url'), web.https || t('webchat_none'), null, async () => {
+      row('external', t('webchat_url'), t('webchat_url_note'), web.https || t('webchat_none'), async () => {
         const text = web.https || web.http || '';
         if (!text) return;
         try {
@@ -632,7 +632,7 @@
           toast(t('webchat_url'), text);
         }
       }),
-      row('key', t('webchat_password'), web.password || '', () => {
+      row('key', t('webchat_password'), t('webchat_password_note'), web.password || '', () => {
         const field = el('input', { class: 'field', id: 'web-password', value: web.password || '', spellcheck: 'false' });
         dialog({ title: t('webchat_password'), text: t('webchat_password_note'), body: field, buttons: [{ text: t('cancel') }, { text: t('save'), kind: 'primary', run: () => set({ webPassword: field.value.trim() }) }] });
         field.focus();
