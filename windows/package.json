@@ -1,7 +1,7 @@
 {
   "name": "termant",
   "productName": "Termant",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "An AI agent that controls this PC, with a terminal",
   "main": "main.js",
   "author": "Termant",
@@ -24,13 +24,39 @@
   "build": {
     "appId": "app.termant.windows",
     "productName": "Termant",
-    "directories": { "output": "dist", "buildResources": "assets" },
-    "files": ["main.js", "preload.js", "src/**", "ui/**", "web/**", "test/**", "assets/icon.png", "package.json"],
-    "extraResources": [{ "from": "resources", "to": "pc" }],
-    "asarUnpack": ["node_modules/@lydell/**"],
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**",
+      "ui/**",
+      "web/**",
+      "test/**",
+      "assets/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "pc"
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/@lydell/**"
+    ],
     "npmRebuild": false,
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "assets/icon.ico",
       "artifactName": "Termant-Setup.exe"
     },

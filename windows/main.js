@@ -1,7 +1,7 @@
 // Termant for Windows: the main process. It owns the window, the chats, the
 // agent, the terminals, the alarms and rules, and the small local server
 // through which the `pc` command reaches the app.
-const { app, BrowserWindow, ipcMain, Tray, Menu, Notification, dialog, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, Notification, dialog, shell, nativeImage, screen } = require('electron');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -149,7 +149,7 @@ function start() {
         require('./test/selftest')({
           app, win, dir: SELFTEST, log, pcDir, agent, schedule, store, shellEnv,
           settings: () => settings, chats: () => chats, logs: () => logLines, busy: () => busy, current: () => current,
-          web: () => webchat && webchat.status(), rendererError: () => rendererError,
+          web: () => webchat && webchat.status(), rendererError: () => rendererError, busyWindow: () => busyWindow(),
         });
     });
   }
@@ -163,6 +163,51 @@ function background() {
 
 /** The last error the window's page printed; the selftest reads it into its result. */
 let rendererError = '';
+
+// ---------------------------------------------------------------- the corner card
+
+let progressWin = null, progressData = null, progressReady = false;
+
+/** The small card that says what the PC is doing and how long, like the phone's (ui/progress.html). */
+function progressWindow() {
+  if (progressWin) return progressWin;
+  progressWin = new BrowserWindow({
+    width: 340, height: 96, show: false, frame: false, resizable: false, transparent: true,
+    alwaysOnTop: true, skipTaskbar: true, focusable: false, hasShadow: false,
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  });
+  progressWin.loadFile(path.join(__dirname, 'ui', 'progress.html'));
+  progressWin.webContents.on('did-finish-load', () => { progressReady = true; paintProgress(); });
+  progressWin.on('closed', () => { progressWin = null; progressReady = false; progressData = null; });
+  return progressWin;
+}
+
+/** Show the card while the agent works, with the newest line and the clock; take it away when done. */
+function paintProgress() {
+  if (busy) {
+    const win = progressWindow();
+    const area = screen.getPrimaryDisplay().workArea;
+    win.setPosition(area.x + area.width - win.getBounds().width - 14, area.y + 14);
+    if (!win.isVisible()) win.showInactive();
+    const data = { activity: busy.activity, detail: busy.detail, output: busy.output || '', startedAt: busy.startedAt, lang: settings.lang };
+    const changed = !progressData
+      || progressData.activity !== data.activity || progressData.detail !== data.detail
+      || progressData.output !== data.output || progressData.lang !== data.lang;
+    progressData = data;
+    if (changed && progressReady) progressWin.webContents.executeJavaScript('progressUpdate(' + JSON.stringify(data) + ')').catch(() => {});
+  } else if (progressWin && !progressWin.isDestroyed()) {
+    progressWin.hide();
+    progressData = null;
+  }
+}
+
+/** What the selftest reads off the card. */
+async function busyWindow() {
+  if (!progressWin || progressWin.isDestroyed()) return null;
+  let text = '';
+  try { text = await progressWin.webContents.executeJavaScript('document.body.innerText'); } catch (e) { /* not ready */ }
+  return { visible: progressWin.isVisible(), text, data: progressData || null };
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -360,6 +405,7 @@ async function sendMessage(text, own, files, from) {
   busy = { chat, activity: agent.installed() ? 'start' : 'setup', detail: '', startedAt: Date.now() };
   saveChats();
   send('chat', chatState());
+  paintProgress();
   let handed = [];
   const attempt = (model) => agent.run({
     text, session: chat.session, model, cwd: settings.workspace, files: handed,
@@ -375,6 +421,7 @@ async function sendMessage(text, own, files, from) {
         busy.output = event.output || '';
       }
       send('chat', chatState());
+      paintProgress();
     },
   });
   try {
@@ -382,12 +429,14 @@ async function sendMessage(text, own, files, from) {
       await agent.install((fraction, done, total) => {
         busy.detail = total ? Math.round(done) + ' / ' + Math.round(total) + ' MB' : Math.round(done) + ' MB';
         send('chat', chatState());
+        paintProgress();
       });
       send('installed', true);
     }
     busy.activity = 'start';
     busy.detail = '';
     send('chat', chatState());
+    paintProgress();
     agent.writeConfig(path.join(pcDir, 'AGENTS.md'));
     let first = settings.model;
     if (files.length) {
@@ -413,6 +462,7 @@ async function sendMessage(text, own, files, from) {
         reply.text = '';
         reply.steps = [];
         send('chat', chatState());
+        paintProgress();
         log('backup model: ' + model);
         const next = await attempt(model);
         if (!next.failed || next.stopped) {
@@ -452,6 +502,7 @@ async function sendMessage(text, own, files, from) {
   busy = null;
   saveChats();
   send('chat', chatState());
+  paintProgress();
   return true;
 }
 

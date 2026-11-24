@@ -380,6 +380,7 @@ module.exports = async function selftest(ctx) {
         await until(() => !ctx.busy() || /^got [2-4] of 6 MB$/.test(ctx.busy().output || ''), 120000);
         const during = ctx.busy() ? { activity: ctx.busy().activity, detail: ctx.busy().detail, output: ctx.busy().output } : null;
         const onScreen = await js('[(document.querySelector("#status span") || {}).textContent || "", (document.querySelector("#status .printed") || {}).textContent || ""]');
+        const card = await ctx.busyWindow();
         await shot('progress');
         await until(() => !ctx.busy(), 120000);
         clearInterval(watcher);
@@ -388,7 +389,16 @@ module.exports = async function selftest(ctx) {
         check('progress: what the running command prints is followed', printed.filter((l) => /^got [1-5] of 6 MB$/.test(l)).length >= 3, JSON.stringify(printed));
         check('progress: the newest line is on the screen under the command', /node slow\.js/.test(onScreen[0]) && /^got [1-6] of 6 MB$/.test(onScreen[1]), JSON.stringify(onScreen));
         check('progress: the answer has what the command printed', !reply.failed && /got 6 of 6 MB/.test(reply.text || '') && (reply.steps || []).join('|') === 'node slow.js', JSON.stringify(reply).slice(0, 500));
+        check('progress: the corner card says what is done and for how long',
+          !!card && card.visible && /Running a command/.test(card.text) && /of 6 MB/.test(card.text)
+          && (/\d+s\b/.test(card.text) || /\d+:\d\d\b/.test(card.text))
+          && !!card.data && card.data.activity === 'command' && card.data.detail === 'node slow.js',
+          JSON.stringify(card).slice(0, 300));
         check('progress: the line is gone when the work is done', await js('!document.querySelector("#status .printed")'));
+        // the corner card, like the phone's: gone with the work
+        await sleep(500);
+        const cardAfter = await ctx.busyWindow();
+        check('progress: the corner card is away when the work is done', !!cardAfter && !cardAfter.visible, JSON.stringify(cardAfter));
 
         // ---- the web chat: a phone on the network talks to this same chat.
         // The window is the phone: a request from this process is the phone's browser.
