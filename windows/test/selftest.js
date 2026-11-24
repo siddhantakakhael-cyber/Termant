@@ -433,18 +433,12 @@ module.exports = async function selftest(ctx) {
           check('web chat: the phone\u2019s message is in the chat on the screen', lastUser.user && lastUser.from === 'web' && /pong/.test(lastUser.text), JSON.stringify(lastUser).slice(0, 200));
           check('web chat: the answer appears in both', !lastReply.user && /pong/.test(lastReply.text || ''), JSON.stringify(lastReply).slice(0, 200));
           w = await webRequest('/api/state', { cookie: webCookie });
-          await sleep(400);
-          const again = await webRequest('/api/state', { cookie: webCookie });
-          const webState = {};
-          let parseError = '';
-          try { webState = JSON.parse(again.text); } catch (e) { parseError = String(e); }
-          const firstState = {};
-          try { JSON.parse(w.text); firstState.ok = true; } catch (e) { firstState.parseError = String(e); }
+          let webState = {};
+          try { webState = JSON.parse(w.text); } catch (e) { webState = { error: String(e) }; }
           const phoneMsgs = webState.messages || [];
           check('web chat: the phone sees the same answer',
-            w.code === 200 && again.code === 200 && webState.ok && phoneMsgs.length >= 2 && phoneMsgs[phoneMsgs.length - 1].text.includes('pong'),
-            'codes ' + w.code + '/' + again.code + ' len=' + again.text.length + ' tail: ' + again.text.slice(-120) +
-              (parseError ? ' parse: ' + parseError : '') + (firstState.parseError ? ' first parse: ' + firstState.parseError : ''));
+            w.code === 200 && webState.ok && phoneMsgs.length >= 2 && phoneMsgs[phoneMsgs.length - 1].text.includes('pong'),
+            'code ' + w.code + ' ' + w.text.slice(0, 200));
           await shot('web-chat');
         }
 
