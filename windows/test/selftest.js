@@ -436,11 +436,15 @@ module.exports = async function selftest(ctx) {
           await sleep(400);
           const again = await webRequest('/api/state', { cookie: webCookie });
           const webState = {};
-          try { webState = JSON.parse(again.text); } catch (e) { /* not json */ }
+          let parseError = '';
+          try { webState = JSON.parse(again.text); } catch (e) { parseError = String(e); }
+          const firstState = {};
+          try { JSON.parse(w.text); firstState.ok = true; } catch (e) { firstState.parseError = String(e); }
           const phoneMsgs = webState.messages || [];
           check('web chat: the phone sees the same answer',
             w.code === 200 && again.code === 200 && webState.ok && phoneMsgs.length >= 2 && phoneMsgs[phoneMsgs.length - 1].text.includes('pong'),
-            'codes ' + w.code + '/' + again.code + ' first: ' + w.text.slice(0, 120) + ' again(title=' + webState.title + ',n=' + phoneMsgs.length + '): ' + again.text.slice(0, 200));
+            'codes ' + w.code + '/' + again.code + ' len=' + again.text.length + ' tail: ' + again.text.slice(-120) +
+              (parseError ? ' parse: ' + parseError : '') + (firstState.parseError ? ' first parse: ' + firstState.parseError : ''));
           await shot('web-chat');
         }
 
