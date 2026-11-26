@@ -85,6 +85,7 @@ final class ClipVideoView extends LinearLayout {
     private double start = 0, end = 0;
     private double playhead = 0;        // where the preview is now
     private float speed = 1;
+    private String place = "bottom";   // where the next word goes
     private final List<Word> words = new ArrayList<>();
     private String music = null;
     private float musicVolume = 1;
@@ -217,7 +218,7 @@ final class ClipVideoView extends LinearLayout {
         speedChips = chipRow(context, new String[]{"0.5\u00d7", "1\u00d7", "2\u00d7", "4\u00d7"}, 1, new OnClickListener() {
             @Override
             public void onClick(View v) {
-                speed = speeds[((ViewGroup) v.getParent()).getChildPosition(v)];
+                speed = speeds[((ViewGroup) v.getParent()).indexOfChild(v)];
                 refreshKept();
             }
         });
@@ -254,7 +255,7 @@ final class ClipVideoView extends LinearLayout {
         });
         wrow.addView(placeLabel);
         wordsButton = new TextView(context);
-        wordsButton.setText(R.string.video_add_word, fmt(0));
+        wordsButton.setText(getContext().getString(R.string.video_add_word, fmt(0)));
         wordsButton.setTextColor(ON_ACCENT);
         wordsButton.setTextSize(Ui.LABEL);
         wordsButton.setTypeface(Ui.medium());
@@ -304,9 +305,9 @@ final class ClipVideoView extends LinearLayout {
         ownSwitch.setTextColor(MUTED);
         ownSwitch.setTextSize(Ui.CAPTION);
         ownSwitch.setChecked(true);
-        ownSwitch.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
+        ownSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(Switch buttonView, boolean isChecked) {
+            public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
                 keepOwn = isChecked;
             }
         });
@@ -344,9 +345,9 @@ final class ClipVideoView extends LinearLayout {
         sepiaSwitch.setText(R.string.video_sepia);
         sepiaSwitch.setTextColor(MUTED);
         sepiaSwitch.setTextSize(Ui.CAPTION);
-        sepiaSwitch.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
+        sepiaSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(Switch buttonView, boolean isChecked) {
+            public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
                 sepia = isChecked ? 0.6f : 0;
             }
         });
@@ -375,7 +376,7 @@ final class ClipVideoView extends LinearLayout {
         aspectChips = chipRow(context, aspectNames, 0, new OnClickListener() {
             @Override
             public void onClick(View v) {
-                aspect = aspects[((ViewGroup) v.getParent()).getChildPosition(v)];
+                aspect = aspects[((ViewGroup) v.getParent()).indexOfChild(v)];
                 refreshKept();
             }
         });
@@ -513,7 +514,7 @@ final class ClipVideoView extends LinearLayout {
             v.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View vv) {
-                    chosen[0] = ((ViewGroup) vv.getParent()).getChildPosition(vv);
+                    chosen[0] = ((ViewGroup) vv.getParent()).indexOfChild(vv);
                     for (int k = 0; k < row.getChildCount(); k++) {
                         TextView c = (TextView) row.getChildAt(k);
                         c.setBackground(Ui.chip(context, k == chosen[0] ? ACCENT : SURFACE_HIGH, 12));
@@ -690,7 +691,7 @@ final class ClipVideoView extends LinearLayout {
             if (duration > 0 && player.isPlaying()) {
                 playhead = player.getCurrentPosition() / 1000.0;
                 timeline.setRange(start, end, playhead, duration);
-                wordsButton.setText(R.string.video_add_word, fmt(playhead));
+                wordsButton.setText(getContext().getString(R.string.video_add_word, fmt(playhead)));
             }
             ui.postDelayed(this, 200);
         }
@@ -821,22 +822,22 @@ final class ClipVideoView extends LinearLayout {
                 + "' --json-file /tmp/clip-edit.json --out '" + shell(outPath) + "' ; phone gallery '" + shell(outPath) + "'", new Job() {
             @Override
             public void done(int exit, String out) {
-                // the video is made when clip says so; the gallery trip is a second thing (it has
-                // a 32 MB cap), said of its own
-                String saved = null, where = "", galleryNote = "";
-                for (String line : out.split("\n")) {
-                    if (line.startsWith("Video saved:")) {
-                        saved = line.substring("Video saved:".length()).trim().split(" \\(")[0].trim();
-                    } else if (line.startsWith("A copy is in the phone's gallery:")) {
-                        int at = line.indexOf(": ");
-                        where = at >= 0 ? line.substring(at + 2).trim() : "";
-                    } else if (line.startsWith("phone gallery:")) {
-                        galleryNote = line.substring("phone gallery:".length()).trim();
-                    }
-                }
                 ui.post(new Runnable() {
                     @Override
                     public void run() {
+                        // the video is made when clip says so; the gallery trip is a second thing
+                        // (it has a 32 MB cap), said of its own
+                        String saved = null, where = "", galleryNote = "";
+                        for (String line : out.split("\n")) {
+                            if (line.startsWith("Video saved:")) {
+                                saved = line.substring("Video saved:".length()).trim().split(" \\(")[0].trim();
+                            } else if (line.startsWith("A copy is in the phone's gallery:")) {
+                                int at = line.indexOf(": ");
+                                where = at >= 0 ? line.substring(at + 2).trim() : "";
+                            } else if (line.startsWith("phone gallery:")) {
+                                galleryNote = line.substring("phone gallery:".length()).trim();
+                            }
+                        }
                         busy = false;
                         if (saved == null) {
                             if (out.contains("ffmpeg is not installed")) {
@@ -954,6 +955,7 @@ final class ClipVideoView extends LinearLayout {
         private int mode = 0; // 0 nothing, 1 the start end, 2 the end end, 3 the playhead
 
         TimelineView(Context c) {
+            super(c);
             dim.setColor(0x99000000);
             line.setColor(ACCENT);
             line.setStrokeWidth(2 * density);
@@ -995,8 +997,9 @@ final class ClipVideoView extends LinearLayout {
                     double from = i * (double) total / shots.size();
                     double to = (i + 1) * (double) total / shots.size();
                     dest.set((int) (i * each), (int) top, (int) ((i + 1) * each + 1), (int) (top + thumbH));
-                    src.set(shots.get(i).getBounds());
-                    canvas.drawBitmap(shots.get(i), src, dest, paint);
+                    Bitmap shot = shots.get(i);
+                    src.set(0, 0, shot.getWidth(), shot.getHeight());
+                    canvas.drawBitmap(shot, src, dest, paint);
                     if (to <= rangeStart || from >= rangeEnd) canvas.drawRect(dest, dim);
                 }
             }
@@ -1005,8 +1008,8 @@ final class ClipVideoView extends LinearLayout {
             paint.setColor(SURFACE_HIGH);
             canvas.drawRoundRect(track, trackH / 2, trackH / 2, paint);
             paint.setColor(ACCENT);
-            RectF kept = new RectF(dp(2) + rangeStart * pxPerSec, trackY + dp(3),
-                    dp(2) + rangeEnd * pxPerSec, trackY + trackH - dp(3));
+            RectF kept = new RectF((float) (dp(2) + rangeStart * pxPerSec), (float) (trackY + dp(3)),
+                    (float) (dp(2) + rangeEnd * pxPerSec), (float) (trackY + trackH - dp(3)));
             if (kept.width() < dp(6)) kept.set(kept.left - dp(3), kept.top, kept.left + dp(6), kept.bottom);
             canvas.drawRoundRect(kept, (trackH - dp(6)) / 2, (trackH - dp(6)) / 2, paint);
             // the two ends

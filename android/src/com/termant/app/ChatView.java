@@ -890,10 +890,10 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         play.setTextSize(34);
         play.setGravity(Gravity.CENTER);
         box.addView(play, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        player.setOnPreCompletionListener(new android.media.VideoView.OnPreCompletionListener() {
+        player.setOnPreCompletionListener(new android.widget.MediaController.OnPreCompletionListener() {
             @Override
             public void onPreCompletion(android.media.MediaPlayer mp) {
-                runOnUiThread(new Runnable() {
+                play.post(new Runnable() {
                     @Override
                     public void run() {
                         play.setVisibility(View.VISIBLE);
