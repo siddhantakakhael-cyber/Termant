@@ -39,9 +39,9 @@ export -f hasaudio vsize2 near dur 2>/dev/null || true
 
 # the test video: six seconds, sound in it
 "$FF" -y -f lavfi -i "testsrc=duration=6:size=320x240:rate=15" -f lavfi -i "sine=frequency=440:duration=6" \
-  -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$d/src.mp4" 2>/dev/null
-"$FF" -y -f lavfi -i "sine=frequency=880:duration=4" -c:a pcm_s16le "$d/song.wav" 2>/dev/null
-[ -s "$d/src.mp4" ] || { echo "FAIL could not make the test video"; echo "RESULT: FAIL (1 failed)"; exit 1; }
+  -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$d/src.mp4" 2>"$d/make.log"
+"$FF" -y -f lavfi -i "sine=frequency=880:duration=4" -c:a pcm_s16le "$d/song.wav" 2>>"$d/make.log"
+[ -s "$d/src.mp4" ] || { echo "FAIL could not make the test video"; tail -n 6 "$d/make.log" 2>/dev/null; echo "RESULT: FAIL (1 failed)"; exit 1; }
 
 # ---- info and thumbnails
 clip info "$d/src.mp4" > "$d/info.txt" 2>&1

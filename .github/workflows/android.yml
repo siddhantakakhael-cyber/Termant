@@ -68,8 +68,16 @@ jobs:
 
       - name: Clip a video (clip's tools, with a real ffmpeg)
         run: |
-          command -v ffmpeg >/dev/null || sudo apt-get install -y ffmpeg
-          bash android/ci/clip-check.sh android/assets/guest
+          set -o pipefail
+          {
+            echo "ffmpeg: $(command -v ffmpeg || echo 'not found on the runner')"
+            if ! command -v ffmpeg >/dev/null; then
+              sudo apt-get update -qq
+              sudo apt-get install -y ffmpeg
+            fi
+            ffmpeg -version 2>&1 | head -1
+            bash android/ci/clip-check.sh android/assets/guest
+          } 2>&1 | tee ci-out/clip.log
 
       - name: Enable KVM for the emulator
         run: |
