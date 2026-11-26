@@ -12,7 +12,7 @@ opencode=$(PATH="$HOME/.opencode/bin:$PATH" command -v opencode 2>/dev/null)
 mkdir -p "$work/bin"
 if [ -n "$1" ]; then kit=$1/kit; else kit=$(command -v termant-kit); fi
 [ -f "$kit" ] || { echo "RESULT: FAIL (no kit)"; exit 2; }
-for name in termant-kit safe tidy study readfile me watch diary draw apilayer; do cp "$kit" "$work/bin/$name"; done
+for name in termant-kit safe tidy study readfile me watch diary draw clip apilayer; do cp "$kit" "$work/bin/$name"; done
 chmod 755 "$work/bin"/*
 # a stand-in for the phone command: answers questions, makes and removes rules
 cat > "$work/bin/fakephone" <<'P'
@@ -625,5 +625,33 @@ if [ -n "$opencode" ]; then
   fi
 else
   echo "SKIP the real list of models (OpenCode is not on this machine)"
+fi
+
+# ---- clip: editing a video (the finished pipeline is tested by clip-check.sh with a real ffmpeg;
+# here: what clip says, and the edits it refuses before touching ffmpeg)
+run clip help
+check "clip alone explains itself" has "editing a video"
+run termant-kit clip help
+check "termant-kit clip is the same command" has "editing a video"
+run clip last
+check "clip last, before any edit, says so" refused "no video has been edited yet"
+run clip info "$d/there-is-no-video.mp4"
+check "clip info names a video that is not there" refused "there is no such video"
+run clip edit "$d/there-is-no-video.mp4" --json "[0, 2]"
+check "clip edit refuses a list that is not an object" refused "must be a JSON object"
+run clip trim "$d/there-is-no-video.mp4" --from 2
+check "clip trim refuses a video that is not there" refused "there is no such video"
+if command -v ffmpeg >/dev/null 2>&1; then
+  ffmpeg -y -hide_banner -loglevel error -f lavfi -i "testsrc=duration=6:size=320x240:rate=15" \
+    -f lavfi -i "sine=frequency=440:duration=6" -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest \
+    "$d/clip-src.mp4" 2>/dev/null
+  run clip info "$d/clip-src.mp4"
+  check "clip info says how long it is" has "6.0 s" && check "and how big" has "320x240"
+  run clip trim "$d/clip-src.mp4" --from 2 --to 4
+  check "clip trim saves the kept part" has "Video saved" && check "the part is two seconds" has "(2 s)"
+  run clip last
+  check "clip last names the newest edited video" has "clip-src-edited.mp4"
+else
+  echo "SKIP the clip pipeline with ffmpeg (ffmpeg is not on this machine)"
 fi
 if [ "$failed" -eq 0 ]; then echo "RESULT: PASS"; else echo "RESULT: FAIL ($failed)"; exit 1; fi

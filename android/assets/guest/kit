@@ -11,6 +11,7 @@ One file, several commands; the name it is called by picks the tool:
   watch     look for something every few minutes, then do something once
   diary     what the agent did, how long it took
   draw      a picture made from words
+  clip      a video changed: the kept parts, speed, words, music, the look
   apilayer  APILayer's APIs (rates, news, text from a picture, ...) with the user's key
   termant-kit TOOL ...   any of the above, and: team (notes, seen, model), attach, models
 
@@ -24,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import zipfile
 import zlib
@@ -1667,6 +1669,591 @@ Pictures are kept in ~/pictures, with a copy in the phone's gallery (Pictures/Te
             "just say in one line what you drew.")
 
 
+# ---------------------------------------------------------------- clip: editing a video
+# The app's video section (and you) change a video with this: the wanted changes go in one
+# list, and the finished video is made in one go -- the kept parts in their order, each with
+# its speed and its look, the words on top of it, the music or its own sound underneath.
+# ffmpeg does the work; this file only decides which commands, in which order.
+# The finished video is saved next to the first (with -edited in the name), or at --out FILE.
+
+CLIP_ASPECTS = {  # name: (crop width, crop height, width and height of the finished video)
+    "16:9": ("min(iw,ih*16/9)", "min(ih,iw*9/16)", 1280, 720),
+    "9:16": ("min(iw,ih*9/16)", "min(ih,iw*16/9)", 720, 1280),
+    "1:1": ("min(iw,ih)", "min(iw,ih)", 960, 960),
+    "4:3": ("min(iw,ih*4/3)", "min(ih,iw*3/4)", 1152, 864),
+    "3:4": ("min(iw,ih*3/4)", "min(ih,iw*4/3)", 864, 1152),
+}
+
+
+def clip_ffmpeg():
+    found = shutil.which("ffmpeg")
+    if not found:
+        raise Refused("clip: ffmpeg is not installed yet. Install it with: apt install -y ffmpeg")
+    return found
+
+
+def clip_probe(ffmpeg, path):
+    """How long, how big, how fast, and does it have sound: what the editor plans with."""
+    try:
+        p = subprocess.run([ffmpeg, "-hide_banner", "-i", path], capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise Refused("clip: could not read %s (%s)" % (path, e))
+    said = p.stderr
+    info = {"duration": 0.0, "width": 0, "height": 0, "fps": 0.0, "audio": False}
+    m = re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", said)
+    if m:
+        info["duration"] = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
+    m = re.search(r"Stream #\d+:\d+.*?: Video:.*?(\d{2,5})x(\d{2,5})", said)
+    if m:
+        info["width"], info["height"] = int(m.group(1)), int(m.group(2))
+    m = re.search(r"(\d+(?:\.\d+)?)\s+fps", said)
+    if m:
+        info["fps"] = float(m.group(1))
+    info["audio"] = bool(re.search(r"Stream #\d+:\d+.*?: Audio:", said))
+    if info["duration"] <= 0:
+        raise Refused("clip: %s does not look like a video with time in it" % path)
+    return info
+
+
+def clip_run(what, cmd):
+    """One ffmpeg command; when it fails, what it said, plainly."""
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise Refused("clip: %s stopped (%s)" % (what, e))
+    if p.returncode != 0:
+        tail = " ".join(p.stderr.split())
+        raise Refused("clip: %s did not finish. ffmpeg said: %s" % (what, one_line(tail, 300) or "nothing"))
+
+
+def clip_atempo(rate):
+    """atempo takes 0.5 to 2 at a stretch; other speeds chain a few together."""
+    parts = []
+    r = float(rate)
+    while r > 2.0:
+        parts.append("atempo=2.0")
+        r /= 2.0
+    while r < 0.5:
+        parts.append("atempo=0.5")
+        r /= 0.5
+    parts.append("atempo=%.3f" % r)
+    return ",".join(parts)
+
+
+def clip_edit(source, edit, target, chat=False):
+    """Make the finished video from one list of changes. Prints progress 0.00 to 1.00."""
+    if not isinstance(edit, dict):
+        raise Refused("clip: the list of changes must be a JSON object")
+    if not os.path.isfile(source):
+        raise Refused("clip: there is no such video: %s" % source)
+    ffmpeg = clip_ffmpeg()
+    info = clip_probe(ffmpeg, source)
+    duration = info["duration"]
+
+    # ---- read the list, and refuse the impossible at once
+    segments = []
+    raw_segments = edit.get("segments")
+    if not raw_segments:
+        raw_segments = [[0.0, duration]]
+    for raw in raw_segments:
+        if not isinstance(raw, list) or len(raw) < 2:
+            raise Refused("clip: each kept part is [start, end] or [start, end, speed]")
+        s = float(raw[0])
+        e = float(raw[1])
+        r = float(raw[2]) if len(raw) > 2 else 1.0
+        if not (0.0 <= s < e <= duration + 0.05):
+            raise Refused("clip: the part [%s, %s] is not inside the video (it is %s s long)" % (s, e, "%.1f" % duration))
+        if not (0.25 <= r <= 4.0):
+            raise Refused("clip: the speed is between 0.25 and 4, not %s" % r)
+        segments.append((min(s, duration), min(e, duration), r))
+    for i in range(1, len(segments)):
+        if segments[i][0] + 0.01 < segments[i - 1][1]:
+            raise Refused("clip: the kept parts overlap each other (%s and %s)" % (segments[i - 1], segments[i]))
+    texts = []
+    total_out = 0.0
+    for s, e, r in segments:
+        total_out += (e - s) / r
+    for raw in edit.get("texts") or []:
+        if not isinstance(raw, dict):
+            raise Refused("clip: each word is an object with from, to and text")
+        t = {
+            "from": float(raw.get("from", 0.0)),
+            "to": float(raw.get("to", 2.0)),
+            "text": one_line(str(raw.get("text", "")), 200),
+            "place": raw.get("place", "bottom"),
+            "size": int(float(raw.get("size", 48))),
+            "color": str(raw.get("color", "white")),
+        }
+        if not t["text"]:
+            raise Refused("clip: the words are empty")
+        if not (0.0 <= t["from"] < t["to"] <= total_out + 0.05):
+            raise Refused("clip: the words [%s, %s] are not on the finished video (%s s)" % (t["from"], t["to"], "%.1f" % total_out))
+        if t["place"] not in ("top", "center", "bottom"):
+            raise Refused("clip: the place for the words is top, center or bottom, not %s" % t["place"])
+        if not (8 <= t["size"] <= 400):
+            raise Refused("clip: the size of the words is 8 to 400, not %s" % t["size"])
+        texts.append(t)
+    music = str(edit.get("music") or "")
+    if music and not os.path.isfile(music):
+        raise Refused("clip: there is no such sound: %s" % music)
+    music_volume = float(edit.get("music_volume", 1.0))
+    if not (0.0 <= music_volume <= 4.0):
+        raise Refused("clip: the music volume is 0 to 4, not %s" % music_volume)
+    mute = bool(edit.get("mute"))
+    gain = float(edit.get("gain", 1.0))
+    if not (0.0 <= gain <= 4.0):
+        raise Refused("clip: the volume is 0 to 4, not %s" % gain)
+    brightness = float(edit.get("brightness", 0.0))
+    if not (-1.0 <= brightness <= 1.0):
+        raise Refused("clip: the brightness is -1 to 1, not %s" % brightness)
+    contrast = float(edit.get("contrast", 1.0))
+    saturation = float(edit.get("saturation", 1.0))
+    for name, v in (("contrast", contrast), ("saturation", saturation)):
+        if not (0.0 <= v <= 3.0):
+            raise Refused("clip: the %s is 0 to 3, not %s" % (name, v))
+    sepia = float(edit.get("sepia", 0.0))
+    if not (0.0 <= sepia <= 1.0):
+        raise Refused("clip: the sepia is 0 to 1, not %s" % sepia)
+    rotate = int(float(edit.get("rotate", 0)))
+    if rotate not in (0, 90, 180, 270):
+        raise Refused("clip: the turn is 0, 90, 180 or 270, not %s" % rotate)
+    flip = str(edit.get("flip") or "")
+    if flip not in ("", "h", "v"):
+        raise Refused("clip: the flip is h or v, not %s" % flip)
+    aspect = str(edit.get("aspect") or "")
+    if aspect and aspect not in CLIP_ASPECTS:
+        raise Refused("clip: the frame is one of %s, not %s" % (" ".join(sorted(CLIP_ASPECTS)), aspect))
+
+    if not target:
+        base, _ = os.path.splitext(os.path.abspath(source))
+        target = base + "-edited.mp4"
+
+    # ---- the look: the turn, the flip, the frame, the colour -- in that order
+    look = []
+    if rotate == 90:
+        look.append("transpose=1")
+    elif rotate == 270:
+        look.append("transpose=2")
+    elif rotate == 180:
+        look += ["hflip", "vflip"]
+    if flip == "h":
+        look.append("hflip")
+    elif flip == "v":
+        look.append("vflip")
+    flips_h = look.count("hflip")
+    flips_v = look.count("vflip")
+    look = [x for x in look if x not in ("hflip", "vflip")]
+    if flips_h % 2:
+        look.append("hflip")
+    if flips_v % 2:
+        look.append("vflip")
+    if aspect:
+        crop_w, crop_h, w, h = CLIP_ASPECTS[aspect]
+        look.append("crop='%s':'%s'" % (crop_w, crop_h))  # the commas inside need the quotes in the graph
+        look.append("scale=%d:%d" % (w, h))
+    if brightness or abs(contrast - 1.0) > 0.001 or abs(saturation - 1.0) > 0.001:
+        look.append("eq=brightness=%.3f:contrast=%.3f:saturation=%.3f" % (brightness, contrast, saturation))
+    if sepia > 0.001:
+        look.append("sepia=level=%.3f" % sepia)
+
+    def progress(value):
+        out("progress %.2f" % max(0.0, min(1.0, value)))
+
+    # ---- the quick way: one part, no changes but the cut -- ffmpeg only copies the streams
+    if (len(segments) == 1 and segments[0][2] == 1.0 and not texts and not music
+            and not look and gain == 1.0):
+        s, e, _ = segments[0]
+        cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+               "-ss", "%.3f" % s, "-i", source, "-t", "%.3f" % (e - s)]
+        if mute:
+            cmd.append("-an")
+        cmd += ["-c", "copy", target]
+        progress(0.3)
+        clip_run("the quick cut", cmd)
+        progress(1.0)
+        out("Video saved: %s (%.0f s)" % (target, e - s))
+        if chat:
+            clip_to_phone(target)
+        return target
+
+    # ---- the full way: make each kept part, join them, take the sound, put it together
+    work = tempfile.mkdtemp(prefix="clip-")
+    try:
+        fps = info["fps"] if info["fps"] >= 8 else 30.0
+        n = len(segments)
+        parts = []
+        for i, (s, e, r) in enumerate(segments):
+            chain = list(look)
+            if abs(r - 1.0) > 0.001:
+                chain.append("setpts=(PTS-STARTPTS)/%.3f" % r)
+            part = os.path.join(work, "part_%02d.mp4" % i)
+            # the cut is asked of the input: the output may be longer (the speed), not cut to it
+            cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+                   "-ss", "%.3f" % s, "-t", "%.3f" % (e - s), "-i", source, "-an"]
+            if chain:
+                cmd += ["-vf", ",".join(chain)]
+            cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+                    "-pix_fmt", "yuv420p", "-r", "%.3f" % fps, part]
+            clip_run("making part %d of %d" % (i + 1, n), cmd)
+            parts.append(part)
+            progress(0.75 * (i + 1) / n)
+        out_dir = os.path.dirname(os.path.abspath(target))
+        if out_dir and not os.path.isdir(out_dir):
+            os.makedirs(out_dir, exist_ok=True)
+        list_path = os.path.join(work, "parts.txt")
+        with open(list_path, "w", encoding="utf-8") as f:
+            for part in parts:
+                f.write("file '%s'\n" % part)
+        video = os.path.join(work, "video.mp4")
+        clip_run("joining the parts", [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+                                       "-f", "concat", "-safe", "0", "-i", list_path, "-c", "copy", video])
+        # the sound of the kept parts, each at its own speed
+        orig = ""
+        if info["audio"] and not mute:
+            sounds = []
+            for i, (s, e, r) in enumerate(segments):
+                af = "asetpts=PTS-STARTPTS"
+                if abs(r - 1.0) > 0.001:
+                    af = clip_atempo(r) + ",asetpts=PTS-STARTPTS"
+                part = os.path.join(work, "sound_%02d.wav" % i)
+                clip_run("taking the sound of part %d of %d" % (i + 1, n),
+                         [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+                          "-ss", "%.3f" % s, "-t", "%.3f" % (e - s), "-i", source, "-vn",
+                          "-af", af, "-ar", "44100", "-ac", "2", "-c:a", "pcm_s16le", part])
+                sounds.append(part)
+            sound_list = os.path.join(work, "sounds.txt")
+            with open(sound_list, "w", encoding="utf-8") as f:
+                for part in sounds:
+                    f.write("file '%s'\n" % part)
+            orig = os.path.join(work, "sound.wav")
+            clip_run("joining the sound", [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+                                           "-f", "concat", "-safe", "0", "-i", sound_list, "-c", "copy", orig])
+        progress(0.86)
+        mfile = ""
+        if music:
+            loop = "-1" if edit.get("music_loop", True) else "0"
+            mfile = os.path.join(work, "music.wav")
+            clip_run("taking the music", [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+                                          "-stream_loop", loop, "-i", music, "-t", "%.3f" % total_out,
+                                          "-ar", "44100", "-ac", "2", "-c:a", "pcm_s16le", mfile])
+        progress(0.9)
+        # the words, on top of the finished video, in the finished video's own time
+        text_filters = []
+        for i, t in enumerate(texts):
+            tfile = os.path.join(work, "word_%02d.txt" % i)
+            with open(tfile, "w", encoding="utf-8") as f:
+                f.write(t["text"])
+            y = {"top": "h*0.06", "center": "(h-text_h)/2", "bottom": "h*0.82"}.get(t["place"], "h*0.82")
+            text_filters.append("drawtext=textfile='%s':fontsize=%d:fontcolor=%s:borderw=2:bordercolor=black@0.6"
+                                ":x=(w-text_w)/2:y=%s:enable='between(t,%.2f,%.2f)'"
+                                % (tfile, t["size"], t["color"], y, t["from"], t["to"]))
+        if text_filters or orig or mfile:
+            # when the words are not on it, the video is mapped as it is; [v] exists only with them
+            maps = ["[v]" if text_filters else "0:v"]
+            if orig or mfile:
+                maps.append("[a]")
+            cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", video]
+            plan = []
+            if orig and mfile:
+                cmd += ["-i", orig, "-i", mfile]
+                plan.append("[1:a]volume=%.3f[oa];[2:a]volume=%.3f[mu];[oa][mu]amix=inputs=2:duration=first:normalize=0[a]"
+                            % (gain * 0.75, music_volume * 0.75))
+            elif orig:
+                cmd += ["-i", orig]
+                plan.append("[1:a]volume=%.3f[a]" % gain)
+            elif mfile:
+                cmd += ["-i", mfile]
+                plan.append("[1:a]volume=%.3f[a]" % music_volume)
+            if text_filters:
+                plan.append("[0:v]" + ",".join(text_filters) + "[v]")
+            cmd += ["-filter_complex", ";".join(plan)]
+            for m in maps:
+                cmd += ["-map", m]
+            cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p"]
+            if len(maps) > 1:
+                cmd += ["-c:a", "aac", "-b:a", "128k"]
+            cmd += ["-movflags", "+faststart", target]
+            clip_run("putting it together", cmd)
+        else:
+            shutil.copyfile(video, target)
+        progress(1.0)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    out("Video saved: %s (%.0f s)" % (target, total_out))
+    if chat:
+        clip_to_phone(target)
+    return target
+
+
+def clip_to_phone(target):
+    """In the chat, the finished video goes to the phone's gallery, like the pictures do."""
+    if not os.environ.get("TERMANT_CHAT"):
+        return
+    ok, said = phone("gallery", target, timeout=900)
+    lines = said.splitlines()
+    address = ""
+    if ok and lines:
+        out(lines[0])
+        address = next((x.strip() for x in lines[1:] if x.startswith("content://")), "")
+    else:
+        out("Not copied to the phone's gallery (%s). It is in Ubuntu, at the path above."
+            % one_line(said or "no answer", 160))
+        return
+    # The app empties this list before each message and reads it when the reply is done:
+    # these videos are shown under the reply. It reads files in the home folder only.
+    try:
+        shown = target
+        if not target.startswith(HOME + os.sep):
+            shown = os.path.join(HOME, "videos", os.path.basename(target))
+            os.makedirs(os.path.dirname(shown), exist_ok=True)
+            shutil.copyfile(target, shown)
+        os.makedirs(CACHE, exist_ok=True)
+        with open(os.path.join(CACHE, "clipped.txt"), "a", encoding="utf-8") as f:
+            f.write(shown + "\t" + address + "\n")
+        out("The chat shows this video under your answer by itself: do not paste its path or a link, "
+            "just say in one line what you made.")
+    except OSError:
+        pass
+
+
+def clip(args):
+    what = args[0] if args else "help"
+    if what in ("help", "--help", "-h"):
+        out("""clip: editing a video: the kept parts, their speed, words on it, music under it
+  clip info FILE                 how long, how big, does it have sound
+  clip thumbs FILE DIR [FPS]     small pictures of the video, one every so often
+  clip edit FILE --json LIST     one list of changes, made in one go
+                                 (or --json-file FILE when the list is long)
+  clip trim FILE --from S --to S keep only that part of the video
+  clip cut FILE --from S --to S  take that part out of the video
+  clip speed FILE --rate R       0.5 to 4; 2 is twice as fast
+  clip text FILE "WORDS" --from S --to S [--place top|center|bottom] [--size N] [--color C]
+  clip music FILE SONG [--volume V] [--no-loop]   music as long as the video
+  clip mute FILE                 the video without its sound
+  clip volume FILE --gain G      its own sound louder (2) or softer (0.5)
+  clip filter FILE [--brightness B] [--contrast C] [--saturation S] [--sepia F]
+  clip rotate FILE [--deg 90|180|270] [--flip h|v]
+  clip crop FILE --aspect 16:9|9:16|1:1|4:3|3:4
+  clip last                      where the newest edited video is
+The finished video is saved next to the first (with -edited in the name), or at
+--out FILE. ffmpeg does the work; say what you want and it is made. When you edit in
+the chat, the finished video also goes to the phone's gallery (Movies/Termant).""")
+        return
+
+    def one_change(source, edit, what_args):
+        out_path = None
+        if not os.path.isfile(source):
+            raise Refused("clip: there is no such video: %s" % source)
+        info = clip_probe(clip_ffmpeg(), source)
+        duration = info["duration"]
+
+        def number(flag, i):
+            if i + 1 >= len(what_args):
+                raise Refused("clip %s: %s takes a number" % (what, flag))
+            try:
+                return float(what_args[i + 1])
+            except ValueError:
+                raise Refused("clip %s: %s takes a number, not %s" % (what, flag, what_args[i + 1]))
+
+        def take(flag, i):
+            if i + 1 >= len(what_args):
+                raise Refused("clip %s: %s takes a word" % (what, flag))
+            return what_args[i + 1]
+
+        i = 0
+        while i < len(what_args):
+            a = what_args[i]
+            if a == "--out":
+                out_path = take(a, i)
+                i += 2
+                continue
+            if what == "trim" and a == "--from":
+                v = number(a, i)
+                if not (0.0 <= v < duration):
+                    raise Refused("clip trim: --from is 0 to %.1f, not %s" % (duration, v))
+                edit.setdefault("segments", [[0.0, duration]])[0][0] = v
+            elif what == "trim" and a == "--to":
+                v = number(a, i)
+                if not (0.0 < v <= duration):
+                    raise Refused("clip trim: --to is 0 to %.1f, not %s" % (duration, v))
+                edit.setdefault("segments", [[0.0, duration]])[0][1] = v
+            elif what == "cut" and a == "--from":
+                v = number(a, i)
+                keep = edit.setdefault("segments", [[0.0, duration]])
+                if len(keep) > 1:
+                    raise Refused("clip cut: one cut at a time (make the first cut, then the next)")
+                if not (0.0 <= v < duration):
+                    raise Refused("clip cut: --from is 0 to %.1f, not %s" % (duration, v))
+                keep[0][1] = v
+                keep.append([v, duration])
+            elif what == "cut" and a == "--to":
+                v = number(a, i)
+                keep = edit.setdefault("segments", [[0.0, duration]])
+                if len(keep) < 2:
+                    raise Refused("clip cut: --to comes after --from")
+                if not (keep[1][0] < v <= duration):
+                    raise Refused("clip cut: --to is after --from and inside the video (0 to %.1f)" % duration)
+                keep[1][0] = v
+            elif what == "speed" and a == "--rate":
+                v = number(a, i)
+                if not (0.25 <= v <= 4.0):
+                    raise Refused("clip speed: the rate is 0.25 to 4, not %s" % v)
+                edit["segments"] = [[0.0, duration, v]]
+            elif what == "text" and a == "--from":
+                edit.setdefault("texts", [{}])[0]["from"] = number(a, i)
+            elif what == "text" and a == "--to":
+                edit.setdefault("texts", [{}])[0]["to"] = number(a, i)
+            elif what == "text" and a == "--place":
+                word = take(a, i)
+                if word not in ("top", "center", "bottom"):
+                    raise Refused("clip text: --place is top, center or bottom, not %s" % word)
+                edit.setdefault("texts", [{}])[0]["place"] = word
+            elif what == "text" and a == "--size":
+                edit.setdefault("texts", [{}])[0]["size"] = number(a, i)
+            elif what == "text" and a == "--color":
+                edit.setdefault("texts", [{}])[0]["color"] = take(a, i)
+            elif what == "music" and a == "--volume":
+                edit["music_volume"] = number(a, i)
+            elif what == "music" and a == "--no-loop":
+                edit["music_loop"] = False
+                i += 1
+                continue
+            elif what == "volume" and a == "--gain":
+                edit["gain"] = number(a, i)
+            elif what == "filter" and a in ("--brightness", "--contrast", "--saturation", "--sepia"):
+                edit[a[2:]] = number(a, i)
+            elif what == "rotate" and a == "--deg":
+                v = number(a, i)
+                if v not in (90, 180, 270):
+                    raise Refused("clip rotate: --deg is 90, 180 or 270")
+                edit["rotate"] = int(v)
+            elif what == "rotate" and a == "--flip":
+                word = take(a, i)
+                if word not in ("h", "v"):
+                    raise Refused("clip rotate: --flip is h or v, not %s" % word)
+                edit["flip"] = word
+            elif what == "crop" and a == "--aspect":
+                word = take(a, i)
+                if word not in CLIP_ASPECTS:
+                    raise Refused("clip crop: --aspect is one of %s, not %s" % (" ".join(sorted(CLIP_ASPECTS)), word))
+                edit["aspect"] = word
+            else:
+                raise Refused("clip %s: there is no %s (clip help)" % (what, a))
+            i += 2
+        return out_path
+
+    if what == "info":
+        if len(args) != 2:
+            raise Refused("usage: clip info FILE")
+        if not os.path.isfile(args[1]):
+            raise Refused("clip: there is no such video: %s" % args[1])
+        info = clip_probe(clip_ffmpeg(), args[1])
+        m, s = divmod(info["duration"], 60)
+        h, m = divmod(m, 60)
+        length = ("%02d:%02d:%04.1f" % (h, m, s)) if h else ("%02d:%04.1f" % (m, s))
+        out("%s (%.1f s)" % (length, info["duration"]))
+        out("%dx%d%s" % (info["width"], info["height"], ", %.3g fps" % info["fps"] if info["fps"] else ""))
+        out("audio: %s" % ("yes" if info["audio"] else "no"))
+        return
+
+    if what == "thumbs":
+        if len(args) not in (3, 4):
+            raise Refused("usage: clip thumbs FILE DIR [FPS]")
+        source, folder = args[1], args[2]
+        every = float(args[3]) if len(args) == 4 else 1.0
+        if not (0.1 <= every <= 10):
+            raise Refused("clip thumbs: FPS is 0.1 to 10")
+        if not os.path.isfile(source):
+            raise Refused("clip: there is no such video: %s" % source)
+        info = clip_probe(clip_ffmpeg(), source)
+        fps = min(every, 900.0 / info["duration"])  # at most nine hundred pictures
+        if not os.path.isdir(folder):
+            os.makedirs(folder, exist_ok=True)
+        clip_run("making the pictures", [clip_ffmpeg(), "-hide_banner", "-loglevel", "error", "-y",
+                                         "-i", source, "-vf", "fps=%.3f,scale=96:-2" % fps,
+                                         "-q:v", "7", os.path.join(folder, "t_%04d.jpg")])
+        count = len([x for x in os.listdir(folder) if x.endswith(".jpg")])
+        out("%d thumbnails in %s" % (count, folder))
+        return
+
+    if what == "last":
+        newest = load("clip.json", {}).get("last")
+        if not newest or not os.path.exists(newest):
+            raise Refused("clip: no video has been edited yet")
+        out(newest)
+        return
+
+    if what == "edit":
+        if len(args) < 2:
+            raise Refused("usage: clip edit FILE --json LIST   (or --json-file FILE)")
+        source = args[1]
+        edit = None
+        out_path = None
+        i = 2
+        while i < len(args):
+            if args[i] == "--json" and i + 1 < len(args):
+                try:
+                    edit = json.loads(args[i + 1])
+                except ValueError as e:
+                    raise Refused("clip edit: the list is not JSON (%s)" % e)
+                i += 2
+            elif args[i] == "--json-file" and i + 1 < len(args):
+                try:
+                    with open(args[i + 1], encoding="utf-8") as f:
+                        edit = json.load(f)
+                except (OSError, ValueError) as e:
+                    raise Refused("clip edit: the list file cannot be read (%s)" % e)
+                i += 2
+            elif args[i] == "--out" and i + 1 < len(args):
+                out_path = args[i + 1]
+                i += 2
+            else:
+                raise Refused("clip edit: there is no %s (clip help)" % args[i])
+        if edit is None:
+            raise Refused("clip edit: --json or --json-file is wanted")
+        target = clip_edit(source, edit, out_path, chat=bool(os.environ.get("TERMANT_CHAT")))
+        state = load("clip.json", {})
+        state["last"] = target
+        save("clip.json", state)
+        return
+
+    needs = {"trim": 2, "cut": 2, "speed": 2, "text": 3, "music": 3, "mute": 1,
+             "volume": 2, "filter": 1, "rotate": 1, "crop": 2}
+    if what not in needs:
+        raise Refused("clip: there is no %s (clip help)" % what)
+    if len(args) < needs[what] + 1:
+        raise Refused("clip: %s wants more words (clip help)" % what)
+    source = args[1]
+    if what in ("text", "music"):
+        if what == "text":
+            edit = {"texts": [{"text": args[2], "from": 0.0, "to": 2.0}]}
+        else:
+            edit = {"music": args[2]}
+        what_args = args[3:]
+    else:
+        edit = {}
+        what_args = args[2:]
+    if what == "mute":
+        edit["mute"] = True
+    out_path = one_change(source, edit, what_args)
+    if what == "trim":
+        s, e = edit.get("segments", [[0.0, 0.0]])[0][:2]
+        if s >= e:
+            raise Refused("clip trim: --to comes after --from")
+    if what == "cut":
+        keep = edit.get("segments")
+        if not keep or len(keep) < 2 or keep[0][1] >= keep[1][0]:
+            raise Refused("clip cut: --to comes after --from")
+    if what == "text":
+        t = edit["texts"][0]
+        if "from" not in t or "to" not in t:
+            raise Refused('clip text: the words want --from S and --to S (the seconds on the finished video)')
+    target = clip_edit(source, edit, out_path, chat=bool(os.environ.get("TERMANT_CHAT")))
+    state = load("clip.json", {})
+    state["last"] = target
+    save("clip.json", state)
+
+
 # ---------------------------------------------------------------- apilayer: APILayer's APIs, with the user's key
 
 # APILayer is a marketplace of APIs. Sixty of them stand behind one gateway and answer to one key
@@ -2280,7 +2867,7 @@ There is no API here that draws a picture from words: that is `draw`.""")
 
 
 TOOLS = {"safe": safe, "tidy": tidy, "study": study, "readfile": readfile, "me": me, "watch": watch,
-         "diary": diary, "draw": draw, "apilayer": apilayer, "team": team, "attach": attach, "models": models}
+         "diary": diary, "draw": draw, "clip": clip, "apilayer": apilayer, "team": team, "attach": attach, "models": models}
 
 
 def main():

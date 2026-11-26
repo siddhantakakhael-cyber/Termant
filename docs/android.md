@@ -20,6 +20,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [A team of helper agents](#a-team-of-helper-agents)
 - [Pictures and files in the chat, Undo, and work by itself](#pictures-and-files-in-the-chat-undo-and-work-by-itself)
 - [A picture from words: draw](#a-picture-from-words-draw)
+- [A video from a video: the timeline and clip](#a-video-from-a-video-the-timeline-and-clip)
 - [APILayer: ready-made APIs with your own key](#apilayer-ready-made-apis-with-your-own-key)
 - [How far a download is: the newest line of a running command](#how-far-a-download-is-the-newest-line-of-a-running-command)
 - [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
@@ -552,6 +553,93 @@ with "Open in gallery" and "Share", and the picture still there after the app
 is closed and opened again. Not tested: a real phone, what the gallery and
 share buttons open on a real phone, Android 7 to 9, and how well a real model
 turns your request into good words for the picture.
+
+## A video from a video: the timeline and clip
+
+New in 0.27.0. Two ways to change a video, the same engine underneath.
+
+**The video section, by hand.** The video button in the chat's top bar (the
+little play mark) opens a screen like a small CapCut:
+
+- **The timeline.** The video lies on a track with one small picture per
+  second over it. The part that stays is marked in the app's colour; the two
+  ends of that mark drag, like the trim handles on a timeline. Tap anywhere
+  on the track to move the playhead; the preview above plays and the seconds
+  move.
+- **Speed** of the kept part: 0.5×, 1×, 2×, 4×.
+- **Words on the video**: type them, choose top, center or bottom, and "put
+  them at 0:03" pins them where the playhead is, for two seconds.
+- **Music under it**: choose a song from the phone, set how loud it is, and
+  keep or drop the video's own sound.
+- **The look**: light, contrast, colour, sepia, turn 90°, flip, and the frame
+  (original, 16:9, 9:16, 1:1, 4:3, 3:4).
+- **Make it** runs the whole list at once in Ubuntu and puts the finished
+  video in the phone's gallery, in **Movies/Termant**. While it works, a
+  line says how far it is.
+
+Choose the video from the phone or from what is already in Ubuntu (videos
+you sent in the chat are in `~/uploads`). On a fresh Ubuntu the first "Make
+it" offers to install ffmpeg (a minute or two, once).
+
+**From the chat, by words.** Ask the agent: "is video se do second kaat do",
+"pehla hissa do baar fast banao aur upar likho *shuru*", "background mein yeh
+gaana laga do". The agent runs `clip`:
+
+```
+clip info FILE                how long it is, how big, does it have sound
+clip thumbs FILE DIR [FPS]    small pictures of it (phone look DIR/0001.jpg)
+clip trim FILE --from S --to S    keep only that part
+clip cut FILE --from S --to S     take that part out
+clip speed FILE --rate R          0.5 to 4
+clip text FILE "WORDS" --from S --to S [--place top|center|bottom]
+clip music FILE SONG [--volume V]
+clip mute FILE                    without its own sound
+clip volume FILE --gain G         its own sound louder or softer
+clip filter FILE [--brightness B] [--contrast C] [--saturation S] [--sepia F]
+clip rotate FILE [--deg 90|180|270] [--flip h|v]
+clip crop FILE --aspect 16:9|9:16|1:1|4:3|3:4
+clip last                         where the newest edited video is
+```
+
+Several changes at once go in one list — the same list the section sends:
+`clip edit FILE --json '{"segments": [[0, 2], [4, 6, 2]], "texts":
+[{"from": 0.5, "to": 1.5, "text": "do baar", "place": "bottom"}],
+"music": "~/uploads/song.mp3"}'` — the kept parts in their order, each
+`[start, end, speed]`.
+
+The finished video is saved next to the first, with `-edited` in the name, or
+at `--out FILE`. In the chat the reply shows the video under it (tap to play)
+and a copy goes to **Movies/Termant**; the agent is told not to paste the
+path.
+
+**What to expect, honestly.**
+
+- The work is ffmpeg's: it re-encodes, so a video takes roughly as long as it
+  is (a little more with words or music), on the phone's own computer.
+  ffmpeg is not in a fresh Ubuntu; the first use installs it.
+- The preview shows the whole video, not the edits as you make them — the
+  result is true only after "Make it". (The timeline, the seconds and the
+  kept part are the plan; ffmpeg does the making.)
+- Words are one colour, plain, with a dark edge, so they read over most
+  videos; there is no font of your own and no timing of words to speech.
+- A song is looped when it is shorter than the video and stops with it.
+- The gallery copy needs no storage permission on Android 10 and newer. On
+  Android 7 to 9 allow "phone storage" in Termant's menu first; then the
+  video is only in `~/videos` (that path is written but not tested).
+- Big videos: the trip from Ubuntu to the gallery is capped at 32 MB; above
+  that the finished video stays in Ubuntu and the section says so.
+
+**How it is tested.** Every build runs `clip`'s whole tool list against a
+real ffmpeg on the build machine (`android/ci/clip-check.sh`, 38 checks:
+the length of what comes out, the size, the sound gone, the frame turned,
+the words on, the music in, the one list at once, and every wrong choice
+refused). Inside the guest Ubuntu the kit check adds the refusals that need
+no ffmpeg. On the emulator the test installs ffmpeg, makes a six-second
+video, trims, speeds, writes words, turns and crops it, makes the one list at
+once, and requires the trimmed video on the phone, in **Movies/Termant**; it
+then opens the section from the chat's top bar and requires it to open. Not
+tested: a real phone, a video longer than a minute, and what the gallery app
+shows for the copy.
 
 ## APILayer: ready-made APIs with your own key
 
