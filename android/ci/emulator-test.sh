@@ -1199,15 +1199,16 @@ grep -q '^gallery-exit=0' "$OUT/result10.txt" || finish "FAIL the finished video
 grep -q 'Movies/Termant' "$OUT/result10.txt" || finish "FAIL the video's place was not said as Movies/Termant"
 grep -q '^last-exit=0' "$OUT/result10.txt" || finish "FAIL clip last"
 adb shell ls /sdcard/Movies/Termant 2>/dev/null | grep -q 'trim.mp4' || finish "FAIL the trimmed video is not on the phone, in Movies/Termant"
-# and the section itself: the button in the chat's top bar opens the timeline
-adb shell input keyevent 4
+# and the section itself: the button in the chat's top bar opens the timeline. The terminal
+# keeps its own keyboard, so the way out of it is the button, like in the other sections.
+tap_on 'content-desc="Back to the chat"' || finish "FAIL the terminal's back button is gone after the clip test"
 sleep 2
 tap_on 'content-desc="Video"' || finish "FAIL the video button is not in the chat's top bar"
 sleep 4
 shot 43-video-section
 adb logcat -d -s Termant:I | grep 'video section:' > "$OUT/clip-ui.txt"
 grep -q 'video section: opened' "$OUT/clip-ui.txt" || finish "FAIL the video section did not open"
-adb shell input keyevent 4
+tap_on 'content-desc="Back to the chat"' || finish "FAIL the video section's back button is gone"
 sleep 2
 tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL the terminal button is gone after the video section"
 sleep 4
