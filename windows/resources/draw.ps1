@@ -41,7 +41,8 @@ function One-Line([string]$text, [int]$limit = 200) {
   return $t.Substring(0, $limit - 1) + '...'
 }
 function Env-Number([string]$name, [double]$default) {
-  $value = $env:$name
+  # the $env: scope wants a literal name; a name kept in a variable is asked of the process
+  $value = [Environment]::GetEnvironmentVariable($name)
   if ($value) {
     $number = 0.0
     if ([double]::TryParse($value, [ref]$number)) { return $number }
