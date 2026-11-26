@@ -388,22 +388,25 @@ async function modelFacts() {
 // this list; the app empties it before each message and reads it when the reply is done,
 // and the answer shows the pictures under it. Only pictures in the home Pictures folder or
 // Termant's own data folder are shown (the web chat serves them with the same rule).
-const drawnFile = path.join(store.dir, 'agent', 'cache', 'drawn.txt');
-const pictureDirs = [path.join(os.homedir(), 'pictures'), store.dir];
+// the list lives in the agent's cache folder; store is ready when these are first called
+function drawnFile() {
+  return path.join(store.dir, 'agent', 'cache', 'drawn.txt');
+}
 function pictureAllowed(file) {
   try {
     const p = path.resolve(String(file || ''));
-    return pictureDirs.some((d) => p === d || p.startsWith(d + path.sep)) && fs.statSync(p).isFile();
+    const dirs = [path.join(os.homedir(), 'pictures'), store.dir];
+    return dirs.some((d) => p === d || p.startsWith(d + path.sep)) && fs.statSync(p).isFile();
   } catch (e) {
     return false;
   }
 }
 function clearDrawn() {
-  try { fs.unlinkSync(drawnFile); } catch (e) { /* no picture this message */ }
+  try { fs.unlinkSync(drawnFile()); } catch (e) { /* no picture this message */ }
 }
 function readDrawn() {
   let lines = '';
-  try { lines = fs.readFileSync(drawnFile, 'utf8'); } catch (e) { return []; }
+  try { lines = fs.readFileSync(drawnFile(), 'utf8'); } catch (e) { return []; }
   clearDrawn();
   return lines.split(/\r?\n/).map((l) => l.trim()).filter((p) => pictureAllowed(p)).slice(0, 8);
 }
