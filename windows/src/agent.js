@@ -220,6 +220,8 @@ class Agent {
     env.OPENCODE_DISABLE_AUTOUPDATE = '1';
     env.NO_COLOR = '1';
     env.TERMANT_DATA = path.dirname(this.dir);
+    // draw (resources/draw.ps1) writes the pictures it makes into the chat's drawn list when it runs here
+    env.TERMANT_CHAT = '1';
     // git must fail rather than wait for a password nobody can type
     env.GIT_TERMINAL_PROMPT = '0';
     env.GH_PROMPT_DISABLED = '1';

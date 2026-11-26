@@ -249,6 +249,8 @@ class WebChat {
         from: m.from || '',
         steps: (m.steps || []).slice(-12).map((st) => (typeof st === 'string' ? st : st.text || '')).slice(0, 12),
         failed: !!m.failed,
+        // the pictures the agent drew, as addresses on this server (served by /api/pic)
+        pictures: (m.pictures || []).slice(0, 8).map((p) => '/api/pic?path=' + encodeURIComponent(p)),
       }));
       return json(response, 200, {
         ok: true,
@@ -259,6 +261,18 @@ class WebChat {
         busy: w.busy ? { activity: w.busy.activity, detail: w.busy.detail || '', output: w.busy.output || '' } : null,
         messages,
       });
+    }
+    if (url === '/api/pic') {
+      // a picture the agent drew, shown under the answer on the phone. Only pictures the
+      // main process allowed (the home Pictures folder or Termant's data folder) are given.
+      if (request.method !== 'GET') return json(response, 405, { ok: false, error: 'not allowed' });
+      const query = (request.url.split('?')[1] || '').replace(/^path=/, '');
+      let file = '';
+      try { file = decodeURIComponent(query); } catch (e) { file = ''; }
+      const pic = file && this.deps.picture ? this.deps.picture(file) : null;
+      if (!pic) return json(response, 404, { ok: false, error: 'not a picture in this chat' });
+      response.writeHead(200, { 'content-type': pic.type, 'cache-control': 'no-store' });
+      return response.end(pic.buffer);
     }
     if (request.method !== 'POST') return json(response, 405, { ok: false, error: 'not allowed' });
     if (url === '/api/message') {

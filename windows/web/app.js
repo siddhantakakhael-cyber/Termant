@@ -92,8 +92,10 @@
     div.className = 'msg ' + (m.user ? 'user' : 'assistant') + (m.failed ? ' failed' : '');
     const who = m.user ? (m.from === 'web' ? '' : T.pc) : 'Termant';
     const steps = (m.steps || []).map((s) => '<div>· ' + esc(s) + '</div>').join('');
+    const pics = (m.pictures || []).map((p) => '<img class="pic" src="' + p + '" alt="" loading="lazy">').join('');
     div.innerHTML = (who ? '<div class="who">' + esc(who) + '</div>' : '') +
-      '<div class="bubble">' + esc(m.text || (m.user ? '' : '…')) + (steps ? '<div class="steps">' + steps + '</div>' : '') + '</div>';
+      '<div class="bubble">' + esc(m.text || (m.user ? '' : '…')) + (steps ? '<div class="steps">' + steps + '</div>' : '') + '</div>' +
+      (pics ? '<div class="pics">' + pics + '</div>' : '');
     return div;
   }
   function renderMessages(force) {

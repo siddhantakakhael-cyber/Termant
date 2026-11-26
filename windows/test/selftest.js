@@ -2,6 +2,7 @@
 // it drives its own window, uses the real `pc` command, saves screenshots and
 // result.json into the folder, and exits with 0 only if every hard check passed.
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const http = require('http');
 const httpsLib = require('https');
@@ -300,6 +301,52 @@ module.exports = async function selftest(ctx) {
       }
     }
 
+    // ---- draw: a picture from words (the draw command, against a pretend quick service)
+    {
+      const pngBytes = require('./attach-test').png();
+      const drawFake = http.createServer((req, res) => {
+        if ((req.url || '').startsWith('/prompt/')) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(pngBytes); }
+        res.writeHead(404, { 'content-type': 'text/plain' });
+        res.end('no such thing');
+      });
+      await new Promise((resolve) => drawFake.listen(0, '127.0.0.1', resolve));
+      const drawEnv = Object.assign({}, ctx.shellEnv(), {
+        TERMANT_DATA: path.join(dir, 'draw-data'),
+        TERMANT_DRAW_POLLINATIONS: 'http://127.0.0.1:' + drawFake.address().port,
+        TERMANT_DRAW_GAP: '0',
+        TERMANT_CHAT: '1',
+      });
+      const draw = (args, env) => new Promise((resolve) => {
+        const line = '"' + [path.join(pcDir, 'draw.cmd'), ...args].map((a) => '"' + a + '"').join(' ') + '"';
+        execFile('cmd.exe', ['/d', '/s', '/c', line], { env: env || drawEnv, windowsHide: true, timeout: 180000, windowsVerbatimArguments: true },
+          (error, stdout, stderr) => resolve({ code: error ? (error.code || 1) : 0, out: String(stdout).trim(), err: String(stderr).trim() }));
+      });
+      if (WINDOWS) {
+        let d = await draw(['a red apple on a table, photo']);
+        const savedPath = (d.out.match(/Picture saved: (.+?) \(/) || [])[1] || '';
+        check('draw: a picture is made and saved in the Pictures folder', d.code === 0 && savedPath.startsWith(os.homedir() + path.sep + 'pictures'), JSON.stringify(d).slice(0, 300));
+        check('draw: the saved file is the picture the service gave', savedPath && fs.existsSync(savedPath) && fs.readFileSync(savedPath).equals(pngBytes), savedPath);
+        const drawnList = path.join(dir, 'draw-data', 'agent', 'cache', 'drawn.txt');
+        check('draw: the chat gets the picture to show under the answer', fs.existsSync(drawnList) && fs.readFileSync(drawnList, 'utf8').includes(savedPath),
+          fs.existsSync(drawnList) ? fs.readFileSync(drawnList, 'utf8').slice(0, 200) : 'no drawn list');
+        d = await draw(['last']);
+        check('draw last: the newest picture is named', d.code === 0 && d.out === savedPath, JSON.stringify(d).slice(0, 200));
+        d = await draw(['--seed', 'x', 'a cat']);
+        check('draw: a wrong seed is refused at once', d.code !== 0 && /seed/.test(d.out + d.err), JSON.stringify(d).slice(0, 200));
+        d = await draw(['a cat'], Object.assign({}, drawEnv, {
+          TERMANT_DRAW_POLLINATIONS: 'http://127.0.0.1:1',
+          TERMANT_DRAW_HORDE: 'http://127.0.0.1:1',
+          TERMANT_DRAW_WAIT: '3',
+          TERMANT_DRAW_POLL: '1',
+        }));
+        check('draw: when no service answers, it says so plainly', d.code !== 0 && /could not be reached/.test(d.out + d.err), JSON.stringify(d).slice(0, 300));
+        if (savedPath && fs.existsSync(savedPath)) fs.unlinkSync(savedPath);
+      } else {
+        check('draw: the Windows draw command is not tested on this system', true, 'not Windows');
+      }
+      drawFake.close();
+    }
+
     // ---- the AI agent (needs the internet and a free model that answers)
     if (process.argv.includes('--selftest-agent')) {
       const started = Date.now();
@@ -465,6 +512,64 @@ module.exports = async function selftest(ctx) {
         check('files: a picture sent with a message reaches the model', /SAW pictures=1/.test(reply.text || ''), JSON.stringify(reply).slice(0, 500));
         check('files: the message names the file, not its path', await js('[...document.querySelectorAll(".msg.user .bubble")].some((b) => b.textContent.includes("attached.png") && !b.textContent.includes("[file:"))'));
         await shot('attached');
+
+        // ---- draw: a picture the agent draws for the answer; the chat and the phone show it.
+        // The quick service is a pretend one on this PC; the agent's environment points at it.
+        const pngDraw = require('./attach-test').png();
+        const drawAgentFake = http.createServer((req, res) => {
+          if ((req.url || '').startsWith('/prompt/')) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(pngDraw); }
+          res.writeHead(404, { 'content-type': 'text/plain' });
+          res.end('no such thing');
+        });
+        await new Promise((resolve) => drawAgentFake.listen(0, '127.0.0.1', resolve));
+        process.env.TERMANT_DRAW_POLLINATIONS = 'http://127.0.0.1:' + drawAgentFake.address().port;
+        process.env.TERMANT_DRAW_GAP = '0';
+        agent.stopServer(); // a new agent takes the new environment
+        await js('document.getElementById("new-chat").click()');
+        await sleep(500);
+        reply = await send('RUN draw "a picture for the test"', 300);
+        const drawnPath = (reply.pictures || [])[0] || '';
+        check('draw: the agent made a picture and the answer names it',
+          !reply.failed && /Picture saved:/.test(reply.text || '') && drawnPath.startsWith(os.homedir() + path.sep + 'pictures') && fs.existsSync(drawnPath),
+          JSON.stringify(reply).slice(0, 400));
+        check('draw: the chat shows the picture under the answer',
+          await until(() => js('[...document.querySelectorAll(".msg.agent .pictures img")].some((i) => (i.title || "") === ' + JSON.stringify(drawnPath) + ' && i.naturalWidth > 0)'), 15000), drawnPath);
+        await shot('draw');
+        if (webStatus && webStatus.https) {
+          // a phone on the network gets the same answer and can load the same picture
+          const picPort = parseInt(webStatus.https.split(':').pop().replace(/[^0-9]/g, ''), 10);
+          const picRequest = (url, { method = 'GET', body, cookie, binary = false } = {}) => new Promise((resolve) => {
+            const req = httpsLib.request({ host: '127.0.0.1', port: picPort, path: url, method, rejectUnauthorized: false,
+              headers: Object.assign(body ? { 'content-type': 'application/json' } : {}, cookie ? { cookie } : {}) }, (res) => {
+                const parts = [];
+                res.on('data', (d) => parts.push(d));
+                res.on('end', () => {
+                  const buf = Buffer.concat(parts);
+                  resolve({ code: res.statusCode, text: binary ? '' : buf.toString('utf8'), buf, type: res.headers['content-type'] || '', cookie: (res.headers['set-cookie'] || [])[0] || '' });
+                });
+              });
+            req.on('error', (e) => resolve({ code: 0, text: e.message, buf: Buffer.alloc(0), type: '', cookie: '' }));
+            if (body) req.end(JSON.stringify(body));
+            else req.end();
+          });
+          let w = await picRequest('/api/login', { method: 'POST', body: { password: webStatus.password } });
+          const picCookie = (w.cookie || '').split(';')[0];
+          w = await picRequest('/api/state', { cookie: picCookie });
+          let st = {};
+          try { st = JSON.parse(w.text); } catch (e) { st = { error: String(e) }; }
+          const phoneLast = (st.messages || []).slice(-1)[0] || {};
+          check('draw: the phone sees the picture in the same answer',
+            Array.isArray(phoneLast.pictures) && phoneLast.pictures.length === 1 && phoneLast.pictures[0].startsWith('/api/pic?path='),
+            JSON.stringify(phoneLast).slice(0, 200));
+          w = await picRequest(phoneLast.pictures && phoneLast.pictures[0] || '', { cookie: picCookie, binary: true });
+          check('draw: the phone can load the picture', w.code === 200 && (w.type || '').includes('image/png') && w.buf.equals(pngDraw), 'code ' + w.code + ' ' + w.type);
+          w = await picRequest(phoneLast.pictures && phoneLast.pictures[0] || '/api/pic');
+          check('draw: without the password the picture is not given', w.code === 401, 'code ' + w.code);
+        }
+        delete process.env.TERMANT_DRAW_POLLINATIONS;
+        delete process.env.TERMANT_DRAW_GAP;
+        drawAgentFake.close();
+        if (drawnPath && fs.existsSync(drawnPath)) fs.unlinkSync(drawnPath);
         delete process.env.OPENCODE_CONFIG_CONTENT;
         agent.stopServer();
         Object.assign(ctx.settings(), real);

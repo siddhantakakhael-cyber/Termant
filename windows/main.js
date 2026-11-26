@@ -118,6 +118,16 @@ function start() {
     stop: () => agent && agent.stop(),
     saveSettings: (patch) => saveSettings(patch),
     webChanged: () => send('web', webchat && webchat.status()),
+    picture: (file) => {
+      if (!pictureAllowed(file)) return null;
+      let size = 0;
+      try { size = fs.statSync(String(file)).size; } catch (e) { return null; }
+      if (size > 15 * 1000 * 1000) return null;
+      const types = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
+      const type = types[path.extname(String(file)).toLowerCase()];
+      if (!type) return null;
+      return { buffer: fs.readFileSync(String(file)), type };
+    },
   });
   if (settings.webOn !== false) webchat.start();
   agent = new Agent(path.join(store.dir, 'agent'), pcDir, () => settings, () => team.config());
@@ -373,6 +383,31 @@ async function modelFacts() {
   return facts || (kept && kept.facts) || {};
 }
 
+// ---------------------------------------------------------------- pictures drawn for the chat
+// The agent's draw command (resources/draw.ps1) appends one line per picture it makes to
+// this list; the app empties it before each message and reads it when the reply is done,
+// and the answer shows the pictures under it. Only pictures in the home Pictures folder or
+// Termant's own data folder are shown (the web chat serves them with the same rule).
+const drawnFile = path.join(store.dir, 'agent', 'cache', 'drawn.txt');
+const pictureDirs = [path.join(os.homedir(), 'pictures'), store.dir];
+function pictureAllowed(file) {
+  try {
+    const p = path.resolve(String(file || ''));
+    return pictureDirs.some((d) => p === d || p.startsWith(d + path.sep)) && fs.statSync(p).isFile();
+  } catch (e) {
+    return false;
+  }
+}
+function clearDrawn() {
+  try { fs.unlinkSync(drawnFile); } catch (e) { /* no picture this message */ }
+}
+function readDrawn() {
+  let lines = '';
+  try { lines = fs.readFileSync(drawnFile, 'utf8'); } catch (e) { return []; }
+  clearDrawn();
+  return lines.split(/\r?\n/).map((l) => l.trim()).filter((p) => pictureAllowed(p)).slice(0, 8);
+}
+
 /**
  * Sends the user's message to the agent; with own set, the agent writes first
  * by itself (a check-in). from names a message that came from the web chat.
@@ -387,6 +422,7 @@ async function sendMessage(text, own, files, from) {
     }
   }).slice(0, attach.MOST);
   if (busy || (!text && !files.length)) return false;
+  clearDrawn();
   // the files go with the message as marks the agent can read: "[file: C:\Users\...\a.png]"
   text = attach.mark(text || 'Look at this file and tell me what is in it.', files);
   if (!current) newChat();
@@ -480,6 +516,8 @@ async function sendMessage(text, own, files, from) {
     if (result.stopped) reply.note = 'stopped';
     else if (seenBy && !reply.note) reply.note = 'saw:' + seenBy;
     reply.seconds = Math.round((Date.now() - busy.startedAt) / 100) / 10;
+    const drawn = readDrawn();
+    if (drawn.length) reply.pictures = drawn;
   } catch (e) {
     reply.failed = true;
     reply.text = 'The AI agent could not be set up: ' + (e.message || e) + '\nCheck the internet connection and try again.';
@@ -488,7 +526,7 @@ async function sendMessage(text, own, files, from) {
   const fresh = learned.diary().slice(knownBefore);
   if (fresh.length) reply.learned = fresh.map((e) => learned.line(e).slice(2));
   log('reply: ' + JSON.stringify({ text: reply.text.slice(0, 300), steps: reply.steps, failed: reply.failed, note: reply.note,
-    fast: agent.fast, seconds: reply.seconds, learned: reply.learned, helpers: reply.helpers }));
+    fast: agent.fast, seconds: reply.seconds, learned: reply.learned, helpers: reply.helpers, pictures: reply.pictures }));
   if (settings.speak && !own && !reply.failed && reply.text && keysFrom(settings.voiceKeys).length) {
     say(reply.text.replace(/```[\s\S]*?```/g, ' ').replace(/[*_#`>|]/g, ' ')).catch((e) => log('speak: ' + e.message));
   }
@@ -544,7 +582,7 @@ function findWsl() {
 function shellEnv() {
   const env = agent.env();
   // a terminal is the user's own: it keeps their usual settings folders
-  for (const name of ['XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_STATE_HOME', 'XDG_CACHE_HOME', 'OPENCODE_CONFIG_DIR', 'NO_COLOR']) delete env[name];
+  for (const name of ['XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_STATE_HOME', 'XDG_CACHE_HOME', 'OPENCODE_CONFIG_DIR', 'NO_COLOR', 'TERMANT_CHAT']) delete env[name];
   return env;
 }
 
@@ -941,6 +979,11 @@ const handlers = {
     if (/^https?:/.test(String(url))) shell.openExternal(url);
   },
   'open:folder': () => shell.openPath(settings.workspace),
+  'open:file': (file) => {
+    const p = String(file || '');
+    if (!pictureAllowed(p)) throw new Error('not a picture Termant showed in this chat');
+    shell.openPath(p);
+  },
 };
 
 for (const [name, handler] of Object.entries(handlers)) {

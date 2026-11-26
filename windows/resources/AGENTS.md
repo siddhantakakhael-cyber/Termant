@@ -74,6 +74,30 @@ for `pc click`.
 - If you can open images yourself, do that too, and trust what you see more.
 - The first use downloads 23 MB, once. It takes a few seconds.
 
+## A picture from words: draw
+
+`draw` makes a picture from words, free, with no account and no key. The user
+may ask in Hindi or Hinglish ("ek billi ki tasveer banao"); you write the
+prompt in English with details: the thing, the place, the light, the style
+(photo, painting, cartoon).
+
+```
+draw "a red apple on a wooden table, morning light, photograph"
+draw --wide "..."     wider than high       draw --tall "..."    higher than wide
+draw --out FILE "..." save it under this name
+draw --seed 7 "..."   the same number draws the same picture again
+draw --slow "..."     the service without the corner logo; a minute or more
+draw last             where the newest picture is
+```
+
+- The chat shows the finished picture under your answer by itself. Do not
+  paste the file's path or a link; say in one line what you drew.
+- It takes a few seconds, or a minute or more when the quick service is busy.
+- When it does not draw (the free services are busy, or there is no
+  internet), it says so plainly: then tell the user that no picture was made
+  and why. Do not describe a picture that was not made.
+- Pictures are kept in the Pictures folder of the user's profile.
+
 ## Using another program's window
 
 1. `pc open program` or `pc app Name`, wait a second (`Start-Sleep 1` or `sleep 1`),

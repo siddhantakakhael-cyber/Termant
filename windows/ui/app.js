@@ -300,6 +300,16 @@
           bubble.appendChild(markdown(m.text || (m.note === 'stopped' ? '' : t('no_answer'))));
           node.appendChild(bubble);
         }
+        // pictures the agent drew for this answer; a click opens the picture in the PC's viewer
+        if (m.pictures && m.pictures.length) {
+          node.appendChild(el('div', { class: 'pictures' }, m.pictures.map((p) =>
+            el('img', {
+              src: encodeURI('file:///' + String(p).replace(/\\/g, '/')),
+              alt: String(p).split(/[\\/]/).pop(),
+              title: p,
+              onclick: () => { window.termant.call('open:file', p).catch(() => {}); },
+            }))));
+        }
         if (m.note === 'stopped') node.appendChild(el('div', { class: 'note' }, t('stopped')));
         else if (m.note && m.note.startsWith('model:')) node.appendChild(el('div', { class: 'note' }, t('switched', m.note.slice(6))));
         else if (m.note && m.note.startsWith('saw:')) node.appendChild(el('div', { class: 'note' }, t('seen_by', m.note.slice(4))));

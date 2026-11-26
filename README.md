@@ -82,7 +82,7 @@ browser, hosted on your own server with Docker.
 - It teaches itself: asked for something it does not know, it searches YouTube, reads what a video says, does the task and keeps the steps as a skill. Ask "aaj kya seekha?".
 - A team of agents: on a big job the main agent hands parts to helpers (researcher, writer, coder, checker) that work at the same time; you can make helpers of your own ("ek agent banao jo ...").
 - Pictures and files in the chat (the **+** button): a picture goes to a model that can see, PDF, Word, Excel and zip files are read by the agent. An **Undo** line puts changed files back. Work by itself at night (`phone job`), watches, notifications, tidying folders, filling forms, a daily quiz and a work diary: see [the guide](docs/android.md#pictures-and-files-in-the-chat-undo-and-work-by-itself).
-- It makes pictures from words, free and without a key: "ek billi ki tasveer banao". The picture shows in the chat and goes to the gallery. Two free services draw it (quick with a small logo, or slow without); details and limits in [the guide](docs/android.md#a-picture-from-words-draw). Android only.
+- It makes pictures from words, free and without a key: "ek billi ki tasveer banao". The picture shows in the chat; on the phone a copy goes to the gallery, on Windows it is kept in the Pictures folder. Two free services draw it (quick with a small logo, or slow without); details and limits in [the Android guide](docs/android.md#a-picture-from-words-draw) and [the Windows guide](docs/windows.md#a-picture-from-words-draw).
 - [APILayer](https://apilayer.com)'s ready-made APIs with your own free key (currency rates, news, text from a picture, a web page as PDF, and more; 60 APIs): send `apilayer key YOUR_KEY` once in the chat, then just ask. The key stays on the phone and is not sent to a model. Tested against a pretend APILayer, not yet with a real key; see [the guide](docs/android.md#apilayer-ready-made-apis-with-your-own-key). Android only.
 - It speaks with ElevenLabs if you give it keys; several keys take turns when one has used up its limit.
 - It checks in: asks how the exam went the next day, by notification you can answer.
@@ -150,9 +150,10 @@ Command Prompt tabs. Windows that do not say what is in them are read from a
 picture, on the PC itself, with the small [Mirage](https://huggingface.co/Cactus-Compute/mirage)
 model. The same model looks at a photo and says what is in it and where
 (`pc look photo.jpg`). It learns from YouTube by itself and keeps skills, reads
-and changes Word documents (`pc word`), speaks with ElevenLabs keys that
-take turns, and hands parts of a big job to helper agents that work at the
-same time. A skill that comes with it, `remove-ai-marks` (from
+and changes Word documents (`pc word`), draws pictures from words for free
+(no account or key) and shows the picture under its answer, speaks with
+ElevenLabs keys that take turns, and hands parts of a big job to helper agents
+that work at the same time. A skill that comes with it, `remove-ai-marks` (from
 [watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover)),
 finds and removes the marks AI tools leave in your own text and files:
 invisible letters, C2PA, EXIF and document properties (`pc marks`); it does
@@ -163,11 +164,11 @@ the home Wi-Fi — with a password, and with voice: say "hey Termant" and the
 phone sends the command to the PC, the answer spoken by the browser (an
 iPhone gets it too: in Safari, or in the small iOS app that adds a real
 microphone and the words "hey Termant"). It is an early version
-(0.8.0).
+(0.9.0).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.8.0/Termant-Setup.exe)** and open it.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.9.0/Termant-Setup.exe)** and open it.
 2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
 3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
 

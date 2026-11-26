@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.8.0).** It is built and tested automatically on a Windows
+> **Early version (0.9.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.8.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.9.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
@@ -31,6 +31,7 @@ To remove it: Windows **Settings → Apps → Installed apps → Termant → Uni
 | --- | --- |
 | **Chat** | Ask for anything; the answer shows each command the agent ran. Earlier chats are kept in the list on the left. |
 | **Pictures and files** | The **+** in the message box adds pictures or files to a message. A picture goes to the model itself; if the chosen model cannot see pictures, the first free model that can is asked for that message, and the answer says so. Small text files go into the message. Other files (Word, zip, Excel) the agent opens itself. |
+| **Draw a picture** | "Ek billi ki tasveer banao": the agent makes a picture from words, free and without a key; it shows under the answer, and the file is kept in your Pictures folder. |
 | **Models** | Free models work with no account. Pick one from the chip at the top right, or leave it on automatic. If a model does not answer, Termant tries other free ones. With your own API key (Settings), that company's models appear too. |
 | **PC control** | The agent uses the `pc` command: open programs and links, list and switch windows, type, press keys, click, read what a window shows, take screenshots, volume, brightness, clipboard, lock, sleep, shut down. |
 | **Terminal** | Up to 8 tabs of PowerShell, Command Prompt, or Ubuntu if you have WSL. The `pc` command works there too. |
@@ -446,6 +447,42 @@ this, and it is usually the larger part.
 
 This picture is from the automatic test; the answer is the pretend model's.
 
+## A picture from words: draw
+
+New in 0.9.0. Ask in the chat: "ek billi ki tasveer banao jo khidki par
+baithi hai", "draw a boat on a lake", "mere PC ke liye wallpaper banao".
+The agent runs `draw`, and the finished picture appears under its answer;
+a click on it opens the picture in the PC's own viewer. A copy is kept in
+the **Pictures** folder of your user profile (in Windows, "Pictures"). It
+costs nothing and needs no account and no key. The same picture appears
+under the same answer in the web chat from the phone.
+
+It also works by hand in any tab:
+
+```
+draw "a cat at a window, warm morning light, photo"
+draw --wide "..."      wider than high        draw --tall "..."    higher than wide
+draw --slow "..."      no logo, but slower    draw --seed 7 "..."  the same picture again
+draw --out FILE "..."  save it under this name
+draw last              where the newest picture is
+```
+
+The words work best in English (the agent translates what you ask), with the
+thing, the place, the light and the style (photo, painting, cartoon).
+
+**Who draws.** Two free services that belong to other people; Termant only
+asks them:
+
+| | [Pollinations](https://pollinations.ai) (asked first) | [AI Horde](https://aihorde.net) (asked when the first does not draw, or with `--slow`) |
+| --- | --- | --- |
+| Time | a few seconds | a minute or more (volunteers' computers, a queue) |
+| Size | 768 a side (wide 768×432, tall 432×768) | 512 a side (wide 576×320, tall 320×576) |
+| Logo | its small logo in a corner | none |
+| How often | one picture in 45 seconds for one internet address; `draw` waits for it up to a minute | as the queue allows |
+
+When neither service draws (they are busy, or there is no internet), `draw`
+says so plainly, and the agent tells you that no picture was made.
+
 ## Not on Windows yet
 
 The Android app got more in its version 0.22.0 than this one: Undo for
@@ -528,6 +565,16 @@ Server 2025 machine with a real desktop:
     must be gone when the answer is done. Its words are read out of the
     window, not from a picture; how it lies over other programs has not been
     watched.
+
+13. Drawing a picture: `draw` runs against a pretend quick service on the
+    test machine — it must save the very picture the service gave, in the
+    Pictures folder, put its path in the chat's list, and name it again with
+    `draw last`; a wrong seed is refused at once; and when neither service can
+    be reached it must say so plainly. Then the installed app asks the pretend
+    model to run `draw`: the picture must appear under the answer in the chat,
+    and in the web chat the phone sees it in the same answer and can load the
+    same picture from the app — with the password, and refused without it.
+    The real services were not asked by this test.
 
 What the test machine cannot check: sound (it has no speakers, so volume, mute
 and `pc say` are only tried), brightness, battery, Wi-Fi, voice dictation, and
