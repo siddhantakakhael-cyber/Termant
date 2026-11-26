@@ -77,6 +77,8 @@ function State-Set($state, [string]$name, $value) {
 }
 
 # --- one http request; @{ code = status (0 when not reached); body = bytes; retry = header or '' }
+# Windows PowerShell (5.1) does not load this assembly by itself; PowerShell 7 has it already
+Add-Type -AssemblyName System.Net.Http 2>$null
 $script:http = [System.Net.Http.HttpClient]::new()
 $script:http.Timeout = [TimeSpan]::FromSeconds(300)
 function Web-Request([string]$method, [string]$url, $bodyObject, [hashtable]$headers, [int]$seconds) {
