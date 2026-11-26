@@ -457,6 +457,9 @@ the **Pictures** folder of your user profile (in Windows, "Pictures"). It
 costs nothing and needs no account and no key. The same picture appears
 under the same answer in the web chat from the phone.
 
+When one service does not draw, the other draws instead, and the line under
+the picture says which one drew.
+
 It also works by hand in any tab:
 
 ```
