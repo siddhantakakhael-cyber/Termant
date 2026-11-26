@@ -115,7 +115,7 @@ function Why([int]$code, [string]$said) {
     return 'could not be reached (no connection)'
   }
   if ($code -eq 402 -or $code -eq 429) { return "busy: it draws for one address only now and then (HTTP $code)" }
-  if ($said -and -not $said.StartsWith('<')) { return "HTTP $code: $said" }
+  if ($said -and -not $said.StartsWith('<')) { return 'HTTP {0}: {1}' -f $code, $said }
   return "HTTP $code"
 }
 function Picture-Kind([byte[]]$data) {
