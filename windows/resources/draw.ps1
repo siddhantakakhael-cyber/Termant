@@ -76,6 +76,12 @@ function State-Set($state, [string]$name, $value) {
   return $state
 }
 
+# an empty message (some failures carry none) is still a reason
+function Reason-Text([string]$text) {
+  if ($text) { return $text }
+  return 'not reached'
+}
+
 # --- one http request; @{ code = status (0 when not reached); body = bytes; retry = header or '' }
 # Windows PowerShell (5.1) does not load this assembly by itself; PowerShell 7 has it already
 Add-Type -AssemblyName System.Net.Http 2>$null
@@ -99,11 +105,11 @@ function Web-Request([string]$method, [string]$url, $bodyObject, [hashtable]$hea
     if ($response.Headers.TryGetValues('Retry-After', [ref]$values)) { $retry = ($values | Select-Object -First 1) }
     return @{ code = $code; body = $body; retry = [string]$retry }
   } catch [System.Net.Http.HttpRequestException] {
-    return @{ code = 0; body = [Text.Encoding]::UTF8.GetBytes($_.Message); retry = '' }
+    return @{ code = 0; body = [Text.Encoding]::UTF8.GetBytes(Reason-Text "$($_.Message)"); retry = '' }
   } catch [System.Threading.Tasks.TaskCanceledException] {
     return @{ code = 0; body = [Text.Encoding]::UTF8.GetBytes('timed out'); retry = '' }
   } catch {
-    return @{ code = 0; body = [Text.Encoding]::UTF8.GetBytes($_.Exception.Message); retry = '' }
+    return @{ code = 0; body = [Text.Encoding]::UTF8.GetBytes(Reason-Text "$($_.Exception.Message)"); retry = '' }
   } finally {
     if ($response) { $response.Dispose() }
     $request.Dispose()
@@ -348,7 +354,8 @@ if ($env:TERMANT_CHAT) {
     Copy-Item -LiteralPath $target -Destination $shown -Force
   }
   $cache = $env:XDG_CACHE_HOME
-  if (-not $cache) { $cache = Join-Path $DataDir 'agent' 'cache' }
+  # Windows PowerShell's Join-Path takes two paths, so the middle one is named first
+  if (-not $cache) { $cache = Join-Path (Join-Path $DataDir 'agent') 'cache' }
   try {
     New-Item -ItemType Directory -Force -Path $cache | Out-Null
     [System.IO.File]::AppendAllText((Join-Path $cache 'drawn.txt'), ($shown + [Environment]::NewLine), (New-Object System.Text.UTF8Encoding($false)))
