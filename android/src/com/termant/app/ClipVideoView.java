@@ -97,11 +97,14 @@ final class ClipVideoView extends LinearLayout {
     private int rotate = 0;
     private String flip = null;         // "h" or "v"
     private String aspect = null;       // one of clip's aspect names
-    // the screen, the speed curve
+    // the screen, the speed curve, the zoom, the moving words
     private boolean screenOn;
     private String keyColor = "#00ff00";
     private String bg = null;           // the guest path of the background
+    private String motion = "";         // none, across, rise or drift
     private final List<double[]> curvePoints = new ArrayList<>();  // {the kept part's second, the rate}
+    private final List<double[]> zoomPoints = new ArrayList<>();   // {the finished video's second, the times}
+    private double zoomNow = 1;
     private boolean ffmpegMissing;
     private boolean busy;
 
@@ -111,11 +114,11 @@ final class ClipVideoView extends LinearLayout {
     private EditText wordsEdit;
     private SeekBar musicBar;
     private Switch sepiaSwitch, ownSwitch;
-    private View aspectChips, speedChips, flipButton, exportButton, keyChips, screenButton,
-            bgButton, bgRemove, curveButton;
-    private LinearLayout bgRow, curveList;
+    private View aspectChips, speedChips, flipButton, exportButton, motionChips, keyChips, screenButton,
+            bgButton, bgRemove, curveButton, zoomButton;
+    private LinearLayout bgRow, curveList, zoomList;
     private TextView bgName;
-    private CurveStrip curveStrip;
+    private CurveStrip curveStrip, zoomStrip;
     private TimelineView timeline;
 
     ClipVideoView(Context context, Host host) {
@@ -282,6 +285,18 @@ final class ClipVideoView extends LinearLayout {
         });
         wrow.addView(wordsButton, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         content.addView(wrow);
+        final String[] motions = {"", "across", "rise", "drift"};
+        final String[] motionNames = {context.getString(R.string.video_motion_still),
+                context.getString(R.string.video_motion_across), context.getString(R.string.video_motion_rise),
+                context.getString(R.string.video_motion_drift)};
+        sectionHead(context, content, context.getString(R.string.video_motion), null);
+        motionChips = chipRow(context, motionNames, 0, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                motion = motions[((ViewGroup) v.getParent()).indexOfChild(v)];
+            }
+        });
+        content.addView(motionChips);
         wordsList = new LinearLayout(context);
         wordsList.setOrientation(VERTICAL);
         wordsList.setPadding(0, dp(6), 0, 0);
@@ -471,6 +486,35 @@ final class ClipVideoView extends LinearLayout {
         curveList.setOrientation(VERTICAL);
         curveList.setPadding(0, dp(6), 0, 0);
         content.addView(curveList);
+
+        // the zoom: the same graph, the times of the finished video
+        sectionHead(context, content, context.getString(R.string.video_zoom), null);
+        final double[] zooms = {1.0, 1.5, 2.0, 3.0, 4.0};
+        content.addView(chipRow(context, new String[]{"1\u00d7", "1.5\u00d7", "2\u00d7", "3\u00d7", "4\u00d7"}, 0,
+                new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        zoomNow = zooms[((ViewGroup) v.getParent()).indexOfChild(v)];
+                    }
+                }));
+        zoomStrip = new CurveStrip(context, 1.0, 4.0, zoomPoints, new CurveStrip.OnTap() {
+            @Override
+            public void tappedAt(double fraction) {
+                addZoomPoint(fraction);
+            }
+        });
+        content.addView(zoomStrip, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56)));
+        content.addView(chip(context, context.getString(R.string.video_zoom_clear), false, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                zoomPoints.clear();
+                refreshZoom();
+            }
+        }), new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        zoomList = new LinearLayout(context);
+        zoomList.setOrientation(VERTICAL);
+        zoomList.setPadding(0, dp(6), 0, 0);
+        content.addView(zoomList);
 
         // what the export says
         status = new TextView(context);
@@ -773,6 +817,7 @@ final class ClipVideoView extends LinearLayout {
                 + (aspect != null ? "  \u00b7  " + aspect : ""));
         timeline.setRange(start, end, playhead, duration);
         if (curveStrip != null) curveStrip.invalidate();
+        if (zoomStrip != null) zoomStrip.invalidate();
     }
 
     /** The preview's position, drawn on the track about five times a second. */
@@ -878,8 +923,10 @@ final class ClipVideoView extends LinearLayout {
             if (!words.isEmpty()) {
                 JSONArray w = new JSONArray();
                 for (Word word : words) {
-                    w.put(new JSONObject().put("from", word.from).put("to", word.to)
-                            .put("text", word.text).put("place", word.place));
+                    JSONObject o = new JSONObject().put("from", word.from).put("to", word.to)
+                            .put("text", word.text).put("place", word.place);
+                    if (!motion.isEmpty()) o.put("motion", motion);
+                    w.put(o);
                 }
                 edit.put("texts", w);
             }
@@ -901,6 +948,11 @@ final class ClipVideoView extends LinearLayout {
                 JSONArray c = new JSONArray();
                 for (double[] pt : curvePoints) c.put(new JSONArray().put(pt[0]).put(pt[1]));
                 edit.put("speed_curve", c);
+            }
+            if (!zoomPoints.isEmpty()) {
+                JSONArray z = new JSONArray();
+                for (double[] pt : zoomPoints) z.put(new JSONArray().put(pt[0]).put(pt[1]));
+                edit.put("zoom", z);
             }
             File jf = new File(Ubuntu.rootfs(getContext()), "tmp/clip-edit.json");
             FileOutputStream fo = new FileOutputStream(jf);
@@ -1033,6 +1085,36 @@ final class ClipVideoView extends LinearLayout {
         }
     }
 
+    private void addZoomPoint(double fraction) {
+        if (duration <= 0 || zoomPoints.size() >= 12) return;
+        double kept = Math.max(0.1, end - start);
+        // the finished video's second: at the speed, when there is no curve
+        double t = fraction * kept / (curvePoints.isEmpty() ? Math.max(0.25, speed) : 1.0);
+        zoomPoints.add(new double[]{t, zoomNow});
+        zoomPoints.sort(new java.util.Comparator<double[]>() {
+            @Override
+            public int compare(double[] a, double[] b) {
+                return Double.compare(a[0], b[0]);
+            }
+        });
+        refreshZoom();
+    }
+
+    private void refreshZoom() {
+        zoomStrip.invalidate();
+        zoomList.removeAllViews();
+        for (final double[] pt : zoomPoints) {
+            zoomList.addView(pointRow(fmt(pt[0]) + "  ×"
+                    + String.format(java.util.Locale.US, "%.2g", pt[1]), new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    zoomPoints.remove(pt);
+                    refreshZoom();
+                }
+            }));
+        }
+    }
+
     /** One point of a curve: its words, and the cross that takes it away. */
     private LinearLayout pointRow(String words, OnClickListener job) {
         TextView v = new TextView(getContext());
@@ -1051,6 +1133,57 @@ final class ClipVideoView extends LinearLayout {
         row.addView(v, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         row.addView(x);
         return row;
+    }
+
+    // ------------------------------------------------------------ Ubuntu calls
+
+    /** Runs one command in Ubuntu and reports what it said. */
+    private void guest(final String script, final Job job) {
+        final Context c = getContext();
+        new Thread("termant-clip") {
+            @Override
+            public void run() {
+                int exit = -1;
+                StringBuilder out = new StringBuilder();
+                try {
+                    Ubuntu.prepareHost(c);
+                    ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(c, "/bin/bash", "-l", "-c", script));
+                    Map<String, String> env = pb.environment();
+                    env.clear();
+                    for (String e : Ubuntu.hostEnvironment(c)) {
+                        int eq = e.indexOf('=');
+                        env.put(e.substring(0, eq), e.substring(eq + 1));
+                    }
+                    pb.redirectErrorStream(true);
+                    Process p = pb.start();
+                    p.getOutputStream().close();
+                    java.io.BufferedReader in = new java.io.BufferedReader(
+                            new java.io.InputStreamReader(p.getInputStream(), java.nio.charset.StandardCharsets.UTF_8));
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        out.append(line).append('\n');
+                        if (line.startsWith("progress ")) {
+                            try {
+                                final double value = Double.parseDouble(line.substring("progress ".length()));
+                                ui.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (busy) setStatus(getContext().getString(R.string.video_exporting,
+                                                (int) (value * 100) + "%"), false);
+                                    }
+                                });
+                            } catch (NumberFormatException e) {
+                                // not a progress line after all
+                            }
+                        }
+                    }
+                    exit = p.waitFor();
+                } catch (Exception e) {
+                    out.append(e);
+                }
+                job.done(exit, out.toString());
+            }
+        }.start();
     }
 
     // ------------------------------------------------------------ the curve's graph
@@ -1125,57 +1258,6 @@ final class ClipVideoView extends LinearLayout {
             }
             return super.onTouchEvent(e);
         }
-    }
-
-    // ------------------------------------------------------------ Ubuntu calls
-
-    /** Runs one command in Ubuntu and reports what it said. */
-    private void guest(final String script, final Job job) {
-        final Context c = getContext();
-        new Thread("termant-clip") {
-            @Override
-            public void run() {
-                int exit = -1;
-                StringBuilder out = new StringBuilder();
-                try {
-                    Ubuntu.prepareHost(c);
-                    ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(c, "/bin/bash", "-l", "-c", script));
-                    Map<String, String> env = pb.environment();
-                    env.clear();
-                    for (String e : Ubuntu.hostEnvironment(c)) {
-                        int eq = e.indexOf('=');
-                        env.put(e.substring(0, eq), e.substring(eq + 1));
-                    }
-                    pb.redirectErrorStream(true);
-                    Process p = pb.start();
-                    p.getOutputStream().close();
-                    java.io.BufferedReader in = new java.io.BufferedReader(
-                            new java.io.InputStreamReader(p.getInputStream(), java.nio.charset.StandardCharsets.UTF_8));
-                    String line;
-                    while ((line = in.readLine()) != null) {
-                        out.append(line).append('\n');
-                        if (line.startsWith("progress ")) {
-                            try {
-                                final double value = Double.parseDouble(line.substring("progress ".length()));
-                                ui.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (busy) setStatus(getContext().getString(R.string.video_exporting,
-                                                (int) (value * 100) + "%"), false);
-                                    }
-                                });
-                            } catch (NumberFormatException e) {
-                                // not a progress line after all
-                            }
-                        }
-                    }
-                    exit = p.waitFor();
-                } catch (Exception e) {
-                    out.append(e);
-                }
-                job.done(exit, out.toString());
-            }
-        }.start();
     }
 
     // ------------------------------------------------------------ the timeline itself

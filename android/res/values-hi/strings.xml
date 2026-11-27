@@ -81,6 +81,13 @@
     <string name="video_curve">Speed curve</string>
     <string name="video_curve_clear">Bina curve</string>
     <string name="video_curve_note">Graph par tap karo: wahan ke seconds par, upar wali speed</string>
+    <string name="video_zoom">Zoom</string>
+    <string name="video_zoom_clear">Bina zoom</string>
+    <string name="video_motion">Words hile hue</string>
+    <string name="video_motion_still">Ruke hue</string>
+    <string name="video_motion_across">Phas ke</string>
+    <string name="video_motion_rise">Upar aate hue</string>
+    <string name="video_motion_drift">Tairte hue</string>
     <string name="ask_send">Bhejein</string>
     <string name="ask_voice">Bolkar likhein</string>
     <string name="voice_missing">Is phone mein voice typing app nahi hai. Keyboard ka microphone button istemal karein.</string>

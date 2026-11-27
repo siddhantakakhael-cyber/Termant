@@ -1741,7 +1741,6 @@ def clip_atempo(rate):
     return ",".join(parts)
 
 
-
 def clip_curve_slices(points, total, step=0.5):
     """[[second, value], ...] on the finished video; the video is cut into pieces no longer than
     STEP, and every piece gets the value the curve has at its middle (rates and zooms alike)."""
@@ -1825,6 +1824,7 @@ def clip_edit(source, edit, target, chat=False):
             "place": raw.get("place", "bottom"),
             "size": int(float(raw.get("size", 48))),
             "color": str(raw.get("color", "white")),
+            "motion": str(raw.get("motion") or ""),
         }
         if not t["text"]:
             raise Refused("clip: the words are empty")
@@ -1832,6 +1832,8 @@ def clip_edit(source, edit, target, chat=False):
             raise Refused("clip: the words [%s, %s] are not on the finished video (%s s)" % (t["from"], t["to"], "%.1f" % total_out))
         if t["place"] not in ("top", "center", "bottom"):
             raise Refused("clip: the place for the words is top, center or bottom, not %s" % t["place"])
+        if t["motion"] not in ("", "across", "rise", "drift"):
+            raise Refused("clip: the motion of the words is none, across, rise or drift, not %s" % t["motion"])
         if not (8 <= t["size"] <= 400):
             raise Refused("clip: the size of the words is 8 to 400, not %s" % t["size"])
         texts.append(t)
@@ -1879,6 +1881,16 @@ def clip_edit(source, edit, target, chat=False):
     for name, v in (("screen softness", key_sim), ("screen blend", key_blend)):
         if not (0.01 <= v <= 1.0):
             raise Refused("clip: the %s is 0.01 to 1, not %s" % (name, v))
+    zoom = []
+    for raw in edit.get("zoom") or []:
+        if not isinstance(raw, list) or len(raw) != 2:
+            raise Refused("clip: each point of the zoom is [second, times]")
+        t, z = float(raw[0]), float(raw[1])
+        if not (0.0 <= t <= total_out + 0.05) or not (1.0 <= z <= 4.0):
+            raise Refused("clip: a point of the zoom is on the finished video and its zoom is 1 to 4")
+        zoom.append((t, z))
+    if zoom and len(zoom) < 2:
+        raise Refused("clip: the zoom wants two points or more")
 
     if not target:
         base, _ = os.path.splitext(os.path.abspath(source))
@@ -1924,7 +1936,7 @@ def clip_edit(source, edit, target, chat=False):
     # ---- the quick way: one part, no changes but the cut -- ffmpeg only copies the streams
     if (len(segments) == 1 and segments[0][2] == 1.0 and not texts and not music
             and not look and gain == 1.0 and not background and not key_color
-            and not curve):
+            and not curve and not zoom):
         s, e, _ = segments[0]
         cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
                "-ss", "%.3f" % s, "-i", source, "-t", "%.3f" % (e - s)]
@@ -2014,6 +2026,20 @@ def clip_edit(source, edit, target, chat=False):
             if orig:
                 os.replace(curve_a, orig)
             progress(0.87)
+        # the zoom: the finished video leans in and out, point by point
+        if zoom:
+            slices = clip_curve_slices(zoom, total_out)
+            vplan = []
+            for i, (a, b, z) in enumerate(slices):
+                vplan.append("[0:v]trim=start=%.3f:end=%.3f,setpts=PTS-STARTPTS,crop=iw/%.3f:ih/%.3f,scale=%d:%d,setsar=1[v%d]"
+                             % (a, b, z, z, vw, vh, i))
+            vplan.append("".join("[v%d]" % i for i in range(len(slices))) + "concat=n=%d:v=1:a=0[vc]" % len(slices))
+            zoom_v = os.path.join(work, "zoom.mp4")
+            clip_run("the zoom", [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", video,
+                                  "-filter_complex", ";".join(vplan), "-map", "[vc]",
+                                  "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", zoom_v])
+            os.replace(zoom_v, video)
+            progress(0.88)
         # the screen: the colour is taken away, over the background (or over the black)
         if background or key_color:
             color = key_color or "0x00ff00"
@@ -2057,9 +2083,19 @@ def clip_edit(source, edit, target, chat=False):
             with open(tfile, "w", encoding="utf-8") as f:
                 f.write(t["text"])
             y = {"top": "h*0.06", "center": "(h-text_h)/2", "bottom": "h*0.82"}.get(t["place"], "h*0.82")
+            x = "(w-text_w)/2"
+            if t["motion"]:
+                k = "min(1,max(0,(t-%.2f)/(%.2f-%.2f)))" % (t["from"], t["to"], t["from"])
+                if t["motion"] == "across":
+                    x = "(0.05+0.90*%s)*(w-text_w)" % k
+                elif t["motion"] == "rise":
+                    y = "(h-text_h)*(0.92-0.42*%s)" % k
+                else:  # drift
+                    x = "(0.08+0.64*%s)*(w-text_w)" % k
+                    y = "(h-text_h)*(0.90-0.62*%s)" % k
             text_filters.append("drawtext=textfile='%s':fontsize=%d:fontcolor=%s:borderw=2:bordercolor=black@0.6"
-                                ":x=(w-text_w)/2:y=%s:enable='between(t,%.2f,%.2f)'"
-                                % (tfile, t["size"], t["color"], y, t["from"], t["to"]))
+                                ":x='%s':y='%s':enable='between(t,%.2f,%.2f)'"
+                                % (tfile, t["size"], t["color"], x, y, t["from"], t["to"]))
         if text_filters or orig or mfile:
             # when the words are not on it, the video is mapped as it is; [v] exists only with them
             maps = ["[v]" if text_filters else "0:v"]
@@ -2140,7 +2176,8 @@ def clip(args):
   clip trim FILE --from S --to S keep only that part of the video
   clip cut FILE --from S --to S  take that part out of the video
   clip speed FILE --rate R       0.5 to 4; 2 is twice as fast
-  clip text FILE "WORDS" --from S --to S [--place top|center|bottom] [--size N] [--color C]  clip music FILE SONG [--volume V] [--no-loop]   music as long as the video
+  clip text FILE "WORDS" --from S --to S [--place top|center|bottom] [--size N] [--color C] [--motion across|rise|drift]
+  clip music FILE SONG [--volume V] [--no-loop]   music as long as the video
   clip mute FILE                 the video without its sound
   clip volume FILE --gain G      its own sound louder (2) or softer (0.5)
   clip filter FILE [--brightness B] [--contrast C] [--saturation S] [--sepia F]
@@ -2148,6 +2185,7 @@ def clip(args):
   clip crop FILE --aspect 16:9|9:16|1:1|4:3|3:4
   clip screen FILE --background FILE [--color C]   the screen is taken away, over a photo or a video
   clip curve FILE --points 0:1,3:2,6:1             the speed changes, like a curve
+  clip zoom FILE --points 0:1,6:2                  the zoom changes, point by point
   clip last                      where the newest edited video is
 The finished video is saved next to the first (with -edited in the name), or at
 --out FILE. ffmpeg does the work; say what you want and it is made. When you edit in
@@ -2270,6 +2308,11 @@ the chat, the finished video also goes to the phone's gallery (Movies/Termant)."
                 if len(pts) < 2:
                     raise Refused("clip %s: two points at least" % what)
                 edit["speed_curve" if what == "curve" else "zoom"] = pts
+            elif what == "text" and a == "--motion":
+                word = take(a, i)
+                if word not in ("across", "rise", "drift"):
+                    raise Refused("clip text: --motion is across, rise or drift, not %s" % word)
+                edit.setdefault("texts", [{}])[0]["motion"] = word
             else:
                 raise Refused("clip %s: there is no %s (clip help)" % (what, a))
             i += 2
@@ -2351,7 +2394,7 @@ the chat, the finished video also goes to the phone's gallery (Movies/Termant)."
         return
 
     needs = {"trim": 2, "cut": 2, "speed": 2, "text": 3, "music": 3, "mute": 1,
-             "volume": 2, "filter": 1, "rotate": 1, "crop": 2, "screen": 2, "curve": 2}
+             "volume": 2, "filter": 1, "rotate": 1, "crop": 2, "screen": 2, "curve": 2, "zoom": 2}
     if what not in needs:
         raise Refused("clip: there is no %s (clip help)" % what)
     if len(args) < needs[what] + 1:

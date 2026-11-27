@@ -84,6 +84,13 @@
     <string name="video_curve">The speed curve</string>
     <string name="video_curve_clear">No curve</string>
     <string name="video_curve_note">Tap the graph: a point at the seconds there, at the speed above</string>
+    <string name="video_zoom">The zoom</string>
+    <string name="video_zoom_clear">No zoom</string>
+    <string name="video_motion">The words move</string>
+    <string name="video_motion_still">Still</string>
+    <string name="video_motion_across">Across</string>
+    <string name="video_motion_rise">Rise</string>
+    <string name="video_motion_drift">Drift</string>
     <string name="ask_send">Send</string>
     <string name="ask_voice">Speak</string>
     <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>
