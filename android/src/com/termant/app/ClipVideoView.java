@@ -461,7 +461,7 @@ final class ClipVideoView extends LinearLayout {
 
         // the speed curve: tap the graph, and the seconds there go at the speed above
         sectionHead(context, content, context.getString(R.string.video_curve), null);
-        curveStrip = new CurveStrip(context, 0.25, 4.0, curvePoints, new CurveStrip.OnTap() {
+        curveStrip = new CurveStrip(context, 0.25, 4.0, curvePoints, new OnTap() {
             @Override
             public void tappedAt(double fraction) {
                 addCurvePoint(fraction);
@@ -497,7 +497,7 @@ final class ClipVideoView extends LinearLayout {
                         zoomNow = zooms[((ViewGroup) v.getParent()).indexOfChild(v)];
                     }
                 }));
-        zoomStrip = new CurveStrip(context, 1.0, 4.0, zoomPoints, new CurveStrip.OnTap() {
+        zoomStrip = new CurveStrip(context, 1.0, 4.0, zoomPoints, new OnTap() {
             @Override
             public void tappedAt(double fraction) {
                 addZoomPoint(fraction);
@@ -1192,11 +1192,11 @@ final class ClipVideoView extends LinearLayout {
      * The small graph of a curve: the seconds on the width, the value on the height (a log
      * scale, like the rates). A tap gives a fraction of the kept part.
      */
-    private class CurveStrip extends View {
-        interface OnTap {
-            void tappedAt(double fraction);
-        }
+    private interface OnTap {
+        void tappedAt(double fraction);
+    }
 
+    private class CurveStrip extends View {
         private final double min, max;
         private final List<double[]> points;
         private final OnTap onTap;
