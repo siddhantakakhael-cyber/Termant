@@ -70,6 +70,7 @@ function defaults() {
     lang: hindi ? 'hi' : 'en',
     theme: 'dark',
     model: '',
+    persona: '',
     workspace: path.join(app.getPath('documents'), 'Termant'),
     auto: true,
     backup: true,

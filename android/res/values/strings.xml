@@ -57,6 +57,13 @@
     <string name="settings">Settings</string>
     <string name="settings_agent">Agent</string>
     <string name="settings_model_note">Which AI model answers in the chat.</string>
+    <string name="persona_title">Chat persona</string>
+    <string name="persona_note">The role the agent plays in the chat: it changes how it speaks, not what it can do.</string>
+    <string name="persona_off">Off</string>
+    <string name="persona_gf">Girlfriend</string>
+    <string name="persona_employee">Employee</string>
+    <string name="persona_secretary">Secretary</string>
+    <string name="persona_manager">Manager</string>
     <string name="settings_workspace_note">The folder in Ubuntu where the agent keeps and runs its files.</string>
     <string name="settings_keys">Your own API key</string>
     <string name="settings_keys_note">Optional. Without a key, free models are used. With a key, that company\'s models appear in the model list and are billed to your account. Keys stay on this phone, in Ubuntu at ~/.config/termant/keys.env.</string>

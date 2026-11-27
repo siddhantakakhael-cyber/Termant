@@ -109,6 +109,29 @@ final class Config {
         return m.isEmpty() ? Lang.of(c).getString(R.string.model_auto) : m.substring(m.lastIndexOf('/') + 1);
     }
 
+    // ------------------------------------------------------------ persona
+
+    /**
+     * The chat persona: "" (Termant as usual), "gf", "employee", "secretary" or "manager".
+     * It changes how the agent speaks and behaves, never what it may do.
+     */
+    static String persona(Context c) {
+        String name = prefs(c).getString("persona", "");
+        switch (name) {
+            case "gf":
+            case "employee":
+            case "secretary":
+            case "manager":
+                return name;
+            default:
+                return "";
+        }
+    }
+
+    static void setPersona(Context c, String name) {
+        prefs(c).edit().putString("persona", name).apply();
+    }
+
     // ------------------------------------------------------------ auto-switch
 
     static boolean autoSwitch(Context c) {

@@ -359,6 +359,9 @@ module.exports = async function selftest(ctx) {
       check('the agent downloads and starts', agent.installed(), installError || Math.round((Date.now() - started) / 1000) + ' s');
       if (agent.installed()) {
         agent.writeConfig(path.join(pcDir, 'AGENTS.md'));
+        check('the persona file is written before the agent (none chosen: empty)',
+          fs.existsSync(agent.personaFile) && fs.readFileSync(agent.personaFile, 'utf8') === '',
+          agent.personaFile);
         const models = await agent.models();
         check('the model list loads', models && models.length > 0, models ? models.length + ' models, first: ' + models.slice(0, 4).join(', ') : 'none');
         await js('document.getElementById("model-chip").click()');

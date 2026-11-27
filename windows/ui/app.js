@@ -557,6 +557,18 @@
 
   // ---------------------------------------------------------------- settings
 
+  function pickPersona() {
+    const ids = ['', 'gf', 'employee', 'secretary', 'manager'];
+    const list = el('div', { class: 'body' }, ids.map((id) =>
+      el('button', { class: 'choice' + ((S.settings.persona || '') === id ? ' on' : ''), onclick: async () => {
+        S.settings = await call('settings:set', { persona: id });
+        closeDialog();
+        renderAll();
+      } },
+        el('span', null, t('persona_' + (id || 'off'))))));
+    dialog({ title: t('s_persona'), text: t('s_persona_note'), body: [list], buttons: [{ text: t('cancel') }], id: 'persona' });
+  }
+
   function renderSettings() {
     $('settings-title').textContent = t('nav_settings');
     const page = $('settings');
@@ -593,6 +605,7 @@
         field.focus();
       }),
       row('sparkle', t('s_model'), null, modelName(), pickModel),
+      row('chat', t('s_persona'), t('s_persona_note'), t('persona_' + (s.persona || 'off')), pickPersona),
       toggle('refresh', t('s_backup'), t('s_backup_note'), 'backup'),
       toggle('bolt', t('s_auto'), t('s_auto_note'), 'auto'),
       toggle('globe', t('s_web'), t('s_web_note'), 'webSearch'),

@@ -209,6 +209,11 @@ public class MainActivity extends Activity
             }
 
             @Override
+            public void onPickPersona() {
+                pickPersona();
+            }
+
+            @Override
             public void onPickWorkspace() {
                 pickWorkspace();
             }
@@ -1082,6 +1087,33 @@ public class MainActivity extends Activity
                         dialog.dismiss();
                         if (which == folders.size()) newWorkspace();
                         else useWorkspace(folders.get(which));
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    /** The chat persona: none, or one of the four roles. */
+    private void pickPersona() {
+        final String[] ids = {"", "gf", "employee", "secretary", "manager"};
+        final String[] names = {
+                getString(R.string.persona_off),
+                getString(R.string.persona_gf),
+                getString(R.string.persona_employee),
+                getString(R.string.persona_secretary),
+                getString(R.string.persona_manager),
+        };
+        int current = 0;
+        for (int i = 0; i < ids.length; i++)
+            if (ids[i].equals(Config.persona(this))) current = i;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.persona_title)
+                .setSingleChoiceItems(names, current, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        Config.setPersona(MainActivity.this, ids[which]);
+                        settingsPanel.refresh();
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)

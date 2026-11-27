@@ -54,6 +54,13 @@
     <string name="settings">Settings</string>
     <string name="settings_agent">AI agent</string>
     <string name="settings_model_note">Chat mein kaunsa AI model jawab dega.</string>
+    <string name="persona_title">Chat persona</string>
+    <string name="persona_note">Agent chat mein kaunsa role khelta hai: ye sirf uski baat badalta hai, na ki uski taakat.</string>
+    <string name="persona_off">Band</string>
+    <string name="persona_gf">Girlfriend</string>
+    <string name="persona_employee">Employee</string>
+    <string name="persona_secretary">Secretary</string>
+    <string name="persona_manager">Manager</string>
     <string name="settings_workspace_note">Ubuntu ka woh folder jahan agent apni files rakhta aur chalata hai.</string>
     <string name="settings_keys">Aapki apni API key</string>
     <string name="settings_keys_note">Zaroori nahi. Bina key ke free models chalte hain. Key daalne par us company ke models list mein aa jaate hain aur kharcha aapke account se katta hai. Keys isi phone mein rehti hain, Ubuntu ki ~/.config/termant/keys.env file mein.</string>

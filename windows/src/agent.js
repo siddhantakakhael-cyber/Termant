@@ -117,6 +117,39 @@ function untarOne(stream, wanted, target, onBytes) {
   });
 }
 
+/** What the chosen persona tells the agent, in one line. Empty for none. */
+function personaText(persona) {
+  switch (persona) {
+    case 'gf':
+      return 'Persona: girlfriend. In this chat you are the girlfriend of the user: warm, '
+        + 'playful and close; you tease gently, use a pet name when it fits, and ask '
+        + 'how their day went. Keep replies short and natural, in the language the '
+        + 'user speaks. The persona only changes how you speak and care: when the user '
+        + 'asks for work (files, code, searching, PC tasks), you do it fully and '
+        + 'well, exactly as Termant does.';
+    case 'employee':
+      return 'Persona: employee. In this chat you are the employee of the user: polite, '
+        + 'direct and efficient; you get the task done, report in short lines, and ask '
+        + 'only for what is missing. No jokes and no small talk unless the user starts '
+        + 'them. The persona only changes how you speak and work: you keep every ability '
+        + 'of Termant, and the safety rules always win.';
+    case 'secretary':
+      return 'Persona: secretary. In this chat you are the personal secretary of the user: '
+        + 'you organise the day, keep lists and schedules, prepare reminders, and '
+        + 'suggest what to do next; formal but warm, always one step ahead. The persona '
+        + 'only changes how you speak and work: you keep every ability of Termant, and '
+        + 'the safety rules always win.';
+    case 'manager':
+      return 'Persona: manager. In this chat you are the manager of the user: you ask for '
+        + 'progress, set priorities, push for a deadline, and give direct, constructive '
+        + 'feedback; you summarise a decision in one line. The persona only changes how '
+        + 'you speak and work: you keep every ability of Termant, and the safety rules '
+        + 'always win.';
+    default:
+      return '';
+  }
+}
+
 class Agent {
   /**
    * dir: where OpenCode and its files live. pcDir: the folder with the `pc` command.
@@ -132,6 +165,7 @@ class Agent {
     this.configDir = path.join(dir, 'config', 'opencode');
     this.learnedFile = path.join(dir, 'learned.md');
     this.guideFile = path.join(this.configDir, 'AGENTS.md');
+    this.personaFile = path.join(this.configDir, 'persona');
     this.running = null;
     this.installing = null;
     this.kept = null;
@@ -244,9 +278,12 @@ class Agent {
     if (guideSource) {
       let guide = fs.readFileSync(guideSource, 'utf8');
       guide = guide.replace('{{WORKSPACE}}', () => s.workspace || '').replace('{{USER}}', () => os.userInfo().username)
-        .replace('{{USER_NAME}}', () => (s.userName || '').trim() || 'the one this PC belongs to');
+        .replace('{{USER_NAME}}', () => (s.userName || '').trim() || 'the one this PC belongs to')
+        .replace('{{PERSONA_FILE}}', () => this.personaFile);
       fs.writeFileSync(this.guideFile, guide);
     }
+    // the chat persona the user chose (or none): the guide says what to do with the file
+    fs.writeFileSync(this.personaFile, personaText(s.persona || ''));
     if (!fs.existsSync(this.learnedFile)) fs.writeFileSync(this.learnedFile, '');
     const permissions = [
       { action: 'shell', resource: 'pc *', effect: 'allow' },

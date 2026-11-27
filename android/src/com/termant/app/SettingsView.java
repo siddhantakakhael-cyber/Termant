@@ -37,6 +37,9 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
 
         void onPickModel();
 
+        /** The user picks the chat persona (none, girlfriend, employee, secretary, manager). */
+        void onPickPersona();
+
         void onPickWorkspace();
 
         void onAskSms();
@@ -156,6 +159,14 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                     @Override
                     public void onClick(View v) {
                         host.onPickModel();
+                    }
+                });
+        row(c.getString(R.string.persona_title),
+                personaName(c, Config.persona(c)), c.getString(R.string.persona_note),
+                new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        host.onPickPersona();
                     }
                 });
         row(c.getString(R.string.workspace_title), Config.workspaceName(c),
@@ -823,6 +834,22 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
      * One setting: its name, what it is set to, and a line about it. "On" and
      * "Off" are shown as a small badge, everything else as words with an arrow.
      */
+    /** The persona's name as the settings row shows it. */
+    private static String personaName(Context c, String persona) {
+        switch (persona) {
+            case "gf":
+                return c.getString(R.string.persona_gf);
+            case "employee":
+                return c.getString(R.string.persona_employee);
+            case "secretary":
+                return c.getString(R.string.persona_secretary);
+            case "manager":
+                return c.getString(R.string.persona_manager);
+            default:
+                return c.getString(R.string.persona_off);
+        }
+    }
+
     private void row(String title, String value, String note, OnClickListener click) {
         Context c = getContext();
         LinearLayout card = new LinearLayout(c);

@@ -1191,6 +1191,8 @@ grep -q '^other: password=ci-token-not-real' "$OUT/result5.txt" && finish "FAIL 
 grep -q '^git-name=ci-user' "$OUT/result5.txt" || finish "FAIL git did not get the account's name for commits"
 grep -q '"websearch"' "$OUT/result5.txt" || finish "FAIL web search is not in the agent's settings"
 grep -q '"provider": *"exa"' "$OUT/result5.txt" || finish "FAIL web search has no search service chosen"
+grep -q '^persona-file=kept' "$OUT/result5.txt" || finish "FAIL the persona file was not written before the agent"
+grep -q '^persona-bytes=0' "$OUT/result5.txt" || finish "FAIL the persona file is not empty though no persona is chosen"
 
 echo "Questions from the agent: over another app, then inside Termant"
 choices=$(count_log 'overlay: choice 1 at'); boxes=$(count_log 'overlay: box at')

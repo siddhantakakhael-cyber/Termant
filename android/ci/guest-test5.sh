@@ -173,4 +173,11 @@ echo "== github"
   echo "git-email=$(git config --global user.email)"
 )
 echo "== web search in the agent's settings"; cat /root/.config/opencode/opencode.jsonc
+echo "== the persona file the app writes before the agent (none is chosen: empty)"
+if [ -f /root/.config/opencode/persona ]; then
+  echo "persona-file=kept"
+  echo "persona-bytes=$(wc -c < /root/.config/opencode/persona)"
+else
+  echo "persona-file=missing"
+fi
 echo TERMANT-TEST-END

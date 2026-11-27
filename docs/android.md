@@ -329,7 +329,10 @@ all skills are given to the agent at the start of every chat; it reads one
 On a big job the agent does not do everything one step after the other any
 more. It is the main agent and hands parts of the job to helper agents. Each
 helper works in its own conversation, several at the same time, and reports
-back; the main agent puts the results together and answers you.
+back; the main agent puts the results together and answers you. When a
+request has 3 or 4 parts that do not depend on each other, they are done at
+the same time — one helper for each part, all started in one step — not one
+after another; the job then takes the time of its longest part.
 
 | Helper | What it is for |
 | --- | --- |
@@ -807,6 +810,14 @@ by hand makes Termant try it again at once.
 The **Arena** chip opens the arena.ai website in your browser, where you
 sign in and use it. Arena.ai offers no way for other apps to use its agent, so
 it is not connected to the chat and cannot control the phone or Ubuntu.
+
+**Chat persona.** In Settings → AI agent, the row **Chat persona** chooses
+who the agent is in the chat: off (Termant as usual), girlfriend, employee,
+secretary or manager. The agent plays that role in every reply, in your
+language. It only changes how it speaks and cares: what it can do does not
+change, and the safety rules of its guide always win over the role. The
+choice is written to `~/.config/opencode/persona` in Ubuntu with every
+message, so it can be changed or ended at any time.
 
 Under the chat are two chips: the **workspace folder** the agent works in and
 the **model** that answers. The gear button opens Settings, where you can also

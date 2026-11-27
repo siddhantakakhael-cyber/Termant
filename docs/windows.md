@@ -33,6 +33,7 @@ To remove it: Windows **Settings → Apps → Installed apps → Termant → Uni
 | **Pictures and files** | The **+** in the message box adds pictures or files to a message. A picture goes to the model itself; if the chosen model cannot see pictures, the first free model that can is asked for that message, and the answer says so. Small text files go into the message. Other files (Word, zip, Excel) the agent opens itself. |
 | **Draw a picture** | "Ek billi ki tasveer banao": the agent makes a picture from words, free and without a key; it shows under the answer, and the file is kept in your Pictures folder. |
 | **Models** | Free models work with no account. Pick one from the chip at the top right, or leave it on automatic. If a model does not answer, Termant tries other free ones. With your own API key (Settings), that company's models appear too. |
+| **Chat persona** | Settings → AI agent → **Chat persona**: off, girlfriend, employee, secretary or manager. The agent plays that role in every reply, in your language; it changes how it speaks, not what it can do. |
 | **PC control** | The agent uses the `pc` command: open programs and links, list and switch windows, type, press keys, click, read what a window shows, take screenshots, volume, brightness, clipboard, lock, sleep, shut down. |
 | **Terminal** | Up to 8 tabs of PowerShell, Command Prompt, or Ubuntu if you have WSL. The `pc` command works there too. |
 | **Rules** | "Every day at 11 pm turn the volume to zero." Rules run at a time of day, every so often, once after a delay, or when Termant starts. |
@@ -212,7 +213,10 @@ the agent at the start of every chat, and it reads one when a task fits.
 On a big job the agent does not do everything one step after the other any
 more. It is the main agent and hands parts of the job to helper agents. Each
 helper works in its own conversation, several at the same time, and reports
-back; the main agent puts the results together and answers you.
+back; the main agent puts the results together and answers you. When a
+request has 3 or 4 parts that do not depend on each other, they are done at
+the same time — one helper for each part, all started in one step — not one
+after another; the job then takes the time of its longest part.
 
 | Helper | What it is for |
 | --- | --- |

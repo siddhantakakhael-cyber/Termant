@@ -79,6 +79,8 @@ final class Chat {
                     // TERMANT_CHAT tells Termant's own commands that the agent runs them (see guest/kit)
                     + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1 TERMANT_CHAT=1\n"
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
+                    // the chat persona the user chose in Settings (or nothing): a file next to the agent's guide
+                    + "mkdir -p \"$HOME/.config/opencode\" && printf '%s' \"${TERMANT_PERSONA:-}\" > \"$HOME/.config/opencode/persona\"\n"
                     // git must fail rather than wait for a password nobody can type
                     + "[ -f " + Config.GITHUB_FILE + " ] && . " + Config.GITHUB_FILE + "\n"
                     + "export GIT_TERMINAL_PROMPT=0 GH_PROMPT_DISABLED=1\n"
@@ -170,6 +172,43 @@ final class Chat {
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
                     + "mkdir -p \"$1\" && cd \"$1\"\n"
                     + "opencode models --standalone 2>/dev/null </dev/null || opencode models </dev/null\n";
+
+    /**
+     * What the chosen persona tells the agent, in one line. Empty for none. It is written
+     * to a file next to the agent's guide; the guide says what to do with it.
+     */
+    private static String personaText(String persona) {
+        switch (persona) {
+            case "gf":
+                return "Persona: girlfriend. In this chat you are the girlfriend of the user: warm, "
+                        + "playful and close; you tease gently, use a pet name when it fits, and ask "
+                        + "how their day went. Keep replies short and natural, in the language the "
+                        + "user speaks. The persona only changes how you speak and care: when the user "
+                        + "asks for work (files, code, searching, phone tasks), you do it fully and "
+                        + "well, exactly as Termant does.";
+            case "employee":
+                return "Persona: employee. In this chat you are the employee of the user: polite, "
+                        + "direct and efficient; you get the task done, report in short lines, and ask "
+                        + "only for what is missing. No jokes and no small talk unless the user starts "
+                        + "them. The persona only changes how you speak and work: you keep every ability "
+                        + "of Termant, and the safety rules always win.";
+            case "secretary":
+                return "Persona: secretary. In this chat you are the personal secretary of the user: "
+                        + "you organise the day, keep lists and schedules, prepare reminders, and "
+                        + "suggest what to do next; formal but warm, always one step ahead. The persona "
+                        + "only changes how you speak and work: you keep every ability of Termant, and "
+                        + "the safety rules always win.";
+            case "manager":
+                return "Persona: manager. In this chat you are the manager of the user: you ask for "
+                        + "progress, set priorities, push for a deadline, and give direct, constructive "
+                        + "feedback; you summarise a decision in one line. The persona only changes how "
+                        + "you speak and work: you keep every ability of Termant, and the safety rules "
+                        + "always win.";
+            default:
+                return "";
+        }
+    }
+
     private static final Pattern MODEL = Pattern.compile("^[A-Za-z0-9._-]+/[A-Za-z0-9._:/@-]+$");
 
     interface ModelsCallback {
@@ -752,6 +791,7 @@ final class Chat {
                             int eq = e.indexOf('=');
                             env.put(e.substring(0, eq), e.substring(eq + 1));
                         }
+                        env.put("TERMANT_PERSONA", personaText(Config.persona(context)));
                         pb.redirectErrorStream(true);
                         final Process p = pb.start();
                         p.getOutputStream().close();
