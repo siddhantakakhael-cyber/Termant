@@ -520,16 +520,47 @@ final class LiveCall {
         p.getOutputStream().close();
         byte[] buf = new byte[4096];
         DataInputStream in = new DataInputStream(p.getInputStream());
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int n;
-        while ((n = in.read(buf)) > 0 && out.size() < 8000)
-            out.write(buf, 0, Math.min(n, 8000 - out.size()));
-        p.waitFor(90 * 1000);
-        if (p.isAlive()) {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Thread drain = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int n;
+                    while ((n = in.read(buf)) > 0)
+                        synchronized (out) {
+                            if (out.size() < 8000) out.write(buf, 0, Math.min(n, 8000 - out.size()));
+                        }
+                } catch (IOException ignored) {
+                    // the stream closed when the process ended or was destroyed
+                }
+            }
+        });
+        drain.setDaemon(true);
+        drain.start();
+        Thread waitEnd = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    p.waitFor();
+                } catch (InterruptedException ignored) {
+                    // the call is ending; the wait below decides
+                }
+            }
+        });
+        waitEnd.setDaemon(true);
+        waitEnd.start();
+        waitEnd.join(90 * 1000L);
+        if (waitEnd.isAlive()) {
             p.destroy();
+            waitEnd.join(5000L);
+            p.destroyForcibly();
             return "(timed out after 90 seconds)";
         }
-        String text = out.toString("UTF-8").trim();
+        drain.join(2000L);
+        String text;
+        synchronized (out) {
+            text = out.toString("UTF-8").trim();
+        }
         int code = p.exitValue();
         if (text.isEmpty()) return code == 0 ? "(done, nothing to show)" : "(exit " + code + ", nothing printed)";
         return code == 0 ? text : "(exit " + code + ") " + text;

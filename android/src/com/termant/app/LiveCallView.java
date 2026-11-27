@@ -57,20 +57,20 @@ final class LiveCallView extends LinearLayout {
         title.setText(R.string.live_title);
         title.setTextColor(ACCENT);
         title.setTextSize(18);
-        top.addView(title, new LayoutParams(WRAP_CONTENT, WRAP_CONTENT));
+        top.addView(title, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         timer = new TextView(context);
         timer.setText("0:00");
         timer.setTextColor(MUTED);
         timer.setTextSize(14);
         timer.setPadding(dp(12), 0, 0, 0);
-        top.addView(timer, new LayoutParams(WRAP_CONTENT, WRAP_CONTENT));
-        addView(top, new LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+        top.addView(timer, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        addView(top, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         // the middle: the orb
         FrameLayout mid = new FrameLayout(context);
         orb = new OrbView(context);
         mid.addView(orb, new FrameLayout.LayoutParams(dp(190), dp(190), Gravity.CENTER));
-        addView(mid, new LayoutParams(MATCH_PARENT, 0, 1));
+        addView(mid, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
 
         // the two voices, and the command that runs
         LinearLayout lines = new LinearLayout(context);
@@ -84,9 +84,9 @@ final class LiveCallView extends LinearLayout {
         workLine.setTextColor(ACCENT);
         workLine.setTextSize(13);
         lines.addView(userLine);
-        lines.addView(termantLine, new LayoutParams(WRAP_CONTENT, WRAP_CONTENT));
-        lines.addView(workLine, new LayoutParams(WRAP_CONTENT, WRAP_CONTENT));
-        addView(lines, new LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+        lines.addView(termantLine, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        lines.addView(workLine, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        addView(lines, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         // the end button
         Button end = new Button(context);
@@ -105,8 +105,8 @@ final class LiveCallView extends LinearLayout {
         LinearLayout endRow = new LinearLayout(context);
         endRow.setGravity(Gravity.CENTER_HORIZONTAL);
         endRow.setPadding(dp(16), dp(6), dp(16), dp(22));
-        endRow.addView(end, new LayoutParams(WRAP_CONTENT, dp(52)));
-        addView(endRow, new LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+        endRow.addView(end, new LayoutParams(LayoutParams.WRAP_CONTENT, dp(52)));
+        addView(endRow, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
     }
 
     private int dp(int v) {
@@ -188,7 +188,7 @@ final class LiveCallView extends LinearLayout {
             workLine.setTextColor(ERROR);
             workLine.setText(reason.equals("quota") ? getString(R.string.live_quota)
                     : reason.equals("no-key") ? getString(R.string.live_no_key)
-                    : getString(R.string.live_error, reason));
+                    : getResources().getString(R.string.live_error, reason));
         }
         main.postDelayed(new Runnable() {
             @Override
