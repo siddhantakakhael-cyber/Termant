@@ -4,9 +4,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 /**
- * Two palettes: dark (default) and light. Picked from Settings → Theme.
- * Screens read the colours when they are built, so the activity rebuilds
- * itself after a switch.
+ * Three palettes: dark (default), light and ember. Picked from Settings →
+ * Theme, which goes dark, light, ember, dark... Screens read the colours
+ * when they are built, so the activity rebuilds itself after a switch.
  */
 final class Theme {
     private Theme() {
@@ -42,6 +42,23 @@ final class Theme {
             0xffd8dee4, // OUTLINE
             0x1fd25a2e, // ACCENT_SOFT
     };
+    // The one that is not quiet: a warm black that glows, for the user who wants
+    // the phone to feel like it is on fire while it works.
+    static final int[] EMBER = {
+            0xff150d09, // BG
+            0xff211510, // SURFACE
+            0xff2e1d15, // SURFACE_HIGH
+            0xfff6ede3, // TEXT
+            0xffab927d, // MUTED
+            0xffff5c33, // ACCENT
+            0xff2b0d02, // ON_ACCENT
+            0xffff8a76, // ERROR
+            0xffead9c6, // KEY_TEXT
+            0xff8fd6a4, // CODE
+            0x33ffffff, // RIPPLE
+            0xff402a1d, // OUTLINE
+            0x2aff5c33, // ACCENT_SOFT
+    };
 
     static final int IDX_BG = 0, IDX_SURFACE = 1, IDX_SURFACE_HIGH = 2,
             IDX_TEXT = 3, IDX_MUTED = 4, IDX_ACCENT = 5, IDX_ON_ACCENT = 6,
@@ -54,7 +71,7 @@ final class Theme {
     static void apply(Context c) {
         SharedPreferences p = c.getSharedPreferences("termant", Context.MODE_PRIVATE);
         String theme = p.getString("theme", "dark");
-        current = theme.equals("light") ? LIGHT : DARK;
+        current = theme.equals("light") ? LIGHT : theme.equals("ember") ? EMBER : DARK;
     }
 
     static String currentName(Context c) {

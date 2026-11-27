@@ -143,12 +143,14 @@ final class SettingsView extends LinearLayout implements Rules.Listener {
                         host.onLookChanged();
                     }
                 });
-        final boolean light = Theme.currentName(c).equals("light");
-        row(c.getString(R.string.theme_title), c.getString(light ? R.string.theme_light : R.string.theme_dark),
+        final String themeName = Theme.currentName(c);
+        final int themeLabel = themeName.equals("light") ? R.string.theme_light
+                : themeName.equals("ember") ? R.string.theme_ember : R.string.theme_dark;
+        row(c.getString(R.string.theme_title), c.getString(themeLabel),
                 c.getString(R.string.theme_note), new OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Theme.set(c, light ? "dark" : "light");
+                        Theme.set(c, themeName.equals("dark") ? "light" : themeName.equals("light") ? "ember" : "dark");
                         host.onLookChanged();
                     }
                 });

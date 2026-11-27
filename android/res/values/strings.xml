@@ -162,7 +162,16 @@
     <string name="theme_title">Theme</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_light">Light</string>
-    <string name="theme_note">Dark or light colours for the whole app.</string>
+    <string name="theme_ember">Ember</string>
+    <string name="theme_note">Dark, light or ember for the whole app. Tap to switch.</string>
+    <string name="live_title">Live</string>
+    <string name="live_call">Live call: talk out loud, and the work runs while you talk</string>
+    <string name="live_end">End</string>
+    <string name="live_working">working: %1$s</string>
+    <string name="live_no_key">Live needs a Google Gemini key: Settings → Your own API key.</string>
+    <string name="live_quota">Live is off for now: the live quota is used up. Try again tomorrow.</string>
+    <string name="live_ended">Live call ended (%1$s)</string>
+    <string name="live_error">Live stopped: %1$s</string>
     <string name="lang_title">Language</string>
     <string name="lang_hindi">Hindi (Hinglish)</string>
     <string name="lang_english">English</string>

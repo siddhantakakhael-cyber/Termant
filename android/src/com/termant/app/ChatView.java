@@ -45,6 +45,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
         /** The user wants to send a picture or a file with the message. */
         void onAttach();
+
+        /** The user wants a live voice call. */
+        void onLive();
     }
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
@@ -70,6 +73,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private LinearLayout attachRow;
     /** The text of the reply being written, and what the list looked like when it was built. */
     private TextView writing;
+    private ImageView live;
     /** The last rendered chat and its message count: a row that arrived after that may come in. */
     private Chat seenChat;
     private int seenCount;
@@ -227,6 +231,18 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         input.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         pill.addView(input, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
+        live = Ui.iconButton(context, R.drawable.ic_phone, context.getString(R.string.live_call),
+                0xffffffff, 42, 21);
+        live.setBackground(Ui.pressable(context, ERROR, 21));
+        live.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ChatView.this.host.onLive();
+            }
+        });
+        pressScale(live);
+        pill.addView(live, new LayoutParams(dp(42), dp(42)));
+
         mic = Ui.iconButton(context, R.drawable.ic_mic, context.getString(R.string.ask_voice), MUTED, 42, 22);
         mic.setOnClickListener(new OnClickListener() {
             @Override
@@ -381,12 +397,13 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             public boolean onTouch(View view, android.view.MotionEvent e) {
                 switch (e.getActionMasked()) {
                     case android.view.MotionEvent.ACTION_DOWN:
-                        view.animate().scaleX(0.92f).scaleY(0.92f).setDuration(80).start();
+                        view.animate().scaleX(0.88f).scaleY(0.88f).setDuration(70).start();
                         return false;
                     case android.view.MotionEvent.ACTION_UP:
                     case android.view.MotionEvent.ACTION_CANCEL:
                     case android.view.MotionEvent.ACTION_OUTSIDE:
-                        view.animate().scaleX(1f).scaleY(1f).setDuration(140).start();
+                        view.animate().scaleX(1f).scaleY(1f).setDuration(200)
+                                .setInterpolator(new android.view.animation.OvershootInterpolator(1.6f)).start();
                         return false;
                     default:
                         return false;
@@ -434,19 +451,22 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             if (m.user) addMine(m);
             else addReply(m, busy && i == last);
         }
-        // a row that arrived since the last render comes in: a rise and a fade, staggered
+        // a row that arrived since the last render comes in: a big rise, a fade,
+        // an overshoot, staggered
         int arrived = chat.messages.size() - seenCount;
         if (seenChat == chat && arrived > 0 && list.getChildCount() > 0) {
-            int from = (int) Math.max(0, list.getChildCount() - Math.min(arrived, 3));
+            int from = (int) Math.max(0, list.getChildCount() - Math.min(arrived, 4));
             for (int i = from; i < list.getChildCount(); i++) {
                 View row = list.getChildAt(i);
                 row.setAlpha(0f);
-                row.setTranslationY(dp(14));
-                row.animate().alpha(1f).translationY(0f).setDuration(280)
-                        .setStartDelay((long) (i - from) * 60)
-                        .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+                row.setTranslationY(dp(26));
+                row.animate().alpha(1f).translationY(0f).setDuration(340)
+                        .setStartDelay((long) (i - from) * 90)
+                        .setInterpolator(new android.view.animation.OvershootInterpolator(1.25f)).start();
             }
         }
+        // the live button is dimmed while the live quota is used up
+        live.setAlpha(Config.liveBlocked(getContext()) > System.currentTimeMillis() ? 0.35f : 1f);
         seenChat = chat;
         seenCount = chat.messages.size();
         scroll.post(new Runnable() {

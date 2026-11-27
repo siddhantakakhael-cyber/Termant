@@ -132,6 +132,21 @@ final class Config {
         prefs(c).edit().putString("persona", name).apply();
     }
 
+    // ------------------------------------------------------------ the live call
+
+    /**
+     * When the live call must not be offered: 0 = it is fine. It is set to a time
+     * when the Gemini live quota is used up, so a used-up quota does not turn
+     * into a button that fails every time it is pressed.
+     */
+    static long liveBlocked(Context c) {
+        return prefs(c).getLong("live_blocked_until", 0);
+    }
+
+    static void liveBlocked(Context c, long until) {
+        prefs(c).edit().putLong("live_blocked_until", until).apply();
+    }
+
     // ------------------------------------------------------------ auto-switch
 
     static boolean autoSwitch(Context c) {

@@ -152,7 +152,16 @@
     <string name="theme_title">Rang (Theme)</string>
     <string name="theme_dark">Andhera (Dark)</string>
     <string name="theme_light">Ujala (Light)</string>
-    <string name="theme_note">Poore app ke liye dark ya light rang.</string>
+    <string name="theme_ember">Angaar (Ember)</string>
+    <string name="theme_note">Poore app ke liye dark, light ya angaar. Tap karke badlo.</string>
+    <string name="live_title">Live</string>
+    <string name="live_call">Live baat: awaaz me bolo, kaam baat karte karte chalega</string>
+    <string name="live_end">Khatam</string>
+    <string name="live_working">kaam: %1$s</string>
+    <string name="live_no_key">Live ke liye Google Gemini key chahiye: Settings → Apna API key.</string>
+    <string name="live_quota">Live abhi band hai: live ka quota khatam ho gaya. Kal phir try karo.</string>
+    <string name="live_ended">Live baat khatam (%1$s)</string>
+    <string name="live_error">Live ruk gaya: %1$s</string>
     <string name="lang_title">Bhasha (Language)</string>
     <string name="lang_hindi">Hindi (Hinglish)</string>
     <string name="lang_english">English</string>
