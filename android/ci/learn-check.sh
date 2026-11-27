@@ -26,7 +26,7 @@ python3 "$here/fake_web.py" "$work/port" & fake=$!
 trap 'kill $fake 2>/dev/null; rm -rf "$work"' EXIT
 i=0; while [ ! -s "$work/port" ] && [ $i -lt 100 ]; do sleep 0.1; i=$((i+1)); done
 base="http://127.0.0.1:$(cat "$work/port")"
-export TERMANT_YOUTUBE_URL=$base TERMANT_ELEVEN_URL=$base
+export TERMANT_YOUTUBE_URL=$base TERMANT_ELEVEN_URL=$base TERMANT_GEMINI_URL=$base
 V=dQw4w9WgXcQ
 today=$(date +%F)
 
@@ -106,9 +106,9 @@ run learn show word-table
 check "reading a removed skill is refused" refused "there is no skill"
 
 run termant-web voice
-check "no keys: says how to add them" has "No ElevenLabs key is saved"
+check "no keys: says how to add them" has "No voice key is saved"
 run termant-web voice speak hello
-check "no keys: speaking is refused" refused "No ElevenLabs key is saved"
+check "no keys: speaking is refused" refused "No voice key is saved"
 run termant-web voice add key-used-up-1 key-wrong-22 key-good-333 key-good-333 short
 check "three keys are saved, doubles and scraps dropped" has "3 key(s) added; 3 ElevenLabs key(s) are saved now."
 check "the key file is for the owner only" [ "$(stat -c %a "$HOME/.config/termant/voice.keys")" = 600 ]
@@ -140,6 +140,20 @@ check "a key is removed" has "Removed key ...-333; 2 left."
 run termant-web voice speak x
 check "with only bad keys the reasons are told" refused "None of the 2 ElevenLabs keys can speak now: key 1 (...up-1): quota_exceeded; key 2 (...g-22): invalid_api_key."
 check "resting keys are still tried when nothing else is left" [ "$(wc -l < "$work/port.asked")" -eq 2 ]
+
+# the Gemini voice: one free Google key, which speaks Hindi and Odia
+run termant-web voice gemini add not-a-key
+check "a key that is not a Gemini key is refused" refused "does not look like a Gemini key"
+run termant-web voice gemini add AIzaSyDfakegeminikeygood00000
+check "the Gemini key is saved and speaks now" has "the Gemini voice speaks now"
+run termant-web voice speak namaste
+check "the Gemini voice speaks" has "Said with the Gemini voice"
+check "the Gemini sound is a sound file" [ -s "$HOME/.cache/termant/speech.wav" ]
+run termant-web voice gemini add AIzaSyDfakegeminikeywrong00000
+run termant-web voice speak x
+check "a wrong Gemini key is refused" refused "Google refused the key"
+run termant-web voice gemini remove
+check "the Gemini key is removed" has "Gemini key removed"
 
 if [ $failed -eq 0 ]; then echo "RESULT: PASS"; else echo "RESULT: FAIL ($failed)"; fi
 [ $failed -eq 0 ]
