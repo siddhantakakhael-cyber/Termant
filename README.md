@@ -163,11 +163,11 @@ you see how far a download is. The same chat opens in a phone's browser over
 the home Wi-Fi — with a password, and with voice: say "hey Termant" and the
 phone sends the command to the PC, the answer spoken by the browser (an
 iPhone gets it too: the same page works in Safari). It is an early version
-(0.9.0).
+(0.10.0).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.9.0/Termant-Setup.exe)** and open it.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.10.0/Termant-Setup.exe)** and open it.
 2. Windows shows a blue box, "Windows protected your PC", because the installer is not signed. Choose **More info**, then **Run anyway**.
 3. Termant starts and puts an icon on the desktop. The first message downloads the agent (about 120 MB).
 

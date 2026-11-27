@@ -7,13 +7,13 @@ but here it works on your PC. You write what you want in Hindi, Hinglish or
 English; it runs commands, writes files, opens programs, types, clicks, sets
 alarms and keeps rules.
 
-> **Early version (0.9.0).** It is built and tested automatically on a Windows
+> **Early version (0.10.0).** It is built and tested automatically on a Windows
 > machine of GitHub (the test results are listed [below](#how-it-is-tested)),
 > but it has not yet been used on many real PCs. Please report what breaks.
 
 ## Install
 
-1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.9.0/Termant-Setup.exe)**.
+1. Download **[Termant-Setup.exe](https://github.com/siddhantakakhael-cyber/Termant/releases/download/windows-v0.10.0/Termant-Setup.exe)**.
 2. Open it. Windows shows a blue box, **"Windows protected your PC"**, because
    the installer is not signed (a signing certificate costs money). Choose
    **More info**, then **Run anyway**.
