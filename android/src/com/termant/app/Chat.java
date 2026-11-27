@@ -35,6 +35,23 @@ final class Chat {
         String note = "";
         /** The agent spoke first: a check-in nobody asked for (see Care). */
         boolean first;
+        /**
+         * Pictures made for this reply (`draw`), shown under it. Each is the file's path in Ubuntu;
+         * after a tab comes its address in the phone's gallery when a copy was put there.
+         */
+        final List<String> pictures = new ArrayList<>();
+
+        /** The file of picture i as the app reads it. */
+        static File pictureFile(Context c, String picture) {
+            String path = picture.split("\t", 2)[0];
+            return new File(Ubuntu.rootfs(c), path.startsWith("/") ? path.substring(1) : path);
+        }
+
+        /** The picture's address in the phone's gallery, or "" when it is only in Ubuntu. */
+        static String pictureAddress(String picture) {
+            String[] parts = picture.split("\t", 2);
+            return parts.length > 1 ? parts[1].trim() : "";
+        }
     }
 
     interface Listener {
@@ -45,17 +62,25 @@ final class Chat {
     private static final int SETUP_FAILED = 97;
     private static final String SESSION_MARKER = "@@TERMANT-SESSION@@";
     private static final Pattern SESSION_ID = Pattern.compile("\\bses_[A-Za-z0-9]+");
+    /** A note under a reply that starts with this sign can be tapped: it undoes the reply's file changes. */
+    static final String UNDO_SIGN = "\u21a9";
     /** Where the agent script copies OpenCode's event feed while a reply is written, as seen from inside Ubuntu. */
     private static final String STREAM_FILE = "/root/.cache/termant/events.txt";
+    /** Where `draw` (guest/kit) lists the pictures it made for the message being answered. */
+    private static final String DRAWN_FILE = "/root/.cache/termant/drawn.txt";
     /**
      * Runs inside Ubuntu; $1 message, $2 "--continue", "--session ID" or empty, $3 workspace folder,
      * $4 model or empty, $5 non-empty to also print which OpenCode session the reply belongs to,
      * $6 the file the reply is copied to word by word.
      */
     private static final String SCRIPT =
-            "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
-                    + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1\n"
+            "rm -f \"$6.note\" 2>/dev/null\n"
+                    + "termant-agent --install-only || exit " + SETUP_FAILED + "\n"
+                    // TERMANT_CHAT tells Termant's own commands that the agent runs them (see guest/kit)
+                    + "export PATH=\"$HOME/.opencode/bin:$PATH\" NO_COLOR=1 TERMANT_CHAT=1\n"
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
+                    // the chat persona the user chose in Settings (or nothing): a file next to the agent's guide
+                    + "mkdir -p \"$HOME/.config/opencode\" && printf '%s' \"${TERMANT_PERSONA:-}\" > \"$HOME/.config/opencode/persona\"\n"
                     // git must fail rather than wait for a password nobody can type
                     + "[ -f " + Config.GITHUB_FILE + " ] && . " + Config.GITHUB_FILE + "\n"
                     + "export GIT_TERMINAL_PROMPT=0 GH_PROMPT_DISABLED=1\n"
@@ -63,8 +88,23 @@ final class Chat {
                     // OpenCode prints a paragraph only when it is complete. To show the words while
                     // they are written, start its server here and copy the server's event feed to $6.
                     // If any of that fails, OpenCode starts its own server as before.
-                    + "where=--standalone; srv=; feed=\n"
-                    + "if [ -n \"$6\" ] && command -v curl >/dev/null 2>&1 && mkdir -p \"$(dirname \"$6\")\"; then\n"
+                    // Every message is one "turn": what `safe` keeps and deletes during it can be undone together.
+                    + "turn=$(date +%Y%m%d-%H%M%S); mkdir -p \"$HOME/.cache/termant\"; echo \"$turn\" > \"$HOME/.cache/termant/turn\"\n"
+                    + "began=$(date +%s)\n"
+                    // a job the agent does by itself: nobody is there to answer a question (see `safe rm`)
+                    + "case \"$1\" in 'Here is a job to do by yourself now.'*|'You look after the user'*)"
+                    + " : > \"$HOME/.cache/termant/alone\" ;; *) rm -f \"$HOME/.cache/termant/alone\" ;; esac\n"
+                    // "undo" (typed, or the line under a reply tapped) puts the files back at once, without a model
+                    + "case \"$1\" in undo|Undo|UNDO) if put=$(safe undo 2>&1); then echo " + MARKER + "; echo \"$put\"; exit 0; fi ;; esac\n"
+                    // "apilayer key THE_KEY" typed as a message saves the key at once, so that it never
+                    // reaches a model. Only letters, numbers and the signs of a link are let through, unquoted.
+                    + "case \"$1\" in [Aa]pilayer\\ key|[Aa]pilayer\\ key\\ *) case \"$1\" in *[!A-Za-z0-9_\\ .:/#=-]*) ;; *)"
+                    + " echo " + MARKER + "; set -f; apilayer key ${1#* key} 2>&1; exit 0 ;; esac ;; esac\n"
+                    + "where=--standalone; srv=; feed=; url=\n"
+                    // The server Termant kept from the message before is used when it is there
+                    // (server.sh): then this message does not wait for OpenCode to start.
+                    + "[ -n \"$6\" ] && . /usr/local/lib/termant/server.sh 2>/dev/null && use_kept \"$6\"\n"
+                    + "if [ -z \"$url\" ] && [ -n \"$6\" ] && command -v curl >/dev/null 2>&1 && mkdir -p \"$(dirname \"$6\")\"; then\n"
                     + "  export OPENCODE_PASSWORD=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \\n')\n"
                     + "  : > \"$6.server\"\n"
                     // the server stops when its input closes, which is when this script is gone
@@ -85,10 +125,37 @@ final class Chat {
                     + "    kill $srv 2>/dev/null; srv=; unset OPENCODE_PASSWORD\n"
                     + "  fi\n"
                     + "fi\n"
+                    // Files attached to the message ("[file: PATH]"): a picture or PDF goes to the model itself
+                    // when a model that can take it is there, and that model is asked; see `termant-kit attach`.
+                    + "model=$4; files=(); told=\n"
+                    + "case \"$1\" in *'[file: '*)\n"
+                    + "  picked=$(termant-kit attach \"$4\" \"$1\" 2>/dev/null)\n"
+                    + "  case \"$picked\" in model=*) model=$(printf '%s\\n' \"$picked\" | sed -n 's/^model=//p' | head -n 1) ;; esac\n"
+                    + "  while IFS= read -r f; do [ -n \"$f\" ] && files+=(--file \"$f\"); done"
+                    + " < <(printf '%s\\n' \"$picked\" | sed -n 's/^file=//p')\n"
+                    + "  told=$(printf '%s\\n' \"$picked\" | sed -n 's/^note=model://p' | head -n 1)\n"
+                    + "  ;;\n"
+                    + "esac\n"
                     + "echo " + MARKER + "\n"
-                    + "if [ -n \"$4\" ]; then opencode run $where --auto $2 --model \"$4\" \"$1\" </dev/null\n"
-                    + "else opencode run $where --auto $2 \"$1\" </dev/null; fi\n"
+                    + "if [ -n \"$model\" ]; then opencode run $where --auto $2 --model \"$model\" \"${files[@]}\" \"$1\" </dev/null\n"
+                    + "else opencode run $where --auto $2 \"${files[@]}\" \"$1\" </dev/null; fi\n"
                     + "code=$?\n"
+                    // the work diary (`diary`), and what is said under the reply: what can be undone, which model saw the file
+                    + "if command -v termant-kit >/dev/null 2>&1; then\n"
+                    + "  kind=; said=$1\n"
+                    + "  case \"$1\" in\n"
+                    + "    'Here is a job to do by yourself now.'*) kind=job; said=$(printf '%s\\n' \"$1\" | sed -n 's/^The job: //p' | head -n 1) ;;\n"
+                    + "    'You look after the user'*) kind=check-in; said= ;;\n"
+                    + "  esac\n"
+                    + "  helpers=0; [ -s \"$6\" ] && helpers=$(grep '\"session.created\"' \"$6\" 2>/dev/null | grep -c '\"parentID\":\"ses_')\n"
+                    + "  termant-kit diary add --seconds $(( $(date +%s) - began )) --model \"$model\" --ok $code --helpers \"$helpers\""
+                    + " --turn \"$turn\" ${kind:+--kind $kind} -- \"$said\" >/dev/null 2>&1\n"
+                    + "  changes=$(safe has \"$turn\" 2>/dev/null)\n"
+                    + "  note=\n"
+                    + "  [ -n \"$told\" ] && note=\"Model for the attached file: ${told#opencode/}\"\n"
+                    + "  [ -n \"$changes\" ] && note=\"" + UNDO_SIGN + " Undo: $changes file change(s)${note:+ \u00b7 $note}\"\n"
+                    + "  [ -n \"$note\" ] && [ -n \"$6\" ] && printf '%s\\n' \"$note\" > \"$6.note\"\n"
+                    + "fi\n"
                     + "if [ $code -eq 0 ] && [ -n \"$5\" ]; then\n"
                     + "  echo; echo " + SESSION_MARKER + "\n"
                     + "  { opencode session list $where --max-count 1 --format json 2>/dev/null </dev/null ||\n"
@@ -105,6 +172,43 @@ final class Chat {
                     + "[ -f " + Config.KEYS_FILE + " ] && . " + Config.KEYS_FILE + "\n"
                     + "mkdir -p \"$1\" && cd \"$1\"\n"
                     + "opencode models --standalone 2>/dev/null </dev/null || opencode models </dev/null\n";
+
+    /**
+     * What the chosen persona tells the agent, in one line. Empty for none. It is written
+     * to a file next to the agent's guide; the guide says what to do with it.
+     */
+    private static String personaText(String persona) {
+        switch (persona) {
+            case "gf":
+                return "Persona: girlfriend. In this chat you are the girlfriend of the user: warm, "
+                        + "playful and close; you tease gently, use a pet name when it fits, and ask "
+                        + "how their day went. Keep replies short and natural, in the language the "
+                        + "user speaks. The persona only changes how you speak and care: when the user "
+                        + "asks for work (files, code, searching, phone tasks), you do it fully and "
+                        + "well, exactly as Termant does.";
+            case "employee":
+                return "Persona: employee. In this chat you are the employee of the user: polite, "
+                        + "direct and efficient; you get the task done, report in short lines, and ask "
+                        + "only for what is missing. No jokes and no small talk unless the user starts "
+                        + "them. The persona only changes how you speak and work: you keep every ability "
+                        + "of Termant, and the safety rules always win.";
+            case "secretary":
+                return "Persona: secretary. In this chat you are the personal secretary of the user: "
+                        + "you organise the day, keep lists and schedules, prepare reminders, and "
+                        + "suggest what to do next; formal but warm, always one step ahead. The persona "
+                        + "only changes how you speak and work: you keep every ability of Termant, and "
+                        + "the safety rules always win.";
+            case "manager":
+                return "Persona: manager. In this chat you are the manager of the user: you ask for "
+                        + "progress, set priorities, push for a deadline, and give direct, constructive "
+                        + "feedback; you summarise a decision in one line. The persona only changes how "
+                        + "you speak and work: you keep every ability of Termant, and the safety rules "
+                        + "always win.";
+            default:
+                return "";
+        }
+    }
+
     private static final Pattern MODEL = Pattern.compile("^[A-Za-z0-9._-]+/[A-Za-z0-9._:/@-]+$");
 
     interface ModelsCallback {
@@ -174,6 +278,9 @@ final class Chat {
     }
 
     private static final Pattern ANSI = Pattern.compile("\u001b\\[[0-9;?]*[ -/]*[@-~]|\u001b\\][^\u0007]*\u0007|\r");
+    /** OpenCode's plain output about helper agents: one was started; the run waits for those still at work. */
+    private static final Pattern HELPER_LINE = Pattern.compile("^[\u2713\u2714\u2717\u2715\u00d7] \\S.* Agent$");
+    private static final Pattern WAITS_FOR_HELPERS = Pattern.compile("^waiting for \\d+ background jobs?$");
     /** OpenCode prints "> agent · model" before each thing the model says or does. */
     private static final Pattern HEADER = Pattern.compile("^> \\S+ \u00b7 \\S.*$");
 
@@ -189,6 +296,42 @@ final class Chat {
     /** What the agent ran in the current attempt, as told by its event feed (its printed text can leave calls out). */
     private final List<String> ran = java.util.Collections.synchronizedList(new ArrayList<String>());
     private Process process;
+    /** The script that keeps OpenCode's server running between messages (assets/guest/termant-server). */
+    private Process keeper;
+    /** Where that script says how to reach its server, as seen from inside Ubuntu; must match assets/guest/server.sh. */
+    private static final String KEEP_FILE = "/root/.cache/termant/server.env";
+
+    /** Starts the kept server if it is not running; the message that is sent now still goes the slow way. */
+    private synchronized void keepServer() {
+        try {
+            if (keeper != null) {
+                try {
+                    keeper.exitValue();
+                } catch (IllegalThreadStateException running) {
+                    return;
+                }
+            }
+            ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context, "/bin/bash", "/usr/local/bin/termant-server"));
+            Map<String, String> env = pb.environment();
+            env.clear();
+            for (String e : Ubuntu.hostEnvironment(context)) {
+                int eq = e.indexOf('=');
+                env.put(e.substring(0, eq), e.substring(eq + 1));
+            }
+            pb.redirectErrorStream(true);
+            keeper = pb.start();
+            keeper.getOutputStream().close();
+        } catch (Exception e) {
+            keeper = null; // without it every message starts OpenCode itself, as before
+        }
+    }
+
+    /** Ends the kept server: it would go on with an answer that nobody waits for any more. */
+    private synchronized void dropServer() {
+        new File(Ubuntu.rootfs(context), KEEP_FILE.substring(1)).delete();
+        if (keeper != null) keeper.destroy();
+        keeper = null;
+    }
     private int run; // identifies the current request; stale threads are ignored
     private boolean busy;
     private boolean continues;
@@ -232,6 +375,11 @@ final class Chat {
     volatile int activity = ACT_START;
     volatile String activityDetail = "";
     volatile long activityAt;
+    /**
+     * The newest line the command that runs now has printed (how far a download is, which
+     * package is being unpacked); empty when nothing runs or it has printed nothing yet.
+     */
+    volatile String activityOutput = "";
 
     private static final String[] ACT_NAMES = {"start", "ask", "think", "write", "shell", "install", "phone",
             "screen", "github", "read", "edit", "find", "search", "fetch", "plan", "helper", "tool", "retry",
@@ -247,6 +395,97 @@ final class Chat {
         }
         activity = kind;
         activityDetail = about;
+        activityOutput = "";
+    }
+
+    /** What the running command printed last; it is shown only while a command is what the agent does. */
+    private synchronized void printing(String line) {
+        if (SHELL_RANK.contains(activity)) activityOutput = line;
+    }
+
+    /** Colours and cursor moves that programs print for a terminal. */
+    private static final Pattern ESCAPES = Pattern.compile(
+            "\u001b\\[[0-9;?]*[ -/]*[@-~]|\u001b\\][^\u0007]*\u0007|\u001b[@-_]");
+    private static final String CURL_TIME = "(--:--:--|\\d+:\\d\\d:\\d\\d)";
+    /** curl's meter: % Total, % Received, % Xferd, Dload, Upload, Total, Spent, Left, Speed. */
+    private static final Pattern CURL = Pattern.compile(
+            "^(\\d{1,3}) +(\\S+) +(\\d{1,3}) +(\\S+) +(\\d{1,3}) +(\\S+) +(\\S+) +(\\S+) +"
+                    + CURL_TIME + " +" + CURL_TIME + " +" + CURL_TIME + " +(\\S+)$");
+    /** `curl -#` and others that draw a bar with a percentage after it: "#########      13.7%". */
+    private static final Pattern BAR = Pattern.compile("^[#=>\\-. ]*?(\\d{1,3}(?:[.,]\\d)?) ?%$");
+    /** wget without a terminal: "1050K .......... .......... 12% 1.20M 3s". */
+    private static final Pattern WGET = Pattern.compile(
+            "^(\\d+)K(?: [.,]+)+ +(?:(\\d{1,3})% +)?([\\d.,]+[KMG]?)(?: (\\S+)|=\\S+)?$");
+    private static final Pattern AMOUNT = Pattern.compile("^(\\d+(?:[.,]\\d+)?)([kKMGTP]?)$");
+    private static final Pattern CLOCK = Pattern.compile("^(\\d+):(\\d\\d):(\\d\\d)$");
+
+    /** "22.3M" as curl and wget write an amount, as "22.3 MB". */
+    private static String amount(String text) {
+        Matcher m = AMOUNT.matcher(text);
+        if (!m.matches()) return text;
+        String unit = m.group(2);
+        return m.group(1) + " " + (unit.isEmpty() ? "B" : unit.equalsIgnoreCase("k") ? "kB" : unit + "B");
+    }
+
+    /** "0:00:12" as "12s", "0:01:05" as "1:05"; empty when the time is not known ("--:--:--"). */
+    private static String timeLeft(String text) {
+        Matcher m = CLOCK.matcher(text);
+        if (!m.matches()) return "";
+        try {
+            int hours = Integer.parseInt(m.group(1));
+            int minutes = Integer.parseInt(m.group(2));
+            int seconds = Integer.parseInt(m.group(3));
+            if (hours > 0) return hours + ":" + m.group(2) + ":" + m.group(3);
+            if (minutes > 0) return minutes + ":" + m.group(3);
+            return seconds + "s";
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
+    private static String curlSays(Matcher m) {
+        boolean sending = m.group(4).equals("0") && !m.group(6).equals("0");
+        String done = sending ? m.group(6) : m.group(4);
+        String percent = sending ? m.group(5) : m.group(3);
+        // without a known size, curl gives what has arrived so far as the total
+        boolean known = !m.group(2).equals("0") && (!m.group(2).equals(done) || percent.equals("100"));
+        StringBuilder b = new StringBuilder(known ? percent + "% of " + amount(m.group(2))
+                : amount(done) + (sending ? " sent" : " downloaded"));
+        if (!m.group(12).equals("0")) b.append(" \u00b7 ").append(amount(m.group(12))).append("/s");
+        String rest = timeLeft(m.group(11));
+        if (!rest.isEmpty()) b.append(" \u00b7 ").append(rest).append(" left");
+        return b.toString();
+    }
+
+    private static String wgetSays(Matcher m) {
+        StringBuilder b = new StringBuilder(m.group(2) != null ? m.group(2) + "%"
+                : amount(m.group(1) + "K") + " downloaded");
+        b.append(" \u00b7 ").append(amount(m.group(3))).append("/s");
+        if (m.group(4) != null) b.append(" \u00b7 ").append(m.group(4)).append(" left");
+        return b.toString();
+    }
+
+    /**
+     * The newest line in what a command has printed (the end of it is enough), short and readable:
+     * for a download "45% of 22.3 MB, 1100 kB/s, 12s left", else the line as the command printed it.
+     * A line that redraws itself (it ends with a return, not a new line) counts as lines.
+     * The same rules are in the Windows app (windows/src/progress.js, with its checks); keep the two alike.
+     */
+    static String newestLine(String printed) {
+        String[] lines = ESCAPES.matcher(printed == null ? "" : printed).replaceAll("").split("[\\r\\n]+");
+        for (int i = lines.length - 1; i >= 0; i--) {
+            String line = lines[i].replaceAll("[\\x00-\\x1f\\x7f]+", " ").replaceAll("\\s+", " ").trim();
+            // the two heading lines of curl's meter say nothing
+            if (line.isEmpty() || line.startsWith("% Total % Received") || line.startsWith("Dload Upload")) continue;
+            Matcher m = CURL.matcher(line);
+            if (m.matches()) return curlSays(m);
+            m = BAR.matcher(line);
+            if (m.matches()) return m.group(1) + "%";
+            m = WGET.matcher(line);
+            if (m.matches()) return wgetSays(m);
+            return line.length() > 160 ? line.substring(0, 160) : line;
+        }
+        return "";
     }
 
     private synchronized String trail(boolean clear) {
@@ -321,10 +560,24 @@ final class Chat {
         }
     }
 
+    /** The step shown when a part of the job is handed to a helper agent: "Helper researcher: Find out about chai". */
+    static String helperStep(JSONObject input) {
+        String who = input.optString("agent");
+        if (who.isEmpty()) who = input.optString("subagent_type");
+        if (who.isEmpty()) who = "general";
+        String what = oneLine(input.optString("description"));
+        if (what.isEmpty()) what = oneLine(input.optString("prompt"));
+        if (what.length() > 200) what = what.substring(0, 200);
+        // with a session named, it is more work for a helper that is already there
+        boolean more = !input.optString("sessionID").isEmpty() || !input.optString("task_id").isEmpty();
+        return (more ? "More for helper " : "Helper ") + who + (what.isEmpty() ? "" : ": " + what);
+    }
+
     /** What a tool call is about: the command, the file, the search words. */
     static String aboutOf(String tool, JSONObject input) {
         String name = tool == null ? "" : tool;
         if (input == null) return kindOf(name, null) == ACT_TOOL ? name : "";
+        if (kindOf(name, input) == ACT_HELPER) return helperStep(input).replaceFirst("^(More for helper|Helper) ", "");
         for (String key : new String[]{"command", "path", "filePath", "file_path", "query", "url",
                 "pattern", "description", "name"}) {
             String value = input.optString(key);
@@ -433,7 +686,9 @@ final class Chat {
         status = "";
         if (process != null) process.destroy();
         process = null;
+        dropServer();
         Message last = messages.get(messages.size() - 1);
+        takePictures(last); // a picture drawn before the stop is still shown
         if (last.first && quiet) messages.remove(last); // a check-in that was cut off leaves nothing behind
         else if (last.text.isEmpty()) last.text = Lang.of(context).getString(R.string.chat_stopped);
         quiet = false;
@@ -497,6 +752,8 @@ final class Chat {
         final String known = session;
         final List<String> models = Config.attempts(context);
         carried.clear();
+        // `draw` lists the pictures it makes for this message here; they are shown under the reply
+        new File(Ubuntu.rootfs(context), DRAWN_FILE.substring(1)).delete();
         if (Config.freeLimitUntil(context) > 0 && !Config.onFreeAllowance(models.get(0))
                 && Config.onFreeAllowance(Config.activeModel(context))) {
             android.util.Log.i("Termant", "free limit: OpenCode's free models wait until "
@@ -523,6 +780,7 @@ final class Chat {
                     final Stream stream = new Stream(id, reply);
                     try {
                         Ubuntu.prepareHost(context);
+                        if (attempt == 0 && !moved) keepServer();
                         stream.start();
                         ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
                                 "/bin/bash", "-c", SCRIPT, "termant-chat", prompt, how,
@@ -533,6 +791,7 @@ final class Chat {
                             int eq = e.indexOf('=');
                             env.put(e.substring(0, eq), e.substring(eq + 1));
                         }
+                        env.put("TERMANT_PERSONA", personaText(Config.persona(context)));
                         pb.redirectErrorStream(true);
                         final Process p = pb.start();
                         p.getOutputStream().close();
@@ -554,6 +813,7 @@ final class Chat {
                             if (!stuck && retries(out.toString()) >= patience) {
                                 stuck = true;
                                 p.destroy();
+                                dropServer();
                             }
                             long now = System.currentTimeMillis();
                             if (now - shown > 150) { // do not redraw for every few bytes
@@ -751,6 +1011,9 @@ final class Chat {
                     if (text.isEmpty()) reply.note = "";
                 }
                 if (exit != null) {
+                    String told = toldByScript();
+                    if (!told.isEmpty()) reply.note = reply.note.isEmpty() ? told : told + " \u00b7 " + reply.note;
+                    takePictures(reply);
                     busy = false;
                     process = null;
                     status = "";
@@ -760,7 +1023,11 @@ final class Chat {
                         messages.remove(reply);
                     }
                     quiet = false;
-                    if (exit == 0) {
+                    // A reply the script gave without a model ("undo", "apilayer key ...") began no
+                    // OpenCode session: the next message must not carry on in another chat's.
+                    boolean noModel = session.isEmpty() && !output.contains(SESSION_MARKER);
+                    if (exit == 0 && noModel) android.util.Log.i("Termant", "chat " + Chat.this.id + ": answered without a model");
+                    if (exit == 0 && !noModel) {
                         continues = true;
                         Config.setLastChat(context, Chat.this.id);
                         int at = output.indexOf(SESSION_MARKER);
@@ -778,13 +1045,54 @@ final class Chat {
         });
     }
 
+    /** What the chat script wants said under the reply: what can be undone, which model saw an attached file. */
+    private String toldByScript() {
+        try {
+            File f = new File(Ubuntu.rootfs(context), STREAM_FILE.substring(1) + ".note");
+            if (!f.isFile()) return "";
+            byte[] all = new byte[(int) Math.min(f.length(), 600)];
+            try (FileInputStream in = new FileInputStream(f)) {
+                int n = in.read(all);
+                return n <= 0 ? "" : new String(all, 0, n, StandardCharsets.UTF_8).trim();
+            }
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Puts the pictures `draw` made during this message under the reply (see Message.pictures). */
+    private void takePictures(Message reply) {
+        if (reply.user) return;
+        for (String picture : drawn()) {
+            if (!reply.pictures.contains(picture)) reply.pictures.add(picture);
+        }
+        if (!reply.pictures.isEmpty()) android.util.Log.i("Termant", "chat: pictures drawn: " + reply.pictures.size());
+    }
+
+    /** The pictures `draw` listed since this message began (the list is emptied in begin()). */
+    private List<String> drawn() {
+        List<String> found = new ArrayList<>();
+        try {
+            File f = new File(Ubuntu.rootfs(context), DRAWN_FILE.substring(1));
+            if (!f.isFile() || f.length() > 20000) return found;
+            for (String line : read(f).split("\n")) {
+                String path = line.split("\t", 2)[0].trim();
+                // only files inside Ubuntu, and only those that are there
+                if (!path.startsWith("/") || path.contains("/../") || found.size() >= 8) continue;
+                if (Message.pictureFile(context, line).isFile()) found.add(line.trim());
+            }
+        } catch (Exception e) {
+            // no pictures then
+        }
+        return found;
+    }
+
     private void apply(Message reply, String raw, Integer exit) {
         String output = ANSI.matcher(raw).replaceAll("");
         int start = output.indexOf(MARKER);
         if (start < 0) {
-            // still installing the agent: show the latest line as progress
-            String[] lines = output.trim().split("\n");
-            status = lines[lines.length - 1].trim();
+            // still installing the agent: show the latest line as progress (a bar that redraws itself too)
+            status = newestLine(raw.length() > 4096 ? raw.substring(raw.length() - 4096) : raw);
             if (exit != null) {
                 reply.failed = true;
                 reply.text = Lang.of(context).getString(R.string.chat_setup_failed) + tail(output);
@@ -822,6 +1130,14 @@ final class Chat {
         List<String> told;
         synchronized (ran) {
             told = new ArrayList<>(ran);
+        }
+        // the feed names a helper better ("Helper researcher: ...") than the plain output does
+        boolean named = false;
+        for (String step : told) named |= step.startsWith("Helper ") || step.startsWith("More for helper ");
+        if (named) {
+            for (java.util.Iterator<String> i = steps.iterator(); i.hasNext();) {
+                if (i.next().startsWith("Helper: ")) i.remove();
+            }
         }
         for (String step : told) {
             String first = step.split("\n", 2)[0].trim();
@@ -861,9 +1177,20 @@ final class Chat {
         private final java.io.ByteArrayOutputStream line = new java.io.ByteArrayOutputStream();
         /** Tool calls seen so far (id to tool name), and the thinking of the current step. */
         private final Map<String, String> tools = new java.util.HashMap<>();
+        /** The helper agents this reply started: their OpenCode session to "name: what it was given". */
+        private final Map<String, String> helpers = new java.util.HashMap<>();
         private final StringBuilder thought = new StringBuilder();
         private int pieces;
         private long firstAfter = -1;
+        /**
+         * The command that runs now: OpenCode's name for it and the file it prints into (the feed
+         * tells both when the command starts), when that file was last looked at, and what was shown.
+         */
+        private String shell;
+        private File printed;
+        private long lookedAt;
+        private String lastPrinted = "";
+        private int printedLines;
 
         Stream(int id, Message reply) {
             super("termant-stream");
@@ -891,12 +1218,16 @@ final class Chat {
                     + (firstAfter < 0 ? "" : ", first after " + firstAfter + " ms")
                     + ", reply after " + (android.os.SystemClock.elapsedRealtime() - began) + " ms");
             android.util.Log.i("Termant", "activity: " + trail(true));
+            if (printedLines > 0) {
+                android.util.Log.i("Termant", "progress: " + printedLines + " lines of running commands shown");
+            }
         }
 
         @Override
         public void run() {
             while (!done) {
                 if (read()) show(text.toString());
+                look();
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
@@ -932,6 +1263,82 @@ final class Chat {
         }
 
         /**
+         * A command started or ended ("shell.created" names the file it prints into, as seen
+         * from inside Ubuntu). Commands of helper agents are not followed.
+         */
+        private void shellEvent(String line) {
+            try {
+                JSONObject o = new JSONObject(line.substring(5));
+                JSONObject d = o.optJSONObject("data");
+                if (d == null) return;
+                String type = o.optString("type");
+                if ("shell.created".equals(type)) {
+                    JSONObject info = d.optJSONObject("info");
+                    if (info == null) return;
+                    JSONObject about = info.optJSONObject("metadata");
+                    String of = about == null ? "" : about.optString("sessionID");
+                    if (session == null || !session.equals(of)) return;
+                    String path = info.optString("file");
+                    if (!path.startsWith("/") || path.contains("/../")) return;
+                    shell = info.optString("id");
+                    printed = new File(Ubuntu.rootfs(context), path.substring(1));
+                    lookedAt = 0;
+                    lastPrinted = "";
+                } else if ("shell.exited".equals(type) && shell != null && shell.equals(d.optString("id"))) {
+                    shell = null;
+                    printed = null;
+                }
+            } catch (Exception e) {
+                // not a line about a command after all
+            }
+        }
+
+        /** Shows the newest line of what the running command has printed so far; looks twice a second. */
+        private void look() {
+            File from = printed;
+            if (from == null) return;
+            long now = android.os.SystemClock.elapsedRealtime();
+            if (now - lookedAt < 400) return;
+            lookedAt = now;
+            String newest;
+            try (java.io.RandomAccessFile in = new java.io.RandomAccessFile(from, "r")) {
+                long size = in.length();
+                int want = (int) Math.min(size, 4096L);
+                if (want == 0) return;
+                byte[] end = new byte[want];
+                in.seek(size - want);
+                in.readFully(end);
+                newest = newestLine(new String(end, StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                return; // not there yet, or gone already
+            }
+            if (newest.isEmpty()) return;
+            printing(newest);
+            if (!newest.equals(lastPrinted)) {
+                lastPrinted = newest;
+                printedLines++;
+            }
+        }
+
+        /**
+         * Something a helper agent did. A helper is a session whose parent is this reply's
+         * session; while it works, the indicator names it.
+         */
+        private void helperEvent(String of, String type, JSONObject d) {
+            if ("session.created".equals(type)) {
+                if (session != null && session.equals(d.optString("parentID")) && helpers.size() < 100) {
+                    String who = d.optString("agent");
+                    String what = oneLine(d.optString("title"));
+                    helpers.put(of, (who.isEmpty() ? "general" : who) + (what.isEmpty() ? "" : ": " + what));
+                }
+                return;
+            }
+            String label = helpers.get(of);
+            if (label == null) return;
+            if ("session.step.started".equals(type) || "session.tool.called".equals(type)) doing(ACT_HELPER, label);
+        }
+
+        /**
          * One line of the event feed: "data: {type, data: {sessionID, ...}}".
          * Only the conversation asked here counts: the first session in the
          * feed is that one, later ones belong to helper agents it starts.
@@ -943,6 +1350,10 @@ final class Chat {
                 doing(ACT_ASK, "");
                 return false;
             }
+            if (line.contains("\"type\":\"shell.")) {
+                shellEvent(line);
+                return false;
+            }
             if (!line.contains("\"type\":\"session.") || !line.contains("\"sessionID\"")) return false;
             try {
                 JSONObject o = new JSONObject(line.substring(5));
@@ -952,7 +1363,10 @@ final class Chat {
                 if (of.isEmpty()) return false;
                 String type = o.optString("type");
                 if (session == null) session = of;
-                if (!of.equals(session)) return false;
+                if (!of.equals(session)) {
+                    helperEvent(of, type, d);
+                    return false;
+                }
                 switch (type) {
                     case "session.step.started":
                         failure = null; // a step that failed is being tried again
@@ -996,6 +1410,7 @@ final class Chat {
                         if (input != null) {
                             String command = input.optString("command").trim();
                             String step = !command.isEmpty() ? command
+                                    : kindOf(name, input) == ACT_HELPER ? helperStep(input)
                                     : "websearch".equals(name) ? "web search: " + input.optString("query")
                                     : "webfetch".equals(name) ? "web page: " + input.optString("url") : "";
                             if (!step.isEmpty() && ran.size() < 200) ran.add(step);
@@ -1082,8 +1497,12 @@ final class Chat {
                 // file tools: "← Write hi.py", "→ Read notes.txt"
                 result.steps.add(line.substring(2).trim());
                 inCommand = true;
-            } else if (line.startsWith("! retrying (attempt ")) {
+            } else if (line.startsWith("! retrying (attempt ") || WAITS_FOR_HELPERS.matcher(line).matches()) {
                 // OpenCode's own progress line, not something the model said
+                inCommand = false;
+            } else if (!inCommand && HELPER_LINE.matcher(line).matches()) {
+                // "✓ Find out about chai Researcher Agent": a part of the job went to a helper agent
+                result.steps.add("Helper: " + line.substring(2, line.length() - " Agent".length()).trim());
                 inCommand = false;
             } else if (!inCommand) {
                 said.append(line).append('\n');
@@ -1105,9 +1524,14 @@ final class Chat {
             JSONArray list = new JSONArray();
             String title = "";
             for (Message m : messages) {
-                if (title.isEmpty() && m.user) title = m.text.length() > 80 ? m.text.substring(0, 80) : m.text;
+                if (title.isEmpty() && m.user) {
+                    // an attached file is named, without its path
+                    String said = m.text.replaceAll("\\[file: (?:[^\\]\\n]*/)?([^\\]\\n/]+)\\]", "$1");
+                    title = said.length() > 80 ? said.substring(0, 80) : said;
+                }
                 list.put(new JSONObject().put("user", m.user).put("text", m.text).put("first", m.first)
-                        .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps)));
+                        .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps))
+                        .put("pictures", new JSONArray(m.pictures)));
             }
             // a chat the agent began: named after what it asked
             if (title.isEmpty() && !messages.isEmpty()) {
@@ -1150,6 +1574,8 @@ final class Chat {
                 m.first = j.optBoolean("first");
                 JSONArray steps = j.optJSONArray("steps");
                 for (int k = 0; steps != null && k < steps.length(); k++) m.steps.add(steps.getString(k));
+                JSONArray pictures = j.optJSONArray("pictures");
+                for (int k = 0; pictures != null && k < pictures.length(); k++) m.pictures.add(pictures.getString(k));
                 // a reply that was cut off when the app was closed
                 if (m.first && m.text.isEmpty()) continue;
                 if (!m.user && m.text.isEmpty()) m.text = Lang.of(context).getString(R.string.chat_stopped);

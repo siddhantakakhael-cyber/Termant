@@ -1,0 +1,42 @@
+odd.jpg (2000x1000), seen by Mirage in 0.4 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+In short: a room full of test things
+Scene: setting = test room; people = 3; long key name = y z
+Things (45), highest score first. Each line: name, score, where its middle is, how much of the picture it covers, how it looks, and its middle point:
+- edge, 100%: middle, under 1% of the picture @1333,666
+- 12, 90%: top left, under 1% of the picture @10,5
+- dot x6, 30-65%: 1 top left, 1 top, 1 left, 1 middle, 1 bottom, 1 bottom right
+- cup or mug, 50%: top left, 4% of the picture; red, 2 @400,200
+- cup, 50%: bottom right, 5% of the picture; near the door @1600,825
+- Cup, 50%: middle, 4% of the picture; foreground @1000,500
+- too big, 31%: all over, 100% of the picture; background @1000,500
+- edge, 1%: left, under 1% of the picture @2,333
+- nameless id, 0%: across the top, 10% of the picture @1000,50
+- tall thing, 0%: down the middle, 10% of the picture; on the table @1000,500
+- thing 0, 0%: left, under 1% of the picture @20,510
+- thing 1, 0%: left, under 1% of the picture @80,510
+- thing 2, 0%: left, under 1% of the picture @140,510
+- thing 3, 0%: left, under 1% of the picture @200,510
+- thing 4, 0%: left, under 1% of the picture @260,510
+- thing 5, 0%: left, under 1% of the picture @320,510
+- thing 6, 0%: left, under 1% of the picture @380,510
+- thing 7, 0%: left, under 1% of the picture @440,510
+- thing 8, 0%: left, under 1% of the picture @500,510
+- thing 9, 0%: left, under 1% of the picture @560,510
+- thing 10, 0%: left, under 1% of the picture @620,510
+- thing 11, 0%: middle, under 1% of the picture @680,510
+- thing 12, 0%: middle, under 1% of the picture @740,510
+- thing 13, 0%: middle, under 1% of the picture @800,510
+- thing 14, 0%: middle, under 1% of the picture @860,510
+- thing 15, 0%: middle, under 1% of the picture @920,510
+- thing 16, 0%: middle, under 1% of the picture @980,510
+- thing 17, 0%: middle, under 1% of the picture @1040,510
+- thing 18, 0%: middle, under 1% of the picture @1100,510
+- thing 19, 0%: middle, under 1% of the picture @1160,510
+(10 more left out)
+Also there, place not marked: wall (2; left background; white), floor
+Writing (letters can be wrong):
+- "B": bottom right @1900,950
+- "Café  ñandú   line": top @1000,35
+- "no score": left @10,505
+Maybe (this part is often wrong): Cup falling; Cup hitting floor; cup next to cup; wall behind tall thing; thing 0 beside thing 1; thing 1 beside thing 2; thing 2 beside thing 3; thing 3 beside thing 4

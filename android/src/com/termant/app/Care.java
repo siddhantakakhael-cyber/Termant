@@ -280,6 +280,39 @@ final class Care {
         return true;
     }
 
+    /**
+     * A job the agent does by itself, with nobody watching (`phone job`, mostly from a rule at
+     * night or from a watch). Its report arrives the way a check-in does: in the chat and as a
+     * notification.
+     */
+    String job(String task) throws PhoneBridge.Refused {
+        task = task.trim();
+        if (task.length() < 5) {
+            throw new PhoneBridge.Refused("usage: phone job \"what to do\"   (the agent does it by itself and reports as a notification)");
+        }
+        if (task.length() > 2000) throw new PhoneBridge.Refused("phone job: the task is too long; put the details in a file and name the file");
+        if (!Ubuntu.isInstalled(service)) throw new PhoneBridge.Refused("Ubuntu is not set up yet.");
+        if (asking != null || service.chat.isBusy()) {
+            throw new PhoneBridge.Refused("The agent is busy right now, so the job was not started. "
+                    + "phone job is for rules and watches, not for the middle of a chat: do the work yourself now.");
+        }
+        asking = service.chat.checkIn("Here is a job to do by yourself now. The user asked earlier for it to be done at this time "
+                + "and will read your report later.\n\nThe job: " + task + "\n\n"
+                + "- Do it with your tools, and with helpers if it has separate parts.\n"
+                + "- Do not use phone ask this time. Whatever needs the user's yes (sending a message, paying, "
+                + "deleting, changing an account) you leave undone and name in the report.\n"
+                + "- When it is done, write the report: first one line that names the job, then the result in short, "
+                + "then what is still open. Write in the language the user writes to you in.\n"
+                + "- The report itself is shown to the user as a notification; do not use phone notify for it.");
+        if (asking == null) throw new PhoneBridge.Refused("The job could not be started.");
+        PowerManager pm = (PowerManager) service.getSystemService(Context.POWER_SERVICE);
+        release();
+        awake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "termant:job");
+        awake.acquire(30 * 60 * 1000); // a job may take a while; the phone must not fall asleep in the middle
+        android.util.Log.i("Termant", "job: started: " + (task.length() > 80 ? task.substring(0, 80) : task));
+        return "The agent started the job. Its report will arrive as a notification and in the chat.";
+    }
+
     private void release() {
         if (awake != null && awake.isHeld()) awake.release();
         awake = null;

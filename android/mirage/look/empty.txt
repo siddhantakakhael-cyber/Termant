@@ -1,0 +1,3 @@
+empty.jpg (64x48), seen by Mirage in 0.4 s.
+Mirage is a small model on this phone: the places are about right, but a name can be wrong even with a high score (say "it looks like"), it does not know who a person is, and it reads Latin letters only.
+Nothing was recognised in it.

@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Termant</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; -webkit-app-region: drag; user-select: none; }
+  .box { display: flex; flex-direction: column; gap: 4px; margin: 10px; padding: 11px 14px;
+         background: #151a21; border: 1px solid #2a3340; border-radius: 10px; color: #e8edf3;
+         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .what { font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .time { font-size: 12px; color: #8fa1b3; font-variant-numeric: tabular-nums; }
+  .detail { font-size: 12px; color: #b8c4d0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .detail:empty { display: none; }
+  @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .box { animation: card-in .25s cubic-bezier(.2, .7, .3, 1); }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="top"><span class="what" id="what">…</span><span class="time" id="time"></span></div>
+  <div class="detail" id="detail"></div>
+</div>
+<script>
+  // The same words as the line under the chat (ui/strings.js), kept short for the corner.
+  const WORDS = {
+    en: { setup: 'Downloading the AI agent', start: 'Starting', think: 'Thinking', wait: 'Trying again',
+      command: 'Running a command', pc: 'Controlling the PC', read: 'Reading a file', edit: 'Writing a file',
+      search: 'Searching the web', team: 'Helpers are working', web: 'Reading a web page',
+      find: 'Looking through files', tool: 'Using a tool', switch: 'Trying another model' },
+    hi: { setup: 'एजेंट डाउनलोड हो रहा है', start: 'शुरू हो रहा है', think: 'सोच रहा है', wait: 'फिर कोशिश हो रही है',
+      command: 'कमांड चल रही है', pc: 'PC चलाया जा रहा है', read: 'फ़ाइल पढ़ी जा रही है', edit: 'फ़ाइल लिखी जा रही है',
+      search: 'वेब पर खोज हो रही है', team: 'सहायक काम कर रहे हैं', web: 'वेब पेज पढ़ा जा रहा है',
+      find: 'फ़ाइलों में खोज हो रही है', tool: 'टूल चल रहा है', switch: 'दूसरा मॉडल आज़माया जा रहा है' },
+  };
+  let startedAt = 0;
+  // Like the phone's card: while a command has printed, its newest line says more than the command does.
+  function progressUpdate(d) {
+    startedAt = d.startedAt || Date.now();
+    const words = (WORDS[d.lang] || WORDS.en);
+    document.getElementById('what').textContent = words[d.activity] || words.tool;
+    document.getElementById('detail').textContent = d.output || d.detail || '';
+    tick();
+  }
+  // The phone's clock: 45s until a minute, then 1:05, 12:30 …
+  function clock(s) {
+    return s < 60 ? s + 's' : Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + s % 60;
+  }
+  function tick() {
+    if (startedAt) document.getElementById('time').textContent = clock(Math.max(0, Math.round((Date.now() - startedAt) / 1000)));
+  }
+  setInterval(tick, 250);
+</script>
+</body>
+</html>

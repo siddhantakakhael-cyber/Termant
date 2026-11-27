@@ -1,0 +1,330 @@
+<script>window.service_name='image_to_text';window.seo_name='image_to_text-api';window.api_id='110';window.api_subscribed=false;</script>
+<h1 class="h2 mb-3 text-primary">Image to Text API</h1>
+<div class="mb-5">Recognizes and reads the text embedded in images. </div>
+<!-- API Provider -->
+<div class="d-flex justify-content-between align-items-center mb-5">
+<a class="media align-items-center" href="/">
+<div class="avatar avatar-xs mr-1">
+<img class="avatar-img" src="https://assets.apilayer.com/logo/square_large.png" alt="APILayer">
+</div>
+<div class="media-body font-size-1 text-body">
+APILayer
+</div>
+</a>
+<div class="d-flex align-items-center">
+</div>
+</div>
+<!-- End API Provider -->
+</div>
+</div>
+</div>
+<div class="card-footer border-0 m-0 p-0">
+<!-- Buttons -->
+<div class="d-flex align-items-center">
+<button id="subscribeButton" 
+type="button" 
+class="right-menu btn btn-block btn-primary" 
+onclick="loadPricing()">
+Subscribe for Free
+</button>
+<a data-next-url="/live_demo?api=image_to_text"
+class="right-menu show-code btn btn-block btn-soft-primary d-none d-lg-block ml-3 mt-0 js-hs-unfold-invoker"  data-hs-unfold-options='{
+"target": "#sidebarContent",
+"type": "css-animation",
+"animationIn": "fadeInRight",
+"animationOut": "fadeOutRight",
+"hasOverlay": "rgba(55, 125, 255, 0.1)",
+"smartPositionOff": true
+}'
+data-hs-unfold-target="#sidebarContent" 
+data-hs-unfold-invoker="" 
+>
+Live Demo</a>
+</div>
+<!-- End Buttons -->
+</div>
+</div>
+</div>
+<!-- End API Info -->
+<!-- API Stat -->
+<div class="col-lg-6 mt-3 mt-lg-0">
+<iframe src="/code/response?service_name=image_to_text&method=post&endpoint=/upload" 
+data-src=""
+class="code-response fluid h-100 w-100 mb-1 mt-1 rounded border-0 d-none d-lg-block" 
+rel="nofollow">
+</iframe>
+<p style="font-size:12px;">Response example. If you want to see more <a href="javascript:;"  onclick="loadDocumentation()">check the documentation.</a></p>
+</div>
+<!-- End API Stat -->
+</div>
+<!-- End Info & Stat Section -->
+<!-- Content -->
+<div class="row">
+<div class="col-12">
+<!-- Tab Nav -->
+<ul class="nav nav-classic" id="pills-tab" role="tablist">
+<li class="nav-item">
+<a class="nav-link font-weight-bold active" id="pricing-tab" data-toggle="tab" data-target="#pricing" type="button" role="tab" aria-controls="pricing" aria-selected="true">
+<div class="d-md-flex justify-content-md-center align-items-md-center">
+<span>Pricing</span>
+</div>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link font-weight-bold " id="details-tab" data-toggle="tab" data-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">
+<div class="d-md-flex justify-content-md-center align-items-md-center">
+<span>API info</span>
+</div>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link font-weight-bold" id="documentation-tab" data-toggle="tab" data-target="#documentation" type="button" role="tab" aria-controls="documentation" aria-selected="false">
+<div class="d-md-flex justify-content-md-center align-items-md-center">
+<span class="d-none d-md-block">Documentation</span>
+<span class="d-xs-block d-md-none">Docs</span> 
+</div>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link font-weight-bold" id="reviews-tab" data-toggle="tab" data-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">
+<div class="d-md-flex justify-content-md-center align-items-md-center">
+<span>Reviews</span> 
+</div>
+</a>
+</li>
+</ul>
+<!-- End Tab Nav -->
+<!-- Tabs -->
+<div class="tab-content" id="pills-tabContent">
+<div class="tab-pane active space-1" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
+<!-- Pricing Section -->
+<div class="row justify-content-around px-lg-2">
+<div class="plan col-sm-12 col-md-6 col-lg px-lg-1 mb-5">
+<!-- Pricing -->
+<div class="card  h-100 border overflow-hidden">
+<!-- Header -->
+<div class="card-header border-0  text-center d-block px-3">
+<span class="d-block h3">Free Plan</span>
+<span class="d-block mb-3">
+<span class="plan-price font-size-4 font-weight-bold text-primary">
+$0.00 </span>
+<span class="d-block font-size-1 mt-n1">Monthly</span>
+</span>
+<!-- Button -->
+<a href="javascript:;"
+data-next-url="/checkout/image_to_text/free-plan/255"
+class="btn btn-outline-primary btn-block transition-3d-hover js-hs-unfold-invoker"
+data-hs-unfold-options='{
+"target": "#sidebarContent",
+"type": "css-animation",
+"animationIn": "fadeInRight",
+"animationOut": "fadeOutRight",
+"hasOverlay": "rgba(55, 125, 255, 0.1)",
+"smartPositionOff": true
+}'
+data-hs-unfold-target="#sidebarContent" 
+data-hs-unfold-invoker="" 
+rel="nofollow">
+Subscribe
+</a>
+<!-- End Button -->
+</div>
+<!-- End Header -->
+<!-- Body -->
+<div class="card-body py-0 px-3">
+<!--<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-code text-success mt-1 mr-1"></i>
+<div class="media-body"> 100
+Requests / Daily </div>
+</div>-->
+<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-code text-success mt-1 mr-1"></i>
+<div class="media-body"> 100
+Requests / Monthly </div>
+</div>
+<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+<div class="media-body"> Free for Lifetime </div>
+</div>
+<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+<div class="media-body"> No Credit Card Required </div>
+</div>
+</div>
+<!-- End Body -->
+<!--<div class="card-footer border-0 pt-0"></div>-->
+</div>
+<!-- End Pricing -->
+</div>
+<div class="plan col-sm-12 col-md-6 col-lg px-lg-1 mb-5">
+<!-- Pricing -->
+<div class="card bg-light h-100 border overflow-hidden">
+<div class="badge badge-secondary rounded-0 position-absolute w-100"><span>MOST POPULAR</span></div>
+<!-- Header -->
+<div class="card-header border-0  bg-light  text-center d-block px-3">
+<span class="d-block h3">Starter Plan</span>
+<span class="d-block mb-3">
+<span class="plan-price font-size-4 font-weight-bold text-primary">
+$17.99 </span>
+<span class="d-block font-size-1 mt-n1">Monthly</span>
+</span>
+<!-- Button -->
+<a href="javascript:;"
+data-next-url="/checkout/image_to_text/starter-plan/256"
+class="btn btn-success btn-block transition-3d-hover js-hs-unfold-invoker"
+data-hs-unfold-options='{
+"target": "#sidebarContent",
+"type": "css-animation",
+"animationIn": "fadeInRight",
+"animationOut": "fadeOutRight",
+"hasOverlay": "rgba(55, 125, 255, 0.1)",
+"smartPositionOff": true
+}'
+data-hs-unfold-target="#sidebarContent" 
+data-hs-unfold-invoker="" 
+rel="nofollow">
+Subscribe
+</a>
+<!-- End Button -->
+</div>
+<!-- End Header -->
+<!-- Body -->
+<div class="card-body py-0 px-3">
+<!--<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-code text-success mt-1 mr-1"></i>
+<div class="media-body"> 10,000
+Requests / Daily </div>
+</div>-->
+<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-code text-success mt-1 mr-1"></i>
+<div class="media-body"> 10,000
+Requests / Monthly </div>
+</div>
+<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+<div class="media-body"> Standard Support </div>
+</div>
+</div>
+<!-- End Body -->
+<!--<div class="card-footer border-0 pt-0"></div>-->
+</div>
+<!-- End Pricing -->
+</div>
+<div class="plan col-sm-12 col-md-6 col-lg px-lg-1 mb-5">
+<!-- Pricing -->
+<div class="card  h-100 border overflow-hidden">
+<!-- Header -->
+<div class="card-header border-0  text-center d-block px-3">
+<span class="d-block h3">Pro Plan</span>
+<span class="d-block mb-3">
+<span class="plan-price font-size-4 font-weight-bold text-primary">
+$34.99 </span>
+<span class="d-block font-size-1 mt-n1">Monthly</span>
+</span>
+<!-- Button -->
+<a href="javascript:;"
+data-next-url="/checkout/image_to_text/pro-plan/257"
+class="btn btn-outline-primary btn-block transition-3d-hover js-hs-unfold-invoker"
+data-hs-unfold-options='{
+"target": "#sidebarContent",
+"type": "css-animation",
+"animationIn": "fadeInRight",
+"animationOut": "fadeOutRight",
+"hasOverlay": "rgba(55, 125, 255, 0.1)",
+"smartPositionOff": true
+}'
+data-hs-unfold-target="#sidebarContent" 
+data-hs-unfold-invoker="" 
+rel="nofollow">
+Subscribe
+</a>
+<!-- End Button -->
+</div>
+<!-- End Header -->
+<!-- Body -->
+<div class="card-body py-0 px-3">
+<!--<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-code text-success mt-1 mr-1"></i>
+<div class="media-body"> 30,000
+Requests / Daily </div>
+</div>-->
+<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-code text-success mt-1 mr-1"></i>
+<div class="media-body"> 30,000
+Requests / Monthly </div>
+</div>
+<div class="media font-size-1 text-body mb-3">
+<i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+<div class="media-body"> Standard Support </div>
+</div>
+</div>
+<!-- End Body -->
+<!--<div class="card-footer border-0 pt-0"></div>-->
+</div>
+<!-- End Pricing -->
+</div>
+<div class="col-sm-12 col-md-6 col-lg px-lg-1 mb-5 ">
+<!-- Custom Plan-->
+<div class="card h-100 border">
+<!-- Header -->
+<div class="card-header border-0 text-center d-block">
+<span class="d-block h3">Custom Plan</span>
+<span class="d-block mb-3">
+<span class="font-size-4 font-weight-bold text-primary">Volume</span>
+<span class="d-block font-size-1 mt-n1">Monthly</span>
+</span>
+<a class="btn btn-outline-primary btn-block transition-3d-hovers"
+href="/support" rel="nofollow">Contact
+Us</a>
+</div>
+<!-- End Header -->
+<!-- Body -->
+<div class="card-body py-0 px-3">
+<div class="media font-size-1 mb-3">
+<i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+<div class="media-body">
+Any requests volume you need
+</div>
+</div>
+</div>
+<!-- End Body -->
+<!-- Footer -->
+<div class="card-footer border-0 pt-0"></div>
+<!-- End Footer -->
+</div>
+<!-- End Custom Plan -->
+</div>
+</div>
+<!-- End Pricing Section -->
+</div>
+<div class="tab-pane  space-1" id="details" role="tabpanel" aria-labelledby="details-tab">
+<!-- API Description Text -->
+<article> 
+<p>Image to Text API uses a neural net (LSTM) based OCR engine which is focused on line recognition, but also supports recognizing the character patterns. It supports both handwriting and printed materials.</p>
+<h4>Examples</h4>
+<p>Looking at the following business card, it will extract the text information easily, even though the business card is positioned with angle.</p>
+<p><img src="https://assets.apilayer.com/apis/codes/image_to_text/business-card2.jpg" class="mw-100 mr-3 mb-3" alt="Business Card"></p>
+<p>The API can be triggered with this few lines of cURL command</p>
+<pre>
+curl --request GET \
+--url 'https://api.apilayer.com/image_to_text/url?url=IMAGE PATH' \
+--header 'apikey: YOUR API KEY'
+</pre>
+<p>The output is JSON data with all the text extracted and even the language is auto detected,</p>
+<pre>
+{
+"lang": "en", 
+"all_text": "TREVOR OWENS\nCreative Director\nINFINITY\nINFINITY LTD\n12 Badgers lane\nBt 54 1234\nT 028 1298 1234\nE info@infinity.com\nW www.infinity.com\n", 
+"annotations": ["TREVOR", "OWENS", "Creative", "Director", "INFINITY", "INFINITY", "LTD", "12", "Badgers", "lane", "Bt", "54", "1234", "T", "028", "1298", "1234", "E", "info@infinity.com", "W", "www.infinity.com"]}
+</pre>
+<p>The API will also work for handwritings. Even for non-English texts. Check the following example</p>
+<p><img src="https://storage.googleapis.com/assets.apilayer.com/apis/codes/image_to_text/french_handwriting2.jpg" class="mw-100 mr-3 mb-3"></p>
+<p>The response is surprisingly good. </p>
+<pre>
+{
+"lang": "fr", 
+"all_text": "Les Stdjecifa Brangain Que Je Sain\nLres Marculina: ag\u00e9 beau,blanc,bleu,blond,bon,brun\ner\u00e9atif fort giner\u00e9ia g\u00e9nial,gentil,inbligent,jeune,-\nmarron, m\u00e9chant, aympatique, mime,gros,nois, nouve.\nnelit grand, rouxs\u00e9rieur, morti tmide, et vert.\nLafeminims:ag\u00e9e, leue, belle,blond,bowne,brume,\n\u00e1alive fortie, gin\u00e9reuse g\u00e9niale, gentille, intalligenis\nm\u00e9chante mympatique, mince, gro\npetit\narrante,marron,\nresseuse,p\u00e9nille.\n,grande,rousse,s\u00e9rieus\nNEAT CURSINE VRITING\n", 
+"annotations": ["Les", "Stdjecifa", "Brangain", "Que", "Je", "Sain", "Lres", "Marculina:", "ag\u00e9", "beau,blanc,bleu,blond,bon,brun", "er\u00e9atif", "fort", "giner\u00e9ia", "g\u00e9nial,gentil,inbligent,jeune,-", "marron,", "m\u00e9chant,", "aympatique,", "mime,gros,nois,", "nouve.", "nelit", "grand,", "rouxs\u00e9rieur,", "morti", "tmide,", "et", "vert.", "Lafeminims:ag\u00e9e,", "leue,", "belle,blond,bowne,brume,", "\u00e1alive", "fortie,", "gin\u00e9reuse", "g\u00e9niale,", "gentille,", "intalligenis", "m\u00e9chante", "mympatique,", "mince,", "gro", "petit", "arrante,marron,", "resseuse,p\u00e9nille.", ",grande,rousse,s\u00e9rieus", "NEAT", "CURSINE", "VRITING"]}
+</pre>
+</article>
+<!-- End API Description Text -->

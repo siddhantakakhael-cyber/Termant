@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>Termant</title>
+<style>
+<!--STYLE-->
+</style>
+</head>
+<body>
+<div id="page" class="dark">
+  <header>
+    <span id="dot" class="dot off" aria-hidden="true"></span>
+    <div class="titles">
+      <div id="head-title">Termant</div>
+      <div id="head-sub">on this PC</div>
+    </div>
+    <button id="say" class="icon-button" title="Speak the answers">🔊</button>
+    <button id="mic" class="icon-button" title="Voice">🎙</button>
+  </header>
+  <main id="messages" aria-live="polite"></main>
+  <div id="voicebar" hidden></div>
+  <div id="busy" hidden>
+    <div id="busy-line"></div>
+    <code id="busy-out"></code>
+    <button id="stop">Stop</button>
+  </div>
+  <footer>
+    <input id="input" type="text" autocomplete="off" enterkeyhint="send" aria-label="Message">
+    <button id="send" class="send">➤</button>
+  </footer>
+</div>
+<div id="login" hidden>
+  <div class="card">
+    <div class="big">Termant</div>
+    <div id="login-sub">the chat of this PC</div>
+    <input id="password" type="password" autocomplete="off" placeholder="Password" aria-label="Password">
+    <div id="login-error" role="alert"></div>
+    <button id="unlock" class="primary">Open</button>
+    <div id="login-hint"></div>
+  </div>
+</div>
+<script>
+<!--APP-JS-->
+</script>
+</body>
+</html>

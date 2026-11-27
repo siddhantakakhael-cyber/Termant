@@ -42,6 +42,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         void onPickModel();
 
         void onOpenArena();
+
+        /** The user wants to send a picture or a file with the message. */
+        void onAttach();
     }
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
@@ -62,8 +65,14 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private final TextView workspaceChip, modelChip;
     private final ImageView mic;
     private Chat chat;
+    /** Files waiting to go with the next message, as paths inside Ubuntu. */
+    private final java.util.List<String> attached = new java.util.ArrayList<>();
+    private LinearLayout attachRow;
     /** The text of the reply being written, and what the list looked like when it was built. */
     private TextView writing;
+    /** The last rendered chat and its message count: a row that arrived after that may come in. */
+    private Chat seenChat;
+    private int seenCount;
     private String shape = "";
 
     ChatView(Context context, Host host) {
@@ -86,6 +95,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 showHistory();
             }
         });
+        pressScale(past);
         bar.addView(past, new LayoutParams(dp(40), dp(40)));
 
         TextView title = new TextView(context);
@@ -107,6 +117,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 if (chat != null) chat.clear();
             }
         });
+        pressScale(fresh);
         bar.addView(fresh, new LayoutParams(dp(40), dp(40)));
 
         ImageView gear = Ui.iconButton(context, R.drawable.ic_settings,
@@ -117,6 +128,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 ChatView.this.host.onSettings();
             }
         });
+        pressScale(gear);
         bar.addView(gear, new LayoutParams(dp(40), dp(40)));
 
         ImageView terminal = Ui.iconButton(context, R.drawable.ic_terminal,
@@ -131,6 +143,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams terminalSize = new LayoutParams(dp(48), dp(36));
         terminalSize.leftMargin = dp(4);
+        pressScale(terminal);
         bar.addView(terminal, terminalSize);
         addView(bar);
 
@@ -153,6 +166,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 ChatView.this.host.onPickWorkspace();
             }
         });
+        pressScale(workspaceChip);
         chips.addView(workspaceChip, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30)));
         modelChip = chip(context.getString(R.string.model_title), R.drawable.ic_sparkle, R.drawable.ic_chevron_down);
         modelChip.setOnClickListener(new OnClickListener() {
@@ -163,6 +177,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams modelSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
         modelSize.leftMargin = dp(6);
+        pressScale(modelChip);
         chips.addView(modelChip, modelSize);
 
         // Arena.ai has no way for other apps to use its agent, so this opens its website.
@@ -176,6 +191,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams arenaSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
         arenaSize.leftMargin = dp(6);
+        pressScale(arena);
         chips.addView(arena, arenaSize);
 
         android.widget.HorizontalScrollView chipScroll = new android.widget.HorizontalScrollView(context);
@@ -188,14 +204,23 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         LinearLayout pill = new LinearLayout(context);
         pill.setGravity(Gravity.BOTTOM);
         pill.setBackground(Ui.card(context, 26));
-        pill.setPadding(dp(18), dp(5), dp(5), dp(5));
+        pill.setPadding(dp(5), dp(5), dp(5), dp(5));
+        ImageView plus = Ui.iconButton(context, R.drawable.ic_plus, context.getString(R.string.attach_file), MUTED, 42, 22);
+        plus.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ChatView.this.host.onAttach();
+            }
+        });
+        pressScale(plus);
+        pill.addView(plus, new LayoutParams(dp(42), dp(42)));
         input = new EditText(context);
         input.setHint(R.string.ask_hint);
         input.setHintTextColor(MUTED);
         input.setTextColor(TEXT);
         input.setTextSize(16);
         input.setBackground(null);
-        input.setPadding(0, dp(10), 0, dp(10));
+        input.setPadding(dp(4), dp(10), 0, dp(10));
         input.setMaxLines(5);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
                 | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -209,6 +234,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 ChatView.this.host.onVoice();
             }
         });
+        pressScale(mic);
         pill.addView(mic, new LayoutParams(dp(42), dp(42)));
 
         send = Ui.iconButton(context, R.drawable.ic_arrow_up, context.getString(R.string.ask_send), ON_ACCENT, 42, 22);
@@ -223,7 +249,17 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams sendSize = new LayoutParams(dp(42), dp(42));
         sendSize.leftMargin = dp(2);
+        pressScale(send);
         pill.addView(send, sendSize);
+
+        // the files that go with the next message: a name each, a tap takes one off again
+        attachRow = new LinearLayout(context);
+        attachRow.setPadding(dp(12), dp(4), dp(12), 0);
+        android.widget.HorizontalScrollView attachScroll = new android.widget.HorizontalScrollView(context);
+        attachScroll.setHorizontalScrollBarEnabled(false);
+        attachScroll.addView(attachRow);
+        addView(attachScroll);
+        attachRow.setVisibility(GONE);
 
         FrameLayout wrap = new FrameLayout(context);
         wrap.setPadding(dp(10), dp(4), dp(10), dp(10));
@@ -283,8 +319,50 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         input.requestFocus();
     }
 
+    /** A file the user picked, already copied to where Ubuntu reads it. It goes with the next message. */
+    void addAttachment(String path) {
+        if (path == null || path.isEmpty() || attached.contains(path) || attached.size() >= 10) return;
+        attached.add(path);
+        showAttached();
+    }
+
+    private void showAttached() {
+        attachRow.removeAllViews();
+        attachRow.setVisibility(attached.isEmpty() ? GONE : VISIBLE);
+        for (final String path : attached) {
+            String name = path.substring(path.lastIndexOf('/') + 1);
+            TextView v = chip(getContext().getString(R.string.attach_remove, name), R.drawable.ic_file, R.drawable.ic_close);
+            v.setText(name);
+            v.setMaxWidth(dp(190));
+            v.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    attached.remove(path);
+                    showAttached();
+                }
+            });
+            LayoutParams size = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
+            size.rightMargin = dp(6);
+            attachRow.addView(v, size);
+        }
+    }
+
+    /** "[file: /root/uploads/a.jpg]" in a message is shown as the file's name. */
+    static String shown(String text) {
+        return text.replaceAll("\\[file: (?:[^\\]\\n]*/)?([^\\]\\n/]+)\\]", "\uD83D\uDCCE $1");
+    }
+
     private void submit(String text) {
+        if (text.trim().isEmpty() && !attached.isEmpty()) text = getContext().getString(R.string.attach_default);
         if (text.trim().isEmpty()) return;
+        if (!attached.isEmpty()) {
+            // the agent finds the files by these marks (see `termant-kit attach`)
+            StringBuilder with = new StringBuilder(text.trim());
+            for (String path : attached) with.append("\n[file: ").append(path).append("]");
+            text = with.toString();
+            attached.clear();
+            showAttached();
+        }
         input.setText("");
         InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getWindowToken(), 0);
@@ -292,6 +370,30 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     }
 
     // ------------------------------------------------------------ drawing
+
+    /**
+     * The button feels pressed: a small press on touch-down, a small rebound when it lifts.
+     * The click itself is untouched (the listener reports nothing to the chain).
+     */
+    private static void pressScale(final View v) {
+        v.setOnTouchListener(new android.view.View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, android.view.MotionEvent e) {
+                switch (e.getActionMasked()) {
+                    case android.view.MotionEvent.ACTION_DOWN:
+                        view.animate().scaleX(0.92f).scaleY(0.92f).setDuration(80).start();
+                        return false;
+                    case android.view.MotionEvent.ACTION_UP:
+                    case android.view.MotionEvent.ACTION_CANCEL:
+                    case android.view.MotionEvent.ACTION_OUTSIDE:
+                        view.animate().scaleX(1f).scaleY(1f).setDuration(140).start();
+                        return false;
+                    default:
+                        return false;
+                }
+            }
+        });
+    }
 
     @Override
     public void onChatChanged() {
@@ -332,6 +434,21 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             if (m.user) addMine(m);
             else addReply(m, busy && i == last);
         }
+        // a row that arrived since the last render comes in: a rise and a fade, staggered
+        int arrived = chat.messages.size() - seenCount;
+        if (seenChat == chat && arrived > 0 && list.getChildCount() > 0) {
+            int from = (int) Math.max(0, list.getChildCount() - Math.min(arrived, 3));
+            for (int i = from; i < list.getChildCount(); i++) {
+                View row = list.getChildAt(i);
+                row.setAlpha(0f);
+                row.setTranslationY(dp(14));
+                row.animate().alpha(1f).translationY(0f).setDuration(280)
+                        .setStartDelay((long) (i - from) * 60)
+                        .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+            }
+        }
+        seenChat = chat;
+        seenCount = chat.messages.size();
         scroll.post(new Runnable() {
             @Override
             public void run() {
@@ -346,7 +463,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         if (last < 0) return "";
         Chat.Message m = chat.messages.get(last);
         return last + "|" + busy + "|" + m.user + "|" + m.failed + "|" + m.text.isEmpty() + "|" + m.note
-                + "|" + chat.status + "|" + m.steps;
+                + "|" + chat.status + "|" + m.steps + "|" + m.pictures.size();
     }
 
     private void addWelcome() {
@@ -604,7 +721,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private void addMine(Chat.Message m) {
         list.setGravity(Gravity.TOP);
         TextView bubble = new TextView(getContext());
-        bubble.setText(m.text);
+        bubble.setText(shown(m.text));
         bubble.setTextColor(ON_ACCENT);
         bubble.setTextSize(Ui.BODY);
         bubble.setLineSpacing(dp(2), 1);
@@ -673,6 +790,8 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             bubble.addView(text);
             if (working) writing = text;
         }
+        // pictures the agent drew for this reply (`draw`)
+        for (String picture : m.pictures) addPicture(bubble, picture, !m.text.isEmpty() || !m.steps.isEmpty());
         if (!m.note.isEmpty()) {
             TextView note = new TextView(c);
             note.setText(m.note);
@@ -680,7 +799,18 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             note.setTextSize(Ui.CAPTION);
             note.setGravity(Gravity.CENTER_VERTICAL);
             Ui.leading(note, R.drawable.ic_refresh, MUTED, 12, 6);
-            if (!m.text.isEmpty() || !m.steps.isEmpty()) note.setPadding(0, dp(8), 0, 0);
+            if (m.note.startsWith(Chat.UNDO_SIGN)) {
+                // the files this reply changed can be put back: a tap does it
+                note.setTextColor(ACCENT);
+                note.setContentDescription(c.getString(R.string.undo_changes));
+                note.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (chat != null && !chat.isBusy()) chat.send("undo");
+                    }
+                });
+            }
+            if (!m.text.isEmpty() || !m.steps.isEmpty() || !m.pictures.isEmpty()) note.setPadding(0, dp(8), 0, 0);
             bubble.addView(note);
         }
         if (working) {
@@ -696,6 +826,177 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         size.topMargin = dp(18);
         size.rightMargin = dp(8);
         list.addView(bubble, size);
+    }
+
+    /** Pictures already read from their files; the list is rebuilt often and must not read them again each time. */
+    private static final android.util.LruCache<String, android.graphics.Bitmap> PICTURES =
+            new android.util.LruCache<String, android.graphics.Bitmap>(24 * 1024 * 1024) {
+                @Override
+                protected int sizeOf(String key, android.graphics.Bitmap value) {
+                    return value.getByteCount();
+                }
+            };
+
+    /** The picture in this file, made smaller when it is far larger than the screen; null when it cannot be read. */
+    static android.graphics.Bitmap picture(java.io.File file) {
+        String key = file.getPath() + "|" + file.length() + "|" + file.lastModified();
+        android.graphics.Bitmap have = PICTURES.get(key);
+        if (have != null) return have;
+        try {
+            android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            android.graphics.BitmapFactory.decodeFile(file.getPath(), o);
+            if (o.outWidth <= 0 || o.outHeight <= 0) return null;
+            int sample = 1;
+            while (Math.max(o.outWidth, o.outHeight) / sample > 1600) sample *= 2;
+            o = new android.graphics.BitmapFactory.Options();
+            o.inSampleSize = sample;
+            android.graphics.Bitmap read = android.graphics.BitmapFactory.decodeFile(file.getPath(), o);
+            if (read != null) PICTURES.put(key, read);
+            return read;
+        } catch (Exception | OutOfMemoryError e) {
+            return null;
+        }
+    }
+
+    private void addPicture(LinearLayout bubble, final String picture, boolean gapAbove) {
+        final Context c = getContext();
+        final java.io.File file = Chat.Message.pictureFile(c, picture);
+        android.graphics.Bitmap bitmap = file.isFile() ? picture(file) : null;
+        if (bitmap == null) {
+            // the file was deleted since, or is not a picture after all
+            TextView gone = new TextView(c);
+            gone.setText(c.getString(R.string.picture_gone, file.getName()));
+            gone.setTextColor(MUTED);
+            gone.setTextSize(Ui.CAPTION);
+            if (gapAbove) gone.setPadding(0, dp(8), 0, 0);
+            bubble.addView(gone);
+            return;
+        }
+        ImageView view = new ImageView(c);
+        view.setImageBitmap(bitmap);
+        view.setAdjustViewBounds(true);
+        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        view.setContentDescription(c.getString(R.string.picture_drawn, file.getName()));
+        view.setBackground(rounded(SURFACE, 14));
+        view.setClipToOutline(true);
+        view.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showPicture(file, Chat.Message.pictureAddress(picture));
+            }
+        });
+        // as wide as the page allows, never wider than the picture itself looks sharp
+        int page = getResources().getDisplayMetrics().widthPixels - dp(44);
+        int width = Math.min(page, dp(340));
+        int height = Math.round(width * (bitmap.getHeight() / (float) bitmap.getWidth()));
+        int most = dp(420);
+        if (height > most) {
+            width = Math.round(width * (most / (float) height));
+            height = most;
+        }
+        LayoutParams size = new LayoutParams(width, height);
+        if (gapAbove) size.topMargin = dp(10);
+        bubble.addView(view, size);
+    }
+
+    /** The picture over the whole screen, with "open in the gallery" and "share" when the gallery has a copy. */
+    private void showPicture(final java.io.File file, final String address) {
+        final Context c = getContext();
+        android.graphics.Bitmap bitmap = picture(file);
+        if (bitmap == null) return;
+        final android.app.Dialog dialog = new android.app.Dialog(c, android.R.style.Theme_Black_NoTitleBar);
+        LinearLayout page = new LinearLayout(c);
+        page.setOrientation(VERTICAL);
+        page.setBackgroundColor(0xff000000);
+        ImageView view = new ImageView(c);
+        view.setImageBitmap(bitmap);
+        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        view.setContentDescription(c.getString(R.string.picture_drawn, file.getName()));
+        view.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+        page.addView(view, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+
+        TextView where = new TextView(c);
+        where.setText(address.isEmpty() ? c.getString(R.string.picture_in_ubuntu, "~/pictures/" + file.getName())
+                : c.getString(R.string.picture_in_gallery, "Pictures/" + Gallery.FOLDER));
+        where.setTextColor(0xffb8b8b8);
+        where.setTextSize(Ui.CAPTION);
+        where.setGravity(Gravity.CENTER);
+        where.setPadding(dp(16), dp(10), dp(16), dp(6));
+        page.addView(where);
+
+        LinearLayout row = new LinearLayout(c);
+        row.setGravity(Gravity.CENTER);
+        row.setPadding(dp(12), dp(4), dp(12), dp(16));
+        if (!address.isEmpty()) {
+            final android.net.Uri uri = android.net.Uri.parse(address);
+            TextView open = pictureButton(c.getString(R.string.picture_open));
+            open.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        c.startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW)
+                                .setDataAndType(uri, "image/*")
+                                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION));
+                    } catch (Exception e) {
+                        android.util.Log.w("Termant", "picture: cannot open " + uri, e);
+                        android.widget.Toast.makeText(c, R.string.picture_no_app, android.widget.Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            row.addView(open, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)));
+            TextView share = pictureButton(c.getString(R.string.picture_share));
+            share.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        android.content.Intent send = new android.content.Intent(android.content.Intent.ACTION_SEND)
+                                .setType("image/*").putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        send.setClipData(android.content.ClipData.newRawUri("", uri));
+                        c.startActivity(android.content.Intent.createChooser(send, c.getString(R.string.picture_share)));
+                    } catch (Exception e) {
+                        android.util.Log.w("Termant", "picture: cannot share " + uri, e);
+                        android.widget.Toast.makeText(c, R.string.picture_no_app, android.widget.Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            LayoutParams shareSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44));
+            shareSize.leftMargin = dp(10);
+            row.addView(share, shareSize);
+        }
+        TextView close = pictureButton(c.getString(R.string.close));
+        close.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+        LayoutParams closeSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44));
+        if (!address.isEmpty()) closeSize.leftMargin = dp(10);
+        row.addView(close, closeSize);
+        page.addView(row);
+        dialog.setContentView(page);
+        dialog.show();
+    }
+
+    private TextView pictureButton(String text) {
+        TextView v = new TextView(getContext());
+        v.setText(text);
+        v.setGravity(Gravity.CENTER);
+        v.setTextColor(0xffffffff);
+        v.setTextSize(Ui.LABEL);
+        v.setTypeface(Ui.medium());
+        v.setSingleLine(true);
+        v.setClickable(true);
+        v.setPadding(dp(18), 0, dp(18), 0);
+        v.setBackground(new RippleDrawable(ColorStateList.valueOf(0x40ffffff), rounded(0xff2a2a2a, 22), rounded(0xffffffff, 22)));
+        return v;
     }
 
     /** "5 minutes ago", in the language chosen in the app (Android's own wording follows the phone's language). */
@@ -867,6 +1168,10 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             int kind = Math.max(0, Math.min(titles.length - 1, chat.activity));
             String name = status.isEmpty() ? titles[kind] : setupTitle;
             String detail = status.isEmpty() ? chat.activityDetail : status;
+            // a command that has printed something: its newest line says more than the command does
+            // (how far a download is, which package is being unpacked)
+            String printed = status.isEmpty() ? chat.activityOutput : "";
+            if (!printed.isEmpty()) detail = printed;
             boolean writing = false;
             if (followWriting && status.isEmpty() && kind == Chat.ACT_WRITE && detail.isEmpty()) {
                 // over another app the answer itself is not on screen: show its latest words

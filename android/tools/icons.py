@@ -3,6 +3,7 @@
 
     python3 android/tools/icons.py                 writes android/res/drawable/ic_*.xml
     python3 android/tools/icons.py --preview x.png  also draws them all into one picture (needs Pillow)
+    python3 android/tools/icons.py --js windows/ui/icons.js   also writes them for the Windows app
 
 Every icon lives on a 24 x 24 grid and is a set of strokes (round ends, round
 corners) plus, for a few, filled shapes. The paths are written as in SVG; the
@@ -48,6 +49,7 @@ ICONS = {
     'compose': (['M11 5 H7 a2 2 0 0 0 -2 2 v10 a2 2 0 0 0 2 2 h10 a2 2 0 0 0 2 -2 v-4',
                  'M17.2 3.8 l3 3 L12.5 14.5 l-3.6 0.6 l0.6 -3.6 Z'], []),
     'terminal': (['M5 8 l4 4 l-4 4', 'M12 16 h7'], []),
+    'video': ([box(3.5, 6, 17, 12, 2.2)], ['M10.4 9.4 l5.2 2.6 l-5.2 2.6 Z']),
     'settings': (gear(), []),
     'back': (['M19 12 H5', 'M11 6 l-6 6 l6 6'], []),
     'close': (['M6 6 l12 12', 'M18 6 L6 18'], []),
@@ -317,6 +319,15 @@ def main():
     print('%d icons written to android/res/drawable' % len(ICONS))
     if '--preview' in sys.argv:
         preview(sys.argv[sys.argv.index('--preview') + 1])
+    if '--js' in sys.argv:
+        # the same icons for the Windows app, as SVG paths in a script
+        import json
+        target = sys.argv[sys.argv.index('--js') + 1]
+        table = {name: {'s': strokes, 'f': fills} for name, (strokes, fills) in sorted(ICONS.items())}
+        with open(target, 'w') as f:
+            f.write('// Made by android/tools/icons.py --js; change the icons there.\n')
+            f.write('window.ICONS = ' + json.dumps(table, indent=1) + ';\n')
+        print('icons for the Windows app:', target)
 
 
 if __name__ == '__main__':

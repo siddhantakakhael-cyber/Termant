@@ -56,6 +56,9 @@ public class MainActivity extends Activity
     private static final int REQUEST_VOICE = 2;
     private static final int REQUEST_SMS = 3;
     private static final int REQUEST_MIC = 4;
+    private static final int REQUEST_ATTACH = 5;
+    /** The biggest file the chat takes with a message. */
+    private static final long ATTACH_LIMIT = 200L * 1024 * 1024;
 
     // Colours come from Theme (dark/light). These methods keep old call sites working.
     static int bg() {
@@ -188,6 +191,11 @@ public class MainActivity extends Activity
             public void onOpenArena() {
                 openArena();
             }
+
+            @Override
+            public void onAttach() {
+                pickAttachment();
+            }
         });
         settingsPanel = new SettingsView(this, new SettingsView.Host() {
             @Override
@@ -198,6 +206,11 @@ public class MainActivity extends Activity
             @Override
             public void onPickModel() {
                 pickModel(false);
+            }
+
+            @Override
+            public void onPickPersona() {
+                pickPersona();
             }
 
             @Override
@@ -247,6 +260,11 @@ public class MainActivity extends Activity
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, R.string.overlay_no_settings, Toast.LENGTH_LONG).show();
                 }
+            }
+
+            @Override
+            public void onToggleWake() {
+                if (service != null) service.setWakeWord(!Config.wakeWord(MainActivity.this));
             }
 
             @Override
@@ -763,12 +781,14 @@ public class MainActivity extends Activity
     }
 
     private void listen() {
+        if (service != null) service.pauseWake(); // the wake word must not hear this speech
         voiceInChat = chatPanel.getVisibility() == View.VISIBLE;
         voiceBefore = (voiceInChat ? chatPanel.draft() : askInput.getText().toString()).trim();
         if (voice == null) {
             voice = new Voice(this, new Voice.Listener() {
                 @Override
                 public void onListening(boolean listening) {
+                    if (!listening && service != null) service.resumeWake();
                     chatPanel.setListening(listening && voiceInChat);
                     boolean here = listening && !voiceInChat;
                     askMic.setBackground(pressable(here ? accent() : 0x00000000, 20));
@@ -813,9 +833,108 @@ public class MainActivity extends Activity
         askInput.requestFocus();
     }
 
+    /** Lets the user pick pictures or files (any kind) to send with the next message. */
+    private void pickAttachment() {
+        Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
+        pick.setType("*/*");
+        pick.addCategory(Intent.CATEGORY_OPENABLE);
+        pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        try {
+            startActivityForResult(Intent.createChooser(pick, getString(R.string.attach_file)), REQUEST_ATTACH);
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.attach_failed, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Copies what the user picked into Ubuntu's /root/uploads, where the agent can read it,
+     * and hangs each file on the message being written.
+     */
+    private void takeAttachments(Intent data) {
+        final java.util.List<android.net.Uri> picked = new java.util.ArrayList<>();
+        android.content.ClipData many = data.getClipData();
+        if (many != null) {
+            for (int i = 0; i < many.getItemCount() && picked.size() < 10; i++) {
+                if (many.getItemAt(i).getUri() != null) picked.add(many.getItemAt(i).getUri());
+            }
+        } else if (data.getData() != null) {
+            picked.add(data.getData());
+        }
+        if (picked.isEmpty()) return;
+        final Context app = getApplicationContext();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (final android.net.Uri uri : picked) {
+                    String path = null;
+                    try {
+                        path = copyIntoUbuntu(app, uri);
+                    } catch (Exception e) {
+                        android.util.Log.w("Termant", "attach: " + e);
+                    }
+                    final String made = path;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (made == null) {
+                                Toast.makeText(MainActivity.this, R.string.attach_failed, Toast.LENGTH_LONG).show();
+                            } else {
+                                chatPanel.addAttachment(made);
+                            }
+                        }
+                    });
+                }
+            }
+        }, "attach").start();
+    }
+
+    /** The path inside Ubuntu of a copy of the picked file, or null when it is too big or cannot be read. */
+    private static String copyIntoUbuntu(Context c, android.net.Uri uri) throws Exception {
+        String name = null;
+        try (android.database.Cursor row = c.getContentResolver().query(uri,
+                new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (row != null && row.moveToFirst()) name = row.getString(0);
+        } catch (Exception e) {
+            // some pickers give no name: the last part of the address does
+        }
+        if (name == null || name.trim().isEmpty()) name = uri.getLastPathSegment();
+        if (name == null) name = "file";
+        name = name.substring(name.lastIndexOf('/') + 1).replaceAll("[^A-Za-z0-9._-]+", "_");
+        while (name.startsWith(".") || name.startsWith("-")) name = name.substring(1);
+        if (name.isEmpty()) name = "file";
+        if (name.length() > 80) name = name.substring(name.length() - 80);
+        java.io.File folder = new java.io.File(Ubuntu.rootfs(c), "root/uploads");
+        if (!folder.isDirectory() && !folder.mkdirs()) return null;
+        java.io.File target = new java.io.File(folder, name);
+        for (int n = 2; target.exists() && n < 1000; n++) target = new java.io.File(folder, n + "-" + name);
+        long total = 0;
+        boolean whole = false;
+        try (java.io.InputStream in = c.getContentResolver().openInputStream(uri);
+             java.io.OutputStream out = new java.io.FileOutputStream(target)) {
+            if (in == null) return null;
+            byte[] buffer = new byte[65536];
+            int n;
+            while ((n = in.read(buffer)) > 0) {
+                total += n;
+                if (total > ATTACH_LIMIT) break;
+                out.write(buffer, 0, n);
+            }
+            whole = total > 0 && total <= ATTACH_LIMIT;
+        } finally {
+            if (!whole) target.delete();
+        }
+        if (!whole) return null;
+        android.util.Log.i("Termant", "attach: " + target.getName() + " (" + total + " bytes)");
+        return "/root/uploads/" + target.getName();
+    }
+
     @Override
     protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == REQUEST_ATTACH) {
+            if (result == RESULT_OK && data != null) takeAttachments(data);
+            return;
+        }
         if (request != REQUEST_VOICE || result != RESULT_OK || data == null) return;
         java.util.ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
         if (heard == null || heard.isEmpty()) return;
@@ -968,6 +1087,33 @@ public class MainActivity extends Activity
                         dialog.dismiss();
                         if (which == folders.size()) newWorkspace();
                         else useWorkspace(folders.get(which));
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    /** The chat persona: none, or one of the four roles. */
+    private void pickPersona() {
+        final String[] ids = {"", "gf", "employee", "secretary", "manager"};
+        final String[] names = {
+                getString(R.string.persona_off),
+                getString(R.string.persona_gf),
+                getString(R.string.persona_employee),
+                getString(R.string.persona_secretary),
+                getString(R.string.persona_manager),
+        };
+        int current = 0;
+        for (int i = 0; i < ids.length; i++)
+            if (ids[i].equals(Config.persona(this))) current = i;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.persona_title)
+                .setSingleChoiceItems(names, current, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        Config.setPersona(MainActivity.this, ids[which]);
+                        settingsPanel.refresh();
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)

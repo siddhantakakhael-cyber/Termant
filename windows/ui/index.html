@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data: blob:">
+<title>Termant</title>
+<link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="dark">
+<div id="app">
+  <aside id="side">
+    <div class="brand"><img src="../assets/icon.png" alt=""><span>Termant</span></div>
+    <button id="new-chat" class="wide primary"></button>
+    <div id="chat-list-title" class="label"></div>
+    <div id="chat-list"></div>
+    <nav id="nav"></nav>
+  </aside>
+  <main>
+    <section id="view-chat" class="view">
+      <header>
+        <button id="menu" class="icon-button"></button>
+        <h1 id="chat-title"></h1>
+        <button id="folder-chip" class="chip"></button>
+        <button id="model-chip" class="chip"></button>
+      </header>
+      <div id="messages"></div>
+      <div id="status" hidden></div>
+      <div id="attached" hidden></div>
+      <form id="composer">
+        <button type="button" id="attach" class="icon-button"></button>
+        <textarea id="input" rows="1"></textarea>
+        <button type="button" id="mic" class="icon-button"></button>
+        <button type="submit" id="send" class="icon-button accent"></button>
+      </form>
+    </section>
+    <section id="view-term" class="view" hidden>
+      <header>
+        <button class="icon-button menu-button"></button>
+        <div id="tabs"></div>
+        <button id="tab-add" class="icon-button"></button>
+      </header>
+      <div id="terms"></div>
+    </section>
+    <section id="view-auto" class="view" hidden>
+      <header><button class="icon-button menu-button"></button><h1 id="auto-title"></h1></header>
+      <div id="auto" class="page"></div>
+    </section>
+    <section id="view-settings" class="view" hidden>
+      <header><button class="icon-button menu-button"></button><h1 id="settings-title"></h1></header>
+      <div id="settings" class="page"></div>
+    </section>
+  </main>
+</div>
+<div id="layer"></div>
+<div id="toasts"></div>
+<script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+<script src="icons.js"></script>
+<script src="strings.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

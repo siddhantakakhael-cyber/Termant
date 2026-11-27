@@ -26,6 +26,18 @@
     <string name="alarm_ringing">Tap to stop</string>
     <string name="alarm_stop">Stop</string>
     <string name="ask_hint">Ask in Hindi or English…</string>
+    <string name="attach_file">Add a picture or file</string>
+    <string name="attach_remove">Take off %1$s</string>
+    <string name="attach_default">Look at this file and tell me what is in it.</string>
+    <string name="attach_failed">That file could not be added (too big, or it cannot be read).</string>
+    <string name="undo_changes">Put the changed files back</string>
+    <string name="picture_drawn">Picture: %1$s</string>
+    <string name="picture_gone">The picture %1$s is no longer there.</string>
+    <string name="picture_in_gallery">A copy is in the phone\'s gallery, in %1$s</string>
+    <string name="picture_in_ubuntu">Kept in Ubuntu: %1$s</string>
+    <string name="picture_open">Open in gallery</string>
+    <string name="picture_share">Share</string>
+    <string name="picture_no_app">No app on this phone could take the picture.</string>
     <string name="ask_send">Send</string>
     <string name="ask_voice">Speak</string>
     <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>
@@ -45,6 +57,13 @@
     <string name="settings">Settings</string>
     <string name="settings_agent">Agent</string>
     <string name="settings_model_note">Which AI model answers in the chat.</string>
+    <string name="persona_title">Chat persona</string>
+    <string name="persona_note">The role the agent plays in the chat: it changes how it speaks, not what it can do.</string>
+    <string name="persona_off">Off</string>
+    <string name="persona_gf">Girlfriend</string>
+    <string name="persona_employee">Employee</string>
+    <string name="persona_secretary">Secretary</string>
+    <string name="persona_manager">Manager</string>
     <string name="settings_workspace_note">The folder in Ubuntu where the agent keeps and runs its files.</string>
     <string name="settings_keys">Your own API key</string>
     <string name="settings_keys_note">Optional. Without a key, free models are used. With a key, that company\'s models appear in the model list and are billed to your account. Keys stay on this phone, in Ubuntu at ~/.config/termant/keys.env.</string>
@@ -111,7 +130,7 @@
     <string name="chat_no_answer">The agent gave no answer. Check your internet connection and try again.</string>
     <string name="chat_setup_failed">The agent could not be set up. Check your internet connection and try again.</string>
     <string name="chat_welcome">Namaste. What should I do?</string>
-    <string name="chat_welcome_text">Ask in Hindi or English. I can set alarms and timers, control the phone, and write and run code in Ubuntu. The first request downloads the agent (about 100 MB).</string>
+    <string name="chat_welcome_text">Ask in Hindi or English. I can set alarms and timers, control the phone, and write and run code in Ubuntu. The first request downloads the agent (about 120 MB).</string>
     <string-array name="chat_ideas">
         <item>Mujhe subah 7 baje utha dena</item>
         <item>10 minute baad chai ka timer bajana</item>
@@ -153,6 +172,11 @@
     <string name="voice_denied">The microphone was not allowed, so voice input cannot listen.</string>
     <string name="voice_nothing">Did not catch that. Tap the microphone and try again.</string>
     <string name="voice_failed">Voice input stopped (%1$s). Check the internet connection and try again.</string>
+    <string name="wake_title">Listen for "hey Termant"</string>
+    <string name="wake_note">Say "hey Termant", then the task, without touching the phone; Termant does it and answers in the chat. The microphone must be allowed once — tap the microphone button in the chat first. While it waits, the notification says so; when it hears the words, it says to speak.</string>
+    <string name="wake_armed">Now listening — say the task</string>
+    <string name="notification_wake">listening for "hey Termant"</string>
+    <string name="notification_wake_off">hey Termant is off (%1$s)</string>
     <!-- What the agent is doing right now; same order as Chat.ACT_*. -->
     <string-array name="activity_titles">
         <item>Starting the agent</item>
@@ -221,7 +245,7 @@
     <string name="screen_stop">Turn off</string>
     <string name="screen_no_settings">Open Android Settings → Accessibility yourself.</string>
     <string name="screen_service_label">Termant screen control</string>
-    <string name="screen_service_description">Lets Termant’s AI agent read what is on the screen and tap, type and swipe in other apps when you ask it to in the chat. It does nothing on its own, records nothing, and never types into password boxes.</string>
+    <string name="screen_service_description">Lets Termant’s AI agent read what is on the screen and tap, type and swipe in other apps when you ask it to in the chat. Where an app does not say what it shows, Termant takes a picture of the screen and reads the writing in it on the phone itself; the picture is not kept or sent anywhere. It does nothing on its own, records nothing, and never types into password boxes.</string>
     <!-- Over other apps: what the agent is doing, and its questions. -->
     <string name="ask_from">Termant asks</string>
     <string name="ask_close">Skip</string>

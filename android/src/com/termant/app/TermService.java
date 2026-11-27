@@ -48,6 +48,7 @@ public class TermService extends Service implements TerminalSessionClient {
     static final int MAX_SESSIONS = 8;
     private static final String CHANNEL = "sessions";
     private static final int NOTIFICATION_ID = 1;
+    private static final int WAKE_ARMED_ID = 4;
 
     /** The visible screen, if any. */
     interface Screen {
@@ -77,6 +78,10 @@ public class TermService extends Service implements TerminalSessionClient {
     Rules rules;
     /** Check-ins the agent starts by itself. */
     Care care;
+    /** Waits for "hey Termant" so a task can be given by voice; lives as long as this does. */
+    private Wake wake;
+    /** Why the wake word has given up, to show in the notification, or empty. */
+    private String wakeDetail = "";
     private PhoneBridge bridge;
     private MediaPlayer ringer;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -116,6 +121,78 @@ public class TermService extends Service implements TerminalSessionClient {
         care.start();
         bridge = new PhoneBridge(this);
         bridge.start();
+        wake = new Wake(this, new Wake.Sink() {
+            @Override
+            public void onCommand(String text) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        android.util.Log.i("Termant", "wake: the task is '" + text + "'");
+                        if (chat != null) chat.send(text);
+                    }
+                });
+            }
+
+            @Override
+            public void onArmed(boolean armed) {
+                if (armed) {
+                    getSystemService(NotificationManager.class).notify(WAKE_ARMED_ID, armedNotification());
+                } else {
+                    getSystemService(NotificationManager.class).cancel(WAKE_ARMED_ID);
+                }
+            }
+
+            @Override
+            public void onProblem(String detail) {
+                wakeDetail = detail;
+                Config.setWakeWord(TermService.this, false);
+                refreshNotification();
+            }
+        });
+        if (Config.wakeWord(this)) wake.start();
+    }
+
+    /** Settings: wait for "hey Termant" in the background, or stop waiting. */
+    void setWakeWord(boolean on) {
+        if (wake == null) return;
+        if (on == wake.isOn()) {
+            Config.setWakeWord(this, on);
+            return;
+        }
+        wakeDetail = "";
+        Config.setWakeWord(this, on);
+        if (on) wake.start();
+        else {
+            wake.stop();
+            getSystemService(NotificationManager.class).cancel(WAKE_ARMED_ID);
+        }
+        refreshNotification();
+    }
+
+    /** The app's own microphone button is listening now, so the wake word must be quiet. */
+    void pauseWake() {
+        if (wake != null) wake.suspend(true);
+    }
+
+    void resumeWake() {
+        if (wake != null) wake.suspend(false);
+    }
+
+    /** Shown for a moment when the wake word is heard: now the task is wanted. */
+    private Notification armedNotification() {
+        int immutable = Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0;
+        PendingIntent open = PendingIntent.getActivity(this, 4,
+                new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), immutable);
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26
+                ? new Notification.Builder(this, CHANNEL) : new Notification.Builder(this);
+        b.setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(Lang.of(this).getString(R.string.app_name))
+                .setContentText(Lang.of(this).getString(R.string.wake_armed))
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .setTimeoutAfter(15 * 1000);
+        if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH);
+        return b.build();
     }
 
     /** Terminal palette matching the app's theme (dark or light). */
@@ -191,6 +268,7 @@ public class TermService extends Service implements TerminalSessionClient {
         stopRinging();
         rules.stop();
         if (bridge != null) bridge.stop();
+        if (wake != null) wake.destroy();
         super.onDestroy();
     }
 
@@ -417,6 +495,11 @@ public class TermService extends Service implements TerminalSessionClient {
         String text = count == 0 ? Lang.of(this).getString(R.string.notification_text_none) : count == 1
                 ? Lang.of(this).getString(R.string.notification_text_one)
                 : Lang.of(this).getString(R.string.notification_text_many, count);
+        if (wake != null && wake.isOn()) {
+            text = text + " · " + Lang.of(this).getString(R.string.notification_wake);
+        } else if (!wakeDetail.isEmpty()) {
+            text = text + " · " + Lang.of(this).getString(R.string.notification_wake_off, wakeDetail);
+        }
 
         Notification.Builder b = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(this, CHANNEL)

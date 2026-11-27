@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.termant.app"
-    android:versionCode="20"
-    android:versionName="0.17.0">
+    android:versionCode="30"
+    android:versionName="0.27.0">
 
     <!-- targetSdkVersion stays at 28 for the same reason as Termux: a Linux
          userland needs to map and run program files stored in app data. -->
@@ -53,6 +53,19 @@
         </activity>
 
         <service android:name=".TermService" android:exported="false" />
+
+        <!-- Reading notifications for the agent (phone notifications). Only Android
+             itself can bind it, and only after the user turns it on under
+             Settings → Notifications → Notification access. -->
+        <service
+            android:name=".NotifyListener"
+            android:label="Termant"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- Screen control for the agent (phone screen / tap / type / swipe).
              Only Android itself can bind it, and only after the user turns
