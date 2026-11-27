@@ -455,48 +455,6 @@ draw --slow "..."     no logo in the corner, but a minute or more, and smaller
 - A chart, a QR code, a diagram or a changed photo is not a job for `draw`:
   make those with Python as before.
 
-## Editing a video
-
-When the user asks to change a video, to cut or trim a part of it, to make
-it faster, to put words or music on it, to change its colour, to turn or
-crop it ("video edit karo", "is hisaab kaat do", "speed badhao", "CapCut ki
-tarah banao"):
-
-```
-clip info FILE                how long it is, how big, does it have sound
-clip thumbs FILE DIR [FPS]    small pictures of it, to look at it with `phone look`
-clip trim FILE --from S --to S    keep only that part
-clip cut FILE --from S --to S     take that part out
-clip speed FILE --rate R          0.5 to 4; 2 is twice as fast
-clip text FILE "WORDS" --from S --to S [--place top|center|bottom] [--size N]
-clip music FILE SONG [--volume V]    music under the video, as long as it is
-clip mute FILE                    the video without its own sound
-clip volume FILE --gain G          its own sound louder (2) or softer (0.5)
-clip filter FILE [--brightness B] [--contrast C] [--saturation S] [--sepia F]
-clip rotate FILE [--deg 90|180|270] [--flip h|v]
-clip crop FILE --aspect 16:9|9:16|1:1|4:3|3:4
-clip last                       where the newest edited video is
-```
-
-- First find the video: the user's files come to `~/uploads`, the videos the
-  phone made are in `~/videos`, and `find /root -iname '*.mp4'` shows the rest.
-  `clip info` says its length in seconds; the times above are seconds.
-- Several changes at once go in one list, made in one go:
-  `clip edit FILE --json '{"segments": [[0, 2], [4, 6, 2]], "texts": [{"from": 0.5, "to": 1.5, "text": "do baar", "place": "bottom"}], "music": "~/uploads/song.mp3", "brightness": 0.1}'`
-  `segments` are the kept parts in their order, each `[start, end, speed]`
-  (speed may be left out); the finished video is as long as those parts at
-  their speeds. `--json-file FILE` for a long list.
-- The finished video is saved next to the first, with `-edited` in the name,
-  or at `--out FILE`. In the chat the chat shows it under your answer by
-  itself and a copy goes to the phone's gallery (Movies/Termant): do not
-  paste the path or a link, say in one line what you made.
-- The work is done by ffmpeg, which is not in a fresh Ubuntu: when `clip`
-  says so, install it (`apt-get install -y ffmpeg`, a minute or two) and go
-  on. On a phone the video is a minute or less and it takes about as long as
-  the video is.
-- The words on the video are plain text in one colour with a dark edge; a
-  song is played as long as the video is, looping when it is shorter.
-
 ## APILayer: ready-made APIs with the user's own key
 
 APILayer (apilayer.com) is a shop of small web APIs. About 60 of them answer

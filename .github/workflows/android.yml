@@ -66,19 +66,6 @@ jobs:
           set -o pipefail
           android/build.sh 2>&1 | tee ci-out/build.log
 
-      - name: Clip a video (clip's tools, with a real ffmpeg)
-        run: |
-          set -o pipefail
-          {
-            echo "ffmpeg: $(command -v ffmpeg || echo 'not found on the runner')"
-            if ! command -v ffmpeg >/dev/null; then
-              sudo apt-get update -qq
-              sudo apt-get install -y ffmpeg
-            fi
-            ffmpeg -version 2>&1 | head -1
-            bash android/ci/clip-check.sh android/assets/guest
-          } 2>&1 | tee ci-out/clip.log
-
       - name: Enable KVM for the emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

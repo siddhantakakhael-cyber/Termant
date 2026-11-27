@@ -57,9 +57,6 @@ public class MainActivity extends Activity
     private static final int REQUEST_SMS = 3;
     private static final int REQUEST_MIC = 4;
     private static final int REQUEST_ATTACH = 5;
-    private static final int REQUEST_CLIP_VIDEO = 6;
-    private static final int REQUEST_CLIP_MUSIC = 7;
-    private static final int REQUEST_CLIP_BACKGROUND = 8;
     /** The biggest file the chat takes with a message. */
     private static final long ATTACH_LIMIT = 200L * 1024 * 1024;
 
@@ -119,7 +116,6 @@ public class MainActivity extends Activity
     private View terminalPanel;
     private ChatView chatPanel;
     private SettingsView settingsPanel;
-    private ClipVideoView clipPanel;
     private static MainActivity visible;
     private TerminalView terminal;
     private LinearLayout tabs;
@@ -200,11 +196,6 @@ public class MainActivity extends Activity
             public void onAttach() {
                 pickAttachment();
             }
-
-            @Override
-            public void onOpenClip() {
-                showClip();
-            }
         });
         settingsPanel = new SettingsView(this, new SettingsView.Host() {
             @Override
@@ -281,33 +272,10 @@ public class MainActivity extends Activity
             }
         });
         settingsPanel.setVisibility(View.GONE);
-        clipPanel = new ClipVideoView(this, new ClipVideoView.Host() {
-            @Override
-            public void onCloseClip() {
-                showChat();
-            }
-
-            @Override
-            public void onPickVideo() {
-                pickClipVideo();
-            }
-
-            @Override
-            public void onPickMusic() {
-                pickClipMusic();
-            }
-
-            @Override
-            public void onPickBackground() {
-                pickClipBackground();
-            }
-        });
-        clipPanel.setVisibility(View.GONE);
         rootView.addView(chatPanel, match());
         rootView.addView(settingsPanel, match());
         rootView.addView(terminalPanel, match());
         rootView.addView(setupPanel, match());
-        rootView.addView(clipPanel, match());
         chatPanel.setVisibility(View.GONE);
         terminalPanel.setVisibility(View.GONE);
         setupPanel.setVisibility(View.GONE);
@@ -465,8 +433,7 @@ public class MainActivity extends Activity
 
     @Override
     public void onBackPressed() {
-        if (terminalPanel.getVisibility() == View.VISIBLE || settingsPanel.getVisibility() == View.VISIBLE
-                || clipPanel.getVisibility() == View.VISIBLE) {
+        if (terminalPanel.getVisibility() == View.VISIBLE || settingsPanel.getVisibility() == View.VISIBLE) {
             showChat();
             return;
         }
@@ -874,43 +841,6 @@ public class MainActivity extends Activity
         }
     }
 
-    /** The video section asks for a video to edit. */
-    private void pickClipVideo() {
-        Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
-        pick.setType("video/*");
-        pick.addCategory(Intent.CATEGORY_OPENABLE);
-        try {
-            startActivityForResult(Intent.createChooser(pick, getString(R.string.video_choose)), REQUEST_CLIP_VIDEO);
-        } catch (Exception e) {
-            Toast.makeText(this, R.string.attach_failed, Toast.LENGTH_LONG).show();
-        }
-    }
-
-    /** The video section asks for a song to put under the video. */
-    private void pickClipMusic() {
-        Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
-        pick.setType("audio/*");
-        pick.addCategory(Intent.CATEGORY_OPENABLE);
-        try {
-            startActivityForResult(Intent.createChooser(pick, getString(R.string.video_music_choose)), REQUEST_CLIP_MUSIC);
-        } catch (Exception e) {
-            Toast.makeText(this, R.string.attach_failed, Toast.LENGTH_LONG).show();
-        }
-    }
-
-    /** The video section asks for what goes under the screen: a photo or a video. */
-    private void pickClipBackground() {
-        Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
-        pick.setType("*/*");
-        pick.addCategory(Intent.CATEGORY_OPENABLE);
-        pick.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
-        try {
-            startActivityForResult(Intent.createChooser(pick, getString(R.string.video_bg_choose)), REQUEST_CLIP_BACKGROUND);
-        } catch (Exception e) {
-            Toast.makeText(this, R.string.attach_failed, Toast.LENGTH_LONG).show();
-        }
-    }
-
     /**
      * Copies what the user picked into Ubuntu's /root/uploads, where the agent can read it,
      * and hangs each file on the message being written.
@@ -998,23 +928,6 @@ public class MainActivity extends Activity
         super.onActivityResult(request, result, data);
         if (request == REQUEST_ATTACH) {
             if (result == RESULT_OK && data != null) takeAttachments(data);
-            return;
-        }
-        if (request == REQUEST_CLIP_VIDEO || request == REQUEST_CLIP_MUSIC || request == REQUEST_CLIP_BACKGROUND) {
-            if (result == RESULT_OK && data != null && data.getData() != null) {
-                try {
-                    String path = copyIntoUbuntu(this, data.getData());
-                    if (path != null) {
-                        if (request == REQUEST_CLIP_VIDEO) clipPanel.videoPicked(path);
-                        else if (request == REQUEST_CLIP_MUSIC) clipPanel.musicPicked(path);
-                        else clipPanel.backgroundPicked(path);
-                    } else {
-                        Toast.makeText(this, R.string.attach_failed, Toast.LENGTH_LONG).show();
-                    }
-                } catch (Exception e) {
-                    Toast.makeText(this, R.string.attach_failed, Toast.LENGTH_LONG).show();
-                }
-            }
             return;
         }
         if (request != REQUEST_VOICE || result != RESULT_OK || data == null) return;
@@ -1115,7 +1028,6 @@ public class MainActivity extends Activity
         setupPanel.setVisibility(View.GONE);
         terminalPanel.setVisibility(View.GONE);
         settingsPanel.setVisibility(View.GONE);
-        clipPanel.setVisibility(View.GONE);
         chatPanel.refreshChips();
         chatPanel.setVisibility(View.VISIBLE);
     }
@@ -1126,16 +1038,6 @@ public class MainActivity extends Activity
         settingsPanel.toTop();
         chatPanel.setVisibility(View.GONE);
         settingsPanel.setVisibility(View.VISIBLE);
-    }
-
-    private void showClip() {
-        hideKeyboard();
-        chatPanel.setVisibility(View.GONE);
-        settingsPanel.setVisibility(View.GONE);
-        terminalPanel.setVisibility(View.GONE);
-        clipPanel.setVisibility(View.VISIBLE);
-        clipPanel.onOpen();
-        android.util.Log.i("Termant", "video section: opened");
     }
 
     /** Opens the Arena.ai website in the phone's browser; signing in happens there. */

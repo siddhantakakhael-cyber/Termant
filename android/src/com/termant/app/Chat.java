@@ -40,8 +40,6 @@ final class Chat {
          * after a tab comes its address in the phone's gallery when a copy was put there.
          */
         final List<String> pictures = new ArrayList<>();
-        /** Videos made for this reply (`clip`), shown under it, in the same form as the pictures. */
-        final List<String> videos = new ArrayList<>();
 
         /** The file of picture i as the app reads it. */
         static File pictureFile(Context c, String picture) {
@@ -70,8 +68,6 @@ final class Chat {
     private static final String STREAM_FILE = "/root/.cache/termant/events.txt";
     /** Where `draw` (guest/kit) lists the pictures it made for the message being answered. */
     private static final String DRAWN_FILE = "/root/.cache/termant/drawn.txt";
-    /** Where `clip` (guest/kit) lists the videos it made for the message being answered. */
-    private static final String CLIPPED_FILE = "/root/.cache/termant/clipped.txt";
     /**
      * Runs inside Ubuntu; $1 message, $2 "--continue", "--session ID" or empty, $3 workspace folder,
      * $4 model or empty, $5 non-empty to also print which OpenCode session the reply belongs to,
@@ -654,7 +650,6 @@ final class Chat {
         dropServer();
         Message last = messages.get(messages.size() - 1);
         takePictures(last); // a picture drawn before the stop is still shown
-        takeVideos(last);
         if (last.first && quiet) messages.remove(last); // a check-in that was cut off leaves nothing behind
         else if (last.text.isEmpty()) last.text = Lang.of(context).getString(R.string.chat_stopped);
         quiet = false;
@@ -720,7 +715,6 @@ final class Chat {
         carried.clear();
         // `draw` lists the pictures it makes for this message here; they are shown under the reply
         new File(Ubuntu.rootfs(context), DRAWN_FILE.substring(1)).delete();
-        new File(Ubuntu.rootfs(context), CLIPPED_FILE.substring(1)).delete();
         if (Config.freeLimitUntil(context) > 0 && !Config.onFreeAllowance(models.get(0))
                 && Config.onFreeAllowance(Config.activeModel(context))) {
             android.util.Log.i("Termant", "free limit: OpenCode's free models wait until "
@@ -980,7 +974,6 @@ final class Chat {
                     String told = toldByScript();
                     if (!told.isEmpty()) reply.note = reply.note.isEmpty() ? told : told + " \u00b7 " + reply.note;
                     takePictures(reply);
-                    takeVideos(reply);
                     busy = false;
                     process = null;
                     status = "";
@@ -1034,33 +1027,6 @@ final class Chat {
             if (!reply.pictures.contains(picture)) reply.pictures.add(picture);
         }
         if (!reply.pictures.isEmpty()) android.util.Log.i("Termant", "chat: pictures drawn: " + reply.pictures.size());
-    }
-
-    /** Puts the videos `clip` made during this message under the reply (see Message.videos). */
-    private void takeVideos(Message reply) {
-        if (reply.user) return;
-        for (String video : clipped()) {
-            if (!reply.videos.contains(video)) reply.videos.add(video);
-        }
-        if (!reply.videos.isEmpty()) android.util.Log.i("Termant", "chat: videos clipped: " + reply.videos.size());
-    }
-
-    /** The videos `clip` listed since this message began (the list is emptied in begin()). */
-    private List<String> clipped() {
-        List<String> found = new ArrayList<>();
-        try {
-            File f = new File(Ubuntu.rootfs(context), CLIPPED_FILE.substring(1));
-            if (!f.isFile() || f.length() > 20000) return found;
-            for (String line : read(f).split("\n")) {
-                String path = line.split("\t", 2)[0].trim();
-                // only files inside Ubuntu, and only those that are there
-                if (!path.startsWith("/") || path.contains("/../") || found.size() >= 8) continue;
-                if (Message.pictureFile(context, line).isFile()) found.add(line.trim());
-            }
-        } catch (Exception e) {
-            // no videos then
-        }
-        return found;
     }
 
     /** The pictures `draw` listed since this message began (the list is emptied in begin()). */
@@ -1525,7 +1491,7 @@ final class Chat {
                 }
                 list.put(new JSONObject().put("user", m.user).put("text", m.text).put("first", m.first)
                         .put("failed", m.failed).put("note", m.note).put("steps", new JSONArray(m.steps))
-                        .put("pictures", new JSONArray(m.pictures)).put("videos", new JSONArray(m.videos)));
+                        .put("pictures", new JSONArray(m.pictures)));
             }
             // a chat the agent began: named after what it asked
             if (title.isEmpty() && !messages.isEmpty()) {
@@ -1570,8 +1536,6 @@ final class Chat {
                 for (int k = 0; steps != null && k < steps.length(); k++) m.steps.add(steps.getString(k));
                 JSONArray pictures = j.optJSONArray("pictures");
                 for (int k = 0; pictures != null && k < pictures.length(); k++) m.pictures.add(pictures.getString(k));
-                JSONArray videos = j.optJSONArray("videos");
-                for (int k = 0; videos != null && k < videos.length(); k++) m.videos.add(videos.getString(k));
                 // a reply that was cut off when the app was closed
                 if (m.first && m.text.isEmpty()) continue;
                 if (!m.user && m.text.isEmpty()) m.text = Lang.of(context).getString(R.string.chat_stopped);

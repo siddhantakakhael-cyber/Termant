@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Puts a picture made in Ubuntu (see `draw` in guest/kit) into the phone's gallery, in
- * Pictures/Termant, and a video (see `clip`) into Movies/Termant.
+ * Pictures/Termant.
  */
 final class Gallery {
     static final String FOLDER = "Termant";
@@ -25,8 +25,7 @@ final class Gallery {
     }
 
     /**
-     * "image/jpeg", "video/mp4" and the like when these bytes are something the gallery shows,
-     * else null.
+     * "image/jpeg" and the like when these bytes are something the gallery shows, else null.
      */
     static String kind(byte[] data) {
         if (data.length > 3 && (data[0] & 0xff) == 0xff && (data[1] & 0xff) == 0xd8 && (data[2] & 0xff) == 0xff) {
@@ -40,13 +39,6 @@ final class Gallery {
             return "image/webp";
         }
         if (data.length > 6 && data[0] == 'G' && data[1] == 'I' && data[2] == 'F') return "image/gif";
-        if (data.length > 12 && data[4] == 'f' && data[5] == 't' && data[6] == 'y' && data[7] == 'p') {
-            return "video/mp4"; // mp4 and mov both begin with an ftyp box
-        }
-        if (data.length > 4 && (data[0] & 0xff) == 0x1a && (data[1] & 0xff) == 0x45
-                && (data[2] & 0xff) == 0xdf && (data[3] & 0xff) == 0xa3) {
-            return "video/webm";
-        }
         return null;
     }
 
@@ -56,15 +48,14 @@ final class Gallery {
      */
     static String[] save(Context c, String name, byte[] data) throws PhoneBridge.Refused {
         String kind = kind(data);
-        if (kind == null) throw new PhoneBridge.Refused("phone gallery: this file is not a picture or a video (JPEG, PNG, WebP, GIF, MP4 or WebM)");
-        boolean video = kind.startsWith("video/");
+        if (kind == null) throw new PhoneBridge.Refused("phone gallery: this file is not a picture (JPEG, PNG, WebP or GIF)");
         String ending = kind.equals("image/jpeg") ? "jpg" : kind.substring(kind.indexOf('/') + 1);
         String base = new File(name).getName().replaceAll("\\.[A-Za-z0-9]{1,5}$", "")
                 .replaceAll("[^A-Za-z0-9._-]+", "-").replaceAll("^[-.]+", "");
-        if (base.isEmpty()) base = video ? "video" : "picture";
+        if (base.isEmpty()) base = "picture";
         if (base.length() > 80) base = base.substring(0, 80);
         String file = base + "." + ending;
-        String folderName = video ? Environment.DIRECTORY_MOVIES : Environment.DIRECTORY_PICTURES;
+        String folderName = Environment.DIRECTORY_PICTURES;
         String place = folderName + "/" + FOLDER + "/" + file;
 
         Exception first = null;
@@ -78,9 +69,7 @@ final class Gallery {
                 v.put(MediaStore.MediaColumns.MIME_TYPE, kind);
                 v.put(MediaStore.MediaColumns.RELATIVE_PATH, folderName + "/" + FOLDER);
                 v.put(MediaStore.Images.Media.IS_PENDING, 1);
-                Uri collection = video
-                        ? MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-                        : MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                Uri collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
                 made = resolver.insert(collection, v);
                 if (made == null) throw new java.io.IOException("the gallery gave no place for it");
                 try (OutputStream out = resolver.openOutputStream(made)) {
@@ -104,11 +93,11 @@ final class Gallery {
         }
         if (!Ubuntu.hasStorageAccess(c)) {
             if (first != null) {
-                android.util.Log.w("Termant", "gallery: cannot add the " + (video ? "video" : "picture"), first);
-                throw new PhoneBridge.Refused("phone gallery: the phone did not take the " + (video ? "video" : "picture") + " (" + first.getMessage() + ")");
+                android.util.Log.w("Termant", "gallery: cannot add the picture", first);
+                throw new PhoneBridge.Refused("phone gallery: the phone did not take the picture (" + first.getMessage() + ")");
             }
-            throw new PhoneBridge.Refused("phone gallery: Termant may not write to the phone's "
-                    + (video ? "movies" : "pictures") + " yet. In Termant open the menu and choose \"Allow phone"
+            throw new PhoneBridge.Refused("phone gallery: Termant may not write to the phone's pictures"
+                    + " yet. In Termant open the menu and choose \"Allow phone"
                     + " storage (/sdcard)\", then try again.");
         }
         try {
@@ -137,7 +126,7 @@ final class Gallery {
             }
             return new String[]{folderName + "/" + FOLDER + "/" + target.getName(), address[0]};
         } catch (Exception e) {
-            throw new PhoneBridge.Refused("phone gallery: the " + (video ? "video" : "picture") + " could not be saved (" + e.getMessage() + ")");
+            throw new PhoneBridge.Refused("phone gallery: the picture could not be saved (" + e.getMessage() + ")");
         }
     }
 }

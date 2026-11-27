@@ -115,7 +115,6 @@ adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t6.sh'" < android/ci/guest
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t7.sh'" < android/ci/guest-test7.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t8.sh'" < android/ci/guest-test8.sh
 adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t9.sh'" < android/ci/guest-test9.sh
-adb shell "run-as $PKG sh -c 'cat > files/rootfs/root/t10.sh'" < android/ci/guest-test10.sh
 type_line 'sh%st.sh'
 wait_for_end files/rootfs/root/result.txt 180 || { shot 3-timeout; run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"; finish "FAIL test script did not finish"; }
 run_as cat files/rootfs/root/result.txt > "$OUT/result.txt"
@@ -151,7 +150,7 @@ echo "Phone control"
 adb logcat -d -s Termant:I > "$OUT/phone-log.txt"
 grep -q '^battery-exit=0' "$OUT/result3.txt" || finish "FAIL phone battery"
 grep -q '^bad-alarm-exit=1' "$OUT/result3.txt" || finish "FAIL phone alarm accepted a wrong time"
-grep -q '^termant clip' "$OUT/result3.txt" || finish "FAIL phone clipboard"
+grep -q '^termant ok' "$OUT/result3.txt" || finish "FAIL phone clipboard"
 grep -q '^alarm-exit=0' "$OUT/result3.txt" || finish "FAIL phone alarm"
 grep -q 'alarm 06:45 sent to the Clock app' "$OUT/phone-log.txt" || finish "FAIL alarm did not reach the Clock app"
 grep -q 'ringing: CI-timer' "$OUT/phone-log.txt" || finish "FAIL timer did not ring"
@@ -1192,36 +1191,6 @@ grep -q '^other: password=ci-token-not-real' "$OUT/result5.txt" && finish "FAIL 
 grep -q '^git-name=ci-user' "$OUT/result5.txt" || finish "FAIL git did not get the account's name for commits"
 grep -q '"websearch"' "$OUT/result5.txt" || finish "FAIL web search is not in the agent's settings"
 grep -q '"provider": *"exa"' "$OUT/result5.txt" || finish "FAIL web search has no search service chosen"
-
-echo "Video: the clip tool makes a video in Ubuntu, and it reaches the phone's gallery"
-type_line 'sh%st10.sh'
-wait_for_end files/rootfs/root/result10.txt 300 || { run_as cat files/rootfs/root/result10.txt > "$OUT/result10.txt"; shot 42-clip-timeout; finish "FAIL the clip test did not finish (apt ffmpeg is slow on the emulator)"; }
-run_as cat files/rootfs/root/result10.txt > "$OUT/result10.txt"
-cat "$OUT/result10.txt"
-grep -q '^ffmpeg-exit=0' "$OUT/result10.txt" || finish "FAIL ffmpeg did not install in the emulator's Ubuntu"
-grep -q '^trim-exit=0' "$OUT/result10.txt" || finish "FAIL clip trim"
-grep -q '^speed-exit=0' "$OUT/result10.txt" || finish "FAIL clip speed"
-grep -q '^text-exit=0' "$OUT/result10.txt" || finish "FAIL clip text"
-grep -q '^rotate-exit=0' "$OUT/result10.txt" || finish "FAIL clip rotate"
-grep -q '^crop-exit=0' "$OUT/result10.txt" || finish "FAIL clip crop"
-grep -q '^edit-exit=0' "$OUT/result10.txt" || finish "FAIL clip edit (the whole list at once)"
-grep -q '^gallery-exit=0' "$OUT/result10.txt" || finish "FAIL the finished video did not reach the phone's gallery"
-grep -q 'Movies/Termant' "$OUT/result10.txt" || finish "FAIL the video's place was not said as Movies/Termant"
-grep -q '^last-exit=0' "$OUT/result10.txt" || finish "FAIL clip last"
-adb shell ls /sdcard/Movies/Termant 2>/dev/null | grep -q 'trim.mp4' || finish "FAIL the trimmed video is not on the phone, in Movies/Termant"
-# and the section itself: the button in the chat's top bar opens the timeline. The terminal
-# keeps its own keyboard, so the way out of it is the button, like in the other sections.
-tap_on 'content-desc="Back to the chat"' || finish "FAIL the terminal's back button is gone after the clip test"
-sleep 2
-tap_on 'content-desc="Video"' || finish "FAIL the video button is not in the chat's top bar"
-sleep 4
-shot 43-video-section
-adb logcat -d -s Termant:I | grep 'video section:' > "$OUT/clip-ui.txt"
-grep -q 'video section: opened' "$OUT/clip-ui.txt" || finish "FAIL the video section did not open"
-tap_on 'content-desc="Back to the chat"' || finish "FAIL the video section's back button is gone"
-sleep 2
-tap_on 'content-desc="Open the Ubuntu terminal"' || finish "FAIL the terminal button is gone after the video section"
-sleep 4
 
 echo "Questions from the agent: over another app, then inside Termant"
 choices=$(count_log 'overlay: choice 1 at'); boxes=$(count_log 'overlay: box at')

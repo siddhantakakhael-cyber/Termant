@@ -45,9 +45,6 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
         /** The user wants to send a picture or a file with the message. */
         void onAttach();
-
-        /** The user opens the video section: the timeline editor. */
-        void onOpenClip();
     }
 
     private final int BG = Theme.bg(), SURFACE = Theme.surface(),
@@ -127,16 +124,6 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             }
         });
         bar.addView(gear, new LayoutParams(dp(40), dp(40)));
-
-        ImageView video = Ui.iconButton(context, R.drawable.ic_video,
-                context.getString(R.string.video_title), TEXT, 40, 21);
-        video.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ChatView.this.host.onOpenClip();
-            }
-        });
-        bar.addView(video, new LayoutParams(dp(40), dp(40)));
 
         ImageView terminal = Ui.iconButton(context, R.drawable.ic_terminal,
                 context.getString(R.string.chat_terminal_description), TEXT, 36, 20);
@@ -753,8 +740,6 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         }
         // pictures the agent drew for this reply (`draw`)
         for (String picture : m.pictures) addPicture(bubble, picture, !m.text.isEmpty() || !m.steps.isEmpty());
-        // videos the agent made for this reply (`clip`)
-        for (String video : m.videos) addVideo(bubble, video, !m.text.isEmpty() || !m.steps.isEmpty());
         if (!m.note.isEmpty()) {
             TextView note = new TextView(c);
             note.setText(m.note);
@@ -861,66 +846,6 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         LayoutParams size = new LayoutParams(width, height);
         if (gapAbove) size.topMargin = dp(10);
         bubble.addView(view, size);
-    }
-
-    /** A video the agent made (`clip`), under the reply: it plays in place when tapped. */
-    private void addVideo(LinearLayout bubble, final String video, boolean gapAbove) {
-        final Context c = getContext();
-        final java.io.File file = Chat.Message.pictureFile(c, video);
-        if (!file.isFile()) {
-            TextView gone = new TextView(c);
-            gone.setText(c.getString(R.string.video_gone, file.getName()));
-            gone.setTextColor(MUTED);
-            gone.setTextSize(Ui.CAPTION);
-            if (gapAbove) gone.setPadding(0, dp(8), 0, 0);
-            bubble.addView(gone);
-            return;
-        }
-        FrameLayout box = new FrameLayout(c);
-        box.setBackground(rounded(SURFACE, 14));
-        box.setClipToOutline(true);
-        final android.widget.VideoView player = new android.widget.VideoView(c);
-        player.setVideoPath(file.getAbsolutePath());
-        player.setBackgroundColor(0xff000000);
-        box.addView(player, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        // the play sign, until the video is moving
-        TextView play = new TextView(c);
-        play.setText("\u25b6");
-        play.setTextColor(0x99ffffff);
-        play.setTextSize(34);
-        play.setGravity(Gravity.CENTER);
-        box.addView(play, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        player.setOnCompletionListener(new android.media.MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(android.media.MediaPlayer mp) {
-                play.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        play.setVisibility(View.VISIBLE);
-                    }
-                });
-            }
-        });
-        box.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                play.setVisibility(View.GONE);
-                if (!player.isPlaying()) player.start();
-            }
-        });
-        int page = getResources().getDisplayMetrics().widthPixels - dp(44);
-        int width = Math.min(page, dp(300));
-        LayoutParams size = new LayoutParams(width, dp(200));
-        if (gapAbove) size.topMargin = dp(10);
-        bubble.addView(box, size);
-        TextView where = new TextView(c);
-        String address = Chat.Message.pictureAddress(video);
-        where.setText(address.isEmpty() ? c.getString(R.string.video_in_ubuntu, file.getName())
-                : c.getString(R.string.video_in_gallery, "Movies/" + Gallery.FOLDER));
-        where.setTextColor(MUTED);
-        where.setTextSize(Ui.CAPTION);
-        where.setPadding(dp(4), dp(4), dp(4), 0);
-        bubble.addView(where);
     }
 
     /** The picture over the whole screen, with "open in the gallery" and "share" when the gallery has a copy. */

@@ -162,8 +162,7 @@ command runs, the chat names it and shows the newest line it has printed, so
 you see how far a download is. The same chat opens in a phone's browser over
 the home Wi-Fi — with a password, and with voice: say "hey Termant" and the
 phone sends the command to the PC, the answer spoken by the browser (an
-iPhone gets it too: in Safari, or in the small iOS app that adds a real
-microphone and the words "hey Termant"). It is an early version
+iPhone gets it too: the same page works in Safari). It is an early version
 (0.9.0).
 
 <img src="docs/screenshots/windows-chat.png" width="720" alt="Termant on Windows: asked to open Notepad and type into it, the agent shows each pc command it ran and then says what it did">

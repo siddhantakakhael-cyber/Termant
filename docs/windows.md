@@ -396,8 +396,7 @@ time. No app is wanted; a browser is the phone.
 - **Voice, from the phone**: press the microphone on the page and say
   **"hey Termant"** — or the command right after it, in the same breath. The
   answer is shown and is spoken by the browser's own voice. This is also how
-  an iPhone talks to Termant: there is no Termant app for iOS, and this page
-  works in Safari.
+  an iPhone talks to Termant: this page works in Safari.
 - **Your name** (Settings → AI agent): with it filled in, Termant knows whose
   it is; asked who it is, it names itself and the user in one line.
 
