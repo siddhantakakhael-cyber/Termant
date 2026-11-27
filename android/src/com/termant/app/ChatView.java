@@ -70,6 +70,9 @@ final class ChatView extends LinearLayout implements Chat.Listener {
     private LinearLayout attachRow;
     /** The text of the reply being written, and what the list looked like when it was built. */
     private TextView writing;
+    /** The last rendered chat and its message count: a row that arrived after that may come in. */
+    private Chat seenChat;
+    private int seenCount;
     private String shape = "";
 
     ChatView(Context context, Host host) {
@@ -92,6 +95,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 showHistory();
             }
         });
+        pressScale(past);
         bar.addView(past, new LayoutParams(dp(40), dp(40)));
 
         TextView title = new TextView(context);
@@ -113,6 +117,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 if (chat != null) chat.clear();
             }
         });
+        pressScale(fresh);
         bar.addView(fresh, new LayoutParams(dp(40), dp(40)));
 
         ImageView gear = Ui.iconButton(context, R.drawable.ic_settings,
@@ -123,6 +128,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 ChatView.this.host.onSettings();
             }
         });
+        pressScale(gear);
         bar.addView(gear, new LayoutParams(dp(40), dp(40)));
 
         ImageView terminal = Ui.iconButton(context, R.drawable.ic_terminal,
@@ -137,6 +143,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams terminalSize = new LayoutParams(dp(48), dp(36));
         terminalSize.leftMargin = dp(4);
+        pressScale(terminal);
         bar.addView(terminal, terminalSize);
         addView(bar);
 
@@ -159,6 +166,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 ChatView.this.host.onPickWorkspace();
             }
         });
+        pressScale(workspaceChip);
         chips.addView(workspaceChip, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30)));
         modelChip = chip(context.getString(R.string.model_title), R.drawable.ic_sparkle, R.drawable.ic_chevron_down);
         modelChip.setOnClickListener(new OnClickListener() {
@@ -169,6 +177,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams modelSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
         modelSize.leftMargin = dp(6);
+        pressScale(modelChip);
         chips.addView(modelChip, modelSize);
 
         // Arena.ai has no way for other apps to use its agent, so this opens its website.
@@ -182,6 +191,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams arenaSize = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
         arenaSize.leftMargin = dp(6);
+        pressScale(arena);
         chips.addView(arena, arenaSize);
 
         android.widget.HorizontalScrollView chipScroll = new android.widget.HorizontalScrollView(context);
@@ -202,6 +212,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 ChatView.this.host.onAttach();
             }
         });
+        pressScale(plus);
         pill.addView(plus, new LayoutParams(dp(42), dp(42)));
         input = new EditText(context);
         input.setHint(R.string.ask_hint);
@@ -223,6 +234,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
                 ChatView.this.host.onVoice();
             }
         });
+        pressScale(mic);
         pill.addView(mic, new LayoutParams(dp(42), dp(42)));
 
         send = Ui.iconButton(context, R.drawable.ic_arrow_up, context.getString(R.string.ask_send), ON_ACCENT, 42, 22);
@@ -237,6 +249,7 @@ final class ChatView extends LinearLayout implements Chat.Listener {
         });
         LayoutParams sendSize = new LayoutParams(dp(42), dp(42));
         sendSize.leftMargin = dp(2);
+        pressScale(send);
         pill.addView(send, sendSize);
 
         // the files that go with the next message: a name each, a tap takes one off again
@@ -358,6 +371,30 @@ final class ChatView extends LinearLayout implements Chat.Listener {
 
     // ------------------------------------------------------------ drawing
 
+    /**
+     * The button feels pressed: a small press on touch-down, a small rebound when it lifts.
+     * The click itself is untouched (the listener reports nothing to the chain).
+     */
+    private static void pressScale(final View v) {
+        v.setOnTouchListener(new android.view.View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, android.view.MotionEvent e) {
+                switch (e.getActionMasked()) {
+                    case android.view.MotionEvent.ACTION_DOWN:
+                        view.animate().scaleX(0.92f).scaleY(0.92f).setDuration(80).start();
+                        return false;
+                    case android.view.MotionEvent.ACTION_UP:
+                    case android.view.MotionEvent.ACTION_CANCEL:
+                    case android.view.MotionEvent.ACTION_OUTSIDE:
+                        view.animate().scaleX(1f).scaleY(1f).setDuration(140).start();
+                        return false;
+                    default:
+                        return false;
+                }
+            }
+        });
+    }
+
     @Override
     public void onChatChanged() {
         if (chat == null) return;
@@ -397,6 +434,21 @@ final class ChatView extends LinearLayout implements Chat.Listener {
             if (m.user) addMine(m);
             else addReply(m, busy && i == last);
         }
+        // a row that arrived since the last render comes in: a rise and a fade, staggered
+        int arrived = chat.messages.size() - seenCount;
+        if (seenChat == chat && arrived > 0 && list.getChildCount() > 0) {
+            int from = (int) Math.max(0, list.getChildCount() - Math.min(arrived, 3));
+            for (int i = from; i < list.getChildCount(); i++) {
+                View row = list.getChildAt(i);
+                row.setAlpha(0f);
+                row.setTranslationY(dp(14));
+                row.animate().alpha(1f).translationY(0f).setDuration(280)
+                        .setStartDelay((long) (i - from) * 60)
+                        .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+            }
+        }
+        seenChat = chat;
+        seenCount = chat.messages.size();
         scroll.post(new Runnable() {
             @Override
             public void run() {

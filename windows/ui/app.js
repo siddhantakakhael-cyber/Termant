@@ -260,6 +260,14 @@
     return S.settings.model ? S.settings.model.replace(/^opencode\//, '') : t('model_auto');
   }
 
+  // Which chat was last rendered and how many messages it had: the message that arrives
+  // after that is the only one that may animate in, so a re-render never replays them all.
+  const seen = { chat: null, n: 0 };
+  // The last render, for the fast path below: while a reply is being written, only its last
+  // message changes, several times a second — the words go into the bubble that is there,
+  // and the list is rebuilt only when a step, a picture or the end changes something else.
+  let streamed = null;
+
   function renderChat() {
     const chat = S.chat;
     $('chat-title').textContent = (chat && chat.title) || t('new_chat');
@@ -269,6 +277,31 @@
     $('folder-chip').title = t('s_folder') + ': ' + folder;
     const box = $('messages');
     const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+
+    const lastM = chat && chat.messages.length ? chat.messages[chat.messages.length - 1] : null;
+    const waitingNow = !!(lastM && !lastM.user && S.busy && !lastM.text);
+    const same = streamed && streamed.chatId === (chat && chat.id) && lastM && !lastM.user
+      && streamed.waiting === waitingNow && streamed.count === chat.messages.length
+      && streamed.steps === (lastM.steps ? lastM.steps.length : 0)
+      && streamed.note === (lastM.note || '') && streamed.learned === (lastM.learned ? lastM.learned.length : 0)
+      && streamed.pictures === (lastM.pictures ? lastM.pictures.length : 0)
+      && streamed.failed === !!lastM.failed;
+    if (same) {
+      // the same reply, a few words more: the words go in the bubble, the dots keep their motion
+      if (!waitingNow && lastM.text !== streamed.text && streamed.bubble) {
+        clear(streamed.bubble);
+        streamed.bubble.appendChild(markdown(lastM.text || (lastM.note === 'stopped' ? '' : t('no_answer'))));
+      }
+      streamed.text = lastM.text;
+      if (atEnd || S.busy) box.scrollTop = box.scrollHeight;
+      renderStatus();
+      return;
+    }
+    streamed = null;
+
+    const fresh = !!chat && seen.chat === chat.id && chat.messages.length > seen.n;
+    seen.chat = chat ? chat.id : null;
+    seen.n = chat ? chat.messages.length : 0;
     clear(box);
     if (!chat || !chat.messages.length) {
       box.appendChild(el('div', { class: 'empty' },
@@ -285,6 +318,7 @@
           const u = el('div', { class: 'msg user' + (fromWeb ? ' from-web' : '') });
           if (fromWeb) u.appendChild(el('div', { class: 'own' }, t('web_from')));
           u.appendChild(el('div', { class: 'bubble' }, shown(m.text)));
+          if (fresh && index === chat.messages.length - 1) u.classList.add('in');
           column.appendChild(u);
           return;
         }
@@ -299,6 +333,9 @@
           const bubble = el('div', { class: 'bubble' });
           bubble.appendChild(markdown(m.text || (m.note === 'stopped' ? '' : t('no_answer'))));
           node.appendChild(bubble);
+        } else {
+          // the first word has not arrived yet: three dots say it is on its way
+          node.appendChild(el('div', { class: 'typing' }, el('i'), el('i'), el('i')));
         }
         // pictures the agent drew for this answer; a click opens the picture in the PC's viewer
         if (m.pictures && m.pictures.length) {
@@ -316,9 +353,23 @@
         if (m.learned && m.learned.length) {
           node.appendChild(el('div', { class: 'learned' }, el('b', null, t('learned_now')), m.learned.map((line) => el('div', null, line))));
         }
+        if (fresh && index === chat.messages.length - 1) node.classList.add('in');
         column.appendChild(node);
       });
       box.appendChild(column);
+      if (lastM && !lastM.user) {
+        const node = column.lastChild;
+        const bubble = node ? node.querySelector('.bubble') : null;
+        streamed = {
+          chatId: chat.id, count: chat.messages.length,
+          steps: lastM.steps ? lastM.steps.length : 0,
+          note: lastM.note || '', learned: lastM.learned ? lastM.learned.length : 0,
+          pictures: lastM.pictures ? lastM.pictures.length : 0,
+          failed: !!lastM.failed, waiting: waitingNow, text: lastM.text,
+          // null while the first word is on its way: then the dots are what the fast path guards
+          bubble: waitingNow ? null : bubble,
+        };
+      }
     }
     if (atEnd || S.busy) box.scrollTop = box.scrollHeight;
     renderStatus();
