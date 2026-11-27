@@ -186,8 +186,8 @@ final class LiveCallView extends LinearLayout {
         orb.setSpeaking(false);
         if (!reason.equals("ended")) {
             workLine.setTextColor(ERROR);
-            workLine.setText(reason.equals("quota") ? getString(R.string.live_quota)
-                    : reason.equals("no-key") ? getString(R.string.live_no_key)
+            workLine.setText(reason.equals("quota") ? getResources().getString(R.string.live_quota)
+                    : reason.equals("no-key") ? getResources().getString(R.string.live_no_key)
                     : getResources().getString(R.string.live_error, reason));
         }
         main.postDelayed(new Runnable() {
