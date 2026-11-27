@@ -1,0 +1,165 @@
+17:53:08 skills that came with the app: remove-ai-marks
+17:53:08 bridge on port 60049
+17:53:08 web chat: https://10.1.0.115:3000/ (without the microphone: http://10.1.0.115:3001/)
+17:53:10 PASS window loads
+17:53:10 PASS first-start notice is shown
+17:53:10 PASS notice is remembered
+17:53:11 PASS bridge file exists
+17:53:11 notify: Hello | from the test
+17:53:11 PASS pc notify :: {"code":0,"out":"Notification shown.","err":""}
+17:53:12 PASS pc note add reaches the agent's notes :: {"code":0,"out":"Noted (1).","err":""}
+17:53:12 PASS pc note list :: {"code":0,"out":"1  The user likes chai","err":""}
+17:53:13 PASS pc rule add every :: {"code":0,"out":"Rule 1 added: every 30m -> pc notify Paani Paani pee lo","err":""}
+17:53:13 PASS pc rule add at :: {"code":0,"out":"Rule 2 added: at 23:00 -> pc volume 0","err":""}
+17:53:14 PASS a wrong trigger is refused :: {"code":1,"out":"","err":"I do not understand the trigger \"sometimes\". Use: at HH:MM, every 30m, startup, in 10m"}
+17:53:15 PASS pc rule add in :: {"code":0,"out":"Rule 3 added: in 2s -> pc clipboard set rule-ran-ok","err":""}
+17:53:18 rule 3 runs: pc clipboard set rule-ran-ok
+17:53:19 rule 3 ended with 0
+17:53:19 PASS a rule runs its command, with pc on its PATH :: rule-ran-ok
+17:53:19 PASS a one-time rule removes itself :: 2
+17:53:20 PASS pc rule list :: {"code":0,"out":"1  on   every 30m  ->  pc notify Paani Paani pee lo\n2  on   at 23:00  ->  pc volume 0","err":""}
+17:53:20 PASS pc alarm :: {"code":0,"out":"Alarm 1 set for Sat Nov 28 07:00 (Wake up). It rings while Termant is running.","err":""}
+17:53:21 PASS a wrong alarm time is refused :: {"code":1,"out":"","err":"Give the time as HH:MM on the 24-hour clock, for example: pc alarm 07:00 Wake up"}
+17:53:21 PASS pc timer :: {"code":0,"out":"Timer 2 rings at 17:53 (Chai).","err":""}
+17:53:22 PASS rules page lists the rule
+17:53:26 ring: Chai
+17:53:26 notify: Chai | Termant
+17:53:26 PASS the timer rings
+17:53:27 PASS ringing stops
+17:53:27 ask: Which colour? | Red | Blue
+17:53:27 PASS the question appears
+17:53:28 PASS pc ask prints the answer :: {"code":0,"out":"Blue","err":""}
+17:53:29 PASS a terminal tab opens
+17:53:32 PASS the terminal runs a command :: PS C:\Users\runneradmin\Documents\Termant> echo "termant-ok-$(6*7)"
+termant-ok-42
+PS C:\Users\runneradmin\Documents\Termant> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+17:53:33 PASS pc works inside the terminal :: PS C:\Users\runneradmin\Documents\Termant> echo "termant-ok-$(6*7)"
+termant-ok-42
+PS C:\Users\runneradmin\Documents\Termant> pc info
+Microsoft Windows Server 2025 Datacenter 10.0.26100, computer runnervmop6rv, user runneradmin
+Processor: INTEL(R) XEON(R) PLATINUM 8573C
+Memory: 13.0 GB free of 16.0 G
+17:53:34 PASS language changes to Hindi
+17:53:34 PASS theme changes to light
+17:53:35 PASS settings are saved to disk
+17:53:36 PASS pc youtube search lists videos :: {"code":0,"out":"YouTube, \"table in word\": 1 videos\n1. Make a table in Word\n   Office Guru | 4:05\n   id dQw4w9WgXcQ\nRead what is said in one of them:  youtube read ID","err":""}
+17:53:36 PASS pc youtube read prints what is said :: {"code":0,"out":"YouTube video dQw4w9WgXcQ: Make a table in Word\nBy Office Guru, 4:05 long. Link: https://youtu.be/dQw4w9WgXcQ\nWhat is said (en):\n[0:00] click insert then table","err":""}
+17:53:37 PASS pc skill save :: {"code":0,"out":"Skill learned: word-table (Make a table in Word). You will find it in every chat from now on.","err":""}
+17:53:37 PASS the skill is named in the agent's guide
+17:53:38 PASS pc skill show prints the steps :: {"code":0,"out":"# word-table\nwhat: Make a table in Word\nfrom: https://youtu.be/dQw4w9WgXcQ\nlearned: 2026-11-27\n---\n1. Open Word.\n2. Insert > Table.\n3. Pick 3 x 3.","err":""}
+17:53:38 PASS a wrong skill name is refused :: {"code":1,"out":"","err":"The name must be 2 to 40 small letters, digits or dashes and start with a letter, like word-table."}
+17:53:39 PASS the skill that comes with the app is among the skills :: {"code":0,"out":"remove-ai-marks: Find and remove the marks AI tools leave in the user's own text and files: invisible letters, C2PA, EXIF, XMP, document properties  (2026-11-27)\nword-table: Make a table in Word  (2026-11-27)","err":""}
+17:53:39 PASS and is named in the agent's guide
+17:53:39 PASS pc skill show prints its steps :: {"code":0,"out":"# remove-ai-marks\nwhat: Find and remove the marks AI tools leave in the user's own text and files: invisible letters, C2PA, EXIF, XMP, document properties\nfrom: https://github.com/guillaumemeyer/watermarks-remover\nlearned: 2026-11-27\n---\nThis skill comes from the project waterm
+17:53:40 PASS pc marks check finds invisible letters in a text file :: {"code":0,"out":"File: D:\\a\\Termant\\Termant\\ci-out\\app\\marked note.txt\nKind: text\nLength: 36 chars\nSuspicious: 3\nHits:\n  [zwj_family/probable] U+200B ZERO WIDTH SPACE (Cf) x1 @ [7]\n  [space/informational] U+202F NARROW NO-BREAK SPACE (Zs) x1 @ [24]\n  [zwj_family/probable] U+2060 WORD JO
+17:53:41 PASS pc marks clean makes a cleaned copy and keeps the original :: {"code":0,"out":"Cleaned copy: D:\\a\\Termant\\Termant\\ci-out\\app\\marked note.cleaned.txt\r\n  - invisible letters removed: 2, odd spaces made plain: 1\r\nThe original was not changed.\r\nNot removed: a logo or writing that can be seen, and a watermark inside the pixels, the sound or the choice o
+17:53:42 PASS the copy has no marks :: {"code":0,"out":"File: D:\\a\\Termant\\Termant\\ci-out\\app\\marked note.cleaned.txt\nKind: text\nLength: 34 chars\nSuspicious: 0\r\nResult: no marks found in this file.\r\nNot seen by this check: a watermark that sits in the choice of the words themselves (SynthID-Text and alike).","err":""}
+17:53:43 PASS pc learned tells what was learned today :: {"code":0,"out":"Learned today (2026-11-27): 2\n- note: The user likes chai\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)","err":""}
+17:53:43 PASS pc team add makes a helper :: {"code":0,"out":"Made the helper \"poet\": Writes one short line of verse on a given subject. It can be used from the next message on.","err":""}
+17:53:44 PASS pc team lists the helpers :: {"code":0,"out":"Helpers that come with Termant: 6\n- researcher: Finds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.\n- writer: Writes or rewrites text: a letter, a report, a summ
+17:53:44 PASS pc team show prints the instructions :: {"code":0,"out":"Helper poet\nFor: Writes one short line of verse on a given subject.\n\nPOET-MARK You write one short line of verse about the subject you are given.","err":""}
+17:53:45 PASS a helper of Termant cannot be replaced :: {"code":1,"out":"","err":"\"checker\" is a helper that is already there and cannot be changed. Choose another name."}
+17:53:46 PASS a new helper is in today's diary :: {"code":0,"out":"Learned today (2026-11-27): 3\n- note: The user likes chai\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)\n- helper poet: Writes one short line of verse on a given subject.","err":""}
+17:53:46 PASS Settings lists the helpers
+17:53:46 PASS a helper is made in Settings :: researcherFinds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.Comes with TermantwriterWrites or rewrites text: a letter, a report, a summary, a translation, a document. Give it the 
+17:53:46 PASS a helper is removed in Settings
+17:53:46 PASS Settings shows what was learned today
+17:53:47 PASS pc voice add saves two keys :: {"code":0,"out":"2 key(s) added; 2 ElevenLabs key(s) are saved now.","err":""}
+17:53:47 PASS pc say moves to the second key when the first is used up :: {"code":0,"out":"Said with ElevenLabs, key 2 of 2 (key 1 (...up-1): quota_exceeded).","err":""}
+17:53:48 PASS the used-up key is left out the next time :: {"code":0,"out":"Said with ElevenLabs, key 2 of 2.","err":""}
+17:53:49 PASS pc voice shows each key without printing it :: {"code":0,"out":"1. ...up-1  10000 of 10000 letters used (free)  resting until 11/27/2026, 11:53:47 PM: quota_exceeded\n2. ...-333  40 of 10000 letters used (free)  in use","err":""}
+17:53:49 PASS the chat shows the working folder :: Working folder: C:\Users\runneradmin\Documents\Termant
+17:53:50 PASS the real YouTube: search :: {"code":0,"out":"YouTube, \"how to make a table in Word\": 8 videos\n1. How To Create Tables In Word (COMPLETE Guide!)\n   Steven Bradburn | 8:34 | 109,692 views | 2 years ago\n   id HIOZca4iwYk\n2. How to Insert Table In Microsoft Word\n   Office Master Tutorials | 3:17 | 732,636 views | 3 years ag
+17:53:51 SOFT-FAIL the real YouTube: what a video says :: {"code":1,"out":"","err":"YouTube did not give this video (Sign in to confirm you’re not a bot). Try another video from the search."}
+17:53:52 PASS draw: a picture is made and saved in the Pictures folder :: {"code":0,"out":"Picture saved: C:\\Users\\runneradmin\\pictures\\a-red-apple-on-a-table-photo-20261127-175352.png (8x8, 75 bytes, drawn by Pollinations)\r\nThe chat shows this picture under your answer by itself: do not paste its path or a link, just say in one line what you drew.","err":""}
+17:53:52 PASS draw: the saved file is the picture the service gave :: C:\Users\runneradmin\pictures\a-red-apple-on-a-table-photo-20261127-175352.png
+17:53:52 PASS draw: the chat gets the picture to show under the answer :: C:\Users\runneradmin\pictures\a-red-apple-on-a-table-photo-20261127-175352.png
+
+17:53:52 PASS draw last: the newest picture is named :: {"code":0,"out":"C:\\Users\\runneradmin\\pictures\\a-red-apple-on-a-table-photo-20261127-175352.png","err":""}
+17:53:53 PASS draw: a wrong seed is refused at once :: {"code":1,"out":"","err":"draw: --seed takes a number"}
+17:53:57 PASS draw: when no service answers, it says so plainly :: {"code":1,"out":"","err":"Pollinations did not draw ( could not be reached (not reached)). Asking AI Horde, which takes a minute or more...\r\ndraw: no picture this time. Pollinations: could not be reached (not reached). AI Horde: could not be reached (not reached). Is the internet on? Tell the user
+17:54:03 PASS the agent downloads and starts :: 5 s
+17:54:03 PASS the persona file is written before the agent (none chosen: empty) :: D:\a\_temp\termant-data\agent\config\opencode\persona
+17:54:05 PASS the model list loads :: 11 models, first: opencode/beam-free, opencode/big-pickle, opencode/deepseek-v4.1-flash-free, opencode/flint-40b-free
+17:54:13 reply: {"text":"pong","steps":[],"failed":false,"note":"","fast":true,"seconds":4.7}
+17:54:13 PASS the agent answers :: {"user":false,"text":"pong","steps":[],"failed":false,"note":"","own":false,"seconds":4.7}
+17:54:15 reply: {"text":"ping","steps":[],"failed":false,"note":"","fast":true,"seconds":2.5}
+17:54:15 PASS the second message goes through the kept server :: first 4.7 s (kept server: true), second 2.5 s (kept server: true) {"user":false,"text":"ping","steps":[],"failed":false,"note":"","own":false,"seconds":2.5}
+17:54:21 reply: {"text":"done","steps":["pc clipboard set termant-agent-ok"],"failed":false,"note":"","fast":true,"seconds":6}
+17:54:22 PASS the agent controls the PC with pc :: {"user":false,"text":"done","steps":["pc clipboard set termant-agent-ok"],"failed":false,"note":"","own":false,"seconds":6} clipboard=termant-agent-ok
+17:54:41 reply: {"text":"Opened Notepad, brought it to the front, and typed `namaste from termant` into it. I verified the text is in the editor (the title shows `*Untitled - Notepad`, meaning it's not saved yet).","steps":["pc open notepad","Start-Sleep 1; pc focus Notepad","pc type \"namaste from termant\"","pc screen"],"failed":false,"note":"","fast":true,"seconds":18.2}
+17:54:43 PASS the agent opens Notepad :: {"user":false,"text":"Opened Notepad, brought it to the front, and typed `namaste from termant` into it. I verified the text is in the editor (the title shows `*Untitled - Notepad`, meaning it's not saved yet).","steps":["pc open notepad","Start-Sleep 1; pc focus Notepad","pc type \"namaste from ter
+17:54:48 reply: {"text":"I started two helpers.\n\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\n\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.","steps":["Helper poet: A poem about chai","Helper researcher: Find out about chai"],"failed":false,"note":"","fast":true,"seconds":4.2,"helpers":["poet","researcher"]}
+17:54:49 PASS helpers: the main agent hands parts to two helpers :: ["Helper poet: A poem about chai","Helper researcher: Find out about chai"]
+17:54:49 PASS helpers: the helpers' reports come back into the answer :: "I started two helpers.\n\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\n\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea."
+17:54:49 PASS helpers: the helpers work at the same time :: poet asked at 1795802086704, researcher reported at 1795802088848
+17:54:49 PASS helpers: a helper runs a command by itself :: helper-ran.txt
+17:54:49 PASS helpers: the chat shows who got which part :: {"user":false,"text":"I started two helpers.\n\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\n\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.","steps":["Helper poet: A poem about chai","Helper researcher: Find out about chai"],"failed":false,"note":
+17:54:54 reply: {"text":"RAN: got 1 of 6 MB\ngot 2 of 6 MB\ngot 3 of 6 MB\ngot 4 of 6 MB\ngot 5 of 6 MB\ngot 6 of 6 MB","steps":["node slow.js"],"failed":false,"note":"","fast":true,"seconds":4.9}
+17:54:55 PASS progress: the command is named while it runs :: {"activity":"command","detail":"node slow.js","output":"got 2 of 6 MB"}
+17:54:55 PASS progress: what the running command prints is followed :: ["got 1 of 6 MB","got 2 of 6 MB","got 3 of 6 MB","got 4 of 6 MB","got 5 of 6 MB","got 6 of 6 MB"]
+17:54:55 PASS progress: the newest line is on the screen under the command :: ["Running a command · node slow.js","got 2 of 6 MB"]
+17:54:55 PASS progress: the answer has what the command printed :: {"user":false,"text":"RAN: got 1 of 6 MB\ngot 2 of 6 MB\ngot 3 of 6 MB\ngot 4 of 6 MB\ngot 5 of 6 MB\ngot 6 of 6 MB","steps":["node slow.js"],"failed":false,"note":"","own":false,"seconds":4.9}
+17:54:55 PASS progress: the corner card says what is done and for how long :: {"visible":true,"text":"Running a command\n2s\ngot 2 of 6 MB","data":{"activity":"command","detail":"node slow.js","output":"got 2 of 6 MB","startedAt":1795802089912,"lang":"en"}}
+17:54:55 PASS progress: the line is gone when the work is done
+17:54:55 PASS progress: the corner card is away when the work is done :: {"visible":false,"text":"Thinking\n5s","data":null}
+17:54:55 PASS web chat: the page is served :: {"on":true,"https":"https://10.1.0.115:3000/","http":"http://10.1.0.115:3001/","password":"qpz5qm63"}
+17:54:55 PASS web chat: the phone gets the page with the wake word :: code 200
+17:54:55 PASS web chat: without the password the chat is hidden :: "{\"ok\":false,\"error\":\"the password is wanted\"}"
+17:54:55 PASS web chat: a wrong password is refused :: "{\"ok\":false,\"error\":\"wrong password\"}"
+17:54:55 PASS web chat: the password from Settings opens it :: "termant=d36b34a46bb05a49f808dc9bdb560dfc1bf3f11f6c1b0d176b1abca29142b0cd; Path=/; HttpOnly; SameSite=Strict"
+17:54:55 PASS web chat: a message from the phone is taken :: "{\"ok\":true}"
+17:54:55 PASS web chat: while the phone waits, a second message is refused :: "{\"ok\":false,\"error\":\"busy\"}"
+17:54:56 reply: {"text":"RAN: pong","steps":["echo pong"],"failed":false,"note":"","fast":true,"seconds":0.8}
+17:54:56 PASS web chat: the phone’s message is in the chat on the screen :: {"user":true,"text":"RUN echo pong","from":"web"}
+17:54:56 PASS web chat: the answer appears in both :: {"user":false,"text":"RAN: pong","steps":["echo pong"],"failed":false,"note":"","own":false,"seconds":0.8}
+17:54:56 PASS web chat: the phone sees the same answer :: code 200 {"ok":true,"assistant":"Termant","name":"Siddhanta","lang":"en","title":"RUN node slow.js","busy":null,"messages":[{"user":true,"text":"RUN node slow.js","from":"","steps":[],"failed":false,"pictures"
+17:54:56 PASS files: the button to add a picture or file is there
+17:54:57 attached: 1 file(s), 1 handed to termanttest/fake
+17:54:58 reply: {"text":"SAW pictures=1 words=no","steps":[],"failed":false,"note":"","fast":true,"seconds":1.1}
+17:54:58 PASS files: a picture sent with a message reaches the model :: {"user":false,"text":"SAW pictures=1 words=no","steps":[],"failed":false,"note":"","own":false,"seconds":1.1}
+17:54:58 PASS files: the message names the file, not its path
+17:55:03 reply: {"text":"RAN: Picture saved: C:\\Users\\runneradmin\\pictures\\a-picture-for-the-test-20261127-175503.png (8x8, 75 bytes, drawn by Pollinations)\r\nThe chat shows this picture under your answer by itself: do not paste its path or a link, just say in one line what you drew.","steps":["draw \"a picture for the test\""],"failed":false,"note":"","fast":true,"seconds":4.2,"pictures":["C:\\Users\\runneradmin\\pictures\\a-picture-for-the-test-20261127-175503.png"]}
+17:55:03 PASS draw: the agent made a picture and the answer names it :: {"user":false,"text":"RAN: Picture saved: C:\\Users\\runneradmin\\pictures\\a-picture-for-the-test-20261127-175503.png (8x8, 75 bytes, drawn by Pollinations)\r\nThe chat shows this picture under your answer by itself: do not paste its path or a link, just say in one line what you drew.","steps":["dr
+17:55:03 PASS draw: the chat shows the picture under the answer :: C:\Users\runneradmin\pictures\a-picture-for-the-test-20261127-175503.png
+17:55:04 PASS draw: the phone sees the picture in the same answer :: {"user":false,"text":"RAN: Picture saved: C:\\Users\\runneradmin\\pictures\\a-picture-for-the-test-20261127-175503.png (8x8, 75 bytes, drawn by Pollinations)\r\nThe chat shows this picture under your 
+17:55:04 PASS draw: the phone can load the picture :: code 200 image/png
+17:55:04 PASS draw: without the password the picture is not given :: code 401
+17:55:04 RESULT: PASS (100 checks, 0 failed, 1 soft-failed)

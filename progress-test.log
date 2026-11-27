@@ -1,0 +1,35 @@
+PASS nothing printed gives nothing
+PASS only empty lines give nothing
+PASS the newest line is taken
+PASS a line still being written counts
+PASS Windows line ends are understood
+PASS a line that redraws itself gives its newest state
+PASS colours are left out
+PASS runs of spaces and tabs become one space
+PASS a very long line is cut
+PASS Hindi stays as it is
+PASS curl: the heading lines say nothing
+PASS curl: a download in the middle
+PASS curl: minutes left
+PASS curl: hours left
+PASS curl: before the first byte
+PASS curl: the size known, nothing there yet
+PASS curl: done
+PASS curl: a download of unknown size
+PASS curl: an upload
+PASS curl -#: the bar becomes its percentage
+PASS curl -#: at the start
+PASS wget: a line of dots with a percentage
+PASS wget: without a known size
+PASS wget: the last line
+PASS a line of numbers that is no meter stays
+PASS a sentence that ends in a percentage stays
+PASS apt lines stay as they are
+PASS pip lines stay as they are
+PASS a file that is not there reads as nothing
+PASS an empty file reads as nothing
+PASS only the end of a long file is read
+PASS two bytes a letter are understood
+PASS a file in Hindi is read
+SKIP the real run of OpenCode with a slow command (name the program in TERMANT_OPENCODE)
+RESULT: PASS (33 checks, 0 failed)

@@ -1,0 +1,21 @@
+  log: web chat: https://10.1.0.115:3000/ (without the microphone: http://10.1.0.115:3001/)
+PASS the page is served on https
+PASS a plain address is served too, for browsers that skipped the certificate
+PASS the page has the login and the chat
+PASS the page has the wake word for a microphone that mishears it
+PASS without the password nothing is shown
+PASS a wrong password is refused
+PASS the right password opens it
+PASS the phone sees the same chat the window has
+PASS the phone is told who it is talking to
+PASS an empty message is not sent
+PASS a message from the phone reaches the agent
+PASS while the agent works, the phone is told to wait
+PASS the stop button reaches the agent
+PASS many wrong passwords rest for a minute, right one included
+PASS the logout tells the browser to forget the door
+PASS the https side answers (the browser will accept the certificate once)
+PASS the certificate is kept in the app folder
+PASS a made password is short and has no look-alike letters
+PASS the door closes when it is turned off
+RESULT: PASS (19 checks, 0 failed)

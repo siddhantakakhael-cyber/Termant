@@ -1,0 +1,23 @@
+PASS six helpers come with Termant
+PASS a helper is made
+PASS the same name changes the helper
+PASS a helper of Termant cannot be replaced
+PASS a name of OpenCode cannot be taken
+PASS a wrong name is refused
+PASS a helper without a purpose is refused
+PASS too short instructions are refused
+PASS too long instructions are refused
+PASS a wrong model is refused
+PASS OpenCode gets every helper as a subagent
+PASS every helper is told to leave the screen alone
+PASS the list names them all
+PASS one helper is shown
+PASS a helper of Termant stays
+PASS an unknown helper cannot be removed
+PASS at most 20 helpers of one's own
+PASS helpers are removed
+PASS a broken file is an empty list
+PASS a hand-over is shown as a step
+PASS more work for a helper is shown as a step
+SKIP the real run of OpenCode with helpers (name the program in TERMANT_OPENCODE)
+RESULT: PASS (21 checks, 0 failed)

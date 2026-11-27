@@ -1,0 +1,607 @@
+{
+ "pass": true,
+ "failed": 0,
+ "softFailed": 1,
+ "results": [
+  {
+   "name": "window loads",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "first-start notice is shown",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "notice is remembered",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "bridge file exists",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc notify",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Notification shown.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc note add reaches the agent's notes",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Noted (1).\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc note list",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"1  The user likes chai\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc rule add every",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Rule 1 added: every 30m -> pc notify Paani Paani pee lo\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc rule add at",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Rule 2 added: at 23:00 -> pc volume 0\",\"err\":\"\"}"
+  },
+  {
+   "name": "a wrong trigger is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"I do not understand the trigger \\\"sometimes\\\". Use: at HH:MM, every 30m, startup, in 10m\"}"
+  },
+  {
+   "name": "pc rule add in",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Rule 3 added: in 2s -> pc clipboard set rule-ran-ok\",\"err\":\"\"}"
+  },
+  {
+   "name": "a rule runs its command, with pc on its PATH",
+   "ok": true,
+   "soft": false,
+   "detail": "rule-ran-ok"
+  },
+  {
+   "name": "a one-time rule removes itself",
+   "ok": true,
+   "soft": false,
+   "detail": "2"
+  },
+  {
+   "name": "pc rule list",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"1  on   every 30m  ->  pc notify Paani Paani pee lo\\n2  on   at 23:00  ->  pc volume 0\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc alarm",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Alarm 1 set for Sat Nov 28 07:00 (Wake up). It rings while Termant is running.\",\"err\":\"\"}"
+  },
+  {
+   "name": "a wrong alarm time is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"Give the time as HH:MM on the 24-hour clock, for example: pc alarm 07:00 Wake up\"}"
+  },
+  {
+   "name": "pc timer",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Timer 2 rings at 17:53 (Chai).\",\"err\":\"\"}"
+  },
+  {
+   "name": "rules page lists the rule",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "the timer rings",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "ringing stops",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "the question appears",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc ask prints the answer",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Blue\",\"err\":\"\"}"
+  },
+  {
+   "name": "a terminal tab opens",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "the terminal runs a command",
+   "ok": true,
+   "soft": false,
+   "detail": "PS C:\\Users\\runneradmin\\Documents\\Termant> echo \"termant-ok-$(6*7)\"\ntermant-ok-42\nPS C:\\Users\\runneradmin\\Documents\\Termant> \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+  },
+  {
+   "name": "pc works inside the terminal",
+   "ok": true,
+   "soft": false,
+   "detail": "PS C:\\Users\\runneradmin\\Documents\\Termant> echo \"termant-ok-$(6*7)\"\ntermant-ok-42\nPS C:\\Users\\runneradmin\\Documents\\Termant> pc info\nMicrosoft Windows Server 2025 Datacenter 10.0.26100, computer runnervmop6rv, user runneradmin\nProcessor: INTEL(R) XEON(R) PLATINUM 8573C\nMemory: 13.0 GB free of 16.0 GB\nDisk C: 29 GB free of 150 GB\nDisk D: 146 GB free of 150 GB\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+  },
+  {
+   "name": "language changes to Hindi",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "theme changes to light",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "settings are saved to disk",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc youtube search lists videos",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"YouTube, \\\"table in word\\\": 1 videos\\n1. Make a table in Word\\n   Office Guru | 4:05\\n   id dQw4w9WgXcQ\\nRead what is said in one of them:  youtube read ID\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc youtube read prints what is said",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"YouTube video dQw4w9WgXcQ: Make a table in Word\\nBy Office Guru, 4:05 long. Link: https://youtu.be/dQw4w9WgXcQ\\nWhat is said (en):\\n[0:00] click insert then table\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc skill save",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Skill learned: word-table (Make a table in Word). You will find it in every chat from now on.\",\"err\":\"\"}"
+  },
+  {
+   "name": "the skill is named in the agent's guide",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc skill show prints the steps",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"# word-table\\nwhat: Make a table in Word\\nfrom: https://youtu.be/dQw4w9WgXcQ\\nlearned: 2026-11-27\\n---\\n1. Open Word.\\n2. Insert > Table.\\n3. Pick 3 x 3.\",\"err\":\"\"}"
+  },
+  {
+   "name": "a wrong skill name is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"The name must be 2 to 40 small letters, digits or dashes and start with a letter, like word-table.\"}"
+  },
+  {
+   "name": "the skill that comes with the app is among the skills",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"remove-ai-marks: Find and remove the marks AI tools leave in the user's own text and files: invisible letters, C2PA, EXIF, XMP, document properties  (2026-11-27)\\nword-table: Make a table in Word  (2026-11-27)\",\"err\":\"\"}"
+  },
+  {
+   "name": "and is named in the agent's guide",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc skill show prints its steps",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"# remove-ai-marks\\nwhat: Find and remove the marks AI tools leave in the user's own text and files: invisible letters, C2PA, EXIF, XMP, document properties\\nfrom: https://github.com/guillaumemeyer/watermarks-remover\\nlearned: 2026-11-27\\n---\\nThis skill comes from the project watermarks-remover (MIT licence). On this PC\\nits work is done by `pc marks`. The first use fetches Python"
+  },
+  {
+   "name": "pc marks check finds invisible letters in a text file",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"File: D:\\\\a\\\\Termant\\\\Termant\\\\ci-out\\\\app\\\\marked note.txt\\nKind: text\\nLength: 36 chars\\nSuspicious: 3\\nHits:\\n  [zwj_family/probable] U+200B ZERO WIDTH SPACE (Cf) x1 @ [7]\\n  [space/informational] U+202F NARROW NO-BREAK SPACE (Zs) x1 @ [24]\\n  [zwj_family/probable] U+2060 WORD JOINER (Cf) x1 @ [15]\\r\\nResult: marks found. For a cleaned copy: pc marks clean \\\"D:\\\\a\\\\Termant\\\\Termant\\\\ci-out\\\\app\\\\marked note.txt\\\"\\r\\nNot seen by this check: a watermark that sits in the choice of the words themselves (SynthID-Text and alike).\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc marks clean makes a cleaned copy and keeps the original",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Cleaned copy: D:\\\\a\\\\Termant\\\\Termant\\\\ci-out\\\\app\\\\marked note.cleaned.txt\\r\\n  - invisible letters removed: 2, odd spaces made plain: 1\\r\\nThe original was not changed.\\r\\nNot removed: a logo or writing that can be seen, and a watermark inside the pixels, the sound or the choice of words (SynthID and alike).\",\"err\":\"\"}"
+  },
+  {
+   "name": "the copy has no marks",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"File: D:\\\\a\\\\Termant\\\\Termant\\\\ci-out\\\\app\\\\marked note.cleaned.txt\\nKind: text\\nLength: 34 chars\\nSuspicious: 0\\r\\nResult: no marks found in this file.\\r\\nNot seen by this check: a watermark that sits in the choice of the words themselves (SynthID-Text and alike).\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc learned tells what was learned today",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Learned today (2026-11-27): 2\\n- note: The user likes chai\\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc team add makes a helper",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Made the helper \\\"poet\\\": Writes one short line of verse on a given subject. It can be used from the next message on.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc team lists the helpers",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Helpers that come with Termant: 6\\n- researcher: Finds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.\\n- writer: Writes or rewrites text: a letter, a report, a summary, a translation, a document. Give it the facts, the language and tone, and the file to save to (or it returns the text).\\n- coder: Writes a program or script, runs it and fixes it until it works. Give it exactly what the program must do and the folder to work in.\\n- checker: Checks finished work "
+  },
+  {
+   "name": "pc team show prints the instructions",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Helper poet\\nFor: Writes one short line of verse on a given subject.\\n\\nPOET-MARK You write one short line of verse about the subject you are given.\",\"err\":\"\"}"
+  },
+  {
+   "name": "a helper of Termant cannot be replaced",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"\\\"checker\\\" is a helper that is already there and cannot be changed. Choose another name.\"}"
+  },
+  {
+   "name": "a new helper is in today's diary",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Learned today (2026-11-27): 3\\n- note: The user likes chai\\n- skill word-table: Make a table in Word (from https://youtu.be/dQw4w9WgXcQ)\\n- helper poet: Writes one short line of verse on a given subject.\",\"err\":\"\"}"
+  },
+  {
+   "name": "Settings lists the helpers",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "a helper is made in Settings",
+   "ok": true,
+   "soft": false,
+   "detail": "researcherFinds things out: searches the web and YouTube, reads pages and videos, and reports the facts or steps with their links. Give it one question or topic. It changes nothing.Comes with TermantwriterWrites or rewrites text: a letter, a report, a summary, a translation, a document. Give it the facts, the language and tone, and the file to save to (or it returns the text).Comes with TermantcoderWrites a program or script, runs it and fixes it until it works. Give it exactly what the program must do and the folder to work in.Comes with TermantcheckerChecks finished work against what was ask"
+  },
+  {
+   "name": "a helper is removed in Settings",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "Settings shows what was learned today",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "pc voice add saves two keys",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"2 key(s) added; 2 ElevenLabs key(s) are saved now.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc say moves to the second key when the first is used up",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Said with ElevenLabs, key 2 of 2 (key 1 (...up-1): quota_exceeded).\",\"err\":\"\"}"
+  },
+  {
+   "name": "the used-up key is left out the next time",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Said with ElevenLabs, key 2 of 2.\",\"err\":\"\"}"
+  },
+  {
+   "name": "pc voice shows each key without printing it",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"1. ...up-1  10000 of 10000 letters used (free)  resting until 11/27/2026, 11:53:47 PM: quota_exceeded\\n2. ...-333  40 of 10000 letters used (free)  in use\",\"err\":\"\"}"
+  },
+  {
+   "name": "the chat shows the working folder",
+   "ok": true,
+   "soft": false,
+   "detail": "Working folder: C:\\Users\\runneradmin\\Documents\\Termant"
+  },
+  {
+   "name": "the real YouTube: search",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"code\":0,\"out\":\"YouTube, \\\"how to make a table in Word\\\": 8 videos\\n1. How To Create Tables In Word (COMPLETE Guide!)\\n   Steven Bradburn | 8:34 | 109,692 views | 2 years ago\\n   id HIOZca4iwYk\\n2. How to Insert Table In Microsoft Word\\n   Office Master Tutorials | 3:17 | 732,636 views | 3 years ag"
+  },
+  {
+   "name": "the real YouTube: what a video says",
+   "ok": false,
+   "soft": true,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"YouTube did not give this video (Sign in to confirm you’re not a bot). Try another video from the search.\"}"
+  },
+  {
+   "name": "draw: a picture is made and saved in the Pictures folder",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"Picture saved: C:\\\\Users\\\\runneradmin\\\\pictures\\\\a-red-apple-on-a-table-photo-20261127-175352.png (8x8, 75 bytes, drawn by Pollinations)\\r\\nThe chat shows this picture under your answer by itself: do not paste its path or a link, just say in one line what you drew.\",\"err\":\"\"}"
+  },
+  {
+   "name": "draw: the saved file is the picture the service gave",
+   "ok": true,
+   "soft": false,
+   "detail": "C:\\Users\\runneradmin\\pictures\\a-red-apple-on-a-table-photo-20261127-175352.png"
+  },
+  {
+   "name": "draw: the chat gets the picture to show under the answer",
+   "ok": true,
+   "soft": false,
+   "detail": "C:\\Users\\runneradmin\\pictures\\a-red-apple-on-a-table-photo-20261127-175352.png\r\n"
+  },
+  {
+   "name": "draw last: the newest picture is named",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":0,\"out\":\"C:\\\\Users\\\\runneradmin\\\\pictures\\\\a-red-apple-on-a-table-photo-20261127-175352.png\",\"err\":\"\"}"
+  },
+  {
+   "name": "draw: a wrong seed is refused at once",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"draw: --seed takes a number\"}"
+  },
+  {
+   "name": "draw: when no service answers, it says so plainly",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"code\":1,\"out\":\"\",\"err\":\"Pollinations did not draw ( could not be reached (not reached)). Asking AI Horde, which takes a minute or more...\\r\\ndraw: no picture this time. Pollinations: could not be reached (not reached). AI Horde: could not be reached (not reached). Is the internet on? Tell the user"
+  },
+  {
+   "name": "the agent downloads and starts",
+   "ok": true,
+   "soft": false,
+   "detail": "5 s"
+  },
+  {
+   "name": "the persona file is written before the agent (none chosen: empty)",
+   "ok": true,
+   "soft": false,
+   "detail": "D:\\a\\_temp\\termant-data\\agent\\config\\opencode\\persona"
+  },
+  {
+   "name": "the model list loads",
+   "ok": true,
+   "soft": false,
+   "detail": "11 models, first: opencode/beam-free, opencode/big-pickle, opencode/deepseek-v4.1-flash-free, opencode/flint-40b-free"
+  },
+  {
+   "name": "the agent answers",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"user\":false,\"text\":\"pong\",\"steps\":[],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":4.7}"
+  },
+  {
+   "name": "the second message goes through the kept server",
+   "ok": true,
+   "soft": true,
+   "detail": "first 4.7 s (kept server: true), second 2.5 s (kept server: true) {\"user\":false,\"text\":\"ping\",\"steps\":[],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":2.5}"
+  },
+  {
+   "name": "the agent controls the PC with pc",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"user\":false,\"text\":\"done\",\"steps\":[\"pc clipboard set termant-agent-ok\"],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":6} clipboard=termant-agent-ok"
+  },
+  {
+   "name": "the agent opens Notepad",
+   "ok": true,
+   "soft": true,
+   "detail": "{\"user\":false,\"text\":\"Opened Notepad, brought it to the front, and typed `namaste from termant` into it. I verified the text is in the editor (the title shows `*Untitled - Notepad`, meaning it's not saved yet).\",\"steps\":[\"pc open notepad\",\"Start-Sleep 1; pc focus Notepad\",\"pc type \\\"namaste from termant\\\"\",\"pc screen\"],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":18.2} windows=*Untitled - Notepad   [notepad, id 7592]\r\nTermant   [Termant, id 1404]\r\nC:\\ProgramData\\GitHub\\HostedComputeAgent\\hosted-compute-agent   [WindowsTerminal, id 3848]"
+  },
+  {
+   "name": "helpers: the main agent hands parts to two helpers",
+   "ok": true,
+   "soft": false,
+   "detail": "[\"Helper poet: A poem about chai\",\"Helper researcher: Find out about chai\"]"
+  },
+  {
+   "name": "helpers: the helpers' reports come back into the answer",
+   "ok": true,
+   "soft": false,
+   "detail": "\"I started two helpers.\\n\\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\\n\\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.\""
+  },
+  {
+   "name": "helpers: the helpers work at the same time",
+   "ok": true,
+   "soft": false,
+   "detail": "poet asked at 1795802086704, researcher reported at 1795802088848"
+  },
+  {
+   "name": "helpers: a helper runs a command by itself",
+   "ok": true,
+   "soft": false,
+   "detail": "helper-ran.txt"
+  },
+  {
+   "name": "helpers: the chat shows who got which part",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"I started two helpers.\\n\\nTEAM RESULT (1): POEM REPORT: garam chai, meethi baat.\\n\\nTEAM RESULT (2): POEM REPORT: garam chai, meethi baat. | RESEARCH REPORT: chai is tea.\",\"steps\":[\"Helper poet: A poem about chai\",\"Helper researcher: Find out about chai\"],\"failed\":false,\"note\":\"\",\"own\":false,\"helpers\":[\"poet\",\"researcher\"],\"seconds\":4.2}"
+  },
+  {
+   "name": "progress: the command is named while it runs",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"activity\":\"command\",\"detail\":\"node slow.js\",\"output\":\"got 2 of 6 MB\"}"
+  },
+  {
+   "name": "progress: what the running command prints is followed",
+   "ok": true,
+   "soft": false,
+   "detail": "[\"got 1 of 6 MB\",\"got 2 of 6 MB\",\"got 3 of 6 MB\",\"got 4 of 6 MB\",\"got 5 of 6 MB\",\"got 6 of 6 MB\"]"
+  },
+  {
+   "name": "progress: the newest line is on the screen under the command",
+   "ok": true,
+   "soft": false,
+   "detail": "[\"Running a command · node slow.js\",\"got 2 of 6 MB\"]"
+  },
+  {
+   "name": "progress: the answer has what the command printed",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"RAN: got 1 of 6 MB\\ngot 2 of 6 MB\\ngot 3 of 6 MB\\ngot 4 of 6 MB\\ngot 5 of 6 MB\\ngot 6 of 6 MB\",\"steps\":[\"node slow.js\"],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":4.9}"
+  },
+  {
+   "name": "progress: the corner card says what is done and for how long",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"visible\":true,\"text\":\"Running a command\\n2s\\ngot 2 of 6 MB\",\"data\":{\"activity\":\"command\",\"detail\":\"node slow.js\",\"output\":\"got 2 of 6 MB\",\"startedAt\":1795802089912,\"lang\":\"en\"}}"
+  },
+  {
+   "name": "progress: the line is gone when the work is done",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "progress: the corner card is away when the work is done",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"visible\":false,\"text\":\"Thinking\\n5s\",\"data\":null}"
+  },
+  {
+   "name": "web chat: the page is served",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"on\":true,\"https\":\"https://10.1.0.115:3000/\",\"http\":\"http://10.1.0.115:3001/\",\"password\":\"qpz5qm63\"}"
+  },
+  {
+   "name": "web chat: the phone gets the page with the wake word",
+   "ok": true,
+   "soft": false,
+   "detail": "code 200"
+  },
+  {
+   "name": "web chat: without the password the chat is hidden",
+   "ok": true,
+   "soft": false,
+   "detail": "\"{\\\"ok\\\":false,\\\"error\\\":\\\"the password is wanted\\\"}\""
+  },
+  {
+   "name": "web chat: a wrong password is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "\"{\\\"ok\\\":false,\\\"error\\\":\\\"wrong password\\\"}\""
+  },
+  {
+   "name": "web chat: the password from Settings opens it",
+   "ok": true,
+   "soft": false,
+   "detail": "\"termant=d36b34a46bb05a49f808dc9bdb560dfc1bf3f11f6c1b0d176b1abca29142b0cd; Path=/; HttpOnly; SameSite=Strict\""
+  },
+  {
+   "name": "web chat: a message from the phone is taken",
+   "ok": true,
+   "soft": false,
+   "detail": "\"{\\\"ok\\\":true}\""
+  },
+  {
+   "name": "web chat: while the phone waits, a second message is refused",
+   "ok": true,
+   "soft": false,
+   "detail": "\"{\\\"ok\\\":false,\\\"error\\\":\\\"busy\\\"}\""
+  },
+  {
+   "name": "web chat: the phone’s message is in the chat on the screen",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":true,\"text\":\"RUN echo pong\",\"from\":\"web\"}"
+  },
+  {
+   "name": "web chat: the answer appears in both",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"RAN: pong\",\"steps\":[\"echo pong\"],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":0.8}"
+  },
+  {
+   "name": "web chat: the phone sees the same answer",
+   "ok": true,
+   "soft": false,
+   "detail": "code 200 {\"ok\":true,\"assistant\":\"Termant\",\"name\":\"Siddhanta\",\"lang\":\"en\",\"title\":\"RUN node slow.js\",\"busy\":null,\"messages\":[{\"user\":true,\"text\":\"RUN node slow.js\",\"from\":\"\",\"steps\":[],\"failed\":false,\"pictures\""
+  },
+  {
+   "name": "files: the button to add a picture or file is there",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "files: a picture sent with a message reaches the model",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"SAW pictures=1 words=no\",\"steps\":[],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":1.1}"
+  },
+  {
+   "name": "files: the message names the file, not its path",
+   "ok": true,
+   "soft": false,
+   "detail": ""
+  },
+  {
+   "name": "draw: the agent made a picture and the answer names it",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"RAN: Picture saved: C:\\\\Users\\\\runneradmin\\\\pictures\\\\a-picture-for-the-test-20261127-175503.png (8x8, 75 bytes, drawn by Pollinations)\\r\\nThe chat shows this picture under your answer by itself: do not paste its path or a link, just say in one line what you drew.\",\"steps\":[\"draw \\\"a picture for the test\\\"\"],\"failed\":false,\"note\":\"\",\"own\":false,\"seconds\":4.2,\"pictures\":[\"C:\\\\"
+  },
+  {
+   "name": "draw: the chat shows the picture under the answer",
+   "ok": true,
+   "soft": false,
+   "detail": "C:\\Users\\runneradmin\\pictures\\a-picture-for-the-test-20261127-175503.png"
+  },
+  {
+   "name": "draw: the phone sees the picture in the same answer",
+   "ok": true,
+   "soft": false,
+   "detail": "{\"user\":false,\"text\":\"RAN: Picture saved: C:\\\\Users\\\\runneradmin\\\\pictures\\\\a-picture-for-the-test-20261127-175503.png (8x8, 75 bytes, drawn by Pollinations)\\r\\nThe chat shows this picture under your "
+  },
+  {
+   "name": "draw: the phone can load the picture",
+   "ok": true,
+   "soft": false,
+   "detail": "code 200 image/png"
+  },
+  {
+   "name": "draw: without the password the picture is not given",
+   "ok": true,
+   "soft": false,
+   "detail": "code 401"
+  }
+ ]
+}

@@ -1,0 +1,65 @@
+PASS search finds both videos, not the advert
+PASS search text has title, channel, length and id
+PASS search with no result says so
+PASS page fallback reads ytInitialData
+PASS read picks English and knows it is automatic
+PASS read text has a time mark each minute
+PASS read text names the video and the link
+PASS read --from 1 starts after the first minute
+PASS a long video is cut and says where to go on
+PASS read --lang de takes the German captions (XML)
+PASS a video without captions gives its description
+PASS a refused video says why
+PASS a wrong id is refused
+PASS ids from links
+PASS no skills at first
+PASS today is empty at first
+PASS a skill is saved
+PASS saving again updates
+PASS the skill can be read
+PASS the guide names it
+PASS bad names are refused
+PASS missing steps are refused
+PASS too long is refused
+PASS today lists what was learned
+PASS older days are left out of today
+PASS a skill is removed
+PASS removing a missing skill is refused
+PASS the skill that comes with the app is put among the skills
+PASS it can be read, names its source and the command
+PASS it says what it does not do and what must not be claimed
+PASS it fits a skill and is plain ASCII
+PASS the guide names it
+PASS it is not counted as learned today
+PASS a second start adds nothing
+PASS removed by the user, it does not come back
+PASS nor with a newer version of the app
+PASS a newer version replaces the one that was put there
+PASS one the user changed is left alone
+PASS a skill of that name the user had already is left alone
+PASS a folder that is not there adds nothing
+PASS keys are read one per line, doubles and scraps dropped
+PASS the third key speaks after two are refused
+PASS each refusal is named
+PASS all three were tried, in order
+PASS next time the used-up keys are not asked at all
+PASS with only bad keys the reason is told
+PASS resting keys are still tried when nothing else is left
+PASS a wrong voice is not blamed on the key
+PASS no key is written to voice.json
+PASS the report shows use and rest, never a whole key
+PASS no keys gives a clear message
+PASS a long text is cut and says so
+PASS no Gemini key at first
+PASS a key that does not look like one is refused
+PASS the Gemini key is saved and speaks now
+PASS the Gemini sound is a WAV file at 24 kHz
+PASS the Gemini key asked, not shown whole
+PASS the report shows the Gemini key first, masked
+PASS a wrong Gemini key is refused, not blamed on the sound
+PASS the free Gemini limit is named
+PASS with both kinds of keys and no choice, ElevenLabs speaks
+PASS the engine can be chosen, and chosen back
+PASS the engine cannot be turned to a key that is not saved
+PASS removing the Gemini key puts it back
+RESULT: PASS

@@ -1,0 +1,22 @@
+
+> termant@0.10.0 dist
+> electron-builder --win --x64 --publish never
+
+  • electron-builder  version=26.18.0 os=10.0.26100
+  • loaded configuration  file=package.json ("build" field)
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=45.4.1 appOutDir=dist\win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=D:\a\Termant\Termant\windows\dist\win-unpacked
+  • searching for node modules  pm=npm searchDir=D:\a\Termant\Termant\windows
+  • duplicate dependency references  dependencies=["@peculiar/asn1-schema@2.11.1","@peculiar/asn1-schema@2.11.1","@peculiar/asn1-x509@2.11.1","asn1js@3.1.0","@peculiar/asn1-x509@2.11.1","asn1js@3.1.0","@peculiar/asn1-schema@2.11.1","@peculiar/asn1-x509@2.11.1","asn1js@3.1.0","@peculiar/asn1-schema@2.11.1","@peculiar/asn1-x509@2.11.1","asn1js@3.1.0","@peculiar/asn1-cms@2.11.1","@peculiar/asn1-cms@2.11.1","@peculiar/asn1-pkcs8@2.11.1","@peculiar/asn1-rsa@2.11.1","@peculiar/asn1-schema@2.11.1","asn1js@3.1.0","@peculiar/asn1-schema@2.11.1","@peculiar/asn1-x509@2.11.1","asn1js@3.1.0","@peculiar/asn1-schema@2.11.1","@peculiar/asn1-x509-attr@2.11.1","@peculiar/asn1-x509@2.11.1","asn1js@3.1.0","@peculiar/asn1-schema@2.11.1","@peculiar/asn1-x509@2.11.1","asn1js@3.1.0","asn1js@3.1.0","@peculiar/asn1-schema@2.11.1","@peculiar/utils@2.0.3","asn1js@3.1.0","pvtsutils@1.3.6","pvtsutils@1.3.6"]
+  • updating asar integrity executable resource  executablePath=dist\win-unpacked\Termant.exe
+  • no code signing certificate configured, signing is skipped  path=dist\win-unpacked\Termant.exe
+  • building        target=nsis file=dist\Termant-Setup.exe archs=x64 oneClick=true perMachine=false
+  • downloaded      label=7zip-win-x64.tar.gz progress=100%
+  • downloaded      label=nsis-3.0.4.1.7z progress=100%
+  • no code signing certificate configured, signing is skipped  path=C:\Users\RUNNER~1\AppData\Local\Temp\t-pKu9xZ\elevate-staging-1\resources\elevate.exe
+  • downloaded      label=nsis-resources-3.4.1.7z progress=100%
+  • no code signing certificate configured, signing is skipped  path=dist\Termant-Setup.__uninstaller.exe
+  • no code signing certificate configured, signing is skipped  path=dist\Termant-Setup.exe
+  • building block map  blockMapFile=dist\Termant-Setup.exe.blockmap
