@@ -1,0 +1,145 @@
+Fri Nov 27 09:31:17 UTC 2026
+== the marketplace pages
+-- api-exchangerates.html: https://marketplace.apilayer.com/exchangerates_data-api
+status=200 bytes=117730 seconds=0.277544
+-- api-pika.html: https://marketplace.apilayer.com/pika-api
+status=200 bytes=53023 seconds=0.162999
+-- api-none.html: https://marketplace.apilayer.com/zzqqxxnothing-api
+status=200 bytes=155426 seconds=0.269758
+== the pieces the pages load afterwards: the list, and an API's documentation
+-- list-all.html: https://marketplace.apilayer.com/get-api-data?sort_by=&q=&view_by=list_view
+status=200 bytes=479162 seconds=0.223866
+-- list-none.html: https://marketplace.apilayer.com/get-api-data?sort_by=&q=zzqqxxnothing&view_by=list_view
+status=200 bytes=135 seconds=0.102230
+-- docs-exchangerates.html: https://marketplace.apilayer.com/exchangerates_data-api/tabs/api_docs
+status=200 bytes=34086 seconds=0.138517
+-- docs-image-to-text.html: https://marketplace.apilayer.com/image_to_text-api/tabs/api_docs
+status=200 bytes=12716 seconds=0.140366
+-- docs-pika.html: https://marketplace.apilayer.com/pika-api/tabs/api_docs
+status=200 bytes=0 seconds=0.116863
+== the same page asked by Python, as the tool asks
+agent=None status=403 b'error code: 1010\n'
+agent='termant/1 (+https://github.com/siddhantakakhael-cyber/Termant)' status=200 bytes=155438
+== the gateway
+-- gw-no-key
+status=401 bytes=41
+{"message":"No API key found in request"}
+-- gw-wrong-key
+status=401 bytes=48
+{"message":"Invalid authentication credentials"}
+-- gw-no-such-api
+status=404 bytes=48
+{"message":"no Route matched with those values"}
+-- gw-no-such-api-no-key
+status=404 bytes=48
+{"message":"no Route matched with those values"}
+-- gw-root
+status=404 bytes=48
+{"message":"no Route matched with those values"}
+-- gw-post-wrong-key
+status=401 bytes=48
+{"message":"Invalid authentication credentials"}
+== the tool
+-- no-key: apilayer get exchangerates_data/latest base=USD symbols=INR
+apilayer: no APILayer key is saved, so nothing was asked.
+The user gets one for free, with no card: 1) sign up at https://apilayer.com  2) open https://marketplace.apilayer.com/exchangerates_data-api and press "Subscribe for Free" (every API is subscribed to by itself)  3) the key is on the account page, a code of about 32 letters and numbers.
+Then: apilayer key THE_KEY   (the user can also type that line as a chat message, or in the terminal; then the key does not pass through the model).
+Tell the user plainly that this needs their key; do not make up an answer.
+no-key: exit=1 seconds=0
+-- list-currency: apilayer list currency
+APIs the user's APILayer key can call (5). `apilayer about NAME` shows how:
+  currency_data        Currency Data API: Reliable Exchange Rates & Currency Conversion for your Business. [free: 100 a month]
+  exchangerates_data   Exchange Rates Data API: Real-Time, Intraday & Historical Market Data API. [free: 100 a month]
+  fixer                Fixer API: Foreign exchange rates and currency conversion JSON API. [free: 100 a month]
+  geo                  Geography API: Searchable database of countries, cities, calling codes, currencies and a lot more. [free: 30000 a month]
+  ip_to_location       IP to Location API: Locate and identify website visitors' info (latitude, logintude, connection, currency, timezone etc...) by IP address. [free: 10000 a month]
+Listed in the marketplace too, but each is another company's service, with a key and an address of its own (this tool does not call them; `apilayer about NAME` gives the link):
+  coinlayer            Coinlayer: Real-time Crypto Currency Exchange Rates JSON Rest API
+  exchangerate_host    Exchangerate.host: Real-time current and historical foreign exchange & crypto rates data solution.
+  insidebnb            insidebnb: InsideBnB provides data for business intelligence on short-term rentals.Get Airbnb listings details, rooms, prices, ava…
+  ipxplorer            IPXplorer: Easily locate and identify website visitors' info (latitude, logintude, connection, currency, timezone etc...) by IP ad…
+  remote_jobs_api_feed Remote Jobs API Feed: This API provides access to the latest remote job listings from a diverse range of industries and companies.
+  userparser           Userparser: Get user geolocation, crawler, browser, operating system, and device names using a real-time, lightweight JSON response…
+(from the marketplace, read just now)
+list-currency: exit=0 seconds=1
+-- list-picture: apilayer list picture
+APIs the user's APILayer key can call (2). `apilayer about NAME` shows how:
+  minor_detection      Minor Detection API: Classifies images and detects children, teenagers and babies automatically. [free: 100 a month]
+  violence_detection   Violence Detection API: Classifies images as violent or not. It predicts if images are depicting killing, shooting, blood and gore. [free: 100 a month]
+(from the marketplace, read 27 Nov 09:31)
+list-picture: exit=0 seconds=0
+-- about-exchangerates: apilayer about exchangerates_data
+Exchange Rates Data API (exchangerates_data): Real-Time, Intraday & Historical Market Data API.
+Free plan: 100 requests a month, no card. To use it the user presses "Subscribe for Free" once at https://marketplace.apilayer.com/exchangerates_data-api
+Key: none saved yet (apilayer key THE_KEY)
+
+Endpoints (6):
+  GET /convert   Currency conversion endpoint, which can be used to convert any amount from one currency to another. In order to convert currencies, please use the API's convert endpoint, append the from and to parameters and set them to your preferred base and target currency codes.
+      amount           required, string, name=value: The amount to be converted.
+      from             required, string, name=value: The three-letter currency code of the currency you would like to convert from.
+      to               required, string, name=value: The three-letter currency code of the currency you would like to convert to.
+      date             optional, string, name=value: Specify a date (format YYYY-MM-DD) to use historical rates for this conversion.
+      -> apilayer get exchangerates_data/convert amount=... from=... to=...
+  GET /fluctuation   Fluctuation endpoint you will be able to retrieve information about how currencies fluctuate on a day-to-day basis. To use this feature, simply append a start_date and end_date and choose which currencies (symbols) you would like to query the API for. Please note that the maximum allowed timeframe …
+      end_date         required, string, name=value: The end date of your preferred timeframe.
+      start_date       required, string, name=value: The start date of your preferred timeframe.
+      base             optional, string, name=value: Enter the three-letter currency code of your preferred base currency.
+      symbols          optional, string, name=value: Enter a list of comma-separated currency codes to limit output currencies.
+      -> apilayer get exchangerates_data/fluctuation end_date=... start_date=...
+  GET /latest   Returns real-time exchange rate data updated every 60 minutes, every 10 minutes or every 60 seconds.
+      base             optional, string, name=value: Enter the three-letter currency code of your preferred base currency.
+      symbols          optional, string, name=value: Enter a list of comma-separated currency codes to limit output currencies.
+      -> apilayer get exchangerates_data/latest
+  GET /symbols   Returning all available currencies.
+      -> apilayer get exchangerates_data/symbols
+  GET /timeseries   Timeseries endpoint lets you query the API for daily historical rates between two dates of your choice, with a maximum time frame of 365 days.
+      end_date         required, string, name=value: The end date of your preferred timeframe.
+      start_date       required, string, name=value: The start date of your preferred timeframe.
+      base             optional, string, name=value: Enter the three-letter currency code of your preferred base currency.
+      symbols          optional, string, name=value: Enter a list of comma-separated currency codes to limit output currencies.
+      -> apilayer get exchangerates_data/timeseries end_date=... start_date=...
+  GET /{date}   Historical rates are available for most currencies all the way back to the year of 1999. You can query the Fixer API for historical rates by appending a date (format YYYY-MM-DD) to the base URL.
+      date             required, string, in the address, in place of {date}: A date in the past for which historical rates are requested.
+      base             optional, string, name=value: Enter the three-letter currency code of your preferred base currency.
+      symbols          optional, string, name=value: Enter a list of comma-separated currency codes to limit output currencies.
+      -> apilayer get exchangerates_data/{date}
+
+About it: With over 15 exchange rate data sources, the Exchangerates API is delivering exchanging rates data for more than 170 world currencies. This API has several endpoints, where each of them serves a different purpose, use case. The endpoints include functionalities like receiving the latest exchange rates information for a specific set, or for all currencies; conversion from one to another currency; receiving data Time-series for multiple or for one currency, and preserving the API daily for the fluctuation data. Available Endpoints /symbols Returns all available currencies. /latest Returns exchange rate data in real-time for all available currencies or for a specific set. /convert With this en…
+about-exchangerates: exit=0 seconds=1
+-- about-image-to-text: apilayer about image_to_text
+Image to Text API (image_to_text): Recognizes and reads the text embedded in images.
+Free plan: 100 requests a month, no card. To use it the user presses "Subscribe for Free" once at https://marketplace.apilayer.com/image_to_text-api
+Key: none saved yet (apilayer key THE_KEY)
+
+Endpoints (2):
+  GET /url   Performs OCR on the image at the URL
+      url              required, string, name=value
+      -> apilayer get image_to_text/url url=...
+  POST /upload   Performs OCR on the uploaded image
+      body             required, file, --file FILE
+      -> apilayer post image_to_text/upload --file FILE
+
+About it: Image to Text API uses a neural net (LSTM) based OCR engine which is focused on line recognition, but also supports recognizing the character patterns. It supports both handwriting and printed materials. Examples Looking at the following business card, it will extract the text information easily, even though the business card is positioned with angle. The API can be triggered with this few lines of cURL command The output is JSON data with all the text extracted and even the language is auto detected, The API will also work for handwritings. Even for non-English texts. Check the following example The response is surprisingly good.
+about-image-to-text: exit=0 seconds=0
+-- about-pika: apilayer about pika
+Pika Image Generation API (pika): Auto generate customizable and dynamic images using Pika's Image Generation API. Select a template and get started using Rest API, Zapier or other integrations
+This one is not behind APILayer's gateway: it is another company's service, with its own key, address and prices. The key saved here does not open it, and this tool does not call it.
+Its page, with the links to its documentation and sign-up: https://marketplace.apilayer.com/pika-api
+about-pika: exit=0 seconds=0
+-- about-none: apilayer about zzqqxxnothing
+apilayer: there is no API named zzqqxxnothing. `apilayer list WORD` searches.
+about-none: exit=1 seconds=1
+list: exit=0 callable=60 118 more are listed in the marketplace, each another company's service with a key of its own; `apilayer list WORD` searches them too. (from the marketplace, read 27 Nov 09:31) 
+about-all: read=60 not-read=0 without-a-plan-line=0
+-- wrong-key: apilayer get exchangerates_data/latest base=USD symbols=INR
+apilayer: no answer. APILayer does not know this key (HTTP 401: Invalid authentication credentials). The saved key 0000...ng (33 letters) is wrong or was renewed; the right one is on the user's account page. apilayer key THE_KEY saves it.
+Tell the user plainly that this did not work and why; do not make up an answer.
+wrong-key: exit=1 seconds=0
+-- no-such-api: apilayer get zzqqxxnothing/latest
+apilayer: no answer. APILayer has nothing at zzqqxxnothing/latest (HTTP 404: no Route matched with those values). `apilayer about zzqqxxnothing` shows the endpoints; `apilayer list` the names.
+Tell the user plainly that this did not work and why; do not make up an answer.
+no-such-api: exit=1 seconds=0
+-- post-wrong-key: apilayer post sentiment/analysis --text I am happy today
+apilayer: no answer. APILayer does not know this key (HTTP 401: Invalid authentication credentials). The saved key 0000...ng (33 letters) is wrong or was renewed; the right one is on the user's account page. apilayer key THE_KEY saves it.
+Tell the user plainly that this did not work and why; do not make up an answer.
+post-wrong-key: exit=1 seconds=0

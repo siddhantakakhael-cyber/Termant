@@ -1,0 +1,2844 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+
+  <title>Exchange Rates Data API - APILayer</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Real-Time, Intraday &amp; Historical Market Data API." />
+  <meta name="keywords"
+    content="API Marketplace, Best APIs, APILayer, API, AI APIs, Content APIs, Finance APIs, Stock APIs, Web Tools APIs, Calendar APIs, Currency APIs, Data APIs, Files APIs, Finance APIs, Food APIs, Geo APIs, Images APIs, Jobs APIs, News APIs, Scraping APIs, Security APIs, Social Media APIs, Sports APIs">
+  <link rel="shortcut icon" href="/assets/favicon.ico" />
+  <meta name="google-signin-client_id"
+    content="918427652626-8890ujna0olmp3mpuoms502b2uul2vug.apps.googleusercontent.com">
+
+  
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@apilayer" />
+<meta name="twitter:creator" content="@apilayer" />
+<meta property="og:url" content="https://apilayer.com/exchangerates_data-api" />
+<meta property="og:title" content="Exchange Rates Data API" />
+<meta property="og:description" content="Real-Time, Intraday &amp; Historical Market Data API." />
+<meta property="og:image" content="https://assets.apilayer.com/apis/large/exchangerates_data.png" />
+
+
+  <!-- Fonts -->
+  <link rel="preload" href="/assets/fonts/open-sans-v34-latin-regular.woff2" as="font" type="font/woff2"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sans-v34-latin-600.woff2" as="font" type="font/woff2"
+    crossorigin>
+
+  <!-- Fonts Revamp -->
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Regular.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-ExtraBold.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Black.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-BlackItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Bold.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-BoldItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-ExtraBoldItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Italic.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Light.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Medium.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-MediumItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-SemiBold.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-SemiBoldItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+
+  
+
+<link rel="canonical" href="https://apilayer.com/exchangerates_data-api" />
+
+<link rel="stylesheet" href="/assets/css/playground.css?18" />
+<link rel="stylesheet" href="/assets/css/documentation.css?6" />
+<link rel="stylesheet" href="/assets/css/api.description.bundle.css" />
+
+<script type="application/ld+json"> 
+  {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": "Exchange Rates Data API",
+    "image": "https://assets.apilayer.com/apis/exchangerates_data.png",
+    "description": "Real-Time, Intraday &amp; Historical Market Data API.",
+    "brand": {
+      "@type": "Brand",
+      "name": "APILayer"
+    },
+    "sku": "exchangerates_data",
+    
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.705882352941177",
+        "reviewCount": "17",
+        "bestRating": "5",
+        "worstRating": "1"
+    },
+    
+    "offers": [{
+        "@type": "AggregateOffer",
+        "url": "https://apilayer.com/exchangerates_data-api",
+        "name": "Exchange Rates Data API",
+        "priceCurrency": "USD",
+        
+        "highPrice": "99.99",
+        
+        "lowPrice": "0.0"
+    }]
+  }
+  </script>
+
+  
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  
+
+  <!-- CSS APILayer Template -->
+  <link rel="stylesheet" href="/assets/css/theme.css?7">
+  <link rel="stylesheet" href="/assets/css/vendors.css?5">
+  <link rel="stylesheet" href="/assets/css/footer.css">
+  <link rel="stylesheet" href="/assets/css/custom.css">
+
+  <!-- CSS Implementing Plugins -->
+  <link rel="stylesheet" href="/assets/vendor/font-awesome/css/all.min.css">
+
+  
+  
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KFLWMP8T');</script>
+  <!-- End Google Tag Manager -->
+  
+  
+
+  <script>
+    (function (w) { w.fpr = w.fpr || function () { w.fpr.q = w.fpr.q || []; w.fpr.q[arguments[0] == 'set' ? 'unshift' : 'push'](arguments); }; })(window);
+    fpr("init", { cid: "bgkrzo8z" });
+    fpr("click");
+  </script>
+  <script src="https://cdn.firstpromoter.com/fpr.js" async></script>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-618YSCMDL5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-618YSCMDL5');
+</script>
+
+<body id="index2">
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KFLWMP8T"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+  <!-- ========== HEADER ========== -->
+  <header id="header" class="header header-sticky-top left-aligned-navbar bg-white border-bottom z-index-999 mb-3">
+    <div id="cta-bar"></div>
+    <div class="header-section py-0 py-lg-0">
+      <div id="logoAndNav" style="position: absolute !important; max-width: 100%;" class="container">
+        <!-- Nav -->
+        <nav class="js-mega-menu navbar navbarv2 navbar-expand-md" id="navbar">
+          <div class="navbar-nav-wrap px-2" style="background: white; border-radius: 10px;">
+            <!-- Logo -->
+            <div class="navbar-brand navbar-tab-link navbar-nav-wrap-brand mr-lg-0 d-flex">
+              <a href="/" aria-label="APILayer">
+                <img src="https://assets.apilayer.com/logo/logo.png" alt="APILayer | Hassle Free API Marketplace"
+                  style="width: 170px; height: auto;">
+              </a>
+              <a href="https://github.com/public-apis/public-apis" class="nav-item text-dark ml-2"
+                style="display: flex; align-items: center; gap: 3px; margin-right: 12px;" target="_blank"
+                rel="noreferrer noopener nofollow">
+                <img src="/assets/apilayer/images/github.svg" alt="Repo"
+                  style="width: 20px; height: 20px" />
+                  <div style="display: flex; justify-content: center; align-items: center; gap: 8px;border-radius: 100px; padding-top: 4px;padding-right: 8px;padding-bottom: 4px;padding-left: 8px; border: 0.8px solid #525D6E">
+                    <p style="font-weight: 400; font-style: Regular; font-size: 11px; leading-trim: NONE; line-height: 100%;letter-spacing: 0%;color: #27344A; margin-bottom: 0rem !important;">
+                      390K+
+                    </p>
+                  </div>
+              </a>
+            </div>
+            <!-- End Logo -->
+
+            
+            <!-- Responsive Toggle Button -->
+            <button type="button"
+              class="navbar-toggler navbar-nav-wrap-navbar-toggler btn btn-icon btn-sm rounded-circle"
+              aria-label="Toggle navigation" aria-expanded="false" aria-controls="navBar" data-toggle="collapse"
+              data-target="#navBar">
+              <span class="navbar-toggler-default">
+                <img width="14px" height="14px" src="/assets/apilayer/images/mobilemenu.svg"
+                  alt="Menu" class="menu-icon" />
+              </span>
+              <span class="navbar-toggler-toggled">
+                <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="currentColor"
+                    d="M11.5,9.5l5-5c0.2-0.2,0.2-0.6-0.1-0.9l-1-1c-0.3-0.3-0.7-0.3-0.9-0.1l-5,5l-5-5C4.3,2.3,3.9,2.4,3.6,2.6l-1,1 C2.4,3.9,2.3,4.3,2.5,4.5l5,5l-5,5c-0.2,0.2-0.2,0.6,0.1,0.9l1,1c0.3,0.3,0.7,0.3,0.9,0.1l5-5l5,5c0.2,0.2,0.6,0.2,0.9-0.1l1-1 c0.3-0.3,0.3-0.7,0.1-0.9L11.5,9.5z" />
+                </svg>
+              </span>
+            </button>
+            <!-- End Responsive Toggle Button -->
+
+            <!-- navBar -->
+            <div id="navBar" class="navbar-nav-wrap-navbar navbar-tab-full collapse navbar-collapse mx-lg-3"
+              style="font-size:14px; background: white;">
+              <ul class="navbar-nav navbargap justify-content-end" style="color: #27344A !important;">
+
+                <li class="nav-item dropdown">
+                  <a class="btn dropdown-toggle py-3 px-2 px-md-0"
+                    style="font-size: 0.9rem !important; color: #27344a !important; font-weight: 400 !important;"
+                    href="#" role="button" id="resourcesDropdown" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Products&nbsp;
+                  </a>
+                  <div class="dropdown-menu mt-2" aria-labelledby="resourcesDropdown"
+                    style="border-top: white; border-radius: 6px !important; border: 1px solid #E4EBEF; min-width: 6.75rem;">
+                    <a class="dropdown-item px-2" href="https://apilayer.com/products">Our Products</a>
+                    <a class="dropdown-item px-2" href="/">Marketplace</a>
+                  </div>
+                </li>
+
+                <li class="nav-item dropdown">
+                  <a class="btn dropdown-toggle py-3 px-2 px-md-0"
+                    style="font-size: 0.9rem !important; color: #27344a !important; font-weight: 400 !important;"
+                    href="#" role="button" id="resourcesDropdown" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Resources
+                  </a>
+                  <div class="dropdown-menu mt-2" aria-labelledby="resourcesDropdown"
+                    style="border-top: white; border-radius: 6px !important; border: 1px solid #E4EBEF; min-width: 6.75rem;">
+                    <a class="dropdown-item px-2" href="https://blog.apilayer.com/"
+                      rel="noreferrer noopener">Blogs</a>
+                    <a class="dropdown-item px-2" href="/docs/article/marketplace-faq">FAQ</a>
+                  </div>
+                </li>
+
+                <li class="nav-item dropdown">
+                  <a class="btn dropdown-toggle py-3 px-2 px-md-0"
+                    style="font-size: 0.9rem !important; color: #27344a !important; font-weight: 400 !important; padding-right: 24px !important;"
+                    href="#" role="button" id="communityDropdown" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Community
+                  </a>
+                  <div class="dropdown-menu mt-2" aria-labelledby="communityDropdown"
+                    style="border-top: white; border-radius: 6px !important; border: 1px solid #E4EBEF; min-width: 6.75rem;">
+                    <a class="dropdown-item px-2" href="https://apilayer.com/affiliates">Affiliates</a>
+                    <a class="dropdown-item px-2" href="https://apilayer.com/developers">Developers</a>
+                    <a class="dropdown-item px-2" href="https://apilayer.com/developers/suite">Use Cases</a>
+                    <a class="dropdown-item px-2" href="https://github.com/public-apis/public-apis" target="_blank"
+                      rel="noreferrer noopener nofollow">Github</a>
+                    <a class="dropdown-item px-2" href="https://discord.com/invite/hgjA78638n" target="_blank"
+                      rel="noreferrer noopener nofollow">Discord</a>
+                  </div>
+                </li>
+                
+              </ul>
+              <div class=""
+                  style="gap: 5px; display:flex; flex-direction: row;">
+
+                  <a id="signInButton" type="button" class="btn btn-sm btn-success js-hs-unfold-invoker mt-3"
+                    data-hs-unfold-options='{
+                                                                    "target": "#sidebarContent",
+                                                                    "type": "css-animation",
+                                                                    "animationIn": "fadeInRight",
+                                                                    "animationOut": "fadeOutRight",
+                                                                    "hasOverlay": "rgba(55, 125, 255, 0.1)",
+                                                                    "smartPositionOff": true
+                                              }' data-hs-unfold-target="#sidebarContent" data-hs-unfold-invoker=""
+                    style="padding:6px; margin-top:0px !important; width: 90px; background-color: #f0f0f0 !important; border: 1px solid #f0f0f0 !important; color: #27344A !important"
+                    onmouseover="this.style.backgroundColor='white !important'; this.style.color='#27344A !important'; this.style.borderColor='#BAD1DF !important';"
+                    onmouseout="this.style.backgroundColor='#0052CC !important'; this.style.color='white !important'; this.style.borderColor='#2480FC !important';">
+                    Login
+                  </a>
+
+                </div>
+
+            </div>
+            <!-- End navBar -->
+
+            <!-- Secondary Content -->
+            <div class="navbar-nav-wrap-content">
+              <!-- Login & Profile Button -->
+              <div class="d-inline-block ml-auto">
+                
+
+
+                
+
+
+
+              </div>
+              <!-- End Login & Profile Button -->
+            </div>
+            <!-- End Secondary Content -->
+            
+
+          </div>
+        </nav>
+        <!-- End Nav -->
+      </div>
+    </div>
+  </header>
+  <!-- ========== END HEADER ========== -->
+
+  
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main id="content" role="main">
+    <!-- Breadcrumb Section -->
+    <div class="bg-light">
+      <div class="container py-3">
+        <div class="row justify-content-md-between align-items-md-center">
+          <div class="col-md-8">
+            <nav class="d-inline-block rounded" aria-label="breadcrumb">
+              <ol class="breadcrumb breadcrumb-no-gutter font-size-1 mb-0" itemscope itemtype="https://schema.org/BreadcrumbList">
+                <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                  <a href="/" itemscope itemtype="http://schema.org/WebPage" itemprop="item" itemid="https://apilayer.com/">
+                    <span itemprop="name">API Marketplace</span>
+                  </a>
+                  <meta itemprop="position" content="1">
+                </li>
+                <li class="breadcrumb-item d-none d-md-block" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                  <a href="/category/currency" itemscope itemtype="http://schema.org/WebPage" itemprop="item" itemid="https://apilayer.com/category/currency">
+                    <span itemprop="name">Currency</span>
+                  </a>
+                  <meta itemprop="position" content="2">
+                </li>
+                <li class="breadcrumb-item active" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                  <span itemprop="name">Exchange Rates Data API</span>
+                  <meta itemprop="position" content="3">
+                </li>
+              </ol>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- End Breadcrumb Section -->
+
+    <style>
+      .introjs-tooltipbuttons a.introjs-button:hover {
+        color: #fff;
+      }
+    </style>
+
+    <!-- App Description Section -->
+    <div class="container space-top-1">
+
+      <!-- Info & Stat Section -->
+      <div class="row mb-5">
+        <div class="col-lg-6">
+          <div class="card h-100 shadow-none">
+            <div class="card-body p-0">
+              <div class="row d-flex align-items-start">
+                <div class="col-3 api-icon-bg">
+                  <img class="avatar-img w-100" src="https://assets.apilayer.com/apis/exchangerates_data.png" alt="Exchange Rates Data API">
+                </div>
+                <div class="col-9">
+                  <h1 class="h2 mb-3 text-primary">Exchange Rates Data API</h1>
+                  <div class="mb-5">Real-Time, Intraday &amp; Historical Market Data API.</div>
+                  <!-- API Provider -->
+                  <div class="d-flex justify-content-between align-items-center mb-5">
+                    <a class="media align-items-center" href="/">
+                      <div class="avatar avatar-xs mr-1">
+                        <img class="avatar-img" src="https://assets.apilayer.com/logo/square_large.png" alt="APILayer">
+                      </div>
+                      <div class="media-body font-size-1 text-body">
+                        APILayer
+                      </div>
+                    </a>
+                    <div class="d-flex align-items-center">
+                      
+  
+  
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="18"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="18"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="18"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="18"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-half.svg" alt="Review rating" width="18"></li>
+    
+  
+
+                    </div>
+                  </div>
+                  <!-- End API Provider -->
+                </div>
+              </div>
+            </div>
+            <div class="card-footer border-0 m-0 p-0">
+              <!-- Buttons -->
+              <div class="d-flex align-items-center">
+                
+                  
+                    <button id="subscribeButton" 
+                    type="button" 
+                    class="right-menu btn btn-block btn-primary" 
+                    onclick="loadPricing()">
+                      Subscribe for Free
+                    </button>
+                  
+                  
+                    <a data-next-url="/live_demo?api=exchangerates_data"
+                    class="right-menu show-code btn btn-block btn-soft-primary d-none d-lg-block ml-3 mt-0 js-hs-unfold-invoker"  data-hs-unfold-options='{
+                      "target": "#sidebarContent",
+                      "type": "css-animation",
+                      "animationIn": "fadeInRight",
+                      "animationOut": "fadeOutRight",
+                      "hasOverlay": "rgba(55, 125, 255, 0.1)",
+                      "smartPositionOff": true
+                    }'
+                    data-hs-unfold-target="#sidebarContent" 
+                    data-hs-unfold-invoker="" 
+                    >
+                    Live Demo</a>
+                  
+                
+              </div>
+              <!-- End Buttons -->
+            </div>
+      
+          </div>
+        </div>
+        <!-- End API Info -->
+      
+        <!-- API Stat -->
+        <div class="col-lg-6 mt-3 mt-lg-0">
+          
+          <iframe src="/code/response?service_name=exchangerates_data&method=get&endpoint=/latest" 
+          data-src=""
+          class="code-response fluid h-100 w-100 mb-1 mt-1 rounded border-0 d-none d-lg-block" 
+          rel="nofollow">
+          </iframe>
+          <p style="font-size:12px;">Response example. If you want to see more <a href="javascript:;"  onclick="loadDocumentation()">check the documentation.</a></p>
+
+          
+          
+        </div>
+        <!-- End API Stat -->
+      </div>
+      <!-- End Info & Stat Section -->
+      
+      <!-- Content -->
+      <div class="row">
+        <div class="col-12">
+          <!-- Tab Nav -->
+          <ul class="nav nav-classic" id="pills-tab" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link font-weight-bold active" id="pricing-tab" data-toggle="tab" data-target="#pricing" type="button" role="tab" aria-controls="pricing" aria-selected="true">
+                <div class="d-md-flex justify-content-md-center align-items-md-center">
+                  <span>Pricing</span>
+                </div>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link font-weight-bold " id="details-tab" data-toggle="tab" data-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">
+                <div class="d-md-flex justify-content-md-center align-items-md-center">
+                  <span>API info</span>
+                </div>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link font-weight-bold" id="documentation-tab" data-toggle="tab" data-target="#documentation" type="button" role="tab" aria-controls="documentation" aria-selected="false">
+                <div class="d-md-flex justify-content-md-center align-items-md-center">
+                  <span class="d-none d-md-block">Documentation</span>
+                  <span class="d-xs-block d-md-none">Docs</span> 
+                </div>
+              </a>
+            </li>
+            
+            <li class="nav-item">
+              <a class="nav-link font-weight-bold" id="reviews-tab" data-toggle="tab" data-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">
+                <div class="d-md-flex justify-content-md-center align-items-md-center">
+                  <span>Reviews</span> 
+                </div>
+              </a>
+            </li>
+            
+            
+            <li class="nav-item">
+              <a class="nav-link font-weight-bold" id="faqs-tab" data-toggle="tab" data-target="#faqs" type="button" role="tab" aria-controls="faqs" aria-selected="false">
+                <div class="d-md-flex justify-content-md-center align-items-md-center">
+                  <span>FAQs</span> 
+                </div>
+              </a>
+            </li>
+            
+          </ul>
+          <!-- End Tab Nav -->
+
+          <!-- Tabs -->
+          <div class="tab-content" id="pills-tabContent">
+            <div class="tab-pane active space-1" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
+              <!-- Pricing Section -->
+<div class="row justify-content-around px-lg-2">
+  
+  
+  <div class="plan col-sm-12 col-md-6 col-lg px-lg-1 mb-5">
+    <!-- Pricing -->
+    <div class="card  h-100 border overflow-hidden">
+      
+      
+
+      <!-- Header -->
+      <div class="card-header border-0  text-center d-block px-3">
+        <span class="d-block h3">Free Plan</span>
+        <span class="d-block mb-3">
+          <span class="plan-price font-size-4 font-weight-bold text-primary">
+            $0.00 </span>
+          <span class="d-block font-size-1 mt-n1">Monthly</span>
+        </span>
+
+        <!-- Button -->
+        
+        
+          <a href="javascript:;"
+           data-next-url="/checkout/exchangerates_data/free-plan/597"
+            class="btn btn-outline-primary btn-block transition-3d-hover js-hs-unfold-invoker"
+            data-hs-unfold-options='{
+              "target": "#sidebarContent",
+              "type": "css-animation",
+              "animationIn": "fadeInRight",
+              "animationOut": "fadeOutRight",
+              "hasOverlay": "rgba(55, 125, 255, 0.1)",
+              "smartPositionOff": true
+            }'
+            data-hs-unfold-target="#sidebarContent" 
+            data-hs-unfold-invoker="" 
+            rel="nofollow">
+            Subscribe
+          </a>
+        
+        <!-- End Button -->
+      </div>
+      <!-- End Header -->
+      <!-- Body -->
+      <div class="card-body py-0 px-3">
+        <!--<div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 100
+            Requests / Daily </div>
+        </div>-->
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 100
+            Requests / Monthly </div>
+        </div>
+        
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+          <div class="media-body"> Free for Lifetime </div>
+        </div>
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+          <div class="media-body"> No Credit Card Required </div>
+        </div>
+        
+        
+      </div>
+      <!-- End Body -->
+      <!--<div class="card-footer border-0 pt-0"></div>-->
+    </div>
+    <!-- End Pricing -->
+  </div>
+  
+  
+  
+  <div class="plan col-sm-12 col-md-6 col-lg px-lg-1 mb-5">
+    <!-- Pricing -->
+    <div class="card bg-light h-100 border overflow-hidden">
+      
+      
+      <div class="badge badge-secondary rounded-0 position-absolute w-100"><span>MOST POPULAR</span></div>
+      
+
+      <!-- Header -->
+      <div class="card-header border-0  bg-light  text-center d-block px-3">
+        <span class="d-block h3">Starter Plan</span>
+        <span class="d-block mb-3">
+          <span class="plan-price font-size-4 font-weight-bold text-primary">
+            $14.99 </span>
+          <span class="d-block font-size-1 mt-n1">Monthly</span>
+        </span>
+
+        <!-- Button -->
+        
+        
+          <a href="javascript:;"
+           data-next-url="/checkout/exchangerates_data/starter-plan/732"
+            class="btn btn-success btn-block transition-3d-hover js-hs-unfold-invoker"
+            data-hs-unfold-options='{
+              "target": "#sidebarContent",
+              "type": "css-animation",
+              "animationIn": "fadeInRight",
+              "animationOut": "fadeOutRight",
+              "hasOverlay": "rgba(55, 125, 255, 0.1)",
+              "smartPositionOff": true
+            }'
+            data-hs-unfold-target="#sidebarContent" 
+            data-hs-unfold-invoker="" 
+            rel="nofollow">
+            Subscribe
+          </a>
+        
+        <!-- End Button -->
+      </div>
+      <!-- End Header -->
+      <!-- Body -->
+      <div class="card-body py-0 px-3">
+        <!--<div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 10,000
+            Requests / Daily </div>
+        </div>-->
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 10,000
+            Requests / Monthly </div>
+        </div>
+        
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+          <div class="media-body"> Standard Support </div>
+        </div>
+        
+        
+        
+        
+      </div>
+      <!-- End Body -->
+      <!--<div class="card-footer border-0 pt-0"></div>-->
+    </div>
+    <!-- End Pricing -->
+  </div>
+  
+  
+  
+  <div class="plan col-sm-12 col-md-6 col-lg px-lg-1 mb-5">
+    <!-- Pricing -->
+    <div class="card  h-100 border overflow-hidden">
+      
+      
+
+      <!-- Header -->
+      <div class="card-header border-0  text-center d-block px-3">
+        <span class="d-block h3">Pro Plan</span>
+        <span class="d-block mb-3">
+          <span class="plan-price font-size-4 font-weight-bold text-primary">
+            $59.99 </span>
+          <span class="d-block font-size-1 mt-n1">Monthly</span>
+        </span>
+
+        <!-- Button -->
+        
+        
+          <a href="javascript:;"
+           data-next-url="/checkout/exchangerates_data/pro-plan/733"
+            class="btn btn-outline-primary btn-block transition-3d-hover js-hs-unfold-invoker"
+            data-hs-unfold-options='{
+              "target": "#sidebarContent",
+              "type": "css-animation",
+              "animationIn": "fadeInRight",
+              "animationOut": "fadeOutRight",
+              "hasOverlay": "rgba(55, 125, 255, 0.1)",
+              "smartPositionOff": true
+            }'
+            data-hs-unfold-target="#sidebarContent" 
+            data-hs-unfold-invoker="" 
+            rel="nofollow">
+            Subscribe
+          </a>
+        
+        <!-- End Button -->
+      </div>
+      <!-- End Header -->
+      <!-- Body -->
+      <div class="card-body py-0 px-3">
+        <!--<div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 100,000
+            Requests / Daily </div>
+        </div>-->
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 100,000
+            Requests / Monthly </div>
+        </div>
+        
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+          <div class="media-body"> Standard Support </div>
+        </div>
+        
+        
+        
+        
+      </div>
+      <!-- End Body -->
+      <!--<div class="card-footer border-0 pt-0"></div>-->
+    </div>
+    <!-- End Pricing -->
+  </div>
+  
+  
+  
+  <div class="plan col-sm-12 col-md-6 col-lg px-lg-1 mb-5">
+    <!-- Pricing -->
+    <div class="card  h-100 border overflow-hidden">
+      
+      
+
+      <!-- Header -->
+      <div class="card-header border-0  text-center d-block px-3">
+        <span class="d-block h3">Enterprise Plan</span>
+        <span class="d-block mb-3">
+          <span class="plan-price font-size-4 font-weight-bold text-primary">
+            $99.99 </span>
+          <span class="d-block font-size-1 mt-n1">Monthly</span>
+        </span>
+
+        <!-- Button -->
+        
+        
+          <a href="javascript:;"
+           data-next-url="/checkout/exchangerates_data/enterprise-plan/734"
+            class="btn btn-outline-primary btn-block transition-3d-hover js-hs-unfold-invoker"
+            data-hs-unfold-options='{
+              "target": "#sidebarContent",
+              "type": "css-animation",
+              "animationIn": "fadeInRight",
+              "animationOut": "fadeOutRight",
+              "hasOverlay": "rgba(55, 125, 255, 0.1)",
+              "smartPositionOff": true
+            }'
+            data-hs-unfold-target="#sidebarContent" 
+            data-hs-unfold-invoker="" 
+            rel="nofollow">
+            Subscribe
+          </a>
+        
+        <!-- End Button -->
+      </div>
+      <!-- End Header -->
+      <!-- Body -->
+      <div class="card-body py-0 px-3">
+        <!--<div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 500,000
+            Requests / Daily </div>
+        </div>-->
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-code text-success mt-1 mr-1"></i>
+          <div class="media-body"> 500,000
+            Requests / Monthly </div>
+        </div>
+        
+        <div class="media font-size-1 text-body mb-3">
+          <i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+          <div class="media-body"> Standard Support </div>
+        </div>
+        
+        
+        
+        
+      </div>
+      <!-- End Body -->
+      <!--<div class="card-footer border-0 pt-0"></div>-->
+    </div>
+    <!-- End Pricing -->
+  </div>
+  
+  
+
+  
+
+  
+  <div class="col-sm-12 col-md-6 col-lg px-lg-1 mb-5 ">
+    <!-- Custom Plan-->
+    <div class="card h-100 border">
+      
+      <!-- Header -->
+      <div class="card-header border-0 text-center d-block">
+        <span class="d-block h3">Custom Plan</span>
+        <span class="d-block mb-3">
+          <span class="font-size-4 font-weight-bold text-primary">Volume</span>
+          <span class="d-block font-size-1 mt-n1">Monthly</span>
+        </span>
+
+        
+        <a class="btn btn-outline-primary btn-block transition-3d-hovers"
+          href="/support" rel="nofollow">Contact
+          Us</a>
+        
+      </div>
+      <!-- End Header -->
+      <!-- Body -->
+      <div class="card-body py-0 px-3">
+        <div class="media font-size-1 mb-3">
+          <i class="fas fa-check-circle text-success mt-1 mr-1"></i>
+          <div class="media-body">
+            
+            Any requests volume you need
+            
+          </div>
+        </div>
+        
+      </div>
+      <!-- End Body -->
+      <!-- Footer -->
+      <div class="card-footer border-0 pt-0"></div>
+      <!-- End Footer -->
+    </div>
+    <!-- End Custom Plan -->
+  </div>
+  
+</div>
+<!-- End Pricing Section -->
+            </div>
+            <div class="tab-pane  space-1" id="details" role="tabpanel" aria-labelledby="details-tab">
+              <!-- API Description Text -->
+<article> 
+  <p>With over 15 exchange rate data sources, the Exchangerates API is delivering exchanging rates data for more than 170 world currencies. This API has several endpoints, where each of them serves a different purpose, use case. The endpoints include functionalities like receiving the latest exchange rates information for a specific set, or for all currencies; conversion from one to another currency; receiving data Time-series for multiple or for one currency, and preserving the API daily for the fluctuation data.</p>
+
+<h4>Available Endpoints</h4>
+<ul>
+    <li><small class="badge badge-xs badge-primary mb-2 small font-size-1">/symbols</small> Returns all available currencies.</li>
+    <li><small class="badge badge-xs badge-primary mb-2 small font-size-1">/latest</small> Returns exchange rate data in real-time for all available currencies or for a specific set.</li>
+    <li><small class="badge badge-xs badge-primary mb-2 small font-size-1">/convert</small> With this endpoint, we have any amount conversion from one currency to another.</li>
+    <li><small class="badge badge-xs badge-primary mb-2 small font-size-1">/{date}</small> Endpoint for receiving historical exchange rate information for all available currencies or for a set of currencies.</li>
+    <li><small class="badge badge-xs badge-primary mb-2 small font-size-1">/timeseries</small> It returns the daily historical data for exchange rates, between two specified dates. The data can be returned for all available currency or for specified ones.</li>
+    <li><small class="badge badge-xs badge-primary mb-2 small font-size-1">/fluctuation</small> This endpoint returns the fluctuation data between specified dates. The data can be for all available currencies or for a specific set.</li>
+</ul>
+
+<h4>Supported Symbols</h4>
+<p>The Fixer API comes with a constantly updated endpoint returning all available currencies. To access this list, make a request to the API's symbols endpoint.</p>
+<pre><code class="language-javascript">
+{
+  "success": true,
+  "symbols": {
+    "AED": "United Arab Emirates Dirham",
+    "AFN": "Afghan Afghani",
+    "ALL": "Albanian Lek",
+    "AMD": "Armenian Dram",
+    [...] 
+    }
+}
+</code></pre>
+
+<h4>Tips</h4>
+<p>To reduce bandwidth you can limit the number of output currencies to a specific set of your choice on most API endpoints. To do so, simply append the Fixer API's symbols parameter to your API request and set it to one or more comma-separated currency codes.</p>
+<pre><code class="language-shell">
+curl --request GET 'https://api.apilayer.com/exchangerates_data/live?base=USD&symbols=EUR,GBP' \
+--header 'apikey: YOUR API KEY'
+</code></pre>
+
+<p>It is also possible to convert currencies using historical exchange rate data. To do this, please also use the API's date parameter and set it to your preferred date. (format YYYY-MM-DD)</p>
+<pre><code class="language-shell">
+curl --request GET 'https://api.apilayer.com/currency_data/convert?base=USD&symbols=EUR,GBP,JPY&amount=5&date=2018-01-01' \
+--header 'apikey: YOUR API KEY'
+</code></pre>
+</article>
+<!-- End API Description Text -->
+
+<!-- Benefits Section -->
+<!-- End Benefits Section -->
+            </div>
+            <div class="api-documentation tab-pane space-1" id="documentation" role="tabpanel" aria-labelledby="documentation-tab" style="min-height: 300px;">
+              <div id="docs-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin:auto;background:#fff;display:block;" width="66px" height="66px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+                  <circle cx="27.5" cy="57.5" r="5" fill="#42c5f4">
+                    <animate attributeName="cy" calcMode="spline" keySplines="0 0.5 0.5 1;0.5 0 1 0.5;0.5 0.5 0.5 0.5" repeatCount="indefinite" values="57.5;42.5;57.5;57.5" keyTimes="0;0.3;0.6;1" dur="1s" begin="-0.6s"></animate>
+                  </circle> <circle cx="42.5" cy="57.5" r="5" fill="#42b0f4">
+                    <animate attributeName="cy" calcMode="spline" keySplines="0 0.5 0.5 1;0.5 0 1 0.5;0.5 0.5 0.5 0.5" repeatCount="indefinite" values="57.5;42.5;57.5;57.5" keyTimes="0;0.3;0.6;1" dur="1s" begin="-0.44999999999999996s"></animate>
+                  </circle> <circle cx="57.5" cy="57.5" r="5" fill="#3791ff">
+                    <animate attributeName="cy" calcMode="spline" keySplines="0 0.5 0.5 1;0.5 0 1 0.5;0.5 0.5 0.5 0.5" repeatCount="indefinite" values="57.5;42.5;57.5;57.5" keyTimes="0;0.3;0.6;1" dur="1s" begin="-0.3s"></animate>
+                  </circle> <circle cx="72.5" cy="57.5" r="5" fill="#377dff">
+                    <animate attributeName="cy" calcMode="spline" keySplines="0 0.5 0.5 1;0.5 0 1 0.5;0.5 0.5 0.5 0.5" repeatCount="indefinite" values="57.5;42.5;57.5;57.5" keyTimes="0;0.3;0.6;1" dur="1s" begin="-0.15s"></animate>
+                  </circle>
+                </svg>
+              </div>
+            </div>
+            
+            <div class="api-reviews tab-pane space-1" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+              
+
+
+
+
+
+
+
+  
+  <!-- Overall Ratings -->
+  <div class="mb-7">
+    <div class="row align-items-center">
+      <div class="col-lg-4 mb-4 mb-lg-0">
+        <!-- Overall Review Rating -->
+        <div class="card bg-primary text-white text-center py-4 px-3">
+          <span class="display-4">4.71</span>
+          <ul class="list-inline mb-2">
+            
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-half.svg" alt="Review rating" width="22"></li>
+    
+  
+
+          </ul>
+          <span>API rating</span>
+        </div>
+        <!-- End Overall Review Rating -->
+      </div>
+
+      <div class="col-lg-8">
+        <ul class="list-unstyled list-sm-article mb-0">
+          <li>
+            <!-- Review Rating -->
+            <a class="d-flex align-items-center font-size-1" href="javascript:;">
+              <div class="progress w-100" style="height: 8px;">
+                <div class="progress-bar" role="progressbar" style="width: %;" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex align-items-center min-w-21rem ml-3">
+                <ul class="list-inline mr-1 mb-2">
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                </ul>
+                <span></span>
+              </div>
+            </a>
+            <!-- End Review Rating -->
+          </li>
+
+          <li>
+            <!-- Review Rating -->
+            <a class="d-flex align-items-center font-size-1" href="javascript:;">
+              <div class="progress w-100" style="height: 8px;">
+                <div class="progress-bar" role="progressbar" style="width: %;" aria-valuenow="24" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex align-items-center min-w-21rem ml-3">
+                <ul class="list-inline mr-1 mb-2">
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                </ul>
+                <span></span>
+              </div>
+            </a>
+            <!-- End Review Rating -->
+          </li>
+
+          <li>
+            <!-- Review Rating -->
+            <a class="d-flex align-items-center font-size-1" href="javascript:;">
+              <div class="progress w-100" style="height: 8px;">
+                <div class="progress-bar" role="progressbar" style="width: %;" aria-valuenow="8" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex align-items-center min-w-21rem ml-3">
+                <ul class="list-inline mr-1 mb-2">
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                </ul>
+                <span></span>
+              </div>
+            </a>
+            <!-- End Review Rating -->
+          </li>
+
+          <li>
+            <!-- Review Rating -->
+            <a class="d-flex align-items-center font-size-1" href="javascript:;">
+              <div class="progress w-100" style="height: 8px;">
+                <div class="progress-bar" role="progressbar" style="width: %;" aria-valuenow="3" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex align-items-center min-w-21rem ml-3">
+                <ul class="list-inline mr-1 mb-2">
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                </ul>
+                <span></span>
+              </div>
+            </a>
+            <!-- End Review Rating -->
+          </li>
+
+          <li>
+            <!-- Review Rating -->
+            <a class="d-flex align-items-center font-size-1" href="javascript:;">
+              <div class="progress w-100" style="height: 8px;">
+                <div class="progress-bar" role="progressbar" style="width: %;" aria-valuenow="1" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex align-items-center min-w-21rem ml-3">
+                <ul class="list-inline mr-1 mb-2">
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                  <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="16"></li>
+                </ul>
+                <span></span>
+              </div>
+            </a>
+            <!-- End Review Rating -->
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <!-- End Overall Ratings -->
+  
+
+
+
+
+
+
+
+
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/AGNmyxZnIKeX8h0cI11H2sUrSggAYPqOokTDxfvFtIIadQ=s96-c" alt="Anil Revgade">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Anil Revgade</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>very good service &amp; api response is very fast</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/ALm5wu2KcHmuAxCvO5VZ-mT9Wm2Ind4UV6vA6pK3Plxx4g=s96-c" alt="Rusdi Kurniawan">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Rusdi Kurniawan</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Any calculation what u need for exchange rate using api layer good 👍</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/ACg8ocLmTlTkZ7djQ0ThoVCBfY0FIAUhjCaPEgHVgdBlGg3pULw=s96-c" alt="CHEIKH BEY GHALAOUI MOHAMED NEDHIR">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">CHEIKH BEY GHALAOUI MOHAMED NEDHIR</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Great API Thanks for your job
+</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/AEdFTp4L03qBdPuyQAuHEqgKaQC7_BkTAdj3qKzREgts=s96-c" alt="Klaudiusz K">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Klaudiusz K</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Thanks, its very usefull for my tests laravel app.</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://www.gravatar.com/avatar/f1c7369a8f0173e5d4fb073315c28703?d=identicon&amp;s=128" alt="Youcef">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Youcef</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Very good API, thank you so much :)</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://www.gravatar.com/avatar/741865ceeceb5c9fb6fef5e008c0948d?d=identicon&amp;s=128" alt="BOW">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">BOW</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>i love it, it is very helpful</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://www.gravatar.com/avatar/455d031db7e9455029f5f66c758a42bb?d=identicon&amp;s=128" alt="Allan Duong">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Allan Duong</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>We are using the API to get the latest exchange rates. Works like a charm.</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://www.gravatar.com/avatar/fa3d8d18d2de5439e978b73ff83595d0?d=identicon&amp;s=128" alt="Ejiro Mrabure">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Ejiro Mrabure</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Very effective, thank you very much</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/ALm5wu12LzJ5an2cZwoLVngdJg6yrd3x4t0ydHMVt5o9=s96-c" alt="Назар Баран">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Назар Баран</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Good api for me and good website</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/AAcHTtc4hQk3zMKgr3D_wAmNh7QjZQFu2W43nl-iuRq5Otbasg-K=s96-c" alt="Alexey Kovalev">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Alexey Kovalev</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Very useful and easy to use, especially for beginners like me</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/AEdFTp5kEGObAB_Q_Tj3ozl-w97zNVHQNaEBIiHwUeqkew=s96-c" alt="Peter Hamfelt">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Peter Hamfelt</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>The free plan works great</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/ALm5wu2EINLVt9NDNh5kWY6Af6_36QoJ8MNYJwzdIXNI=s96-c" alt="Mike Raymond">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Mike Raymond</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Thanks for your amazing services!</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://www.gravatar.com/avatar/a15fce62acd71742ada7e75ab7837916?d=identicon&amp;s=128" alt="TestApi">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">TestApi</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Works like a charm. It is very helpful.</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://www.gravatar.com/avatar/3238b69f54843a170e8a1a9ea6312a5f?d=identicon&amp;s=128" alt="Scott Brown">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Scott Brown</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Does exactly what it says it does and was what we needed for out project</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://lh3.googleusercontent.com/a/ALm5wu3Ga2i4-7LiDuf-T9VrbZBQzZm_vGqJqt2gbS5bzw=s96-c" alt="Subash Ramesh">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">4 years ago</span>
+          <h4 class="mb-0">Subash Ramesh</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>i like this one, its very usefull
+</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://www.gravatar.com/avatar/5b843978af7c6e6a7da6faa389ddb169?d=identicon&amp;s=128" alt="Alexey Klieshchunov">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">3 years ago</span>
+          <h4 class="mb-0">Alexey Klieshchunov</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Free version is pretty good for creating studying projects/projects that doesn&#39;t require frequent calls to the API</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+  <!-- All Reviews -->
+  <div class="row mb-5">
+    <div class="col-lg-4 mb-3 mb-lg-0">
+      <div class="media align-items-center">
+        <div class="avatar avatar-circle mr-3">
+          <img class="avatar-img" src="https://avatars.githubusercontent.com/u/95450885?v=4" alt="Sidney Uwaya">
+        </div>
+        <div class="media-body">
+          <span class="d-block text-body font-size-1">3 years ago</span>
+          <h4 class="mb-0">Sidney Uwaya</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      
+      <ul class="list-inline mb-2">
+        
+  
+  
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="22"></li>
+    
+  
+    
+    <li class="list-inline-item mr-1"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="22"></li>
+    
+  
+
+      </ul>
+      
+      
+      <p>Great Api. very helpful with good documentation. Also, it&#39;s really easy to use</p>
+      
+    </div>
+  </div>
+  <!-- End All Reviews -->
+  
+
+            </div>
+            
+            
+            <div class="api-faqs tab-pane space-1" id="faqs" role="tabpanel" aria-labelledby="faqs-tab">
+              <div id="faqs" class="mx-auto">
+  <!-- FAQ Section -->
+  <div itemscope itemtype="https://schema.org/FAQPage">
+    <!-- Basics Accordion -->
+    <div id="faqAccordion">
+      
+      <!-- FAQ 56 -->
+      <div class="card shadow-none mb-3" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question" >
+        <div class="card-header card-collapse" id="heading-56">
+          <a class="btn btn-link btn-block d-flex justify-content-between card-btn collapsed bg-white px-0" href="javascript:;" role="button" data-toggle="collapse" data-target="#collapse-56" aria-expanded="show" aria-controls="collapse-56">
+            <span itemprop="name">What is exchangeratesapi.io?</span>
+            <span class="card-btn-toggle">
+              <span class="card-btn-toggle-default">+</span>
+              <span class="card-btn-toggle-active">−</span>
+            </span>
+          </a>
+        </div>
+        <div id="collapse-56" class="collapse show" aria-labelledby="heading-56" data-parent="#faqAccordion">
+          <div class="card-body px-0 py-3"  itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <div itemprop="text">
+              Exchangeratesapi.io provides a JSON-based REST API, delivering reliable and accurate currency exchange rates for 168 world currencies and precious metals at an affordable price, which makes it the perfect instrument for startups and online businesses, as well as for larger companies in need of reliable financial data via an easy to use interface. The exchangeratesapi.io API is widely used to power financial departments, mobile applications and back-office systems around the world.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End FAQ 56 -->
+      
+      <!-- FAQ 57 -->
+      <div class="card shadow-none mb-3" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question" >
+        <div class="card-header card-collapse" id="heading-57">
+          <a class="btn btn-link btn-block d-flex justify-content-between card-btn collapsed bg-white px-0" href="javascript:;" role="button" data-toggle="collapse" data-target="#collapse-57" aria-expanded="false" aria-controls="collapse-57">
+            <span itemprop="name">Who runs the exchangeratesapi.io API?</span>
+            <span class="card-btn-toggle">
+              <span class="card-btn-toggle-default">+</span>
+              <span class="card-btn-toggle-active">−</span>
+            </span>
+          </a>
+        </div>
+        <div id="collapse-57" class="collapse " aria-labelledby="heading-57" data-parent="#faqAccordion">
+          <div class="card-body px-0 py-3"  itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <div itemprop="text">
+              The exchangeratesapi.io API is a product built and maintained by apilayer, a technology company aiming to build a variety of reliable and essential data interfaces (APIs) and make them affordable for both startups and larger companies. apilayer GmbH is headquartered in Vienna, Austria.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End FAQ 57 -->
+      
+      <!-- FAQ 58 -->
+      <div class="card shadow-none mb-3" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question" >
+        <div class="card-header card-collapse" id="heading-58">
+          <a class="btn btn-link btn-block d-flex justify-content-between card-btn collapsed bg-white px-0" href="javascript:;" role="button" data-toggle="collapse" data-target="#collapse-58" aria-expanded="false" aria-controls="collapse-58">
+            <span itemprop="name">How accurate is exchangeratesapi.io forex data, and where does it come from?</span>
+            <span class="card-btn-toggle">
+              <span class="card-btn-toggle-default">+</span>
+              <span class="card-btn-toggle-active">−</span>
+            </span>
+          </a>
+        </div>
+        <div id="collapse-58" class="collapse " aria-labelledby="heading-58" data-parent="#faqAccordion">
+          <div class="card-body px-0 py-3"  itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <div itemprop="text">
+              Our spot exchange rates are sourced from a very broad base of commercial sources and banks around the world, each of varying types and frequencies. The larger weighting particularly for major currencies is towards commercial sources as they more accurately reflect the trading occurring in the markets.
+
+In order to ensure the highest possible level of data coverage and accuracy, the exchangeratesapi.io system relies on a very distinct “validation and fallback” algorithm, assigning different priorities to each data source and validating each forex rate as it enters our databases. If a source fails to deliver an accurate quote, the next highest provider is queried for this particular currency pair. This enables us to sort out possible inaccuracies and provide the vast majority of all spot exchange rates with a precision of six decimal places.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End FAQ 58 -->
+      
+      <!-- FAQ 59 -->
+      <div class="card shadow-none mb-3" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question" >
+        <div class="card-header card-collapse" id="heading-59">
+          <a class="btn btn-link btn-block d-flex justify-content-between card-btn collapsed bg-white px-0" href="javascript:;" role="button" data-toggle="collapse" data-target="#collapse-59" aria-expanded="false" aria-controls="collapse-59">
+            <span itemprop="name">How often are exchange rates refreshed?</span>
+            <span class="card-btn-toggle">
+              <span class="card-btn-toggle-default">+</span>
+              <span class="card-btn-toggle-active">−</span>
+            </span>
+          </a>
+        </div>
+        <div id="collapse-59" class="collapse " aria-labelledby="heading-59" data-parent="#faqAccordion">
+          <div class="card-body px-0 py-3"  itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <div itemprop="text">
+              Spot exchange rate data is collected within the 60-second market window. Depending on your Subscription Plan, quotes are refreshed every day (Free Plan), every 60 minutes (Basic Plan), 10 minutes (Professional Plan), or 60 seconds (Business Plan).
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End FAQ 59 -->
+      
+      <!-- FAQ 60 -->
+      <div class="card shadow-none mb-3" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question" >
+        <div class="card-header card-collapse" id="heading-60">
+          <a class="btn btn-link btn-block d-flex justify-content-between card-btn collapsed bg-white px-0" href="javascript:;" role="button" data-toggle="collapse" data-target="#collapse-60" aria-expanded="false" aria-controls="collapse-60">
+            <span itemprop="name">Which currency data does the API provide?</span>
+            <span class="card-btn-toggle">
+              <span class="card-btn-toggle-default">+</span>
+              <span class="card-btn-toggle-active">−</span>
+            </span>
+          </a>
+        </div>
+        <div id="collapse-60" class="collapse " aria-labelledby="heading-60" data-parent="#faqAccordion">
+          <div class="card-body px-0 py-3"  itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <div itemprop="text">
+              Depending on which API endpoint you are using for your query, the exchangeratesapi.io API will return or calculate with the most representative forex market rate available, which is generally the ""midpoint"" value. The ""mid"" value will also be the most useful tool to your company's financial department for accounting & invoicing purposes, for financial estimates or planning, for calculator & converter applications, and for any other applications you power with exchangeratesapi.io forex data.
+
+All exchange rates are returned as currency pairs. (See API Response)
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End FAQ 60 -->
+      
+      <!-- FAQ 61 -->
+      <div class="card shadow-none mb-3" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question" >
+        <div class="card-header card-collapse" id="heading-61">
+          <a class="btn btn-link btn-block d-flex justify-content-between card-btn collapsed bg-white px-0" href="javascript:;" role="button" data-toggle="collapse" data-target="#collapse-61" aria-expanded="false" aria-controls="collapse-61">
+            <span itemprop="name">Which currencies and precious metals are supported by the API?</span>
+            <span class="card-btn-toggle">
+              <span class="card-btn-toggle-default">+</span>
+              <span class="card-btn-toggle-active">−</span>
+            </span>
+          </a>
+        </div>
+        <div id="collapse-61" class="collapse " aria-labelledby="heading-61" data-parent="#faqAccordion">
+          <div class="card-body px-0 py-3"  itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <div itemprop="text">
+              The exchangeratesapi.io API provides real-time and historical data for a total of 168 world currencies and precious metals (including Gold "XAU" & Silver "XAG"). See a detailed list of all supported currencies.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End FAQ 61 -->
+      
+      <!-- FAQ 62 -->
+      <div class="card shadow-none mb-3" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question" >
+        <div class="card-header card-collapse" id="heading-62">
+          <a class="btn btn-link btn-block d-flex justify-content-between card-btn collapsed bg-white px-0" href="javascript:;" role="button" data-toggle="collapse" data-target="#collapse-62" aria-expanded="false" aria-controls="collapse-62">
+            <span itemprop="name">At which time are historical exchange rates made available?</span>
+            <span class="card-btn-toggle">
+              <span class="card-btn-toggle-default">+</span>
+              <span class="card-btn-toggle-active">−</span>
+            </span>
+          </a>
+        </div>
+        <div id="collapse-62" class="collapse " aria-labelledby="heading-62" data-parent="#faqAccordion">
+          <div class="card-body px-0 py-3"  itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <div itemprop="text">
+              The previous day's historical exchange rates become available each day at 00:05 AM GMT (12:05 AM London time). However, to allow for reverse rate conversions and consistent comparisons, all rates are time stamped at 23:59:59 GMT. All timestamp values returned by the API are standard UTC timestamps.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End FAQ 62 -->
+      
+    </div>
+    <!-- End Basics Accordion -->
+  </div>
+  <!-- End FAQ Section -->
+</div>
+            </div>
+            
+          </div>
+          <!-- End Tabs -->
+        </div>
+      </div>
+      <!-- End Content -->
+
+      <!-- Related Items Section -->
+      <div class="row">
+        <div class="col-12">
+          <div id="related" class="space-1">
+  <!-- Title -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h1 text-primary">Related Products</h2>
+    <!--<a class="font-size-1 font-weight-bold" href="">View All <i class="fas fa-angle-right fa-sm ml-1"></i></a>-->
+  </div>
+  <!-- End Title -->
+  <div class="row mx-n2">
+    
+    <!-- Card -->
+    <div class="product col-sm-4 px-2 mb-5" data-category="all,,,news,">
+      <div class="card shadow-none h-100">
+        <a class="card-body p-0" href="/financelayer-api">
+          <div class="media d-flex align-items-start">
+            <div class="api-icon-bg avatar avatar-lg mr-3">
+              <img class="avatar-img w-100" src="https://assets.apilayer.com/apis/financelayer.png" alt="Finance News API">
+            </div>
+            <div class="media-body">
+              <span class="d-block text-dark text-uppercase font-weight-bold font-size-1">Finance News API</span>
+              <small class="d-block text-dark">News</small>
+              <div class="d-flex align-items-center">
+                
+                
+                
+              </div>
+              
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <!-- End Card -->
+    
+    <!-- Card -->
+    <div class="product col-sm-4 px-2 mb-5" data-category="all,,,banking,">
+      <div class="card shadow-none h-100">
+        <a class="card-body p-0" href="/tax_data-api">
+          <div class="media d-flex align-items-start">
+            <div class="api-icon-bg avatar avatar-lg mr-3">
+              <img class="avatar-img w-100" src="https://assets.apilayer.com/apis/tax_data.png" alt="Tax Data API">
+            </div>
+            <div class="media-body">
+              <span class="d-block text-dark text-uppercase font-weight-bold font-size-1">Tax Data API</span>
+              <small class="d-block text-dark">Banking</small>
+              <div class="d-flex align-items-center">
+                
+                
+                
+              </div>
+              
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <!-- End Card -->
+    
+    <!-- Card -->
+    <div class="product col-sm-4 px-2 mb-5" data-category="all,,,dev-tools,star-5">
+      <div class="card shadow-none h-100">
+        <a class="card-body p-0" href="/temp_mail-api">
+          <div class="media d-flex align-items-start">
+            <div class=" avatar avatar-lg mr-3">
+              <img class="avatar-img w-100" src="https://assets.apilayer.com/apis/temp_mail.png" alt="Temporary Mail API">
+            </div>
+            <div class="media-body">
+              <span class="d-block text-dark text-uppercase font-weight-bold font-size-1">Temporary Mail API</span>
+              <small class="d-block text-dark">Dev Tools</small>
+              <div class="d-flex align-items-center">
+                
+                <div class="rating mr-1">
+                  
+  
+  
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+
+                </div>
+                
+                
+                
+              </div>
+              
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <!-- End Card -->
+    
+    <!-- Card -->
+    <div class="product col-sm-4 px-2 mb-5" data-category="all,,,banking,star-5">
+      <div class="card shadow-none h-100">
+        <a class="card-body p-0" href="/bank_data-api">
+          <div class="media d-flex align-items-start">
+            <div class="api-icon-bg avatar avatar-lg mr-3">
+              <img class="avatar-img w-100" src="https://assets.apilayer.com/apis/bank_data.png" alt="Bank Data API">
+            </div>
+            <div class="media-body">
+              <span class="d-block text-dark text-uppercase font-weight-bold font-size-1">Bank Data API</span>
+              <small class="d-block text-dark">Banking</small>
+              <div class="d-flex align-items-center">
+                
+                <div class="rating mr-1">
+                  
+  
+  
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+
+                </div>
+                
+                
+                
+              </div>
+              
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <!-- End Card -->
+    
+    <!-- Card -->
+    <div class="product col-sm-4 px-2 mb-5" data-category="all,,,dev-tools,">
+      <div class="card shadow-none h-100">
+        <a class="card-body p-0" href="/dymt-api">
+          <div class="media d-flex align-items-start">
+            <div class="api-icon-bg avatar avatar-lg mr-3">
+              <img class="avatar-img w-100" src="https://assets.apilayer.com/apis/dymt.png" alt="&#34;Did you Mean This?&#34; API">
+            </div>
+            <div class="media-body">
+              <span class="d-block text-dark text-uppercase font-weight-bold font-size-1">&#34;Did you Mean This?&#34; API</span>
+              <small class="d-block text-dark">Dev Tools</small>
+              <div class="d-flex align-items-center">
+                
+                
+                
+              </div>
+              
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <!-- End Card -->
+    
+    <!-- Card -->
+    <div class="product col-sm-4 px-2 mb-5" data-category="all,,,photos-pictures,star-5">
+      <div class="card shadow-none h-100">
+        <a class="card-body p-0" href="/image_to_text-api">
+          <div class="media d-flex align-items-start">
+            <div class="api-icon-bg avatar avatar-lg mr-3">
+              <img class="avatar-img w-100" src="https://assets.apilayer.com/apis/image_to_text.png" alt="Image to Text API">
+            </div>
+            <div class="media-body">
+              <span class="d-block text-dark text-uppercase font-weight-bold font-size-1">Image to Text API</span>
+              <small class="d-block text-dark">Photos / Pictures</small>
+              <div class="d-flex align-items-center">
+                
+                <div class="rating mr-1">
+                  
+  
+  
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+    
+    <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="16"></li>
+    
+  
+
+                </div>
+                
+                
+                
+              </div>
+              
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <!-- End Card -->
+    
+  </div>
+</div>
+        </div>
+      </div>
+      <!-- End Related Items Section -->
+
+    </div>
+    <!-- End App Description Section -->
+
+  </main>
+  <!-- ========== END MAIN CONTENT ========== -->
+
+  <!-- SECONDARY OBJECTS -->
+  
+  <!-- END SECONDARY OBJECTS -->
+  
+
+  
+  <!-- ========== FOOTER ========== -->
+  <footer style="text-align: left !important;">
+    <div class="footer-header">
+      <div class="logo-container">
+        <a href="/"><img alt="API Layer Logo" class="logo"
+            src="/assets//apilayer/images/footerlogo.svg" /></a>
+      </div>
+      <a href="https://apilayer.com/products#explore-products" class="browse-btn">
+        Explore Products
+        <img src="/assets//apilayer/images/blueright.svg" />
+      </a>
+    </div>
+  
+    <div class="content-grid">
+      <div class="sitemap">
+        <div class="sitemap-lists">
+          <ul class="sitemap-list">
+            <p class="footer-p-tags font-weight-medium" style="color: white !important">General</p>
+            <li class="footer-p-tags font-weight-normal"><a href="">Marketplace</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/why-choose-apilayer">About</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="/docs" rel="noreferrer noopener">Documentation</a></li>
+          </ul>
+          <ul class="sitemap-list">
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Support</p>
+            <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/support">Contact Sales</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/contact-us">Helpdesk</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="https://blog.apilayer.com/api-glossary/" rel="noreferrer noopener">API Glossary</a></li>
+          </ul>
+        </div>
+      </div>
+  
+      <div class="Connect">
+        <ul class="sitemap-list">
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Content</p>
+          <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/marketstack-vs-alphavantage/">Marketstack vs Alpha Vantage</a></li>
+        </ul>
+    </div>
+  
+      <div class="newsletter newsletter-v2">
+        <div>
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Newsletter</p>
+          <p class="footer-p-tags font-weight-normal">
+            Join our newsletter to receive the latest API insights, tips, and
+            updates straight to your inbox.
+          </p>
+
+          <form class="newsletter-form" id="newsletter-form">
+            
+            <input class="newsletter-input" placeholder="Email" type="email" id="footer-email" required />
+            
+              <button class="subscribe-btn" type="submit">
+              Subscribe
+              <img src="/assets//apilayer/images/whitearrow.svg" class="subscribe-arrow" />
+              </button>
+          </form>
+        </div>
+        <div class="Connect">
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Connect</p>
+          <div class="social-links">
+  
+            <!-- start social icons -->
+            <div id="social-icons">
+              <a href="https://www.instagram.com/apilayer/" target="_blank" class="icon-box instagram-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 1 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M17.34,5.46h0a1.2,1.2,0,1,0,1.2,1.2A1.2,1.2,0,0,0,17.34,5.46Zm4.6,2.42a7.59,7.59,0,0,0-.46-2.43,4.94,4.94,0,0,0-1.16-1.77,4.7,4.7,0,0,0-1.77-1.15,7.3,7.3,0,0,0-2.43-.47C15.06,2,14.72,2,12,2s-3.06,0-4.12.06a7.3,7.3,0,0,0-2.43.47A4.78,4.78,0,0,0,3.68,3.68,4.7,4.7,0,0,0,2.53,5.45a7.3,7.3,0,0,0-.47,2.43C2,8.94,2,9.28,2,12s0,3.06.06,4.12a7.3,7.3,0,0,0,.47,2.43,4.7,4.7,0,0,0,1.15,1.77,4.78,4.78,0,0,0,1.77,1.15,7.3,7.3,0,0,0,2.43.47C8.94,22,9.28,22,12,22s3.06,0,4.12-.06a7.3,7.3,0,0,0,2.43-.47,4.7,4.7,0,0,0,1.77-1.15,4.85,4.85,0,0,0,1.16-1.77,7.59,7.59,0,0,0,.46-2.43c0-1.06.06-1.4.06-4.12S22,8.94,21.94,7.88ZM20.14,16a5.61,5.61,0,0,1-.34,1.86,3.06,3.06,0,0,1-.75,1.15,3.19,3.19,0,0,1-1.15.75,5.61,5.61,0,0,1-1.86.34c-1,.05-1.37.06-4,.06s-3,0-4-.06A5.73,5.73,0,0,1,6.1,19.8,3.27,3.27,0,0,1,5,19.05a3,3,0,0,1-.74-1.15A5.54,5.54,0,0,1,3.86,16c0-1-.06-1.37-.06-4s0-3,.06-4A5.54,5.54,0,0,1,4.21,6.1,3,3,0,0,1,5,5,3.14,3.14,0,0,1,6.1,4.2,5.73,5.73,0,0,1,8,3.86c1,0,1.37-.06,4-.06s3,0,4,.06a5.61,5.61,0,0,1,1.86.34A3.06,3.06,0,0,1,19.05,5,3.06,3.06,0,0,1,19.8,6.1,5.61,5.61,0,0,1,20.14,8c.05,1,.06,1.37.06,4S20.19,15,20.14,16ZM12,6.87A5.13,5.13,0,1,0,17.14,12,5.12,5.12,0,0,0,12,6.87Zm0,8.46A3.33,3.33,0,1,1,15.33,12,3.33,3.33,0,0,1,12,15.33Z"/>
+                </svg>
+              </a>
+              
+              <a href="https://www.facebook.com/APILayer/" target="_blank" class="icon-box facebook-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon">
+                  <path fill-rule="evenodd" d="M14,6h3a1,1,0,0,0,1-1V3a1,1,0,0,0-1-1H14A5,5,0,0,0,9,7v3H7a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1H9v7a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V14h2.22a1,1,0,0,0,1-.76l.5-2a1,1,0,0,0-1-1.24H13V7A1,1,0,0,1,14,6Z"></path>
+                </svg>
+              </a>
+              
+              <a href="https://www.linkedin.com/company/apilayer/" target="_blank" class="icon-box linkedin-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="-2.5 -2 24 26" aria-hidden="true">
+                  <path fill-rule="evenodd" d='M19.959 11.719v7.379h-4.278v-6.885c0-1.73-.619-2.91-2.167-2.91-1.182 0-1.886.796-2.195 1.565-.113.275-.142.658-.142 1.043v7.187h-4.28s.058-11.66 0-12.869h4.28v1.824l-.028.042h.028v-.042c.568-.875 1.583-2.126 3.856-2.126 2.815 0 4.926 1.84 4.926 5.792zM2.421.026C.958.026 0 .986 0 2.249c0 1.235.93 2.224 2.365 2.224h.028c1.493 0 2.42-.989 2.42-2.224C4.787.986 3.887.026 2.422.026zM.254 19.098h4.278V6.229H.254v12.869z' />
+                </svg>
+              </a>
+                
+              <a href="https://twitter.com/apilayer/" target="_blank" class="icon-box twitter-icon">
+                <svg xmlns="http://www.w3.org/2000/svg"  fill="currentColor" class="h-6 w-6 icon" viewBox="-4 -4 24 24">
+                  <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                </svg>
+              </a>
+              
+              <a href="https://www.youtube.com/channel/UCwDncja3klyMhkKXWV1zoNQ" target="_blank" class="icon-box youtube-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M11.7489 4C10.755 4.00335 6.95329 4.03145 4.29761 4.23019C3.86729 4.28305 2.92964 4.28706 2.09295 5.19376C1.43291 5.88365 1.21872 7.45214 1.21872 7.45214C1.21872 7.45214 1.01747 9.13906 1 10.8982V13.0957C1.01747 14.8549 1.21872 16.5418 1.21872 16.5418C1.21872 16.5418 1.43291 18.1097 2.09295 18.8002C2.92964 19.7069 4.02971 19.6781 4.51956 19.7725C6.12954 19.9324 11.0533 19.9913 11.8803 20H12.2893C13.3485 19.994 17.0829 19.9599 19.7011 19.7638C20.1314 19.7109 21.0691 19.7069 21.9058 18.8002C22.5658 18.1097 22.78 16.5418 22.78 16.5418C22.78 16.5418 23 14.701 23 12.8602V11.1338C23 9.29229 22.78 7.45214 22.78 7.45214C22.78 7.45214 22.5658 5.88365 21.9058 5.19376C21.0691 4.28706 20.1314 4.28305 19.7011 4.23019C17.0454 4.03145 13.2437 4.00335 12.2491 4H11.7489ZM9.72675 8.56008L15.6723 11.7681L9.72804 14.9548L9.72675 8.56008Z"/>
+                </svg>
+              </a>
+              
+              <a href="https://github.com/apilayer/" target="_blank" class="icon-box github-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                </svg>
+              </a>
+  
+              <a href="https://discord.com/invite/hgjA78638n" target="_blank" class="icon-box discord-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M18.8944 4.34399C17.5184 3.71467 16.057 3.256 14.5317 3C14.3397 3.33067 14.1263 3.77866 13.977 4.13067C12.3546 3.89599 10.7439 3.89599 9.14394 4.13067C8.9946 3.77866 8.77059 3.33067 8.58925 3C7.05328 3.256 5.59194 3.71467 4.22555 4.34399C1.46289 8.41865 0.716219 12.3973 1.08955 16.3226C2.92421 17.6559 4.6949 18.4666 6.43463 19C6.86129 18.424 7.2453 17.8053 7.57597 17.1546C6.94663 16.92 6.3493 16.632 5.7733 16.2906C5.92263 16.184 6.07197 16.0667 6.21064 15.9493C9.68796 17.5387 13.4544 17.5387 16.889 15.9493C17.0383 16.0667 17.177 16.184 17.3263 16.2906C16.7503 16.632 16.153 16.92 15.5237 17.1546C15.8543 17.8053 16.2384 18.424 16.665 19C18.4037 18.4666 20.185 17.6559 22.0101 16.3226C22.4687 11.7787 21.2837 7.83202 18.8944 4.34399ZM8.05596 13.9013C7.01061 13.9013 6.15728 12.952 6.15728 11.7893C6.15728 10.6267 6.98928 9.67731 8.05596 9.67731C9.11194 9.67731 9.97591 10.6267 9.95457 11.7893C9.95457 12.952 9.11194 13.9013 8.05596 13.9013ZM15.065 13.9013C14.0197 13.9013 13.1653 12.952 13.1653 11.7893C13.1653 10.6267 13.9983 9.67731 15.065 9.67731C16.121 9.67731 16.985 10.6267 16.9637 11.7893C16.9637 12.952 16.1317 13.9013 15.065 13.9013Z"/>
+                </svg>
+              </a>
+                    
+            </div>
+            <!--end social media icons -->
+          </div>
+        </div> 
+
+      </div>
+    </div>
+  
+    <div class="footer-bottom">
+      <p class="footer-p-tags font-weight-normal">© 2026 APILayer. All rights reserved.</p>
+      <div class="footer-links">
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/legal/APILayer" target="_blank" rel="noreferrer noopener nofollow">Privacy Policy</a>
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/legal/APILayer" target="_blank" rel="noreferrer noopener nofollow">Imprint</a>
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/Legal/Terms-of-Use" target="_blank" rel="noreferrer noopener nofollow">Terms</a>
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/en/legal/privacypolicy" target="_blank" rel="noreferrer noopener nofollow">Cookie Preferences</a>
+      </div>
+    </div>
+  </footer>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const newsletterForm = document.getElementById("newsletter-form");
+    const input = document.getElementById("footer-email");
+
+    if (!newsletterForm || !input) return;
+
+    newsletterForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const value = input.value.trim();
+      if (!value) return;
+      window.location.href = `/newsletter?email=${encodeURIComponent(value)}`;
+    });
+  });
+</script>
+
+
+  <!-- ========== END FOOTER ========== -->
+
+
+  <!-- ========== SECONDARY CONTENTS ========== -->
+
+  <!-- Account Sidebar Navigation -->
+  <aside id="sidebarContent"
+    class="hs-unfold-content sidebar hs-unfold-content-initialized hs-unfold-css-animation animated fadeInRight hs-unfold-hidden"
+    data-hs-target-height="0" data-hs-unfold-content="" data-hs-unfold-content-animation-in="fadeInRight"
+    data-hs-unfold-content-animation-out="fadeOutRight" style="animation-duration: 300ms;" afterOpen="signInCallback">
+    <div class="sidebar-scroller">
+      <div class="sidebar-container">
+        <div class="sidebar-footer-offset" style="padding-bottom: 7rem;">
+          <!-- Toggle Button -->
+          <div class="d-flex justify-content-end align-items-center pt-4 px-4">
+            <div class="hs-unfold">
+              <a class="js-hs-unfold-invoker btn btn-icon btn-xs btn-soft-secondary" href="javascript:;"
+                data-hs-unfold-options="{
+                  &quot;target&quot;: &quot;#sidebarContent&quot;,
+                  &quot;type&quot;: &quot;css-animation&quot;,
+                  &quot;animationIn&quot;: &quot;fadeInRight&quot;,
+                  &quot;animationOut&quot;: &quot;fadeOutRight&quot;,
+                  &quot;hasOverlay&quot;: &quot;rgba(55, 125, 255, 0.1)&quot;,
+                  &quot;smartPositionOff&quot;: true
+                }" data-hs-unfold-target="#sidebarContent" data-hs-unfold-invoker="">
+                <svg width="10" height="10" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="currentColor"
+                    d="M11.5,9.5l5-5c0.2-0.2,0.2-0.6-0.1-0.9l-1-1c-0.3-0.3-0.7-0.3-0.9-0.1l-5,5l-5-5C4.3,2.3,3.9,2.4,3.6,2.6l-1,1 C2.4,3.9,2.3,4.3,2.5,4.5l5,5l-5,5c-0.2,0.2-0.2,0.6,0.1,0.9l1,1c0.3,0.3,0.7,0.3,0.9,0.1l5-5l5,5c0.2,0.2,0.6,0.2,0.9-0.1l1-1 c0.3-0.3,0.3-0.7,0.1-0.9L11.5,9.5z">
+                  </path>
+                </svg>
+              </a>
+            </div>
+          </div>
+          <!-- End Toggle Button -->
+
+
+          
+          <!-- Sign In v2 -->
+          <div class="scrollbar sidebar-body">
+            <div class="sidebar-content py-2 px-4">
+              <form action="/signin" id="signinForm" method="post" class="js-validate" novalidate="novalidate">
+                <input type="hidden" name="csrf_token" value="ImYxYTNmNjAzMTNjN2ViNTE3ZTQyMTUyYjRmZTVmNGEyYmQzY2NhOGYi.awlN5Q.E5_NT4tdxAM99R7FcDedpwkCvGA" />
+                <input type="hidden" name="next" value="" />
+                <!-- Login -->
+                <div id="loginSidebar" style="animation-duration: 400ms; opacity: 1;"
+                  data-hs-show-animation-target-group="idForm">
+                  <!-- Title -->
+                  <div class="text-center mb-4">
+                    <p class="lead mb-0">Sign in to APILayer</p>
+                    <small>Start by choosing an account or email you use.</small>
+                  </div>
+                  <!-- End Title -->
+
+                  <div class="d-flex flex-wrap justify-content-center">
+                    <div id="g_id_onload"
+                      data-client_id="918427652626-8890ujna0olmp3mpuoms502b2uul2vug.apps.googleusercontent.com"
+                      data-ux_mode="redirect" data-itp_support="false" data-auto_prompt="false"
+                      data-login_uri="https://marketplace.apilayer.com/oauth/google"
+                      data-enable_redirect_uri_validation="true">
+                    </div>
+                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
+                      data-text="signin_with" data-size="medium" data-logo_alignment="center">
+                    </div>
+
+                    <a class="btn btn-sm btn-outline-primary p-2 mt-2 mb-2 border btn-github"
+                      href="https://marketplace.apilayer.com/oauth/github" rel="nofollow">
+                      <span class="d-flex justify-content-center align-items-center">
+                        <i class="fab fa-github mr-2 text-dark"></i>
+                        Sign in with Github
+                      </span>
+                    </a>
+                  </div>
+
+                  <div class="text-center mb-3">
+                    <span class="divider divider-xs divider-text">OR</span>
+                  </div>
+
+                  <!-- Form Group -->
+                  <div class="js-form-message form-group">
+                    <label class="input-label" for="signinEmail">Email address</label>
+                    <input type="email" class="form-control" name="email" id="signinEmail" placeholder="Email address"
+                      aria-label="Email address" required data-msg="Please enter a valid email address." value="">
+                    <div class="invalid-feedback"></div>
+                  </div>
+                  <!-- End Form Group -->
+
+                  <!-- Form Group -->
+                  <div class="js-form-message form-group">
+                    <label class="input-label" for="signinPassword">
+                      <span class="d-flex justify-content-between align-items-center">
+                        Password
+                        <a class="link-underline text-capitalize font-weight-normal" href="/recover-password">Forgot
+                          Password?</a>
+                      </span>
+                    </label>
+                    <input type="password" class="form-control" name="password" id="signinPassword"
+                      placeholder="********" aria-label="********" required autocomplete="off"
+                      data-msg="Your password is invalid. Please try again.">
+                    <div class="invalid-feedback"></div>
+                  </div>
+                  <!-- End Form Group -->
+
+                  <div class="js-form-message form-group">
+                    <div class="cf-turnstile" data-response-field-name="recaptcha" data-sitekey="0x4AAAAAACYH28e-9YbsRK0z"></div>
+                    <input class="form-control d-none " data-recaptcha="true" required data-error="Please complete the Captcha">
+                    
+                  </div>
+
+                  <!-- Button -->
+                  <div class="align-items-center mb-3">
+                    <button type="submit" class="btn btn-sm btn-block btn-primary">
+                      <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                      Sign In
+                    </button>
+                  </div>
+                  <!-- End Button -->
+                  <div class="text-center mb-3">
+                    <span class="divider divider-xs divider-text">OR</span>
+                  </div>
+
+                  <div class="text-center mb-2">
+                    <div class="mb-3 mb-sm-0">
+                      <span class="font-size-1 text-muted">Don't have an account?</span>
+                      <a class="font-size-1 font-weight-bold" href="/signup">Signup</a>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+          <!-- End Sign In v2 -->
+          
+        </div>
+
+        <!-- Footer -->
+        <footer class="sidebar-footer bg-transparent border-top py-2 px-7">
+          <ul class="nav nav-sm">
+            <li class="nav-item">
+              <a class="nav-link pl-0" href="https://www.ideracorp.com/Legal/APILayer/PrivacyStatement" target="_blank"
+                rel="noreferrer noopener nofollow">Privacy</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="https://www.ideracorp.com/Legal/Terms-of-Use" target="_blank"
+                rel="noreferrer noopener nofollow">Terms</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about-us">
+                <i class="fas fa-info-circle la-lg"></i>
+              </a>
+            </li>
+          </ul>
+        </footer>
+        <!-- End Footer -->
+      </div>
+    </div>
+  </aside>
+  <!-- End Sidebar Navigation -->
+
+  <!-- ========== END SECONDARY CONTENTS ========== -->
+
+  <!-- Go to Top -->
+  <a class="js-go-to go-to position-fixed" href="javascript:;" style="visibility: hidden;" data-hs-go-to-options='{
+      "offsetTop": 700,
+      "position": {
+        "init": {
+          "right": 15
+        },
+        "show": {
+          "bottom": 15
+        },
+        "hide": {
+          "bottom": -15
+        }
+      }
+    }'>
+    <i class="fas fa-angle-up"></i>
+  </a>
+  <!-- End Go to Top -->
+
+  <!-- JS Global Compulsory -->
+  <script src="/assets/js/bundles/vendors.js?9"></script>
+  <script src="/assets/js/base.js?26"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- script to check navbar Top property so if it's homepage then give it 20px otherwise 0px  -->
+
+  <script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+      // Get the current page path
+      const currentPage = window.location.pathname;
+      // Get the navbar element by its ID
+      const navbar = document.getElementById('navbar');
+      const header = document.getElementById('logoAndNav');
+
+      // Check if we're on the homepage
+      if (currentPage === '/' || currentPage === '/index' || currentPage === '/home' || currentPage === '/products' || currentPage === '/affiliates' || currentPage === '/developers' || currentPage === '/developers/suite' || currentPage === '/docs') {
+        // On homepage, set top to 20px
+        navbar.style.top = '20px';
+      } else {
+        // On other pages, set top to 0px
+        navbar.style.top = '0px';
+        navbar.style.width = '100vw';
+        navbar.style.borderRadius = '0px';
+        navbar.style.height = '65px';
+        navbar.style.maxWidth = '100%';
+        header.style.maxWidth = '100%';
+        header.style.backgroundColor = 'white';
+      }
+    });
+  </script>
+
+  <!-- OAuth Sign In -->
+  
+  <script>
+    window.signedin =  false;
+    window.google_signin_client_id = "918427652626-8890ujna0olmp3mpuoms502b2uul2vug.apps.googleusercontent.com"
+    window.csrf_token = 'ImYxYTNmNjAzMTNjN2ViNTE3ZTQyMTUyYjRmZTVmNGEyYmQzY2NhOGYi.awlN5Q.E5_NT4tdxAM99R7FcDedpwkCvGA'
+  </script>
+  <script src="/assets/js/oauth.js?52"></script>
+  
+  <!-- End Oauth Sign In -->
+
+  <script>
+    window.fusionchartsLicenseKey = "vtA3dB-11wF2A2H2A9C6E5A5F6B3E3E1G2C11tgoB4F1h1fdzoE6F4B-9jH-9D2I3B6A8B6E5G5B1C3D4A1C8B6D1D3D1rmoA32B2B9gC6B5G4zyhA9C5A5vraA2A1A1zbnE2D6G2E3E2B2C6D5C8B4E6aikC3A5RA5moB-9D3G4F2wqE4D2C2pzC1I2A3B-16hE1G3D1fvH4A6B7ueA4D4C3llC7PE7E4uufC2B2C4D8E6B4A3G2F3A28D2C7A6E7C-11==";
+  </script>
+
+  
+<script>
+  window.assetsPath='/assets';
+  window.service_name='exchangerates_data';
+  window.seo_name='exchangerates_data-api';
+  window.api_id='223';
+  window.api_subscribed=false;
+</script>
+<script src="/assets/js/marketplace/playground.js?140"></script>
+<script src="/assets/js/marketplace/marketplace_v2.js?53"></script>
+<script src="/assets/js/marketplace/reviews.js"></script>
+<script src="/assets/js/bundles/api.description.bundle.js"></script>
+
+
+  <!-- JS Plugins Init. -->
+  <script>
+    $(document).on('ready', function () {
+      NProgress.start();
+      init_slick_carousel();
+      init_rest();
+
+      
+      
+      
+
+      
+
+       
+  init_clipboard();
+  init_prism();
+
+  $('button#sample-response-subscribe').click(function() {
+    $('#tryNowModal').modal('hide');
+    loadPricing();
+  });
+
+  
+
+  // align price decimal to top
+  $('.plan-price').each(function() {
+    var price = $(this).text();
+    var price_parts = price.split('.');
+    $(this).html(price_parts[0] + '<span class="font-size-2 align-top">.' + price_parts[1] + '</span>');
+  });
+
+      NProgress.done();
+    });
+  </script>
+
+  <!-- IE Support -->
+  <script>
+    if (/MSIE \d|Trident.*rv:/.test(navigator.userAgent)) document.write('<script src="/assets/vendor/polifills.js"><\/script>');
+  </script>
+
+  
+
+  
+
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function (event) {
+      const dropdowns = document.querySelectorAll(".dropdown");
+
+      dropdowns.forEach((dropdown) => {
+        const dropdownContent = dropdown.querySelector(".dropdown-menu");
+        let isMouseInsideDropdown = false;
+        let isClicked = false; // Track click state separately
+
+        // Hover functionality
+        dropdown.addEventListener("mouseenter", function () {
+          if (!isClicked) {
+            isMouseInsideDropdown = true;
+            dropdownContent.classList.add("active");
+          }
+        });
+
+        dropdownContent.addEventListener("mouseenter", function () {
+          if (!isClicked) {
+            isMouseInsideDropdown = true;
+          }
+        });
+
+        dropdown.addEventListener("mouseleave", function () {
+          if (!isClicked) {
+            isMouseInsideDropdown = false;
+            setTimeout(() => {
+              if (!isMouseInsideDropdown) dropdownContent.classList.remove("active");
+            }, 300);
+          }
+        });
+
+        // Click functionality for mobile devices (only if screen width < 992px)
+        dropdown.addEventListener("click", function () {
+          if (window.innerWidth < 992) {
+            isClicked = !isClicked; // Toggle click state
+            dropdownContent.classList.toggle("active");
+          }
+        });
+
+        // Clear hover timeout if the dropdown is clicked
+        // dropdown.addEventListener("mouseenter", function () {
+        //   if (!isClicked) clearTimeout(closeTimeout);
+        // });
+
+        // dropdownContent.addEventListener("mouseenter", function () {
+        //   if (!isClicked) clearTimeout(closeTimeout);
+        // });
+      });
+
+      // Handle resize events to update behavior dynamically
+      window.addEventListener("resize", () => {
+        if (window.innerWidth >= 992) {
+          // Ensure dropdowns are reset to hover-only mode on larger screens
+          dropdowns.forEach((dropdown) => {
+            const dropdownContent = dropdown.querySelector(".dropdown-menu");
+            dropdownContent.classList.remove("active");
+          });
+        }
+      });
+
+      // Mobile dropdowns
+      const mobileDropdowns = document.querySelectorAll(".mobile-dropdown");
+      mobileDropdowns.forEach((dropdown) => {
+        const mobileToggle = dropdown.querySelector(".mobile-nav-item");
+        const mobileDropdownContent = mobileToggle.nextElementSibling;
+
+        mobileToggle.addEventListener("click", function (event) {
+          event.preventDefault();
+          mobileDropdownContent.classList.toggle("active");
+        });
+      });
+    });
+  </script>
+  
+</body>
+
+</html>

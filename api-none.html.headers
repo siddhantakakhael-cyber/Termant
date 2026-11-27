@@ -1,0 +1,39 @@
+HTTP/2 302 
+date: Fri, 27 Nov 2026 09:31:18 GMT
+content-type: text/html; charset=utf-8
+location: https://marketplace.apilayer.com/
+x-frame-options: SAMEORIGIN
+x-content-type-options: nosniff
+content-security-policy: frame-ancestors 'self' https://assets.apilayer.com
+vary: Cookie
+set-cookie: session=eyJjdXJyZW50X3BhZ2UiOiIvenpxcXh4bm90aGluZy1hcGkifQ.awlN5g.hR4VJ7o7C_W61I7wDVE2cIp3iBY; Secure; HttpOnly; Path=/; SameSite=None
+set-cookie: GAESA=CrIBMDBlOGE0MDhiZDVmODAwZTJmNDBjNmJkMzlkYTgxNTcyNjQ3NmEwYjRmNTVlNWI3NjY3YzcyOGVhMzc5OTNkM2VhM2I4NDcyYjE2ZWEwMWRmMTQwZjc1ZDEyYzkzZDk0MGE2MjQxNGRhNTQ5MjljMDFlNWUyYTgzNWY3YmM3MmI1YWUyZjgwNzRmMjdkMDYyYmE0YjRjZWM4NmVlZTZkYzIyMDVjYTU1NmMxMzUzMmE3YhDzleHioTQ; expires=Sun, 27-Dec-2026 09:31:18 GMT; path=/
+x-cloud-trace-context: 04c4c7b79f889a3e6d22f903b00a3bf1
+server: cloudflare
+cf-cache-status: DYNAMIC
+strict-transport-security: max-age=2592000; includeSubDomains
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=qRyXVvl6hOF8X%2Fzqfq%2Fd%2FzmJDIONc%2BWsJeONyf77Q5TazML5rInrPaaA04UvqFNTf7lSbb2E%2F31eoBN8IxwiH%2FErMxQXdroaIQr0Tnh13h2nSagmHyfrejNis11P5cuJGYpfFU2L3OQMMg%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-ray: a6101e7dbec03897-IAD
+alt-svc: h3=":443"; ma=86400
+
+HTTP/2 200 
+date: Fri, 27 Nov 2026 09:31:18 GMT
+content-type: text/html; charset=utf-8
+x-frame-options: SAMEORIGIN
+x-content-type-options: nosniff
+content-security-policy: frame-ancestors 'self' https://assets.apilayer.com
+vary: Cookie
+set-cookie: session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjExZTY3Yjg0MzJhY2Y4MTUwOWE1ZGI0MDIxZGM4ZTBmM2UwZTJhMSIsImN1cnJlbnRfcGFnZSI6Ii8ifQ.awlN5g.5HfdvcQe23_nZbGvuSkZEbVjfRk; Secure; HttpOnly; Path=/; SameSite=None
+set-cookie: GAESA=CrABMDBlOGE0MDhiZDI4YjUwODU3ZThkN2NiYzg5MWJmMTQ3YjEzMjFmMzg2YzM2NDczMDZjMDViNGU0ZWQ1MjYyZjE2YjRlNzI4ZDQ0NTIyOGRhNTU3OTg2NDQ2MWQ5YjA4NTQyZDJjYTIxZDNmNmUzYjJkZjA5Y2M5MmQ3OTBhNWEwMmIzOGI4M2NiMmQzYTZjMTkzOWMyMTAxNGJjZThjM2NlMzNmYjkzNjFmM2YzZTcQ5Jbh4qE0; expires=Sun, 27-Dec-2026 09:31:18 GMT; path=/
+x-cloud-trace-context: 67fa99ac10f6362f6d22f903b00a3d2b;o=1
+server: cloudflare
+expires: Fri, 27 Nov 2026 09:31:18 GMT
+cache-control: private
+cf-cache-status: DYNAMIC
+strict-transport-security: max-age=2592000; includeSubDomains
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=bJwK3lo%2Bk4C5wXm3eNMER98zXOoTi39Pd7QJPldqUGant4ckwSzeMFxKeczmwnq2MlBxe9wIedZLn2w5chAj0VrJHamFDkIFhRSybaaKrLMoxlobh5QR%2B2KLbgM1QlWbF9fB7%2BhQxAzNPA%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-ray: a6101e7e6f813897-IAD
+alt-svc: h3=":443"; ma=86400
+

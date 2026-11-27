@@ -1,0 +1,20 @@
+HTTP/2 200 
+date: Fri, 27 Nov 2026 09:31:17 GMT
+content-type: text/html; charset=utf-8
+x-frame-options: SAMEORIGIN
+x-content-type-options: nosniff
+content-security-policy: frame-ancestors 'self' https://assets.apilayer.com
+vary: Cookie
+set-cookie: session=.eJwNy1sKwjAQBdC9zLdS82qlmwmT6Z1WlFgmKQji3u35P1_KamgbzcqvhgtJM839_USlmdRx0PEWXJAJJbkJ0bvkS1QkjezLEkT4rnS-wwy1551XnHPARzauK4w7Wl6485X3B_3-IaAlYw.awlN5Q.3vWWSpcU_1GesqBzYZJwVLWlma4; Secure; HttpOnly; Path=/; SameSite=None
+set-cookie: GAESA=CrIBMDBlOGE0MDhiZDVmODAwZTJmNDBjNmJkMzlkYTgxNTcyNjQ3NmEwYjRmNTVlNWI3NjY3YzcyOGVhMzc5OTNkM2VhM2I4NDcyYjE2ZWEwMWRmMTQwZjc1ZDEyYzkzZDk0MGE2MjQxNGRhNTQ5MjljMDFlNWUyYTgzNWY3YmM3MmI1YWUyZjgwNzRmMjdkMDYyYmE0YjRjZWM4NmVlZTZkYzIyMDVjYTU1NmMxMzUzMmE3YhCek-HioTQ; expires=Sun, 27-Dec-2026 09:31:17 GMT; path=/
+x-cloud-trace-context: 5bda4cb53edc4cda8638e547f029b4d1
+server: cloudflare
+expires: Fri, 27 Nov 2026 09:31:17 GMT
+cache-control: private
+cf-cache-status: DYNAMIC
+strict-transport-security: max-age=2592000; includeSubDomains
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=SJ5u1EuOb9TxVj0hCWY%2BiozWkcdpbl60wwhHogvSNDZrfn06f%2BYuQUtVZbGKBmVDf%2BBBKBSoNwVTJUXvLi3T81HxkfT0fhCHNEFy5iVEtNMwvRcTM3gywX88w%2BuFBGDvA5FKZz7txbgHPA%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-ray: a6101e7b2a910736-IAD
+alt-svc: h3=":443"; ma=86400
+

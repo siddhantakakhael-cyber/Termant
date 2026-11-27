@@ -1,0 +1,12 @@
+no-key: exit=1 seconds=0
+list-currency: exit=0 seconds=1
+list-picture: exit=0 seconds=0
+about-exchangerates: exit=0 seconds=1
+about-image-to-text: exit=0 seconds=0
+about-pika: exit=0 seconds=0
+about-none: exit=1 seconds=1
+list: exit=0 callable=60 118 more are listed in the marketplace, each another company's service with a key of its own; `apilayer list WORD` searches them too. (from the marketplace, read 27 Nov 09:31) 
+about-all: read=60 not-read=0 without-a-plan-line=0
+wrong-key: exit=1 seconds=0
+no-such-api: exit=1 seconds=0
+post-wrong-key: exit=1 seconds=0

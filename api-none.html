@@ -1,0 +1,2792 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+
+  <title>APILayer - Best API Marketplace | Reliable, Scalable APIs | APILayer</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Explore a highly curated API marketplace focused on reliability, scalability,
+ and quality. Access AI & Machine Learning, Content, Finance, Stock, and more APIs." />
+  <meta name="keywords"
+    content="API Marketplace, Best APIs, APILayer, API, AI APIs, Content APIs, Finance APIs, Stock APIs, Web Tools APIs, Calendar APIs, Currency APIs, Data APIs, Files APIs, Finance APIs, Food APIs, Geo APIs, Images APIs, Jobs APIs, News APIs, Scraping APIs, Security APIs, Social Media APIs, Sports APIs">
+  <link rel="shortcut icon" href="/assets/favicon.ico" />
+  <meta name="google-signin-client_id"
+    content="918427652626-8890ujna0olmp3mpuoms502b2uul2vug.apps.googleusercontent.com">
+
+  
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@apilayer" />
+  <meta name="twitter:creator" content="@apilayer" />
+  <meta property="og:title" content="APILayer | Hassle-free API marketplace" />
+  <meta property="og:description"
+    content="API marketplace and ready to run app backends for your mobile app and website." />
+  <meta property="og:image" content="https://assets.apilayer.com/logo/square_large.png" />
+  
+
+  <!-- Fonts -->
+  <link rel="preload" href="/assets/fonts/open-sans-v34-latin-regular.woff2" as="font" type="font/woff2"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sans-v34-latin-600.woff2" as="font" type="font/woff2"
+    crossorigin>
+
+  <!-- Fonts Revamp -->
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Regular.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-ExtraBold.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Black.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-BlackItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Bold.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-BoldItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-ExtraBoldItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Italic.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Light.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-Medium.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-MediumItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-SemiBold.ttf" as="font" type="font/ttf"
+    crossorigin>
+  <link rel="preload" href="/assets/fonts/open-sauce-one/OpenSauceOne-SemiBoldItalic.ttf" as="font"
+    type="font/ttf" crossorigin>
+
+  
+<script>
+  function getApiCount(e_type) {
+    var blockDivCount = $('.product').filter(function() {
+      return $(this).css('display') === 'block';
+    }).length;
+    if(!e_type) {
+      $(".srch_count").text(blockDivCount);
+    }
+    $("#checkedItems").text('All APIs' + ' (' + blockDivCount + ')');
+  }
+  function search_data() {
+    event.preventDefault();
+    document.activeElement.blur(); 
+    var search_term = $('#api-search-bar').val();
+    if(search_term == '') {
+      $(".srch-input-required").show();
+      return false;
+    } 
+    $(".srch-input-required").hide();
+    $('#api-search-bar').attr('placeholder', search_term);
+    get_api_data();    
+  }
+
+  function get_api_data(e_type){
+    var search_term = $('#api-search-bar').val();
+    if(search_term) {
+      $(".search_txt").show();
+      $(".srch_term").text(search_term);
+      $("#search_txt_terms").show();
+    }
+    if(e_type == 'dismiss') {
+      $(".search_txt").hide();
+      $("#search_txt_terms").hide();
+      $('#api-search-bar').attr('placeholder', 'Search API...');
+      $('#api-search-bar').val('')
+      search_term = '';
+    }
+    var view_by_value = $('#view_by').val();
+    var sort_by = $('#sort_by').val();
+    if (view_by_value == 'list_view') {
+      document.getElementById('grid-view-btn').classList.remove('active');
+      document.getElementById('list-view-btn').classList.add('active');
+    } else {
+        document.getElementById('list-view-btn').classList.remove('active');
+        document.getElementById('grid-view-btn').classList.add('active');
+    }    
+    $('#loadermain').show();
+    $('.product').hide();
+    $.ajax({
+      type: 'GET',
+      url: '/get-api-data?sort_by='+sort_by+'&q='+search_term+'&view_by='+view_by_value,
+      dataType: "html",
+      success: function(response){
+        $('#apiList').html(response);
+        
+        if(e_type == 'sort' || e_type == 'view') {
+          display_all();
+        }
+        else if(e_type == 'dismiss') {
+          display_all();
+          let num_rating_checked = 0
+          $('.rating-chx').each(function(){ 
+            if($(this).is(':checked')){
+              num_rating_checked++;
+            }
+          });
+          let num_child_category_checked = 0;
+          let category_array = []
+          $('.subcategory-chx').each(function() {
+            if($(this).is(':checked')){
+              num_child_category_checked++;
+              category_array.push($(this).attr('data-sub-category-id'));
+            }
+          });
+          if(num_rating_checked == 0 && !$('#subscribed').is(':checked') && !$('#api-search-bar').val()){
+            update_checkbox_state();
+          }
+          else if(num_child_category_checked || (num_child_category_checked && num_rating_checked && $('#subscribed').is(':checked') && $('#api-search-bar').val())) {
+            setTimeout(getApiCount, 1000);
+          } else {
+            update_checkbox_state();
+          }
+          $(".no-srch-results").hide();
+        }
+        else {
+          setTimeout(getApiCount, 1000);
+          display_all();
+          let num_rating_checked = 0
+          $('.rating-chx').each(function(){ 
+            if($(this).is(':checked')){
+              num_rating_checked++;
+            }
+          });
+          if(num_rating_checked == 0 && !$('#subscribed').is(':checked') && !$('#api-search-bar').val()){
+            update_checkbox_state();
+          }
+          update_checkbox_state();
+        }
+       
+        if ($.trim(response) == null || $.trim(response) == '' || $.trim(response) == undefined) {
+          $("#search_txt_terms").show();
+          $(".no-srch-results").show();
+          $(".search_txt").hide();
+        } else {
+          $(".no-srch-results").hide();
+        }
+      }, complete: function(){
+        $('#loadermain').hide();
+      }
+    });
+  }
+
+  function set_view_by(view_by) {
+    var event_type = 'view';
+    $('#view_by').val(view_by);
+    get_api_data(event_type);
+  }
+  
+  function set_sort_by(sort_by) {
+    var event_type = 'sort';
+    $('#sort_by').val(sort_by);
+    var $current = $(".active");
+    var label_text = "";
+    $('html, body').animate({ scrollTop: 0 }, 'fast');
+    if(sort_by == "featured") {
+      label_text = "Featured";
+      $current.removeClass("active");
+      $('#featured').addClass("active");
+    } else if(sort_by == "title") {
+      label_text = "Alphabetical";
+      $current.removeClass("active");
+      $('#alphabetical').addClass("active");
+    } else {
+      label_text = "Latest";
+      $current.removeClass("active");
+      $('#latest').addClass("active");
+    }
+    $(".selected-sort").text(label_text);
+    get_api_data(event_type);
+  }
+</script>
+
+
+<link rel="canonical" href="https://apilayer.com" />
+
+
+  
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  
+
+  <!-- CSS APILayer Template -->
+  <link rel="stylesheet" href="/assets/css/theme.css?7">
+  <link rel="stylesheet" href="/assets/css/vendors.css?5">
+  <link rel="stylesheet" href="/assets/css/footer.css">
+  <link rel="stylesheet" href="/assets/css/custom.css">
+
+  <!-- CSS Implementing Plugins -->
+  <link rel="stylesheet" href="/assets/vendor/font-awesome/css/all.min.css">
+
+  
+  
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KFLWMP8T');</script>
+  <!-- End Google Tag Manager -->
+  
+  
+
+  <script>
+    (function (w) { w.fpr = w.fpr || function () { w.fpr.q = w.fpr.q || []; w.fpr.q[arguments[0] == 'set' ? 'unshift' : 'push'](arguments); }; })(window);
+    fpr("init", { cid: "bgkrzo8z" });
+    fpr("click");
+  </script>
+  <script src="https://cdn.firstpromoter.com/fpr.js" async></script>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-618YSCMDL5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-618YSCMDL5');
+</script>
+
+<body id="index2">
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KFLWMP8T"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+  <!-- ========== HEADER ========== -->
+  <header id="header" class="header header-sticky-top left-aligned-navbar bg-white border-bottom z-index-999 mb-3">
+    <div id="cta-bar"></div>
+    <div class="header-section py-0 py-lg-0">
+      <div id="logoAndNav" style="position: absolute !important; max-width: 100%;" class="container">
+        <!-- Nav -->
+        <nav class="js-mega-menu navbar navbarv2 navbar-expand-md" id="navbar">
+          <div class="navbar-nav-wrap px-2" style="background: white; border-radius: 10px;">
+            <!-- Logo -->
+            <div class="navbar-brand navbar-tab-link navbar-nav-wrap-brand mr-lg-0 d-flex">
+              <a href="/" aria-label="APILayer">
+                <img src="https://assets.apilayer.com/logo/logo.png" alt="APILayer | Hassle Free API Marketplace"
+                  style="width: 170px; height: auto;">
+              </a>
+              <a href="https://github.com/public-apis/public-apis" class="nav-item text-dark ml-2"
+                style="display: flex; align-items: center; gap: 3px; margin-right: 12px;" target="_blank"
+                rel="noreferrer noopener nofollow">
+                <img src="/assets/apilayer/images/github.svg" alt="Repo"
+                  style="width: 20px; height: 20px" />
+                  <div style="display: flex; justify-content: center; align-items: center; gap: 8px;border-radius: 100px; padding-top: 4px;padding-right: 8px;padding-bottom: 4px;padding-left: 8px; border: 0.8px solid #525D6E">
+                    <p style="font-weight: 400; font-style: Regular; font-size: 11px; leading-trim: NONE; line-height: 100%;letter-spacing: 0%;color: #27344A; margin-bottom: 0rem !important;">
+                      390K+
+                    </p>
+                  </div>
+              </a>
+            </div>
+            <!-- End Logo -->
+
+            
+            <!-- Responsive Toggle Button -->
+            <button type="button"
+              class="navbar-toggler navbar-nav-wrap-navbar-toggler btn btn-icon btn-sm rounded-circle"
+              aria-label="Toggle navigation" aria-expanded="false" aria-controls="navBar" data-toggle="collapse"
+              data-target="#navBar">
+              <span class="navbar-toggler-default">
+                <img width="14px" height="14px" src="/assets/apilayer/images/mobilemenu.svg"
+                  alt="Menu" class="menu-icon" />
+              </span>
+              <span class="navbar-toggler-toggled">
+                <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="currentColor"
+                    d="M11.5,9.5l5-5c0.2-0.2,0.2-0.6-0.1-0.9l-1-1c-0.3-0.3-0.7-0.3-0.9-0.1l-5,5l-5-5C4.3,2.3,3.9,2.4,3.6,2.6l-1,1 C2.4,3.9,2.3,4.3,2.5,4.5l5,5l-5,5c-0.2,0.2-0.2,0.6,0.1,0.9l1,1c0.3,0.3,0.7,0.3,0.9,0.1l5-5l5,5c0.2,0.2,0.6,0.2,0.9-0.1l1-1 c0.3-0.3,0.3-0.7,0.1-0.9L11.5,9.5z" />
+                </svg>
+              </span>
+            </button>
+            <!-- End Responsive Toggle Button -->
+
+            <!-- navBar -->
+            <div id="navBar" class="navbar-nav-wrap-navbar navbar-tab-full collapse navbar-collapse mx-lg-3"
+              style="font-size:14px; background: white;">
+              <ul class="navbar-nav navbargap justify-content-end" style="color: #27344A !important;">
+
+                <li class="nav-item dropdown">
+                  <a class="btn dropdown-toggle py-3 px-2 px-md-0"
+                    style="font-size: 0.9rem !important; color: #27344a !important; font-weight: 400 !important;"
+                    href="#" role="button" id="resourcesDropdown" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Products&nbsp;
+                  </a>
+                  <div class="dropdown-menu mt-2" aria-labelledby="resourcesDropdown"
+                    style="border-top: white; border-radius: 6px !important; border: 1px solid #E4EBEF; min-width: 6.75rem;">
+                    <a class="dropdown-item px-2" href="https://apilayer.com/products">Our Products</a>
+                    <a class="dropdown-item px-2" href="/">Marketplace</a>
+                  </div>
+                </li>
+
+                <li class="nav-item dropdown">
+                  <a class="btn dropdown-toggle py-3 px-2 px-md-0"
+                    style="font-size: 0.9rem !important; color: #27344a !important; font-weight: 400 !important;"
+                    href="#" role="button" id="resourcesDropdown" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Resources
+                  </a>
+                  <div class="dropdown-menu mt-2" aria-labelledby="resourcesDropdown"
+                    style="border-top: white; border-radius: 6px !important; border: 1px solid #E4EBEF; min-width: 6.75rem;">
+                    <a class="dropdown-item px-2" href="https://blog.apilayer.com/"
+                      rel="noreferrer noopener">Blogs</a>
+                    <a class="dropdown-item px-2" href="/docs/article/marketplace-faq">FAQ</a>
+                  </div>
+                </li>
+
+                <li class="nav-item dropdown">
+                  <a class="btn dropdown-toggle py-3 px-2 px-md-0"
+                    style="font-size: 0.9rem !important; color: #27344a !important; font-weight: 400 !important; padding-right: 24px !important;"
+                    href="#" role="button" id="communityDropdown" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    Community
+                  </a>
+                  <div class="dropdown-menu mt-2" aria-labelledby="communityDropdown"
+                    style="border-top: white; border-radius: 6px !important; border: 1px solid #E4EBEF; min-width: 6.75rem;">
+                    <a class="dropdown-item px-2" href="https://apilayer.com/affiliates">Affiliates</a>
+                    <a class="dropdown-item px-2" href="https://apilayer.com/developers">Developers</a>
+                    <a class="dropdown-item px-2" href="https://apilayer.com/developers/suite">Use Cases</a>
+                    <a class="dropdown-item px-2" href="https://github.com/public-apis/public-apis" target="_blank"
+                      rel="noreferrer noopener nofollow">Github</a>
+                    <a class="dropdown-item px-2" href="https://discord.com/invite/hgjA78638n" target="_blank"
+                      rel="noreferrer noopener nofollow">Discord</a>
+                  </div>
+                </li>
+                
+              </ul>
+              <div class=""
+                  style="gap: 5px; display:flex; flex-direction: row;">
+
+                  <a id="signInButton" type="button" class="btn btn-sm btn-success js-hs-unfold-invoker mt-3"
+                    data-hs-unfold-options='{
+                                                                    "target": "#sidebarContent",
+                                                                    "type": "css-animation",
+                                                                    "animationIn": "fadeInRight",
+                                                                    "animationOut": "fadeOutRight",
+                                                                    "hasOverlay": "rgba(55, 125, 255, 0.1)",
+                                                                    "smartPositionOff": true
+                                              }' data-hs-unfold-target="#sidebarContent" data-hs-unfold-invoker=""
+                    style="padding:6px; margin-top:0px !important; width: 90px; background-color: #f0f0f0 !important; border: 1px solid #f0f0f0 !important; color: #27344A !important"
+                    onmouseover="this.style.backgroundColor='white !important'; this.style.color='#27344A !important'; this.style.borderColor='#BAD1DF !important';"
+                    onmouseout="this.style.backgroundColor='#0052CC !important'; this.style.color='white !important'; this.style.borderColor='#2480FC !important';">
+                    Login
+                  </a>
+
+                </div>
+
+            </div>
+            <!-- End navBar -->
+
+            <!-- Secondary Content -->
+            <div class="navbar-nav-wrap-content">
+              <!-- Login & Profile Button -->
+              <div class="d-inline-block ml-auto">
+                
+
+
+                
+
+
+
+              </div>
+              <!-- End Login & Profile Button -->
+            </div>
+            <!-- End Secondary Content -->
+            
+
+          </div>
+        </nav>
+        <!-- End Nav -->
+      </div>
+    </div>
+  </header>
+  <!-- ========== END HEADER ========== -->
+
+  
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "APILayer",
+  "url": "https://apilayer.com/",
+  "logo": "https://assets.apilayer.com/logo/logo.png",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "5122268080",
+    "contactType": "customer service",
+    "areaServed": ["US","AT","GB"],
+    "availableLanguage": "en"
+  },
+  "sameAs": [
+    "https://twitter.com/apilayer/",
+    "https://www.instagram.com/apilayer/",
+    "https://www.linkedin.com/company/apilayer/",
+    "https://github.com/apilayer/",
+    "https://apilayer.com/"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "APILayer",
+  "image": "https://assets.apilayer.com/logo/logo.png",
+  "@id": "",
+  "url": "https://apilayer.com/",
+  "telephone": "5122268080",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Elisabethstrasse 15/5",
+    "addressLocality": "Vienna",
+    "postalCode": "78759",
+    "addressCountry": "AT"
+  } ,
+  "sameAs": [
+    "https://www.facebook.com/apilayer/",
+    "https://twitter.com/apilayer/",
+    "https://www.instagram.com/apilayer/",
+    "https://www.linkedin.com/company/apilayer/",
+    "https://github.com/apilayer/",
+    "https://apilayer.com/"
+  ] 
+}
+</script>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main id="content" role="main">
+    <!-- Hero Section -->
+    <div class="container mt-6">
+      <div class="row align-items-lg-center">
+        <div class="col-lg-12">
+          <!-- Title -->
+          <h1 class="text-primary text-center main-head-text"><a href="">API Marketplace</a></h1>
+          <p class="text-center mobile-sub">Discover, integrate, and manage top-tier APIs across diverse categories.</p>
+          <div style="display: none;" id="search_txt_terms">
+            <h1>Search Results</h1>
+              <p>You searched for <strong class="srch_term">None</strong> keyword.</p>
+          </div>
+          <!-- End Title -->
+ 
+          <!-- Filter -->
+          <div class="mb-3 mt-3 no-srch-results" style="display: none;">
+            <h1 class="h2 font-size-2">No results returned</h1>
+            <p>Try with another search term or <a href="">see all APIs</a></p>
+          </div>
+          <div class="row justify-content-md-start align-items-md-center search_txt" style="display: none;">
+            <div class="col-md-12">
+              <p class="font-size-1 m-0">
+                Search returned <span class="srch_count">178</span> results for
+                <span class="btn btn-xs btn-light">
+                  <span class="srch_term"></span>
+                  <span class="close pl-2" aria-label="Dismiss" href="" onclick="get_api_data('dismiss')">
+                    <span aria-hidden="true">&times;</span>
+                  </span>
+                </span>
+              </p>
+            </div>
+          </div>
+          <!-- End Filter -->
+        </div>
+      </div>
+    </div>
+    <!-- End Hero Section -->
+
+    <!-- Search Sort Section -->
+    <div class="search-bar-section">
+      <div class="container search-inner">
+      <div class="row align-items-lg-center">
+        <div class="col-lg-7 col-6">
+          <div class="navbar-nav-item flex-grow-1 mr-2">
+            <form class="input-group input-group-sm input-group-merge w-100">
+              <div class="input-group">
+                
+                  <input type="text" class="custom-font-size-search form-control form-search rounded-pill" name="q" id="api-search-bar" placeholder="Search API..." aria-label="Search API..." required>
+                
+                <div class="input-group-append">
+                  <button type="submit" class="btn btn-search btn-pill btn-success" onclick="search_data(); return false;"><i class="fas fa-search px-md-3 px-lg-3 px-xl-3 px-sm-0"></i></button>
+                </div>
+              </div>
+              <span style="display: none;" class="custom-required align-items-center srch-input-required"><img class="dropdown-icon-sort" src="/assets/svg/icons/required_icon.png" alt="Sort by" width="18"> Please fill in this field.</span>
+            </form>
+          </div>
+        </div>
+        <div class="col-lg-5 col-6 sort-view-section d-flex align-items-center">
+          <div class="mr-3 d-flex align-items-center">
+          <span class="sort-view-text mr-2">Sort by</span>
+          <div class="sort-by-navbar d-flex align-items-center justify-content-between">
+            <ul>
+              <li>
+                <span class="selected-sort text-dark">Featured</span>
+                <ul class="sort-menu-list" style="display:none;">
+                  <input type="hidden" value="featured" name="sort_by" id="sort_by">
+                  <li class="sort-class text-dark active" id="featured" onclick="set_sort_by('featured')">Featured</li>
+                  <li class="sort-class text-dark" id="alphabetical" onclick="set_sort_by('title')">Alphabetical</li>
+                  <li class="sort-class text-dark" id="latest" onclick="set_sort_by('latest')">Latest</li>
+                </ul>
+              </li>
+            </ul>
+            <img class="dropdown-icon-sort" src="/assets/svg/icons/chevron-down.svg" alt="Sort by" width="18">
+          </div>
+        </div>
+        <div class="view-by-section d-flex align-items-center">
+          <span class="sort-view-text mr-2">View by</span>  
+          <div class="controls d-flex align-items-center justify-content-md-start">
+            <input type="hidden" value="grid_view" name="view_by" id="view_by">
+            <button id="grid-view-btn" value="grid_view" class="toggle-btn d-flex justify-content-between align-items-center active mt-btn grid-view-icon" onclick="set_view_by('grid_view')"></button>
+            <button id="list-view-btn" value="list_view" class="toggle-btn d-flex justify-content-between align-items-center mt-btn list-view-icon" onclick="set_view_by('list_view')"></button>
+         </div>
+      </div>
+        </div>
+        </div>
+        </div>
+      </div>
+      </div>
+      </div>
+    </div>
+    <!-- End Search Sort Section -->
+
+    <!-- API List -->
+    <div class="container space-bottom-1">
+      <div class="row">
+        <div class="col-lg-3 mb-5 mb-lg-0 filter-sidebar-layout">
+          <div class="bg-light border z-index-2 filter-box-style">
+            <div class="navbar-expand-lg navbar-expand-lg-collapse-block">
+              <button type="button" class="navbar-toggler btn btn-block py-3" aria-label="Toggle navigation"
+                aria-expanded="false" aria-controls="sidebarNav" data-toggle="collapse" data-target="#sidebarNav" id="sidebarNavToggle">
+                <span class="d-flex justify-content-between align-items-center">
+                  <span class="h4 mb-0 explore">Explore</span>
+                  <span class="navbar-toggler-default">
+                    <svg width="14" height="14" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="currentColor"
+                        d="M17.4,6.2H0.6C0.3,6.2,0,5.9,0,5.5V4.1c0-0.4,0.3-0.7,0.6-0.7h16.9c0.3,0,0.6,0.3,0.6,0.7v1.4C18,5.9,17.7,6.2,17.4,6.2z M17.4,14.1H0.6c-0.3,0-0.6-0.3-0.6-0.7V12c0-0.4,0.3-0.7,0.6-0.7h16.9c0.3,0,0.6,0.3,0.6,0.7v1.4C18,13.7,17.7,14.1,17.4,14.1z" />
+                    </svg>
+                  </span>
+                  <span class="navbar-toggler-toggled">
+                    <svg width="14" height="14" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="currentColor"
+                        d="M11.5,9.5l5-5c0.2-0.2,0.2-0.6-0.1-0.9l-1-1c-0.3-0.3-0.7-0.3-0.9-0.1l-5,5l-5-5C4.3,2.3,3.9,2.4,3.6,2.6l-1,1 C2.4,3.9,2.3,4.3,2.5,4.5l5,5l-5,5c-0.2,0.2-0.2,0.6,0.1,0.9l1,1c0.3,0.3,0.7,0.3,0.9,0.1l5-5l5,5c0.2,0.2,0.6,0.2,0.9-0.1l1-1 c0.3-0.3,0.3-0.7,0.1-0.9L11.5,9.5z" />
+                    </svg>
+                  </span>
+                </span>
+              </button>
+              <div id="sidebarNav" class="collapse navbar-collapse">
+                <div class="p-2 p-lg-0">
+                  <!-- Filter by Categories -->
+                  <div class="checkbox-group">
+                    <h3 class="section-title-top-filter h4 filter-responsive">Filter by Categories</h3>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="AI/ML" id="parent-11" data-category-id="11" value="AI/ML" data-category-count="4">
+                        <label class="custom-control-label" for="parent-11">
+                          <span class="font-size-1 category_title">AI/ML</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">4</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-11">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-11 childCheckbox subcategory-chx sub-category-11" data-parent="AI/ML" data-sub-category="OCR" id="sub-parent-111" data-sub-category-id="111" value="OCR(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-111">
+                            <span class="font-size-1 sub_category_title">OCR</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-11">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-11 childCheckbox subcategory-chx sub-category-11" data-parent="AI/ML" data-sub-category="Speech to Text" id="sub-parent-106" data-sub-category-id="106" value="Speech to Text(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-106">
+                            <span class="font-size-1 sub_category_title">Speech to Text</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-11">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-11 childCheckbox subcategory-chx sub-category-11" data-parent="AI/ML" data-sub-category="Others" id="sub-parent-11" data-sub-category-id="11" value="Others(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-11">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Automotive" id="parent-99" data-category-id="99" value="Automotive" data-category-count="1">
+                        <label class="custom-control-label" for="parent-99">
+                          <span class="font-size-1 category_title">Automotive</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">1</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-99">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-99 childCheckbox subcategory-chx sub-category-99" data-parent="Automotive" data-sub-category="Vehicle" id="sub-parent-100" data-sub-category-id="100" value="Vehicle(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-100">
+                            <span class="font-size-1 sub_category_title">Vehicle</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Blockchain" id="parent-87" data-category-id="87" value="Blockchain" data-category-count="1">
+                        <label class="custom-control-label" for="parent-87">
+                          <span class="font-size-1 category_title">Blockchain</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">1</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-87">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-87 childCheckbox subcategory-chx sub-category-87" data-parent="Blockchain" data-sub-category="NFT" id="sub-parent-88" data-sub-category-id="88" value="NFT(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-88">
+                            <span class="font-size-1 sub_category_title">NFT</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Business" id="parent-38" data-category-id="38" value="Business" data-category-count="7">
+                        <label class="custom-control-label" for="parent-38">
+                          <span class="font-size-1 category_title">Business</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">7</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-38">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-38 childCheckbox subcategory-chx sub-category-38" data-parent="Business" data-sub-category="Sales" id="sub-parent-108" data-sub-category-id="108" value="Sales(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-108">
+                            <span class="font-size-1 sub_category_title">Sales</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-38">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-38 childCheckbox subcategory-chx sub-category-38" data-parent="Business" data-sub-category="Others" id="sub-parent-38" data-sub-category-id="38" value="Others(6)" data-sub-category-count="6">
+                          <label class="custom-control-label" for="sub-parent-38">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">6</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Communication" id="parent-5" data-category-id="5" value="Communication" data-category-count="7">
+                        <label class="custom-control-label" for="parent-5">
+                          <span class="font-size-1 category_title">Communication</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">7</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-5">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-5 childCheckbox subcategory-chx sub-category-5" data-parent="Communication" data-sub-category="Email" id="sub-parent-44" data-sub-category-id="44" value="Email(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-44">
+                            <span class="font-size-1 sub_category_title">Email</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-5">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-5 childCheckbox subcategory-chx sub-category-5" data-parent="Communication" data-sub-category="GPS" id="sub-parent-113" data-sub-category-id="113" value="GPS(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-113">
+                            <span class="font-size-1 sub_category_title">GPS</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-5">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-5 childCheckbox subcategory-chx sub-category-5" data-parent="Communication" data-sub-category="SMS" id="sub-parent-43" data-sub-category-id="43" value="SMS(5)" data-sub-category-count="5">
+                          <label class="custom-control-label" for="sub-parent-43">
+                            <span class="font-size-1 sub_category_title">SMS</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">5</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Conversion APIs" id="parent-27" data-category-id="27" value="Conversion APIs" data-category-count="1">
+                        <label class="custom-control-label" for="parent-27">
+                          <span class="font-size-1 category_title">Conversion APIs</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">1</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-27">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-27 childCheckbox subcategory-chx sub-category-27" data-parent="Conversion APIs" data-sub-category="Others" id="sub-parent-27" data-sub-category-id="27" value="Others(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-27">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Dev Tools" id="parent-8" data-category-id="8" value="Dev Tools" data-category-count="58">
+                        <label class="custom-control-label" for="parent-8">
+                          <span class="font-size-1 category_title">Dev Tools</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">58</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="IoT" id="sub-parent-110" data-sub-category-id="110" value="IoT(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-110">
+                            <span class="font-size-1 sub_category_title">IoT</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="Jira" id="sub-parent-49" data-sub-category-id="49" value="Jira(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-49">
+                            <span class="font-size-1 sub_category_title">Jira</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="Monitoring" id="sub-parent-107" data-sub-category-id="107" value="Monitoring(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-107">
+                            <span class="font-size-1 sub_category_title">Monitoring</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="Open Source" id="sub-parent-104" data-sub-category-id="104" value="Open Source(3)" data-sub-category-count="3">
+                          <label class="custom-control-label" for="sub-parent-104">
+                            <span class="font-size-1 sub_category_title">Open Source</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">3</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="URL Shortener" id="sub-parent-109" data-sub-category-id="109" value="URL Shortener(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-109">
+                            <span class="font-size-1 sub_category_title">URL Shortener</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="Webhooks" id="sub-parent-48" data-sub-category-id="48" value="Webhooks(3)" data-sub-category-count="3">
+                          <label class="custom-control-label" for="sub-parent-48">
+                            <span class="font-size-1 sub_category_title">Webhooks</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">3</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="Web Scraping" id="sub-parent-114" data-sub-category-id="114" value="Web Scraping(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-114">
+                            <span class="font-size-1 sub_category_title">Web Scraping</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-8">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-8 childCheckbox subcategory-chx sub-category-8" data-parent="Dev Tools" data-sub-category="Others" id="sub-parent-8" data-sub-category-id="8" value="Others(46)" data-sub-category-count="46">
+                          <label class="custom-control-label" for="sub-parent-8">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">46</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="E-commerce" id="parent-51" data-category-id="51" value="E-commerce" data-category-count="3">
+                        <label class="custom-control-label" for="parent-51">
+                          <span class="font-size-1 category_title">E-commerce</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">3</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-51">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-51 childCheckbox subcategory-chx sub-category-51" data-parent="E-commerce" data-sub-category="Integration" id="sub-parent-96" data-sub-category-id="96" value="Integration(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-96">
+                            <span class="font-size-1 sub_category_title">Integration</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-51">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-51 childCheckbox subcategory-chx sub-category-51" data-parent="E-commerce" data-sub-category="Marketplace Management" id="sub-parent-90" data-sub-category-id="90" value="Marketplace Management(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-90">
+                            <span class="font-size-1 sub_category_title">Marketplace Management</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-51">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-51 childCheckbox subcategory-chx sub-category-51" data-parent="E-commerce" data-sub-category="Payment Gateway" id="sub-parent-101" data-sub-category-id="101" value="Payment Gateway(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-101">
+                            <span class="font-size-1 sub_category_title">Payment Gateway</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Files" id="parent-35" data-category-id="35" value="Files" data-category-count="1">
+                        <label class="custom-control-label" for="parent-35">
+                          <span class="font-size-1 category_title">Files</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">1</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-35">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-35 childCheckbox subcategory-chx sub-category-35" data-parent="Files" data-sub-category="Others" id="sub-parent-35" data-sub-category-id="35" value="Others(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-35">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Finance" id="parent-14" data-category-id="14" value="Finance" data-category-count="14">
+                        <label class="custom-control-label" for="parent-14">
+                          <span class="font-size-1 category_title">Finance</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">14</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-14">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-14 childCheckbox subcategory-chx sub-category-14" data-parent="Finance" data-sub-category="Accounting" id="sub-parent-57" data-sub-category-id="57" value="Accounting(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-57">
+                            <span class="font-size-1 sub_category_title">Accounting</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-14">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-14 childCheckbox subcategory-chx sub-category-14" data-parent="Finance" data-sub-category="Banking" id="sub-parent-56" data-sub-category-id="56" value="Banking(4)" data-sub-category-count="4">
+                          <label class="custom-control-label" for="sub-parent-56">
+                            <span class="font-size-1 sub_category_title">Banking</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">4</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-14">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-14 childCheckbox subcategory-chx sub-category-14" data-parent="Finance" data-sub-category="Currency" id="sub-parent-34" data-sub-category-id="34" value="Currency(4)" data-sub-category-count="4">
+                          <label class="custom-control-label" for="sub-parent-34">
+                            <span class="font-size-1 sub_category_title">Currency</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">4</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-14">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-14 childCheckbox subcategory-chx sub-category-14" data-parent="Finance" data-sub-category="Investment &amp; Portfolio Management" id="sub-parent-93" data-sub-category-id="93" value="Investment &amp; Portfolio Management(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-93">
+                            <span class="font-size-1 sub_category_title">Investment &amp; Portfolio Management</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-14">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-14 childCheckbox subcategory-chx sub-category-14" data-parent="Finance" data-sub-category="Others" id="sub-parent-14" data-sub-category-id="14" value="Others(4)" data-sub-category-count="4">
+                          <label class="custom-control-label" for="sub-parent-14">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">4</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Food" id="parent-28" data-category-id="28" value="Food" data-category-count="1">
+                        <label class="custom-control-label" for="parent-28">
+                          <span class="font-size-1 category_title">Food</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">1</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-28">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-28 childCheckbox subcategory-chx sub-category-28" data-parent="Food" data-sub-category="Others" id="sub-parent-28" data-sub-category-id="28" value="Others(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-28">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Geolocation" id="parent-24" data-category-id="24" value="Geolocation" data-category-count="14">
+                        <label class="custom-control-label" for="parent-24">
+                          <span class="font-size-1 category_title">Geolocation</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">14</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-24">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-24 childCheckbox subcategory-chx sub-category-24" data-parent="Geolocation" data-sub-category="Others" id="sub-parent-24" data-sub-category-id="24" value="Others(14)" data-sub-category-count="14">
+                          <label class="custom-control-label" for="sub-parent-24">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">14</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Images" id="parent-13" data-category-id="13" value="Images" data-category-count="2">
+                        <label class="custom-control-label" for="parent-13">
+                          <span class="font-size-1 category_title">Images</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">2</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-13">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-13 childCheckbox subcategory-chx sub-category-13" data-parent="Images" data-sub-category="Others" id="sub-parent-13" data-sub-category-id="13" value="Others(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-13">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Marketing" id="parent-64" data-category-id="64" value="Marketing" data-category-count="26">
+                        <label class="custom-control-label" for="parent-64">
+                          <span class="font-size-1 category_title">Marketing</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">26</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-64">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-64 childCheckbox subcategory-chx sub-category-64" data-parent="Marketing" data-sub-category="Blogging / Content" id="sub-parent-71" data-sub-category-id="71" value="Blogging / Content(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-71">
+                            <span class="font-size-1 sub_category_title">Blogging / Content</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-64">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-64 childCheckbox subcategory-chx sub-category-64" data-parent="Marketing" data-sub-category="Events" id="sub-parent-65" data-sub-category-id="65" value="Events(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-65">
+                            <span class="font-size-1 sub_category_title">Events</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-64">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-64 childCheckbox subcategory-chx sub-category-64" data-parent="Marketing" data-sub-category="Photos / Pictures" id="sub-parent-69" data-sub-category-id="69" value="Photos / Pictures(14)" data-sub-category-count="14">
+                          <label class="custom-control-label" for="sub-parent-69">
+                            <span class="font-size-1 sub_category_title">Photos / Pictures</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">14</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-64">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-64 childCheckbox subcategory-chx sub-category-64" data-parent="Marketing" data-sub-category="Social Media" id="sub-parent-15" data-sub-category-id="15" value="Social Media(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-15">
+                            <span class="font-size-1 sub_category_title">Social Media</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-64">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-64 childCheckbox subcategory-chx sub-category-64" data-parent="Marketing" data-sub-category="Videos" id="sub-parent-68" data-sub-category-id="68" value="Videos(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-68">
+                            <span class="font-size-1 sub_category_title">Videos</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-64">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-64 childCheckbox subcategory-chx sub-category-64" data-parent="Marketing" data-sub-category="Others" id="sub-parent-64" data-sub-category-id="64" value="Others(7)" data-sub-category-count="7">
+                          <label class="custom-control-label" for="sub-parent-64">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">7</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Media" id="parent-97" data-category-id="97" value="Media" data-category-count="3">
+                        <label class="custom-control-label" for="parent-97">
+                          <span class="font-size-1 category_title">Media</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">3</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-97">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-97 childCheckbox subcategory-chx sub-category-97" data-parent="Media" data-sub-category="Audio and Podcasting" id="sub-parent-98" data-sub-category-id="98" value="Audio and Podcasting(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-98">
+                            <span class="font-size-1 sub_category_title">Audio and Podcasting</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-97">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-97 childCheckbox subcategory-chx sub-category-97" data-parent="Media" data-sub-category="Quotes and Text Data" id="sub-parent-102" data-sub-category-id="102" value="Quotes and Text Data(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-102">
+                            <span class="font-size-1 sub_category_title">Quotes and Text Data</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-97">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-97 childCheckbox subcategory-chx sub-category-97" data-parent="Media" data-sub-category="Text and Literature" id="sub-parent-103" data-sub-category-id="103" value="Text and Literature(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-103">
+                            <span class="font-size-1 sub_category_title">Text and Literature</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="News" id="parent-36" data-category-id="36" value="News" data-category-count="3">
+                        <label class="custom-control-label" for="parent-36">
+                          <span class="font-size-1 category_title">News</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">3</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-36">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-36 childCheckbox subcategory-chx sub-category-36" data-parent="News" data-sub-category="Others" id="sub-parent-36" data-sub-category-id="36" value="Others(3)" data-sub-category-count="3">
+                          <label class="custom-control-label" for="sub-parent-36">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">3</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Public Sector" id="parent-73" data-category-id="73" value="Public Sector" data-category-count="2">
+                        <label class="custom-control-label" for="parent-73">
+                          <span class="font-size-1 category_title">Public Sector</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">2</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-73">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-73 childCheckbox subcategory-chx sub-category-73" data-parent="Public Sector" data-sub-category="Govt. Data" id="sub-parent-91" data-sub-category-id="91" value="Govt. Data(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-91">
+                            <span class="font-size-1 sub_category_title">Govt. Data</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-73">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-73 childCheckbox subcategory-chx sub-category-73" data-parent="Public Sector" data-sub-category="Transport" id="sub-parent-76" data-sub-category-id="76" value="Transport(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-76">
+                            <span class="font-size-1 sub_category_title">Transport</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Scraping" id="parent-33" data-category-id="33" value="Scraping" data-category-count="11">
+                        <label class="custom-control-label" for="parent-33">
+                          <span class="font-size-1 category_title">Scraping</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">11</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-33">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-33 childCheckbox subcategory-chx sub-category-33" data-parent="Scraping" data-sub-category="Others" id="sub-parent-33" data-sub-category-id="33" value="Others(11)" data-sub-category-count="11">
+                          <label class="custom-control-label" for="sub-parent-33">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">11</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Security" id="parent-18" data-category-id="18" value="Security" data-category-count="10">
+                        <label class="custom-control-label" for="parent-18">
+                          <span class="font-size-1 category_title">Security</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">10</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-18">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-18 childCheckbox subcategory-chx sub-category-18" data-parent="Security" data-sub-category="Authentication" id="sub-parent-95" data-sub-category-id="95" value="Authentication(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-95">
+                            <span class="font-size-1 sub_category_title">Authentication</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-18">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-18 childCheckbox subcategory-chx sub-category-18" data-parent="Security" data-sub-category="Open Source" id="sub-parent-105" data-sub-category-id="105" value="Open Source(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-105">
+                            <span class="font-size-1 sub_category_title">Open Source</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-18">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-18 childCheckbox subcategory-chx sub-category-18" data-parent="Security" data-sub-category="Software" id="sub-parent-89" data-sub-category-id="89" value="Software(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-89">
+                            <span class="font-size-1 sub_category_title">Software</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-18">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-18 childCheckbox subcategory-chx sub-category-18" data-parent="Security" data-sub-category="Web Apps" id="sub-parent-94" data-sub-category-id="94" value="Web Apps(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-94">
+                            <span class="font-size-1 sub_category_title">Web Apps</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-18">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-18 childCheckbox subcategory-chx sub-category-18" data-parent="Security" data-sub-category="Others" id="sub-parent-18" data-sub-category-id="18" value="Others(3)" data-sub-category-count="3">
+                          <label class="custom-control-label" for="sub-parent-18">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">3</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="SEO APIs" id="parent-7" data-category-id="7" value="SEO APIs" data-category-count="1">
+                        <label class="custom-control-label" for="parent-7">
+                          <span class="font-size-1 category_title">SEO APIs</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">1</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-7">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-7 childCheckbox subcategory-chx sub-category-7" data-parent="SEO APIs" data-sub-category="Others" id="sub-parent-7" data-sub-category-id="7" value="Others(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-7">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Sports" id="parent-20" data-category-id="20" value="Sports" data-category-count="4">
+                        <label class="custom-control-label" for="parent-20">
+                          <span class="font-size-1 category_title">Sports</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">4</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-20">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-20 childCheckbox subcategory-chx sub-category-20" data-parent="Sports" data-sub-category="Basket Ball" id="sub-parent-92" data-sub-category-id="92" value="Basket Ball(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-92">
+                            <span class="font-size-1 sub_category_title">Basket Ball</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-20">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-20 childCheckbox subcategory-chx sub-category-20" data-parent="Sports" data-sub-category="Robotics" id="sub-parent-112" data-sub-category-id="112" value="Robotics(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-112">
+                            <span class="font-size-1 sub_category_title">Robotics</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-20">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-20 childCheckbox subcategory-chx sub-category-20" data-parent="Sports" data-sub-category="Others" id="sub-parent-20" data-sub-category-id="20" value="Others(2)" data-sub-category-count="2">
+                          <label class="custom-control-label" for="sub-parent-20">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">2</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Utilities and Energy" id="parent-85" data-category-id="85" value="Utilities and Energy" data-category-count="3">
+                        <label class="custom-control-label" for="parent-85">
+                          <span class="font-size-1 category_title">Utilities and Energy</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">3</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-85">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-85 childCheckbox subcategory-chx sub-category-85" data-parent="Utilities and Energy" data-sub-category="Others" id="sub-parent-85" data-sub-category-id="85" value="Others(3)" data-sub-category-count="3">
+                          <label class="custom-control-label" for="sub-parent-85">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">3</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                    <div class="categories-checkbox">
+                      <span class="arrow-container"><img class="arrow right" src="/assets/svg/icons/chevron-down.svg" alt="Review rating" width="15"></span>
+                      <div class="custom-control custom-checkbox custom-checkbox-list mb-1 d-flex align-items-center justify-content-between">
+                        <input type='checkbox' name="category" class='custom-control-input parent parentCheckbox parent-category-chx' data-parent="Web Tools APIs" id="parent-9" data-category-id="9" value="Web Tools APIs" data-category-count="1">
+                        <label class="custom-control-label" for="parent-9">
+                          <span class="font-size-1 category_title">Web Tools APIs</span>
+                        </label>
+                        <div>
+                          
+                          <div class="font-size-0 category_count">1</div>
+                          
+                        </div>
+                      </div>
+                      <!-- Sub Categories -->
+                      
+                      <div class="checkbox-group subcategories-checkbox sub-parent-9">
+                        <div class="custom-control custom-checkbox d-flex align-items-center justify-content-between">
+                          <input type='checkbox' class="custom-control-input child sub-parent-9 childCheckbox subcategory-chx sub-category-9" data-parent="Web Tools APIs" data-sub-category="Others" id="sub-parent-9" data-sub-category-id="9" value="Others(1)" data-sub-category-count="1">
+                          <label class="custom-control-label" for="sub-parent-9">
+                            <span class="font-size-1 sub_category_title">Others</span>
+                          </label>
+                          <div>
+                            
+                            <div class="font-size-0 sub_category_count">1</div>
+                            
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                    
+                  </div>
+                  <!-- End Categories -->
+
+                  <!-- Filter by Ratings -->
+                  <div class="filter-top">
+                    <h3 class="section-title-top-filter h4">Filter by Rating</h3>
+                    
+                    <div class="form-group d-flex align-items-center justify-content-between font-size-1 text-lh-lg text-body mb-1">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input category-filter rating-chx" id="star-5" value="star-5">
+                        <label class="custom-control-label" for="star-5">
+                          <div class="d-flex align-items-center">
+                            <ul class="list-inline m-0">
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                            </ul>
+                          </div>
+                        </label>
+                      </div>
+                      <small></small>
+                    </div>
+                    <div class="form-group d-flex align-items-center justify-content-between font-size-1 text-lh-lg text-body mb-1">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input category-filter rating-chx" id="star-4" value="star-4">
+                        <label class="custom-control-label" for="star-4">
+                          <div class="d-flex align-items-center">
+                            <ul class="list-inline m-0">
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                            </ul>
+                          </div>
+                        </label>
+                      </div>
+                      <small></small>
+                    </div>
+                    <div class="form-group d-flex align-items-center justify-content-between font-size-1 text-lh-lg text-body mb-1">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input category-filter rating-chx" id="star-3" value="star-3">
+                        <label class="custom-control-label" for="star-3">
+                          <div class="d-flex align-items-center">
+                            <ul class="list-inline m-0">
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                            </ul>
+                          </div>
+                        </label>
+                      </div>
+                      <small></small>
+                    </div>
+                    <div class="form-group d-flex align-items-center justify-content-between font-size-1 text-lh-lg text-body mb-1">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input category-filter rating-chx" id="star-2" value="star-2">
+                        <label class="custom-control-label" for="star-2">
+                          <div class="d-flex align-items-center">
+                            <ul class="list-inline m-0">
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                            </ul>
+                          </div>
+                        </label>
+                      </div>
+                      <small></small>
+                    </div>
+                    <div class="form-group d-flex align-items-center justify-content-between font-size-1 text-lh-lg text-body mb-1">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input category-filter rating-chx" id="star-1" value="star-1">
+                        <label class="custom-control-label" for="star-1">
+                          <div class="d-flex align-items-center">
+                            <ul class="list-inline m-0">
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                              <li class="list-inline-item mr-0"><img src="/assets/svg/illustrations/star-muted.svg" alt="Review rating" width="15"></li>
+                            </ul>
+                          </div>
+                        </label>
+                      </div>
+                      <small></small>
+                    </div>
+                  </div>
+                  <!-- End Filters -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="col-lg-9 card-layout-full">
+          <div class="d-flex justify-content-left align-items-center section-title-top">
+            <div class="text-primary mb-0 mr-3 section-title font-weight-bold" id="checkedItems"></div>
+          </div>
+          <div class="loader-full-width" id="loadermain">
+          <div class="loader-container">
+            <div class="loader" id="loader"></div>
+          </div>
+        </div>
+          <div id="apiList" class="mid-section">
+            <!-- Loading Data -->
+          </div>
+        </div>
+        <!-- End Col -->
+      </div>
+      <!-- End Row -->
+    </div>
+    <!-- End Container -->
+    <!-- End API List -->
+    <!-- Browse Marketplace Content -->
+
+  </main>
+  <!-- ========== END MAIN CONTENT ========== -->
+
+  
+  <!-- ========== FOOTER ========== -->
+  <footer style="text-align: left !important;">
+    <div class="footer-header">
+      <div class="logo-container">
+        <a href="/"><img alt="API Layer Logo" class="logo"
+            src="/assets//apilayer/images/footerlogo.svg" /></a>
+      </div>
+      <a href="https://apilayer.com/products#explore-products" class="browse-btn">
+        Explore Products
+        <img src="/assets//apilayer/images/blueright.svg" />
+      </a>
+    </div>
+  
+    <div class="content-grid">
+      <div class="sitemap">
+        <div class="sitemap-lists">
+          <ul class="sitemap-list">
+            <p class="footer-p-tags font-weight-medium" style="color: white !important">General</p>
+            <li class="footer-p-tags font-weight-normal"><a href="">Marketplace</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/why-choose-apilayer">About</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="/docs" rel="noreferrer noopener">Documentation</a></li>
+          </ul>
+          <ul class="sitemap-list">
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Support</p>
+            <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/support">Contact Sales</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/contact-us">Helpdesk</a></li>
+            <li class="footer-p-tags font-weight-normal"><a href="https://blog.apilayer.com/api-glossary/" rel="noreferrer noopener">API Glossary</a></li>
+          </ul>
+        </div>
+      </div>
+  
+      <div class="Connect">
+        <ul class="sitemap-list">
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Content</p>
+          <li class="footer-p-tags font-weight-normal"><a href="https://apilayer.com/marketstack-vs-alphavantage/">Marketstack vs Alpha Vantage</a></li>
+        </ul>
+    </div>
+  
+      <div class="newsletter newsletter-v2">
+        <div>
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Newsletter</p>
+          <p class="footer-p-tags font-weight-normal">
+            Join our newsletter to receive the latest API insights, tips, and
+            updates straight to your inbox.
+          </p>
+
+          <form class="newsletter-form" id="newsletter-form">
+            
+            <input class="newsletter-input" placeholder="Email" type="email" id="footer-email" required />
+            
+              <button class="subscribe-btn" type="submit">
+              Subscribe
+              <img src="/assets//apilayer/images/whitearrow.svg" class="subscribe-arrow" />
+              </button>
+          </form>
+        </div>
+        <div class="Connect">
+          <p class="footer-p-tags font-weight-medium" style="color: white !important">Connect</p>
+          <div class="social-links">
+  
+            <!-- start social icons -->
+            <div id="social-icons">
+              <a href="https://www.instagram.com/apilayer/" target="_blank" class="icon-box instagram-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 1 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M17.34,5.46h0a1.2,1.2,0,1,0,1.2,1.2A1.2,1.2,0,0,0,17.34,5.46Zm4.6,2.42a7.59,7.59,0,0,0-.46-2.43,4.94,4.94,0,0,0-1.16-1.77,4.7,4.7,0,0,0-1.77-1.15,7.3,7.3,0,0,0-2.43-.47C15.06,2,14.72,2,12,2s-3.06,0-4.12.06a7.3,7.3,0,0,0-2.43.47A4.78,4.78,0,0,0,3.68,3.68,4.7,4.7,0,0,0,2.53,5.45a7.3,7.3,0,0,0-.47,2.43C2,8.94,2,9.28,2,12s0,3.06.06,4.12a7.3,7.3,0,0,0,.47,2.43,4.7,4.7,0,0,0,1.15,1.77,4.78,4.78,0,0,0,1.77,1.15,7.3,7.3,0,0,0,2.43.47C8.94,22,9.28,22,12,22s3.06,0,4.12-.06a7.3,7.3,0,0,0,2.43-.47,4.7,4.7,0,0,0,1.77-1.15,4.85,4.85,0,0,0,1.16-1.77,7.59,7.59,0,0,0,.46-2.43c0-1.06.06-1.4.06-4.12S22,8.94,21.94,7.88ZM20.14,16a5.61,5.61,0,0,1-.34,1.86,3.06,3.06,0,0,1-.75,1.15,3.19,3.19,0,0,1-1.15.75,5.61,5.61,0,0,1-1.86.34c-1,.05-1.37.06-4,.06s-3,0-4-.06A5.73,5.73,0,0,1,6.1,19.8,3.27,3.27,0,0,1,5,19.05a3,3,0,0,1-.74-1.15A5.54,5.54,0,0,1,3.86,16c0-1-.06-1.37-.06-4s0-3,.06-4A5.54,5.54,0,0,1,4.21,6.1,3,3,0,0,1,5,5,3.14,3.14,0,0,1,6.1,4.2,5.73,5.73,0,0,1,8,3.86c1,0,1.37-.06,4-.06s3,0,4,.06a5.61,5.61,0,0,1,1.86.34A3.06,3.06,0,0,1,19.05,5,3.06,3.06,0,0,1,19.8,6.1,5.61,5.61,0,0,1,20.14,8c.05,1,.06,1.37.06,4S20.19,15,20.14,16ZM12,6.87A5.13,5.13,0,1,0,17.14,12,5.12,5.12,0,0,0,12,6.87Zm0,8.46A3.33,3.33,0,1,1,15.33,12,3.33,3.33,0,0,1,12,15.33Z"/>
+                </svg>
+              </a>
+              
+              <a href="https://www.facebook.com/APILayer/" target="_blank" class="icon-box facebook-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon">
+                  <path fill-rule="evenodd" d="M14,6h3a1,1,0,0,0,1-1V3a1,1,0,0,0-1-1H14A5,5,0,0,0,9,7v3H7a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1H9v7a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V14h2.22a1,1,0,0,0,1-.76l.5-2a1,1,0,0,0-1-1.24H13V7A1,1,0,0,1,14,6Z"></path>
+                </svg>
+              </a>
+              
+              <a href="https://www.linkedin.com/company/apilayer/" target="_blank" class="icon-box linkedin-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="-2.5 -2 24 26" aria-hidden="true">
+                  <path fill-rule="evenodd" d='M19.959 11.719v7.379h-4.278v-6.885c0-1.73-.619-2.91-2.167-2.91-1.182 0-1.886.796-2.195 1.565-.113.275-.142.658-.142 1.043v7.187h-4.28s.058-11.66 0-12.869h4.28v1.824l-.028.042h.028v-.042c.568-.875 1.583-2.126 3.856-2.126 2.815 0 4.926 1.84 4.926 5.792zM2.421.026C.958.026 0 .986 0 2.249c0 1.235.93 2.224 2.365 2.224h.028c1.493 0 2.42-.989 2.42-2.224C4.787.986 3.887.026 2.422.026zM.254 19.098h4.278V6.229H.254v12.869z' />
+                </svg>
+              </a>
+                
+              <a href="https://twitter.com/apilayer/" target="_blank" class="icon-box twitter-icon">
+                <svg xmlns="http://www.w3.org/2000/svg"  fill="currentColor" class="h-6 w-6 icon" viewBox="-4 -4 24 24">
+                  <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                </svg>
+              </a>
+              
+              <a href="https://www.youtube.com/channel/UCwDncja3klyMhkKXWV1zoNQ" target="_blank" class="icon-box youtube-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M11.7489 4C10.755 4.00335 6.95329 4.03145 4.29761 4.23019C3.86729 4.28305 2.92964 4.28706 2.09295 5.19376C1.43291 5.88365 1.21872 7.45214 1.21872 7.45214C1.21872 7.45214 1.01747 9.13906 1 10.8982V13.0957C1.01747 14.8549 1.21872 16.5418 1.21872 16.5418C1.21872 16.5418 1.43291 18.1097 2.09295 18.8002C2.92964 19.7069 4.02971 19.6781 4.51956 19.7725C6.12954 19.9324 11.0533 19.9913 11.8803 20H12.2893C13.3485 19.994 17.0829 19.9599 19.7011 19.7638C20.1314 19.7109 21.0691 19.7069 21.9058 18.8002C22.5658 18.1097 22.78 16.5418 22.78 16.5418C22.78 16.5418 23 14.701 23 12.8602V11.1338C23 9.29229 22.78 7.45214 22.78 7.45214C22.78 7.45214 22.5658 5.88365 21.9058 5.19376C21.0691 4.28706 20.1314 4.28305 19.7011 4.23019C17.0454 4.03145 13.2437 4.00335 12.2491 4H11.7489ZM9.72675 8.56008L15.6723 11.7681L9.72804 14.9548L9.72675 8.56008Z"/>
+                </svg>
+              </a>
+              
+              <a href="https://github.com/apilayer/" target="_blank" class="icon-box github-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                </svg>
+              </a>
+  
+              <a href="https://discord.com/invite/hgjA78638n" target="_blank" class="icon-box discord-icon">
+                <svg class="h-6 w-6 icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M18.8944 4.34399C17.5184 3.71467 16.057 3.256 14.5317 3C14.3397 3.33067 14.1263 3.77866 13.977 4.13067C12.3546 3.89599 10.7439 3.89599 9.14394 4.13067C8.9946 3.77866 8.77059 3.33067 8.58925 3C7.05328 3.256 5.59194 3.71467 4.22555 4.34399C1.46289 8.41865 0.716219 12.3973 1.08955 16.3226C2.92421 17.6559 4.6949 18.4666 6.43463 19C6.86129 18.424 7.2453 17.8053 7.57597 17.1546C6.94663 16.92 6.3493 16.632 5.7733 16.2906C5.92263 16.184 6.07197 16.0667 6.21064 15.9493C9.68796 17.5387 13.4544 17.5387 16.889 15.9493C17.0383 16.0667 17.177 16.184 17.3263 16.2906C16.7503 16.632 16.153 16.92 15.5237 17.1546C15.8543 17.8053 16.2384 18.424 16.665 19C18.4037 18.4666 20.185 17.6559 22.0101 16.3226C22.4687 11.7787 21.2837 7.83202 18.8944 4.34399ZM8.05596 13.9013C7.01061 13.9013 6.15728 12.952 6.15728 11.7893C6.15728 10.6267 6.98928 9.67731 8.05596 9.67731C9.11194 9.67731 9.97591 10.6267 9.95457 11.7893C9.95457 12.952 9.11194 13.9013 8.05596 13.9013ZM15.065 13.9013C14.0197 13.9013 13.1653 12.952 13.1653 11.7893C13.1653 10.6267 13.9983 9.67731 15.065 9.67731C16.121 9.67731 16.985 10.6267 16.9637 11.7893C16.9637 12.952 16.1317 13.9013 15.065 13.9013Z"/>
+                </svg>
+              </a>
+                    
+            </div>
+            <!--end social media icons -->
+          </div>
+        </div> 
+
+      </div>
+    </div>
+  
+    <div class="footer-bottom">
+      <p class="footer-p-tags font-weight-normal">© 2026 APILayer. All rights reserved.</p>
+      <div class="footer-links">
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/legal/APILayer" target="_blank" rel="noreferrer noopener nofollow">Privacy Policy</a>
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/legal/APILayer" target="_blank" rel="noreferrer noopener nofollow">Imprint</a>
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/Legal/Terms-of-Use" target="_blank" rel="noreferrer noopener nofollow">Terms</a>
+        <a class="footer-p-tags font-weight-normal" href="https://www.ideracorp.com/en/legal/privacypolicy" target="_blank" rel="noreferrer noopener nofollow">Cookie Preferences</a>
+      </div>
+    </div>
+  </footer>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const newsletterForm = document.getElementById("newsletter-form");
+    const input = document.getElementById("footer-email");
+
+    if (!newsletterForm || !input) return;
+
+    newsletterForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const value = input.value.trim();
+      if (!value) return;
+      window.location.href = `/newsletter?email=${encodeURIComponent(value)}`;
+    });
+  });
+</script>
+
+
+  <!-- ========== END FOOTER ========== -->
+
+
+  <!-- ========== SECONDARY CONTENTS ========== -->
+
+  <!-- Account Sidebar Navigation -->
+  <aside id="sidebarContent"
+    class="hs-unfold-content sidebar hs-unfold-content-initialized hs-unfold-css-animation animated fadeInRight hs-unfold-hidden"
+    data-hs-target-height="0" data-hs-unfold-content="" data-hs-unfold-content-animation-in="fadeInRight"
+    data-hs-unfold-content-animation-out="fadeOutRight" style="animation-duration: 300ms;" afterOpen="signInCallback">
+    <div class="sidebar-scroller">
+      <div class="sidebar-container">
+        <div class="sidebar-footer-offset" style="padding-bottom: 7rem;">
+          <!-- Toggle Button -->
+          <div class="d-flex justify-content-end align-items-center pt-4 px-4">
+            <div class="hs-unfold">
+              <a class="js-hs-unfold-invoker btn btn-icon btn-xs btn-soft-secondary" href="javascript:;"
+                data-hs-unfold-options="{
+                  &quot;target&quot;: &quot;#sidebarContent&quot;,
+                  &quot;type&quot;: &quot;css-animation&quot;,
+                  &quot;animationIn&quot;: &quot;fadeInRight&quot;,
+                  &quot;animationOut&quot;: &quot;fadeOutRight&quot;,
+                  &quot;hasOverlay&quot;: &quot;rgba(55, 125, 255, 0.1)&quot;,
+                  &quot;smartPositionOff&quot;: true
+                }" data-hs-unfold-target="#sidebarContent" data-hs-unfold-invoker="">
+                <svg width="10" height="10" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="currentColor"
+                    d="M11.5,9.5l5-5c0.2-0.2,0.2-0.6-0.1-0.9l-1-1c-0.3-0.3-0.7-0.3-0.9-0.1l-5,5l-5-5C4.3,2.3,3.9,2.4,3.6,2.6l-1,1 C2.4,3.9,2.3,4.3,2.5,4.5l5,5l-5,5c-0.2,0.2-0.2,0.6,0.1,0.9l1,1c0.3,0.3,0.7,0.3,0.9,0.1l5-5l5,5c0.2,0.2,0.6,0.2,0.9-0.1l1-1 c0.3-0.3,0.3-0.7,0.1-0.9L11.5,9.5z">
+                  </path>
+                </svg>
+              </a>
+            </div>
+          </div>
+          <!-- End Toggle Button -->
+
+
+          
+          <!-- Sign In v2 -->
+          <div class="scrollbar sidebar-body">
+            <div class="sidebar-content py-2 px-4">
+              <form action="/signin" id="signinForm" method="post" class="js-validate" novalidate="novalidate">
+                <input type="hidden" name="csrf_token" value="ImYxMWU2N2I4NDMyYWNmODE1MDlhNWRiNDAyMWRjOGUwZjNlMGUyYTEi.awlN5g.BPTtWRVf24sXbMaajh0X9g-GwDs" />
+                <input type="hidden" name="next" value="" />
+                <!-- Login -->
+                <div id="loginSidebar" style="animation-duration: 400ms; opacity: 1;"
+                  data-hs-show-animation-target-group="idForm">
+                  <!-- Title -->
+                  <div class="text-center mb-4">
+                    <p class="lead mb-0">Sign in to APILayer</p>
+                    <small>Start by choosing an account or email you use.</small>
+                  </div>
+                  <!-- End Title -->
+
+                  <div class="d-flex flex-wrap justify-content-center">
+                    <div id="g_id_onload"
+                      data-client_id="918427652626-8890ujna0olmp3mpuoms502b2uul2vug.apps.googleusercontent.com"
+                      data-ux_mode="redirect" data-itp_support="false" data-auto_prompt="false"
+                      data-login_uri="https://marketplace.apilayer.com/oauth/google"
+                      data-enable_redirect_uri_validation="true">
+                    </div>
+                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
+                      data-text="signin_with" data-size="medium" data-logo_alignment="center">
+                    </div>
+
+                    <a class="btn btn-sm btn-outline-primary p-2 mt-2 mb-2 border btn-github"
+                      href="https://marketplace.apilayer.com/oauth/github" rel="nofollow">
+                      <span class="d-flex justify-content-center align-items-center">
+                        <i class="fab fa-github mr-2 text-dark"></i>
+                        Sign in with Github
+                      </span>
+                    </a>
+                  </div>
+
+                  <div class="text-center mb-3">
+                    <span class="divider divider-xs divider-text">OR</span>
+                  </div>
+
+                  <!-- Form Group -->
+                  <div class="js-form-message form-group">
+                    <label class="input-label" for="signinEmail">Email address</label>
+                    <input type="email" class="form-control" name="email" id="signinEmail" placeholder="Email address"
+                      aria-label="Email address" required data-msg="Please enter a valid email address." value="">
+                    <div class="invalid-feedback"></div>
+                  </div>
+                  <!-- End Form Group -->
+
+                  <!-- Form Group -->
+                  <div class="js-form-message form-group">
+                    <label class="input-label" for="signinPassword">
+                      <span class="d-flex justify-content-between align-items-center">
+                        Password
+                        <a class="link-underline text-capitalize font-weight-normal" href="/recover-password">Forgot
+                          Password?</a>
+                      </span>
+                    </label>
+                    <input type="password" class="form-control" name="password" id="signinPassword"
+                      placeholder="********" aria-label="********" required autocomplete="off"
+                      data-msg="Your password is invalid. Please try again.">
+                    <div class="invalid-feedback"></div>
+                  </div>
+                  <!-- End Form Group -->
+
+                  <div class="js-form-message form-group">
+                    <div class="cf-turnstile" data-response-field-name="recaptcha" data-sitekey="0x4AAAAAACYH28e-9YbsRK0z"></div>
+                    <input class="form-control d-none " data-recaptcha="true" required data-error="Please complete the Captcha">
+                    
+                  </div>
+
+                  <!-- Button -->
+                  <div class="align-items-center mb-3">
+                    <button type="submit" class="btn btn-sm btn-block btn-primary">
+                      <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                      Sign In
+                    </button>
+                  </div>
+                  <!-- End Button -->
+                  <div class="text-center mb-3">
+                    <span class="divider divider-xs divider-text">OR</span>
+                  </div>
+
+                  <div class="text-center mb-2">
+                    <div class="mb-3 mb-sm-0">
+                      <span class="font-size-1 text-muted">Don't have an account?</span>
+                      <a class="font-size-1 font-weight-bold" href="/signup">Signup</a>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+          <!-- End Sign In v2 -->
+          
+        </div>
+
+        <!-- Footer -->
+        <footer class="sidebar-footer bg-transparent border-top py-2 px-7">
+          <ul class="nav nav-sm">
+            <li class="nav-item">
+              <a class="nav-link pl-0" href="https://www.ideracorp.com/Legal/APILayer/PrivacyStatement" target="_blank"
+                rel="noreferrer noopener nofollow">Privacy</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="https://www.ideracorp.com/Legal/Terms-of-Use" target="_blank"
+                rel="noreferrer noopener nofollow">Terms</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about-us">
+                <i class="fas fa-info-circle la-lg"></i>
+              </a>
+            </li>
+          </ul>
+        </footer>
+        <!-- End Footer -->
+      </div>
+    </div>
+  </aside>
+  <!-- End Sidebar Navigation -->
+
+  <!-- ========== END SECONDARY CONTENTS ========== -->
+
+  <!-- Go to Top -->
+  <a class="js-go-to go-to position-fixed" href="javascript:;" style="visibility: hidden;" data-hs-go-to-options='{
+      "offsetTop": 700,
+      "position": {
+        "init": {
+          "right": 15
+        },
+        "show": {
+          "bottom": 15
+        },
+        "hide": {
+          "bottom": -15
+        }
+      }
+    }'>
+    <i class="fas fa-angle-up"></i>
+  </a>
+  <!-- End Go to Top -->
+
+  <!-- JS Global Compulsory -->
+  <script src="/assets/js/bundles/vendors.js?9"></script>
+  <script src="/assets/js/base.js?26"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- script to check navbar Top property so if it's homepage then give it 20px otherwise 0px  -->
+
+  <script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+      // Get the current page path
+      const currentPage = window.location.pathname;
+      // Get the navbar element by its ID
+      const navbar = document.getElementById('navbar');
+      const header = document.getElementById('logoAndNav');
+
+      // Check if we're on the homepage
+      if (currentPage === '/' || currentPage === '/index' || currentPage === '/home' || currentPage === '/products' || currentPage === '/affiliates' || currentPage === '/developers' || currentPage === '/developers/suite' || currentPage === '/docs') {
+        // On homepage, set top to 20px
+        navbar.style.top = '20px';
+      } else {
+        // On other pages, set top to 0px
+        navbar.style.top = '0px';
+        navbar.style.width = '100vw';
+        navbar.style.borderRadius = '0px';
+        navbar.style.height = '65px';
+        navbar.style.maxWidth = '100%';
+        header.style.maxWidth = '100%';
+        header.style.backgroundColor = 'white';
+      }
+    });
+  </script>
+
+  <!-- OAuth Sign In -->
+  
+  <script>
+    window.signedin =  false;
+    window.google_signin_client_id = "918427652626-8890ujna0olmp3mpuoms502b2uul2vug.apps.googleusercontent.com"
+    window.csrf_token = 'ImYxMWU2N2I4NDMyYWNmODE1MDlhNWRiNDAyMWRjOGUwZjNlMGUyYTEi.awlN5g.BPTtWRVf24sXbMaajh0X9g-GwDs'
+  </script>
+  <script src="/assets/js/oauth.js?52"></script>
+  
+  <!-- End Oauth Sign In -->
+
+  <script>
+    window.fusionchartsLicenseKey = "vtA3dB-11wF2A2H2A9C6E5A5F6B3E3E1G2C11tgoB4F1h1fdzoE6F4B-9jH-9D2I3B6A8B6E5G5B1C3D4A1C8B6D1D3D1rmoA32B2B9gC6B5G4zyhA9C5A5vraA2A1A1zbnE2D6G2E3E2B2C6D5C8B4E6aikC3A5RA5moB-9D3G4F2wqE4D2C2pzC1I2A3B-16hE1G3D1fvH4A6B7ueA4D4C3llC7PE7E4uufC2B2C4D8E6B4A3G2F3A28D2C7A6E7C-11==";
+  </script>
+
+  
+<script src="/assets/vendor/hs-toggle-state/dist/hs-toggle-state.min.js"></script>
+<script>
+  const intersection = (arr1, arr2) => {
+   const res = [];
+   for(let i = 0; i < arr1.length; i++){
+      if(!arr2.includes(arr1[i])){
+         continue;
+      };
+      res.push(arr1[i]);
+   };
+   return res;
+};
+const intersectMany = (...arrs) => {
+   let res = arrs[0].slice();
+   for(let i = 1; i < arrs.length; i++){
+      res = intersection(res, arrs[i]);
+   };
+   return res;
+};
+
+  function click_scroll_up(checkone) {
+    if(checkone.checked) {
+      $('html, body').animate({ scrollTop: 0 }, 'fast');
+    }
+  }
+
+  function display_all(){
+    $('.product').hide();
+    let api_ids = []
+    let cat_api_ids = []
+    let rating_api_ids = []
+    let subscriptions_api_ids = []
+    let num_subcategories_checked = 0;
+    let num_rating_checked = 0;
+    let num_subscription_checked = 0;
+    let category_checked = false;
+    let rating_checked = false;
+    let subscription_checked = false;
+    $('.subcategory-chx').each(function(){
+      if($(this).is(':checked')){
+        category_checked = true;
+        num_subcategories_checked++;
+        var cat_id = $(this).data('sub-category-id');
+        $('.product[data-category]').each(function(){
+        if($(this).data('category') == cat_id){
+          cat_api_ids.push($(this).data('api'));
+      }
+      });
+      }
+    });
+
+    $('.rating-chx').each(function(){
+      if($(this).is(':checked')){
+        rating_checked = true;
+        num_rating_checked++;
+        var rating = $(this).val();
+        $('.product[data-rating]').each(function(){
+        if($(this).data('rating') == rating){
+          rating_api_ids.push($(this).data('api'));
+        }
+      });
+      }
+      
+    });
+    if($('#subscribed').is(':checked')){
+      subscription_checked = true;
+      var subscriptions = $('#subscribed').val();
+      $('.product[data-subscriptions]').each(function(){
+    if($(this).data('subscriptions') == subscriptions){
+      subscriptions_api_ids.push($(this).data('api'));
+      num_subscription_checked++;
+    }
+    });
+
+    }
+    if(rating_checked == true && category_checked == true && subscription_checked == true){
+     api_ids = intersectMany(rating_api_ids, cat_api_ids, subscriptions_api_ids);
+  }
+  if(rating_checked == true && category_checked == true && subscription_checked == false){
+      api_ids = intersectMany(rating_api_ids, cat_api_ids);
+  }
+  if(rating_checked == false && category_checked == true && subscription_checked == true){
+      api_ids = intersectMany(subscriptions_api_ids, cat_api_ids);
+  }
+  if(rating_checked == true && category_checked == false && subscription_checked == true){
+      api_ids = intersectMany(subscriptions_api_ids, rating_api_ids);
+  }
+  if(rating_checked == true && category_checked == false && subscription_checked == false){
+      api_ids = rating_api_ids;
+  }
+  if(rating_checked == false && category_checked == true && subscription_checked == false){
+      api_ids = cat_api_ids;
+  }
+  if(rating_checked == false && category_checked == false && subscription_checked == true){
+      api_ids = subscriptions_api_ids;
+  }
+  $('.product').hide();
+  for(i=0;i < api_ids.length; i++){
+    var api_id = api_ids[i];
+    $('.product[data-api]').each(function(){
+        if($(this).data('api') == api_id){
+          $(this).show();
+        }
+    });
+  }
+    
+  if(num_subcategories_checked == 0 && num_rating_checked == 0 && num_subscription_checked == 0){
+    $('.product').show();
+  }
+}
+
+function update_checkbox_state(){
+  let html_text = '';
+  let num_parents_checked = 0;
+  let num_intermediate_checked = 0;
+  checkbox_checked_list = [];
+  $('.parent-category-chx').each(function(){
+    let category_id = $(this).data('category-id');
+    num_sub_categories = 0;
+    num_sub_categories_checked = 0;
+    selected_checkbox = [];
+    selected_checkbox['id'] = category_id;
+    selected_checkbox['title'] = $(this).data('parent');
+    selected_checkbox['count'] = $(this).data('category-count');
+    selected_checkbox['checked'] = false;
+    selected_checkbox['intermediate_checked'] = false;
+    checkbox_sub_checked_list = [];
+    $('.sub-category-'+category_id).each(function(){
+      num_sub_categories++;
+      let sub_category_id = $(this).data('sub-category-id');
+      selected_sub_checkbox = [];
+      selected_sub_checkbox['id'] = sub_category_id;
+      selected_sub_checkbox['title'] = $(this).data('sub-category');
+      selected_sub_checkbox['count'] = $(this).data('sub-category-count');
+      selected_sub_checkbox['checked'] = false;
+        if($(this).is(':checked')){
+          selected_sub_checkbox['checked'] = true;
+          num_sub_categories_checked++;
+        }
+        checkbox_sub_checked_list.push(selected_sub_checkbox);
+      });
+      if(num_sub_categories > num_sub_categories_checked && num_sub_categories_checked > 0){
+        selected_checkbox['intermediate_checked'] = true;
+        num_intermediate_checked++;
+      }
+      if($(this).is(':checked') && num_sub_categories == num_sub_categories_checked && !selected_checkbox['intermediate_checked']){
+        selected_checkbox['checked'] = true;
+        num_parents_checked++;
+      }
+      selected_checkbox['sub_category'] = checkbox_sub_checked_list;
+      checkbox_checked_list.push(selected_checkbox);
+  });
+  selected_checkbox = checkbox_checked_list;  
+  if(num_parents_checked == 0 && num_intermediate_checked == 0){
+    getApiCount();
+  }
+  else if(num_parents_checked == 1 && num_intermediate_checked == 0){
+    for(i=0;i<selected_checkbox.length;i++){
+      if(selected_checkbox[i]['checked']){
+        html_text = selected_checkbox[i]['title'] + ' ('+selected_checkbox[i]['count']+')';
+        break;
+      }
+    }
+    $('#checkedItems').html(html_text);
+  }
+ else if(num_intermediate_checked == 1 && num_parents_checked == 0){
+  total_count = 0
+  for(i=0;i<selected_checkbox.length;i++){
+    if(selected_checkbox[i]['intermediate_checked']){
+      sub_category = selected_checkbox[i]['sub_category']
+      html_text = html_text + selected_checkbox[i]['title']+' > ';
+      for(j=0;j<sub_category.length;j++){
+        if(sub_category[j]['checked']){
+          total_count += sub_category[j]['count'];
+          html_text = html_text + sub_category[j]['title'] + ' ('+sub_category[j]['count']+'), ';
+        }
+      }
+    }
+  }
+  html_text = html_text.substring(0, html_text.length - 2);
+  $('#checkedItems').html(html_text);
+ }
+ else if(num_intermediate_checked == 0 && num_parents_checked > 1){
+  html_text = 'Results for: '
+  total_count = 0
+  num_display = 0
+  for(i=0;i<selected_checkbox.length;i++){
+    if(selected_checkbox[i]['checked']){
+      if(num_display < 2){
+        html_text = html_text + selected_checkbox[i]['title'] + ', ';
+      }
+      num_display++
+      total_count += selected_checkbox[i]['count'];
+    }
+  }
+  html_text = html_text.substring(0, html_text.length - 2);
+  if(num_display > 2){
+    html_text = html_text+' +'+(num_display-2)+' more '
+  }
+  html_text = html_text +' ('+total_count+')'
+  $('#checkedItems').html(html_text);
+ }
+ else if(num_intermediate_checked > 1 && num_parents_checked == 0){
+  html_text = 'Results for: '
+  total_count = 0
+  num_display = 0
+  for(i=0;i<selected_checkbox.length;i++){
+    if(selected_checkbox[i]['intermediate_checked']){
+      if(num_display < 2){
+      html_text = html_text + selected_checkbox[i]['title'] + ', ';
+      }
+      num_display++
+      sub_category = selected_checkbox[i]['sub_category']
+      for(j=0;j<sub_category.length;j++){
+        if(sub_category[j]['checked']){
+          total_count += sub_category[j]['count'];
+        }
+      }
+      
+    }
+  }
+  html_text = html_text.substring(0, html_text.length - 2);
+  if(num_display > 2){
+    html_text = html_text+' +'+(num_display-2)+' more '
+  }
+  html_text = html_text +' ('+total_count+')'
+  $('#checkedItems').html(html_text);
+ }
+ else if(num_intermediate_checked > 0 && num_parents_checked > 0){
+  html_text = 'Results for: '
+  total_count = 0
+  num_display = 0
+  for(i=0;i<selected_checkbox.length;i++){
+    if(selected_checkbox[i]['intermediate_checked']){
+      if(num_display < 2){
+        html_text = html_text + selected_checkbox[i]['title'] + ', ';
+      }
+      num_display++
+      sub_category = selected_checkbox[i]['sub_category']
+      for(j=0;j<sub_category.length;j++){
+        if(sub_category[j]['checked']){
+          total_count += sub_category[j]['count'];
+        }
+      }
+      
+    }
+    else if(selected_checkbox[i]['checked']){
+      if(num_display < 2){
+      html_text = html_text + selected_checkbox[i]['title'] + ', ';
+      }
+      num_display++
+      total_count += selected_checkbox[i]['count'];
+    }
+  }
+  html_text = html_text.substring(0, html_text.length - 2);
+  if(num_display > 2){
+    html_text = html_text+' +'+(num_display-2)+' more '
+  }
+  html_text = html_text +' ('+total_count+')'
+  $('#checkedItems').html(html_text);
+ }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const urlParams = new URLSearchParams(window.location.search);
+  const categoryId = urlParams.get('category_id');
+  if (categoryId) {
+    filterInput = document.querySelector(`input#parent-${categoryId}`);
+    filtersubInput = document.querySelector(`input#sub-parent-${categoryId}`);
+    filterInput.checked = true;
+    filtersubInput.checked = true;
+  } else {
+    console.log("No category ID provided.");
+  }
+});
+</script>
+
+  <!-- JS Plugins Init. -->
+  <script>
+    $(document).on('ready', function () {
+      NProgress.start();
+      init_slick_carousel();
+      init_rest();
+
+      
+      
+      
+
+      
+
+      
+
+// initialization of toggle state
+$('.js-toggle-state').each(function () {
+  var toggleState = new HSToggleState($(this)).init();
+});
+
+$(document).ready(function(){
+  get_api_data();
+});
+
+// Expand and Collapse for checkboxes list
+$(document).ready(function() {
+  $('.arrow-container').click(function(e) {
+      const arrow = $(this).find('.arrow');
+      const category_id = $(this).closest('.categories-checkbox').find('input[name="category"]').attr('id');
+      $('.sub-'+category_id).toggle();
+      if (arrow.hasClass('right')) {
+          arrow.removeClass('right').addClass('down');
+      } else {
+          arrow.removeClass('down').addClass('right');
+      }
+  });
+});
+
+// Grid list icon change
+$(document).ready(function() {
+  // Get the buttons
+  const $gridViewBtn = $('#grid-view-btn');
+  const $listViewBtn = $('#list-view-btn');
+
+  // Add event listeners to toggle active class
+  $gridViewBtn.on('click', function() {
+    $gridViewBtn.addClass('active');
+    $listViewBtn.removeClass('active');
+  });
+
+  $listViewBtn.on('click', function() {
+    $listViewBtn.addClass('active');
+    $gridViewBtn.removeClass('active');
+  });
+});
+
+$(document).on("click", function(event){    
+  var $trigger = $(".sort-by-navbar");
+  if($trigger !== event.target && !$trigger.has(event.target).length){
+    $(".sort-menu-list").hide();
+  } 
+});
+
+$(".sort-by-navbar, .dropdown-icon-sort").click(function() {
+  event.stopPropagation(); 
+  $(".sort-menu-list").toggle();
+});
+
+
+$(document).mouseup(function (e) {
+  if ($(e.target).
+      closest(".form-search").
+      length=== 0) {
+      $(".srch-input-required").hide();
+  }
+});
+
+$('.form-search').click(function(){
+  $('.srch-input-required').hide();
+});
+
+Array.prototype.remove = function() {
+  var what, a = arguments, L = a.length, ax;
+  while (L && this.length) {
+    what = a[--L];
+    while ((ax = this.indexOf(what)) !== -1) {
+        this.splice(ax, 1);
+    }
+  }
+  return this;
+};
+
+$('.rating-chx').click(function(){
+  display_all();
+  var event_type = 'rating';
+  getApiCount(event_type);
+  let num_rating_checked = 0
+  $('.rating-chx').each(function(){ 
+    if($(this).is(':checked')){
+      num_rating_checked++;
+    }
+  });
+  if(num_rating_checked == 0 && !$('#subscribed').is(':checked') && !$('#api-search-bar').val()){
+    update_checkbox_state();
+  }
+});
+
+$('#subscribed').click(function(){
+  display_all();
+  var event_type = 'click';
+  getApiCount(event_type);
+  let num_rating_checked = 0
+  $('.rating-chx').each(function(){ 
+    if($(this).is(':checked')){
+      num_rating_checked++;
+    }
+  });
+  if(num_rating_checked == 0 && !$('#subscribed').is(':checked') && !$('#api-search-bar').val()){
+    update_checkbox_state();
+  }
+});
+
+$('.parentCheckbox').on('change', function() {
+  const parentId = $(this).attr('data-parent');
+  const parentCheckbox = $('.parentCheckbox[data-parent="' + parentId + '"]');
+  const childCheckboxes = $('.childCheckbox[data-parent="' + parentId + '"]');
+  
+  // Check or uncheck all children based on the parent checkbox
+  childCheckboxes.prop('checked', this.checked);
+  display_all();
+  let num_rating_checked = 0
+  $('.rating-chx').each(function(){ 
+    if($(this).is(':checked')){
+      num_rating_checked++;
+    }
+  });
+  if(num_rating_checked == 0 && !$('#subscribed').is(':checked') && !$('#api-search-bar').val()){
+    update_checkbox_state();
+  }
+  else {
+    setTimeout(getApiCount('search'), 500);
+  }
+});
+$('.childCheckbox').on('change', function() {
+  const parentId = $(this).attr('data-parent');
+  const parentCheckbox = $('.parentCheckbox[data-parent="' + parentId + '"]');
+  const childCheckboxes = $('.childCheckbox[data-parent="' + parentId + '"]');
+
+  const allChecked = childCheckboxes.filter(":checked").length === childCheckboxes.length;
+  const allUnchecked = childCheckboxes.filter(":checked").length === 0;
+
+  // Update parent checkbox based on children's state
+  if (allChecked) {
+      parentCheckbox.prop('checked', true);
+      parentCheckbox.prop('indeterminate', false);
+  } else if (allUnchecked) {
+      parentCheckbox.prop('checked', false);
+      parentCheckbox.prop('indeterminate', false);
+  } else {
+      parentCheckbox.prop('indeterminate', true);
+  }
+  display_all();
+  let num_rating_checked = 0
+  $('.rating-chx').each(function(){ 
+    if($(this).is(':checked')){
+      num_rating_checked++;
+    }
+  });
+  if(num_rating_checked == 0 && !$('#subscribed').is(':checked') && !$('#api-search-bar').val()){
+    update_checkbox_state();
+  }
+  else {
+    setTimeout(getApiCount('search'), 500);
+  }
+});
+$('#sidebarNavToggle').on('click', function() {
+  var isExpanded = $('#sidebarNavToggle').attr('aria-expanded') === 'true';
+  if (isExpanded) {
+    $('.explore').text('Explore');
+  } else {
+    $('.explore').text('Filter by Categories');
+  }
+});
+
+$(document).ready(function () {
+  $(window).on("orientationchange", function() {
+    set_view_by('grid_view');
+  });
+});
+
+      NProgress.done();
+    });
+  </script>
+
+  <!-- IE Support -->
+  <script>
+    if (/MSIE \d|Trident.*rv:/.test(navigator.userAgent)) document.write('<script src="/assets/vendor/polifills.js"><\/script>');
+  </script>
+
+  
+
+  
+
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function (event) {
+      const dropdowns = document.querySelectorAll(".dropdown");
+
+      dropdowns.forEach((dropdown) => {
+        const dropdownContent = dropdown.querySelector(".dropdown-menu");
+        let isMouseInsideDropdown = false;
+        let isClicked = false; // Track click state separately
+
+        // Hover functionality
+        dropdown.addEventListener("mouseenter", function () {
+          if (!isClicked) {
+            isMouseInsideDropdown = true;
+            dropdownContent.classList.add("active");
+          }
+        });
+
+        dropdownContent.addEventListener("mouseenter", function () {
+          if (!isClicked) {
+            isMouseInsideDropdown = true;
+          }
+        });
+
+        dropdown.addEventListener("mouseleave", function () {
+          if (!isClicked) {
+            isMouseInsideDropdown = false;
+            setTimeout(() => {
+              if (!isMouseInsideDropdown) dropdownContent.classList.remove("active");
+            }, 300);
+          }
+        });
+
+        // Click functionality for mobile devices (only if screen width < 992px)
+        dropdown.addEventListener("click", function () {
+          if (window.innerWidth < 992) {
+            isClicked = !isClicked; // Toggle click state
+            dropdownContent.classList.toggle("active");
+          }
+        });
+
+        // Clear hover timeout if the dropdown is clicked
+        // dropdown.addEventListener("mouseenter", function () {
+        //   if (!isClicked) clearTimeout(closeTimeout);
+        // });
+
+        // dropdownContent.addEventListener("mouseenter", function () {
+        //   if (!isClicked) clearTimeout(closeTimeout);
+        // });
+      });
+
+      // Handle resize events to update behavior dynamically
+      window.addEventListener("resize", () => {
+        if (window.innerWidth >= 992) {
+          // Ensure dropdowns are reset to hover-only mode on larger screens
+          dropdowns.forEach((dropdown) => {
+            const dropdownContent = dropdown.querySelector(".dropdown-menu");
+            dropdownContent.classList.remove("active");
+          });
+        }
+      });
+
+      // Mobile dropdowns
+      const mobileDropdowns = document.querySelectorAll(".mobile-dropdown");
+      mobileDropdowns.forEach((dropdown) => {
+        const mobileToggle = dropdown.querySelector(".mobile-nav-item");
+        const mobileDropdownContent = mobileToggle.nextElementSibling;
+
+        mobileToggle.addEventListener("click", function (event) {
+          event.preventDefault();
+          mobileDropdownContent.classList.toggle("active");
+        });
+      });
+    });
+  </script>
+  
+</body>
+
+</html>

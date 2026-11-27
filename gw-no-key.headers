@@ -1,0 +1,15 @@
+HTTP/2 401 
+date: Fri, 27 Nov 2026 09:31:19 GMT
+content-type: application/json; charset=utf-8
+content-length: 41
+server: cloudflare
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+www-authenticate: Key realm="kong"
+access-control-allow-origin: *
+cf-cache-status: DYNAMIC
+strict-transport-security: max-age=2592000; includeSubDomains
+x-content-type-options: nosniff
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=If5beaETWPw0hthg%2BWUFrIZcjLOoppmEWYAkI2ofdJa3ZYhTyhNoseMrxI2NMOF7SUXtkEzi%2FiTYoDkzKKj6iTMM1V%2FxnTc5YWfX%2F4se1%2BrHuHMf7nnfMly1wWA1rh4Kdqo%3D"}]}
+cf-ray: a6101e8618fa8296-IAD
+alt-svc: h3=":443"; ma=86400
+
