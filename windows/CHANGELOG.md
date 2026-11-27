@@ -1,5 +1,14 @@
 # Termant for Windows
 
+## 0.10.0
+- A role for the chat: Settings -> "Chat persona" (Girlfriend, Employee,
+  Secretary, Manager). It changes how the agent speaks, not what it can do.
+- The chat moves: a new answer rises into place, a button presses down under
+  the cursor, and while the agent works the typing dots keep moving even as
+  its words stream in.
+- A big job can run three or four helpers at once, one step each, and the
+  chat shows each one.
+
 ## 0.9.0
 - The PC draws pictures from words: ask "a cat at a window, photo" and the finished picture appears under the answer, in the Pictures folder, and in the web chat on the phone. It costs nothing and needs no account or key; `draw` also works by hand in a tab.
 - A click on a picture in the chat opens it in the PC's own viewer.
