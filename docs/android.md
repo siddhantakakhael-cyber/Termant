@@ -567,6 +567,9 @@ little play mark) opens a screen like a small CapCut:
   on the track to move the playhead; the preview above plays and the seconds
   move.
 - **Speed** of the kept part: 0.5×, 1×, 2×, 4×.
+- **A speed curve**: one speed is often not enough — tap the small graph and
+  the seconds there go at the speed above it (the middle of a video can go
+  twice as fast while the ends stay steady). The curve is on the kept part.
 - **Words on the video**: type them, choose top, center or bottom, and "put
   them at 0:03" pins them where the playhead is, for two seconds.
 - **Music under it**: choose a song from the phone, set how loud it is, and
@@ -595,6 +598,7 @@ clip thumbs FILE DIR [FPS]    small pictures of it (phone look DIR/0001.jpg)
 clip trim FILE --from S --to S    keep only that part
 clip cut FILE --from S --to S     take that part out
 clip speed FILE --rate R          0.5 to 4
+clip curve FILE --points 0:1,3:2,6:1   a speed curve on the kept part
 clip text FILE "WORDS" --from S --to S [--place top|center|bottom]
 clip music FILE SONG [--volume V]
 clip mute FILE                    without its own sound
@@ -610,9 +614,11 @@ Several changes at once go in one list — the same list the section sends:
 `clip edit FILE --json '{"segments": [[0, 2], [4, 6, 2]], "texts":
 [{"from": 0.5, "to": 1.5, "text": "do baar", "place": "bottom"}],
 "music": "~/uploads/song.mp3",
+"speed_curve": [[0, 1], [3, 2]],
 "background": "~/uploads/bg.jpg", "key_color": "green"}'` — the kept parts
-in their order, each `[start, end, speed]`; a `background` in the list
-turns on the screen (its colour is `key_color`, green by default).
+in their order, each `[start, end, speed]`; the points of the curve are
+`[second, the value]`; a `background` in the list turns on the
+screen (its colour is `key_color`, green by default).
 
 The finished video is saved next to the first, with `-edited` in the name, or
 at `--out FILE`. In the chat the reply shows the video under it (tap to play)
@@ -631,6 +637,8 @@ path.
   videos; there is no font of your own and no timing of words to speech.
 - The screen takes away one flat colour, well; a real green screen with
   shading or the colour in the background itself leaves a little of it.
+  The speed curve cuts the video into half-second slices and
+  joins them again, so the work takes a little longer.
 - A song is looped when it is shorter than the video and stops with it.
 - The gallery copy needs no storage permission on Android 10 and newer. On
   Android 7 to 9 allow "phone storage" in Termant's menu first; then the
@@ -639,10 +647,11 @@ path.
   that the finished video stays in Ubuntu and the section says so.
 
 **How it is tested.** Every build runs `clip`'s whole tool list against a
-real ffmpeg on the build machine (`android/ci/clip-check.sh`, 42 checks:
+real ffmpeg on the build machine (`android/ci/clip-check.sh`, 45 checks:
 the length of what comes out, the size, the sound gone, the frame turned,
-the words on, the screen over the background, the music in, the one list
-at once, and every wrong choice refused). Inside the guest Ubuntu the kit check adds the refusals that need
+the words on, the screen over the background, the curve's middle at
+double speed, the music in, the one list at once, and every wrong choice
+refused). Inside the guest Ubuntu the kit check adds the refusals that need
 no ffmpeg. On the emulator the test installs ffmpeg, makes a six-second
 video, trims, speeds, writes words, turns and crops it, makes the one list at
 once, and requires the trimmed video on the phone, in **Movies/Termant**; it

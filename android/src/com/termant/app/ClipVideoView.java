@@ -97,10 +97,11 @@ final class ClipVideoView extends LinearLayout {
     private int rotate = 0;
     private String flip = null;         // "h" or "v"
     private String aspect = null;       // one of clip's aspect names
-    // the screen: a colour is taken away, over a background (or over the black)
+    // the screen, the speed curve
     private boolean screenOn;
     private String keyColor = "#00ff00";
     private String bg = null;           // the guest path of the background
+    private final List<double[]> curvePoints = new ArrayList<>();  // {the kept part's second, the rate}
     private boolean ffmpegMissing;
     private boolean busy;
 
@@ -111,9 +112,10 @@ final class ClipVideoView extends LinearLayout {
     private SeekBar musicBar;
     private Switch sepiaSwitch, ownSwitch;
     private View aspectChips, speedChips, flipButton, exportButton, keyChips, screenButton,
-            bgButton, bgRemove;
-    private LinearLayout bgRow;
+            bgButton, bgRemove, curveButton;
+    private LinearLayout bgRow, curveList;
     private TextView bgName;
+    private CurveStrip curveStrip;
     private TimelineView timeline;
 
     ClipVideoView(Context context, Host host) {
@@ -442,6 +444,34 @@ final class ClipVideoView extends LinearLayout {
         bgRow.addView(bgRemove);
         content.addView(bgRow);
 
+        // the speed curve: tap the graph, and the seconds there go at the speed above
+        sectionHead(context, content, context.getString(R.string.video_curve), null);
+        curveStrip = new CurveStrip(context, 0.25, 4.0, curvePoints, new CurveStrip.OnTap() {
+            @Override
+            public void tappedAt(double fraction) {
+                addCurvePoint(fraction);
+            }
+        });
+        content.addView(curveStrip, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56)));
+        TextView cnote = new TextView(context);
+        cnote.setText(R.string.video_curve_note);
+        cnote.setTextColor(MUTED);
+        cnote.setTextSize(Ui.CAPTION);
+        cnote.setPadding(0, dp(4), 0, dp(2));
+        content.addView(cnote);
+        curveButton = chip(context, context.getString(R.string.video_curve_clear), false, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                curvePoints.clear();
+                refreshCurve();
+            }
+        });
+        content.addView(curveButton, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        curveList = new LinearLayout(context);
+        curveList.setOrientation(VERTICAL);
+        curveList.setPadding(0, dp(6), 0, 0);
+        content.addView(curveList);
+
         // what the export says
         status = new TextView(context);
         status.setTextSize(Ui.CAPTION);
@@ -742,6 +772,7 @@ final class ClipVideoView extends LinearLayout {
                 + (flip != null ? "  \u00b7  flip " + flip : "")
                 + (aspect != null ? "  \u00b7  " + aspect : ""));
         timeline.setRange(start, end, playhead, duration);
+        if (curveStrip != null) curveStrip.invalidate();
     }
 
     /** The preview's position, drawn on the track about five times a second. */
@@ -866,6 +897,11 @@ final class ClipVideoView extends LinearLayout {
             if (aspect != null) edit.put("aspect", aspect);
             if (screenOn) edit.put("key_color", keyColor);
             if (bg != null) edit.put("background", bg);
+            if (!curvePoints.isEmpty()) {
+                JSONArray c = new JSONArray();
+                for (double[] pt : curvePoints) c.put(new JSONArray().put(pt[0]).put(pt[1]));
+                edit.put("speed_curve", c);
+            }
             File jf = new File(Ubuntu.rootfs(getContext()), "tmp/clip-edit.json");
             FileOutputStream fo = new FileOutputStream(jf);
             try {
@@ -966,6 +1002,129 @@ final class ClipVideoView extends LinearLayout {
                 refreshScreenButton();
             }
         });
+    }
+
+    private void addCurvePoint(double fraction) {
+        if (duration <= 0 || curvePoints.size() >= 12) return;
+        double kept = Math.max(0.1, end - start);
+        double t = fraction * kept;
+        curvePoints.add(new double[]{t, speed});
+        curvePoints.sort(new java.util.Comparator<double[]>() {
+            @Override
+            public int compare(double[] a, double[] b) {
+                return Double.compare(a[0], b[0]);
+            }
+        });
+        refreshCurve();
+    }
+
+    private void refreshCurve() {
+        curveStrip.invalidate();
+        curveList.removeAllViews();
+        for (final double[] pt : curvePoints) {
+            curveList.addView(pointRow(fmt(pt[0]) + "  ×"
+                    + String.format(java.util.Locale.US, "%.2g", pt[1]), new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    curvePoints.remove(pt);
+                    refreshCurve();
+                }
+            }));
+        }
+    }
+
+    /** One point of a curve: its words, and the cross that takes it away. */
+    private LinearLayout pointRow(String words, OnClickListener job) {
+        TextView v = new TextView(getContext());
+        v.setText(words);
+        v.setTextColor(TEXT);
+        v.setTextSize(Ui.SMALL);
+        v.setPadding(dp(4), dp(3), 0, dp(3));
+        TextView x = new TextView(getContext());
+        x.setText("\u2715");
+        x.setTextColor(MUTED);
+        x.setTextSize(Ui.LABEL);
+        x.setPadding(dp(8), dp(3), dp(4), dp(3));
+        x.setOnClickListener(job);
+        LinearLayout row = new LinearLayout(getContext());
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.addView(v, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        row.addView(x);
+        return row;
+    }
+
+    // ------------------------------------------------------------ the curve's graph
+
+    /**
+     * The small graph of a curve: the seconds on the width, the value on the height (a log
+     * scale, like the rates). A tap gives a fraction of the kept part.
+     */
+    private class CurveStrip extends View {
+        interface OnTap {
+            void tappedAt(double fraction);
+        }
+
+        private final double min, max;
+        private final List<double[]> points;
+        private final OnTap onTap;
+        private final Paint grid = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint curve = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        CurveStrip(Context c, double min, double max, List<double[]> points, OnTap onTap) {
+            super(c);
+            this.min = min;
+            this.max = max;
+            this.points = points;
+            this.onTap = onTap;
+            grid.setColor(SURFACE_HIGH);
+            grid.setStrokeWidth(1.5f * density);
+            curve.setColor(MUTED);
+            curve.setStrokeWidth(2 * density);
+            dot.setColor(ACCENT);
+            setBackgroundColor(SURFACE);
+        }
+
+        private float pad() {
+            return dp(6);
+        }
+
+        private float xOf(double t) {
+            if (duration <= 0) return pad();
+            return pad() + (float) (t / duration) * (getWidth() - 2 * pad());
+        }
+
+        private float yOf(double v) {
+            float f = (float) ((Math.log(v) - Math.log(min)) / (Math.log(max) - Math.log(min)));
+            f = Math.max(0, Math.min(1, f));
+            return (getHeight() - pad()) - f * (getHeight() - 2 * pad());
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            float w = getWidth(), h = getHeight();
+            canvas.drawRect(pad(), pad(), w - pad(), h - pad(), grid);
+            if (duration <= 0) return;
+            for (int i = 1; i < points.size(); i++) {
+                double[] a = points.get(i - 1);
+                double[] b = points.get(i);
+                canvas.drawLine(xOf(a[0]), yOf(a[1]), xOf(b[0]), yOf(b[1]), curve);
+            }
+            for (double[] p : points) {
+                canvas.drawCircle(xOf(p[0]), yOf(p[1]), 3.5f * density, dot);
+            }
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent e) {
+            if (e.getAction() == MotionEvent.ACTION_DOWN && duration > 0) {
+                float f = (e.getX() - pad()) / (getWidth() - 2 * pad());
+                onTap.tappedAt(Math.max(0, Math.min(1, f)));
+                return true;
+            }
+            return super.onTouchEvent(e);
+        }
     }
 
     // ------------------------------------------------------------ Ubuntu calls

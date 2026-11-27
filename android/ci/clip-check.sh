@@ -128,7 +128,7 @@ check "edit: a part outside the video is refused" bash -c '! clip edit "'"$d/src
 check "edit: a broken list is refused" bash -c '! clip edit "'"$d/src.mp4"'" --json "not json" 2>/dev/null'
 check "edit: two overlapping parts are refused" bash -c '! clip edit "'"$d/src.mp4"'" --json "{\"segments\":[[0,4],[2,5]]}" 2>/dev/null'
 
-# ---- the screen, over a background or the black
+# ---- the screen, the speed curve
 "$FF" -y -f lavfi -i "color=c=0x00ff00:s=320x240:d=4:rate=15" \
   -vf "drawtext=text=HI:fontcolor=white:fontsize=60:x=(w-tw)/2:y=(h-th)/2" \
   -c:v libx264 -pix_fmt yuv420p "$d/screen.mp4" 2>/dev/null
@@ -142,6 +142,11 @@ check "screen: a picture, held, is a background too" near "$d/scr3.mp4" 4
 check "screen: a missing background is refused" bash -c '! clip edit "$d/screen.mp4" --json "{\"background\": \"$d/nope.mp4\"}" 2>/dev/null'
 clip edit "$d/screen.mp4" --json '{"key_color": "#00ff00"}' --out "$d/scr2.mp4" 2>&1 | grep -q "Video saved"
 check "screen: over the black, when no background" near "$d/scr2.mp4" 4
+clip curve "$d/src.mp4" --points "0:1,3:2,6:1" --out "$d/curve.mp4" 2>&1 | grep -q "Video saved"
+check "curve: the middle goes twice as fast" near "$d/curve.mp4" 4.3 0.4
+clip curve "$d/src.mp4" --points "0:2,6:2" --out "$d/curve2.mp4" 2>&1 | grep -q "Video saved"
+check "curve: the constant curve is the constant speed" near "$d/curve2.mp4" 3
+check "curve: with a part's speed, it is refused" bash -c '! clip edit "$d/src.mp4" --json "{\"segments\": [[0,6,2]], \"speed_curve\": [[0,1],[6,1]]}" 2>/dev/null'
 
 # ---- what stays for next time
 check "last: the newest edited video is named" bash -c "clip last | grep -q 'all.mp4'"

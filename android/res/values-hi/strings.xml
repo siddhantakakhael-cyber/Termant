@@ -78,6 +78,9 @@
     <string name="video_key_magenta">Magenta</string>
     <string name="video_bg_choose">Uske neeche background lagao</string>
     <string name="video_bg_remove">Hatao</string>
+    <string name="video_curve">Speed curve</string>
+    <string name="video_curve_clear">Bina curve</string>
+    <string name="video_curve_note">Graph par tap karo: wahan ke seconds par, upar wali speed</string>
     <string name="ask_send">Bhejein</string>
     <string name="ask_voice">Bolkar likhein</string>
     <string name="voice_missing">Is phone mein voice typing app nahi hai. Keyboard ka microphone button istemal karein.</string>

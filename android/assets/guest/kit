@@ -19,6 +19,7 @@ One file, several commands; the name it is called by picks the tool:
 """
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -1741,6 +1742,28 @@ def clip_atempo(rate):
 
 
 
+def clip_curve_slices(points, total, step=0.5):
+    """[[second, value], ...] on the finished video; the video is cut into pieces no longer than
+    STEP, and every piece gets the value the curve has at its middle (rates and zooms alike)."""
+    pts = sorted((float(t), float(v)) for t, v in points)
+    def value_at(t):
+        if t <= pts[0][0]:
+            return pts[0][1]
+        for i in range(1, len(pts)):
+            t0, v0 = pts[i - 1]
+            t1, v1 = pts[i]
+            if t <= t1:
+                f = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+                return math.exp((1 - f) * math.log(v0) + f * math.log(v1))
+        return pts[-1][1]
+    slices, t = [], 0.0
+    while t < total - 0.001:
+        t1 = min(t + step, total)
+        slices.append((t, t1, value_at((t + t1) / 2)))
+        t = t1
+    return slices
+
+
 def clip_edit(source, edit, target, chat=False):
     """Make the finished video from one list of changes. Prints progress 0.00 to 1.00."""
     if not isinstance(edit, dict):
@@ -1770,10 +1793,28 @@ def clip_edit(source, edit, target, chat=False):
     for i in range(1, len(segments)):
         if segments[i][0] + 0.01 < segments[i - 1][1]:
             raise Refused("clip: the kept parts overlap each other (%s and %s)" % (segments[i - 1], segments[i]))
+    # the speed curve: when it is in the list, the parts keep their length and the rate changes
+    curve = []
+    for raw in edit.get("speed_curve") or []:
+        if not isinstance(raw, list) or len(raw) != 2:
+            raise Refused("clip: each point of the speed curve is [second, rate]")
+        t, r = float(raw[0]), float(raw[1])
+        if not (0.0 <= t <= duration + 0.05) or not (0.25 <= r <= 4.0):
+            raise Refused("clip: a point of the speed curve is inside the video and its rate is 0.25 to 4")
+        curve.append((t, r))
+    if curve and len(curve) < 2:
+        raise Refused("clip: the speed curve wants two points or more")
+    if curve:
+        curve.sort()
+        for s, e, r in segments:
+            if abs(r - 1.0) > 0.001:
+                raise Refused("clip: the speed curve and a speed of a part are two ways of one thing")
     texts = []
     total_out = 0.0
     for s, e, r in segments:
         total_out += (e - s) / r
+    if curve:
+        total_out = sum((b - a) / r for a, b, r in clip_curve_slices(curve, total_out))
     for raw in edit.get("texts") or []:
         if not isinstance(raw, dict):
             raise Refused("clip: each word is an object with from, to and text")
@@ -1882,7 +1923,8 @@ def clip_edit(source, edit, target, chat=False):
 
     # ---- the quick way: one part, no changes but the cut -- ffmpeg only copies the streams
     if (len(segments) == 1 and segments[0][2] == 1.0 and not texts and not music
-            and not look and gain == 1.0 and not background and not key_color):
+            and not look and gain == 1.0 and not background and not key_color
+            and not curve):
         s, e, _ = segments[0]
         cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
                "-ss", "%.3f" % s, "-i", source, "-t", "%.3f" % (e - s)]
@@ -1950,6 +1992,28 @@ def clip_edit(source, edit, target, chat=False):
             clip_run("joining the sound", [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
                                            "-f", "concat", "-safe", "0", "-i", sound_list, "-c", "copy", orig])
         progress(0.86)
+        # the speed curve: the joined video is cut into pieces, every piece at its own rate
+        if curve:
+            slices = clip_curve_slices(curve, sum((e - s) for s, e, r in segments))
+            vplan, aplan = [], []
+            for i, (a, b, r) in enumerate(slices):
+                vplan.append("[0:v]trim=start=%.3f:end=%.3f,setpts=(PTS-STARTPTS)/%.3f[v%d]" % (a, b, r, i))
+                if orig:
+                    aplan.append("[1:a]atrim=start=%.3f:end=%.3f,asetpts=PTS-STARTPTS,%s[a%d]" % (a, b, clip_atempo(r), i))
+            vplan.append("".join("[v%d][a%d]" % (i, i) if orig else "[v%d]" % i for i in range(len(slices)))
+                         + "concat=n=%d:v=1:a=%d[vc]%s" % (len(slices), 1 if orig else 0, "[ac]" if orig else ""))
+            curve_v = os.path.join(work, "curve.mp4")
+            cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", video] + (["-i", orig] if orig else [])
+            cmd += ["-filter_complex", ";".join(vplan + aplan), "-map", "[vc]", "-an",
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", curve_v]
+            if orig:
+                curve_a = os.path.join(work, "curve.wav")
+                cmd += ["-map", "[ac]", "-c:a", "pcm_s16le", curve_a]
+            clip_run("the speed curve", cmd)
+            os.replace(curve_v, video)
+            if orig:
+                os.replace(curve_a, orig)
+            progress(0.87)
         # the screen: the colour is taken away, over the background (or over the black)
         if background or key_color:
             color = key_color or "0x00ff00"
@@ -2083,6 +2147,7 @@ def clip(args):
   clip rotate FILE [--deg 90|180|270] [--flip h|v]
   clip crop FILE --aspect 16:9|9:16|1:1|4:3|3:4
   clip screen FILE --background FILE [--color C]   the screen is taken away, over a photo or a video
+  clip curve FILE --points 0:1,3:2,6:1             the speed changes, like a curve
   clip last                      where the newest edited video is
 The finished video is saved next to the first (with -edited in the name), or at
 --out FILE. ffmpeg does the work; say what you want and it is made. When you edit in
@@ -2193,6 +2258,18 @@ the chat, the finished video also goes to the phone's gallery (Movies/Termant)."
                 edit["background"] = word
             elif what == "screen" and a == "--color":
                 edit["key_color"] = take(a, i)
+            elif what in ("curve", "zoom") and a == "--points":
+                word = take(a, i)
+                pts = []
+                for piece in word.split(","):
+                    try:
+                        tv, vv = piece.split(":")
+                        pts.append([float(tv), float(vv)])
+                    except ValueError:
+                        raise Refused("clip %s: the points are second:value, second:value" % what)
+                if len(pts) < 2:
+                    raise Refused("clip %s: two points at least" % what)
+                edit["speed_curve" if what == "curve" else "zoom"] = pts
             else:
                 raise Refused("clip %s: there is no %s (clip help)" % (what, a))
             i += 2
@@ -2274,7 +2351,7 @@ the chat, the finished video also goes to the phone's gallery (Movies/Termant)."
         return
 
     needs = {"trim": 2, "cut": 2, "speed": 2, "text": 3, "music": 3, "mute": 1,
-             "volume": 2, "filter": 1, "rotate": 1, "crop": 2, "screen": 2}
+             "volume": 2, "filter": 1, "rotate": 1, "crop": 2, "screen": 2, "curve": 2}
     if what not in needs:
         raise Refused("clip: there is no %s (clip help)" % what)
     if len(args) < needs[what] + 1:
