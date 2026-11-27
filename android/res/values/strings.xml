@@ -73,6 +73,14 @@
     <string name="video_install">Installing ffmpeg…</string>
     <string name="video_error">The video could not be made: %1$s</string>
     <string name="video_not_ready">Ubuntu is still starting; open the section when it is ready.</string>
+    <string name="video_screen">The screen</string>
+    <string name="video_screen_off">Take the screen away</string>
+    <string name="video_screen_on">The screen is away</string>
+    <string name="video_key_green">Green</string>
+    <string name="video_key_blue">Blue</string>
+    <string name="video_key_magenta">Magenta</string>
+    <string name="video_bg_choose">Put a background under it</string>
+    <string name="video_bg_remove">Remove</string>
     <string name="ask_send">Send</string>
     <string name="ask_voice">Speak</string>
     <string name="voice_missing">This phone has no voice typing app. Use the microphone key on your keyboard instead.</string>

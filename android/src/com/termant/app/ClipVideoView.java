@@ -50,6 +50,9 @@ final class ClipVideoView extends LinearLayout {
 
         /** MainActivity opens the system picker for a song (audio/*). */
         void onPickMusic();
+
+        /** MainActivity opens the system picker for a background (a photo or a video). */
+        void onPickBackground();
     }
 
     /** A word on the video; the times are the finished video's own seconds. */
@@ -94,6 +97,10 @@ final class ClipVideoView extends LinearLayout {
     private int rotate = 0;
     private String flip = null;         // "h" or "v"
     private String aspect = null;       // one of clip's aspect names
+    // the screen: a colour is taken away, over a background (or over the black)
+    private boolean screenOn;
+    private String keyColor = "#00ff00";
+    private String bg = null;           // the guest path of the background
     private boolean ffmpegMissing;
     private boolean busy;
 
@@ -103,7 +110,10 @@ final class ClipVideoView extends LinearLayout {
     private EditText wordsEdit;
     private SeekBar musicBar;
     private Switch sepiaSwitch, ownSwitch;
-    private View aspectChips, speedChips, flipButton, exportButton;
+    private View aspectChips, speedChips, flipButton, exportButton, keyChips, screenButton,
+            bgButton, bgRemove;
+    private LinearLayout bgRow;
+    private TextView bgName;
     private TimelineView timeline;
 
     ClipVideoView(Context context, Host host) {
@@ -381,6 +391,56 @@ final class ClipVideoView extends LinearLayout {
             }
         });
         content.addView(aspectChips);
+
+        // the screen: a colour is taken away, over a background (or over the black)
+        sectionHead(context, content, context.getString(R.string.video_screen), null);
+        final String[] keyColors = {"#00ff00", "#0000ff", "#ff00ff"};
+        final String[] keyNames = {context.getString(R.string.video_key_green),
+                context.getString(R.string.video_key_blue), context.getString(R.string.video_key_magenta)};
+        keyChips = chipRow(context, keyNames, 0, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                keyColor = keyColors[((ViewGroup) v.getParent()).indexOfChild(v)];
+            }
+        });
+        content.addView(keyChips);
+        screenButton = chip(context, context.getString(R.string.video_screen_off), false, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                screenOn = !screenOn;
+                refreshScreenButton();
+            }
+        });
+        content.addView(screenButton, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        bgRow = new LinearLayout(context);
+        bgRow.setOrientation(HORIZONTAL);
+        bgRow.setGravity(Gravity.CENTER_VERTICAL);
+        bgRow.setPadding(0, dp(8), 0, 0);
+        bgButton = chip(context, context.getString(R.string.video_bg_choose), false, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                host.onPickBackground();
+            }
+        });
+        bgRow.addView(bgButton);
+        bgName = new TextView(context);
+        bgName.setTextColor(MUTED);
+        bgName.setTextSize(Ui.CAPTION);
+        bgName.setSingleLine(true);
+        bgName.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        bgName.setPadding(dp(10), 0, 0, 0);
+        bgRow.addView(bgName, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        bgRemove = chip(context, context.getString(R.string.video_bg_remove), false, new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bg = null;
+                bgName.setText("");
+                bgRemove.setVisibility(View.GONE);
+            }
+        });
+        bgRemove.setVisibility(View.GONE);
+        bgRow.addView(bgRemove);
+        content.addView(bgRow);
 
         // what the export says
         status = new TextView(context);
@@ -804,6 +864,8 @@ final class ClipVideoView extends LinearLayout {
             if (rotate != 0) edit.put("rotate", rotate);
             if (flip != null) edit.put("flip", flip);
             if (aspect != null) edit.put("aspect", aspect);
+            if (screenOn) edit.put("key_color", keyColor);
+            if (bg != null) edit.put("background", bg);
             File jf = new File(Ubuntu.rootfs(getContext()), "tmp/clip-edit.json");
             FileOutputStream fo = new FileOutputStream(jf);
             try {
@@ -882,6 +944,26 @@ final class ClipVideoView extends LinearLayout {
                         }
                     }
                 });
+            }
+        });
+    }
+
+    private void refreshScreenButton() {
+        ((TextView) screenButton).setBackground(Ui.chip(getContext(), screenOn ? ACCENT : SURFACE_HIGH, 12));
+        ((TextView) screenButton).setTextColor(screenOn ? ON_ACCENT : TEXT);
+        ((TextView) screenButton).setText(getContext().getString(screenOn ? R.string.video_screen_on : R.string.video_screen_off));
+    }
+
+    /** The picked background goes under the video, and the screen is taken away. */
+    void backgroundPicked(final String path) {
+        bg = path;
+        screenOn = true;
+        ui.post(new Runnable() {
+            @Override
+            public void run() {
+                bgName.setText(path.substring(path.lastIndexOf('/') + 1));
+                bgRemove.setVisibility(View.VISIBLE);
+                refreshScreenButton();
             }
         });
     }

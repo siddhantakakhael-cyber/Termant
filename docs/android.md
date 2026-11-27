@@ -573,6 +573,10 @@ little play mark) opens a screen like a small CapCut:
   keep or drop the video's own sound.
 - **The look**: light, contrast, colour, sepia, turn 90°, flip, and the frame
   (original, 16:9, 9:16, 1:1, 4:3, 3:4).
+- **The screen**: a flat colour in the video (green, blue or magenta) is
+  taken away, over a background you choose — a photo or a video from the
+  phone — or over the black when there is none. This is the green-screen
+  trick.
 - **Make it** runs the whole list at once in Ubuntu and puts the finished
   video in the phone's gallery, in **Movies/Termant**. While it works, a
   line says how far it is.
@@ -598,14 +602,17 @@ clip volume FILE --gain G         its own sound louder or softer
 clip filter FILE [--brightness B] [--contrast C] [--saturation S] [--sepia F]
 clip rotate FILE [--deg 90|180|270] [--flip h|v]
 clip crop FILE --aspect 16:9|9:16|1:1|4:3|3:4
+clip screen FILE --background F [--color green|blue|magenta|#RRGGBB]
 clip last                         where the newest edited video is
 ```
 
 Several changes at once go in one list — the same list the section sends:
 `clip edit FILE --json '{"segments": [[0, 2], [4, 6, 2]], "texts":
 [{"from": 0.5, "to": 1.5, "text": "do baar", "place": "bottom"}],
-"music": "~/uploads/song.mp3"}'` — the kept parts in their order, each
-`[start, end, speed]`.
+"music": "~/uploads/song.mp3",
+"background": "~/uploads/bg.jpg", "key_color": "green"}'` — the kept parts
+in their order, each `[start, end, speed]`; a `background` in the list
+turns on the screen (its colour is `key_color`, green by default).
 
 The finished video is saved next to the first, with `-edited` in the name, or
 at `--out FILE`. In the chat the reply shows the video under it (tap to play)
@@ -622,6 +629,8 @@ path.
   kept part are the plan; ffmpeg does the making.)
 - Words are one colour, plain, with a dark edge, so they read over most
   videos; there is no font of your own and no timing of words to speech.
+- The screen takes away one flat colour, well; a real green screen with
+  shading or the colour in the background itself leaves a little of it.
 - A song is looped when it is shorter than the video and stops with it.
 - The gallery copy needs no storage permission on Android 10 and newer. On
   Android 7 to 9 allow "phone storage" in Termant's menu first; then the
@@ -630,10 +639,10 @@ path.
   that the finished video stays in Ubuntu and the section says so.
 
 **How it is tested.** Every build runs `clip`'s whole tool list against a
-real ffmpeg on the build machine (`android/ci/clip-check.sh`, 38 checks:
+real ffmpeg on the build machine (`android/ci/clip-check.sh`, 42 checks:
 the length of what comes out, the size, the sound gone, the frame turned,
-the words on, the music in, the one list at once, and every wrong choice
-refused). Inside the guest Ubuntu the kit check adds the refusals that need
+the words on, the screen over the background, the music in, the one list
+at once, and every wrong choice refused). Inside the guest Ubuntu the kit check adds the refusals that need
 no ffmpeg. On the emulator the test installs ffmpeg, makes a six-second
 video, trims, speeds, writes words, turns and crops it, makes the one list at
 once, and requires the trimmed video on the phone, in **Movies/Termant**; it

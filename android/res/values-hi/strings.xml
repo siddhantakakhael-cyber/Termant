@@ -70,6 +70,14 @@
     <string name="video_install">ffmpeg lag raha hai…</string>
     <string name="video_error">Video nahi bani: %1$s</string>
     <string name="video_not_ready">Ubuntu abhi shuru ho raha hai; taiyaar hone par section kholein.</string>
+    <string name="video_screen">Screen</string>
+    <string name="video_screen_off">Screen hatao</string>
+    <string name="video_screen_on">Screen hat gayi</string>
+    <string name="video_key_green">Hari</string>
+    <string name="video_key_blue">Neeli</string>
+    <string name="video_key_magenta">Magenta</string>
+    <string name="video_bg_choose">Uske neeche background lagao</string>
+    <string name="video_bg_remove">Hatao</string>
     <string name="ask_send">Bhejein</string>
     <string name="ask_voice">Bolkar likhein</string>
     <string name="voice_missing">Is phone mein voice typing app nahi hai. Keyboard ka microphone button istemal karein.</string>

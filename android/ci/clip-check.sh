@@ -128,6 +128,21 @@ check "edit: a part outside the video is refused" bash -c '! clip edit "'"$d/src
 check "edit: a broken list is refused" bash -c '! clip edit "'"$d/src.mp4"'" --json "not json" 2>/dev/null'
 check "edit: two overlapping parts are refused" bash -c '! clip edit "'"$d/src.mp4"'" --json "{\"segments\":[[0,4],[2,5]]}" 2>/dev/null'
 
+# ---- the screen, over a background or the black
+"$FF" -y -f lavfi -i "color=c=0x00ff00:s=320x240:d=4:rate=15" \
+  -vf "drawtext=text=HI:fontcolor=white:fontsize=60:x=(w-tw)/2:y=(h-th)/2" \
+  -c:v libx264 -pix_fmt yuv420p "$d/screen.mp4" 2>/dev/null
+"$FF" -y -f lavfi -i "color=c=0x1133cc:s=320x240:d=6:rate=15" \
+  -c:v libx264 -pix_fmt yuv420p "$d/blue.mp4" 2>/dev/null
+"$FF" -y -f lavfi -i "color=c=0x224499:s=320x240:d=1" -frames:v 1 -q:v 3 "$d/blue.jpg" 2>/dev/null
+clip edit "$d/screen.mp4" --json "{\"background\": \"$d/blue.mp4\"}" --out "$d/scr.mp4" 2>&1 | grep -q "Video saved"
+check "screen: the green goes away over the blue" near "$d/scr.mp4" 4
+clip edit "$d/screen.mp4" --json "{\"background\": \"$d/blue.jpg\"}" --out "$d/scr3.mp4" 2>&1 | grep -q "Video saved"
+check "screen: a picture, held, is a background too" near "$d/scr3.mp4" 4
+check "screen: a missing background is refused" bash -c '! clip edit "$d/screen.mp4" --json "{\"background\": \"$d/nope.mp4\"}" 2>/dev/null'
+clip edit "$d/screen.mp4" --json '{"key_color": "#00ff00"}' --out "$d/scr2.mp4" 2>&1 | grep -q "Video saved"
+check "screen: over the black, when no background" near "$d/scr2.mp4" 4
+
 # ---- what stays for next time
 check "last: the newest edited video is named" bash -c "clip last | grep -q 'all.mp4'"
 mkdir -p "$work/freshclip"

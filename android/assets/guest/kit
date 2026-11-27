@@ -1740,6 +1740,7 @@ def clip_atempo(rate):
     return ",".join(parts)
 
 
+
 def clip_edit(source, edit, target, chat=False):
     """Make the finished video from one list of changes. Prints progress 0.00 to 1.00."""
     if not isinstance(edit, dict):
@@ -1823,6 +1824,20 @@ def clip_edit(source, edit, target, chat=False):
     aspect = str(edit.get("aspect") or "")
     if aspect and aspect not in CLIP_ASPECTS:
         raise Refused("clip: the frame is one of %s, not %s" % (" ".join(sorted(CLIP_ASPECTS)), aspect))
+    background = str(edit.get("background") or "")
+    if background and not os.path.isfile(background):
+        raise Refused("clip: there is no such background: %s" % background)
+    key_color = str(edit.get("key_color") or "")
+    if key_color:
+        k = key_color.strip().lower()
+        key_color = "0x" + k[1:] if k.startswith("#") else key_color
+        if not (key_color.startswith("0x") or key_color.replace("-", "").isalpha()):
+            raise Refused("clip: the screen colour is a name or #RRGGBB, not %s" % key_color)
+    key_sim = float(edit.get("key_sim", 0.15))
+    key_blend = float(edit.get("key_blend", 0.05))
+    for name, v in (("screen softness", key_sim), ("screen blend", key_blend)):
+        if not (0.01 <= v <= 1.0):
+            raise Refused("clip: the %s is 0.01 to 1, not %s" % (name, v))
 
     if not target:
         base, _ = os.path.splitext(os.path.abspath(source))
@@ -1855,13 +1870,19 @@ def clip_edit(source, edit, target, chat=False):
         look.append("eq=brightness=%.3f:contrast=%.3f:saturation=%.3f" % (brightness, contrast, saturation))
     if sepia > 0.001:
         look.append("sepia=level=%.3f" % sepia)
+    # the size of the finished picture, when the words and the screen get on it
+    vw, vh = info["width"], info["height"]
+    if aspect:
+        vw, vh = CLIP_ASPECTS[aspect][2], CLIP_ASPECTS[aspect][3]
+    if rotate in (90, 270):
+        vw, vh = vh, vw
 
     def progress(value):
         out("progress %.2f" % max(0.0, min(1.0, value)))
 
     # ---- the quick way: one part, no changes but the cut -- ffmpeg only copies the streams
     if (len(segments) == 1 and segments[0][2] == 1.0 and not texts and not music
-            and not look and gain == 1.0):
+            and not look and gain == 1.0 and not background and not key_color):
         s, e, _ = segments[0]
         cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
                "-ss", "%.3f" % s, "-i", source, "-t", "%.3f" % (e - s)]
@@ -1929,6 +1950,34 @@ def clip_edit(source, edit, target, chat=False):
             clip_run("joining the sound", [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
                                            "-f", "concat", "-safe", "0", "-i", sound_list, "-c", "copy", orig])
         progress(0.86)
+        # the screen: the colour is taken away, over the background (or over the black)
+        if background or key_color:
+            color = key_color or "0x00ff00"
+            screen_v = os.path.join(work, "screen.mp4")
+            if background:
+                if background.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".gif")):
+                    # one picture, held; the -loop input option is not in every ffmpeg
+                    bgin = ["-framerate", "30", "-t", "%.3f" % total_out, "-stream_loop", "-1", "-i", background]
+                else:
+                    bgin = ["-stream_loop", "-1", "-t", "%.3f" % total_out, "-i", background]
+                bgf = "[0:v]scale=%d:%d,setsar=1,fps=%.3f,setpts=PTS-STARTPTS[bg];" % (vw, vh, fps)
+                clip_run("the screen and its background",
+                         [ffmpeg, "-hide_banner", "-loglevel", "error", "-y"] + bgin
+                         + ["-i", video, "-filter_complex",
+                            bgf + "[1:v]chromakey=%s:%.3f:%.3f[k];[bg][k]overlay=eof_action=pass[v]"
+                            % (color, key_sim, key_blend),
+                            "-map", "[v]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", screen_v])
+            else:
+                clip_run("the screen over the black", [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+                                                       "-f", "lavfi", "-t", "%.3f" % total_out,
+                                                       "-i", "color=c=black:s=%dx%d:r=%.3f" % (vw, vh, fps),
+                                                       "-i", video, "-filter_complex",
+                                                       "[1:v]chromakey=%s:%.3f:%.3f[k];[0:v][k]overlay=eof_action=pass[v]"
+                                                       % (color, key_sim, key_blend),
+                                                       "-map", "[v]", "-c:v", "libx264", "-preset", "veryfast",
+                                                       "-crf", "20", "-pix_fmt", "yuv420p", screen_v])
+            os.replace(screen_v, video)
+            progress(0.89)
         mfile = ""
         if music:
             loop = "-1" if edit.get("music_loop", True) else "0"
@@ -2027,13 +2076,13 @@ def clip(args):
   clip trim FILE --from S --to S keep only that part of the video
   clip cut FILE --from S --to S  take that part out of the video
   clip speed FILE --rate R       0.5 to 4; 2 is twice as fast
-  clip text FILE "WORDS" --from S --to S [--place top|center|bottom] [--size N] [--color C]
-  clip music FILE SONG [--volume V] [--no-loop]   music as long as the video
+  clip text FILE "WORDS" --from S --to S [--place top|center|bottom] [--size N] [--color C]  clip music FILE SONG [--volume V] [--no-loop]   music as long as the video
   clip mute FILE                 the video without its sound
   clip volume FILE --gain G      its own sound louder (2) or softer (0.5)
   clip filter FILE [--brightness B] [--contrast C] [--saturation S] [--sepia F]
   clip rotate FILE [--deg 90|180|270] [--flip h|v]
   clip crop FILE --aspect 16:9|9:16|1:1|4:3|3:4
+  clip screen FILE --background FILE [--color C]   the screen is taken away, over a photo or a video
   clip last                      where the newest edited video is
 The finished video is saved next to the first (with -edited in the name), or at
 --out FILE. ffmpeg does the work; say what you want and it is made. When you edit in
@@ -2137,6 +2186,13 @@ the chat, the finished video also goes to the phone's gallery (Movies/Termant)."
                 if word not in CLIP_ASPECTS:
                     raise Refused("clip crop: --aspect is one of %s, not %s" % (" ".join(sorted(CLIP_ASPECTS)), word))
                 edit["aspect"] = word
+            elif what == "screen" and a == "--background":
+                word = take(a, i)
+                if not os.path.isfile(word):
+                    raise Refused("clip screen: there is no such background: %s" % word)
+                edit["background"] = word
+            elif what == "screen" and a == "--color":
+                edit["key_color"] = take(a, i)
             else:
                 raise Refused("clip %s: there is no %s (clip help)" % (what, a))
             i += 2
@@ -2218,7 +2274,7 @@ the chat, the finished video also goes to the phone's gallery (Movies/Termant)."
         return
 
     needs = {"trim": 2, "cut": 2, "speed": 2, "text": 3, "music": 3, "mute": 1,
-             "volume": 2, "filter": 1, "rotate": 1, "crop": 2}
+             "volume": 2, "filter": 1, "rotate": 1, "crop": 2, "screen": 2}
     if what not in needs:
         raise Refused("clip: there is no %s (clip help)" % what)
     if len(args) < needs[what] + 1:
