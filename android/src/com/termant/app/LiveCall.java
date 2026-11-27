@@ -181,7 +181,7 @@ final class LiveCall {
     // ------------------------------------------------------------ the WebSocket
 
     /** The server answered, but it did not want the call (a status other than 101). */
-    private static final class LiveReject extends Exception {
+    private static final class LiveReject extends RuntimeException {
         final boolean quota;
         final int code;
         final String body;
@@ -295,7 +295,11 @@ final class LiveCall {
         } catch (Exception e) {
             throw new IOException("could not build the call: " + e.getMessage());
         }
-        sendText(new JSONObject().put("setup", setup).toString());
+        try {
+            sendText(new JSONObject().put("setup", setup).toString());
+        } catch (org.json.JSONException e) {
+            throw new IOException("could not build the call: " + e.getMessage());
+        }
     }
 
     /** A text frame, masked, as the RFC asks of every client frame. */
@@ -498,7 +502,7 @@ final class LiveCall {
                     .toString();
             sendText(msg);
             say("speaking");
-        } catch (IOException e) {
+        } catch (Exception e) {
             finish("error: the call closed while the command ran");
         }
     }
