@@ -12,7 +12,7 @@ opencode=$(PATH="$HOME/.opencode/bin:$PATH" command -v opencode 2>/dev/null)
 mkdir -p "$work/bin"
 if [ -n "$1" ]; then kit=$1/kit; else kit=$(command -v termant-kit); fi
 [ -f "$kit" ] || { echo "RESULT: FAIL (no kit)"; exit 2; }
-for name in termant-kit safe tidy study readfile me watch diary draw apilayer; do cp "$kit" "$work/bin/$name"; done
+for name in termant-kit safe tidy study readfile me watch diary draw smol apilayer; do cp "$kit" "$work/bin/$name"; done
 chmod 755 "$work/bin"/*
 # a stand-in for the phone command: answers questions, makes and removes rules
 cat > "$work/bin/fakephone" <<'P'
@@ -626,5 +626,24 @@ if [ -n "$opencode" ]; then
 else
   echo "SKIP the real list of models (OpenCode is not on this machine)"
 fi
+
+# ---- smol: a picture read by a small model (the model itself is not installed in the test:
+# what is tested is what smol says, and the refusals before it would run anything)
+run smol help
+check "smol alone explains itself" has "SmolVLM"
+run termant-kit smol help
+check "termant-kit smol is the same command" has "SmolVLM"
+run smol
+check "smol with no words explains itself too" has "smol FILE"
+run smol "$d/there-is-no-picture.png"
+check "smol names a picture that is not there" refused "no such picture"
+head -c 16 /dev/zero > "$d/not-a-picture.png"
+run smol "$d/not-a-picture.png"
+check "smol refuses a file that is not a picture" refused "not a picture"
+printf '\377\330\377\340' > "$d/picture.jpg"
+run env TERMANT_SMOL_HOME="$d/smol-empty" smol "$d/picture.jpg"
+check "without the install it says so" has "not installed yet"
+check "and it does not install anything" [ ! -e "$d/smol-empty/installed.txt" ]
+check "and it does not run the model" hasnt "looking at"
 
 if [ "$failed" -eq 0 ]; then echo "RESULT: PASS"; else echo "RESULT: FAIL ($failed)"; exit 1; fi

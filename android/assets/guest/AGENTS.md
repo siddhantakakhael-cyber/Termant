@@ -434,6 +434,20 @@ phone look                   what the screen shows now, as a picture (a photo
   `phone tap X Y` taps a thing at its point.
 - The first use downloads 22 MB, once.
 
+For a question about a picture, or when Mirage's lines are not enough (a scene
+to understand, writing in a language Mirage does not read, "is the glass full?"),
+a small model that reads pictures answers it:
+
+```
+smol FILE [QUESTION]         the scene, the things and where they are, the writing
+```
+
+- It is not installed by default (about 1.5 GB, a few minutes, once): when `smol`
+  says it is not there, say so in one line and ask whether to install it. After
+  the user says yes, run `smol install` and then the question.
+- The picture does not leave the phone; a question takes a minute or less, so
+  say what you are doing before you run it.
+
 ## Making a picture from words
 
 When the user asks for a picture, a drawing, a logo idea, a wallpaper, a

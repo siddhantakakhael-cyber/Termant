@@ -11,6 +11,7 @@ One file, several commands; the name it is called by picks the tool:
   watch     look for something every few minutes, then do something once
   diary     what the agent did, how long it took
   draw      a picture made from words
+  smol      a picture read by a small model (SmolVLM): the scene, the things, the writing
   apilayer  APILayer's APIs (rates, news, text from a picture, ...) with the user's key
   termant-kit TOOL ...   any of the above, and: team (notes, seen, model), attach, models
 
@@ -1669,6 +1670,129 @@ Pictures are kept in ~/pictures, with a copy in the phone's gallery (Pictures/Te
             "just say in one line what you drew.")
 
 
+# ---------------------------------------------------------------- smol: a picture read by a small model
+# SmolVLM (Hugging Face's SmolVLM-500M-Instruct, Apache 2.0): a small vision model that
+# looks at a picture and answers a question about it in plain words. It runs on the
+# phone's own computer, so the picture does not leave the phone. The first use is an
+# install of about 1.5 GB (the model and the Python runtime it runs in); after that, a
+# picture takes a minute or less.
+
+SMOL_HOME = os.environ.get("TERMANT_SMOL_HOME") or os.path.join(CACHE, "smol")
+SMOL_MODEL = os.environ.get("TERMANT_SMOL_MODEL", "HuggingFaceTB/SmolVLM-500M-Instruct")
+SMOL_MARKER = os.path.join(SMOL_HOME, "installed.txt")
+SMOL_SCRIPT = os.path.join(SMOL_HOME, "smol.py")
+SMOL_DEFAULT_QUESTION = (
+    "Describe this picture in a few plain lines: the scene, the things in it and where "
+    "each is (left, top right, across the bottom), and any writing, word by word.")
+
+# The runner that looks at the picture; written into place by `smol install`.
+SMOL_RUNNER = """#!/usr/bin/env python3
+import sys
+import torch
+from PIL import Image
+from transformers import AutoProcessor
+from transformers import SmolVLMForConditionalGeneration
+
+model_dir, picture, question = sys.argv[1], sys.argv[2], sys.argv[3]
+# 8-bit weights keep the model small enough for a phone; when that is not possible
+# (most phones), the full-precision model does the same job with more memory.
+try:
+    model = SmolVLMForConditionalGeneration.from_pretrained(model_dir, load_in_8bit=True)
+except Exception:
+    model = SmolVLMForConditionalGeneration.from_pretrained(model_dir)
+model.eval()
+processor = AutoProcessor.from_pretrained(model_dir)
+image = Image.open(picture).convert("RGB")
+messages = [{"role": "user", "content": [{"type": "image", "image": image},
+                                         {"type": "text", "text": question}]}]
+inputs = processor.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
+with torch.no_grad():
+    out = model.generate(**inputs, max_new_tokens=300, do_sample=False)
+new_tokens = out[0][inputs["input_ids"].shape[1]:]
+sys.stdout.write(processor.batch_decode(new_tokens, skip_special_tokens=True)[0].strip() + chr(10))
+"""
+
+
+def smol_installed():
+    return os.path.isfile(SMOL_MARKER) and os.path.isfile(SMOL_SCRIPT)
+
+
+def smol_image_ok(path):
+    # the pictures a phone makes: the first bytes say which it is
+    try:
+        with open(path, "rb") as f:
+            head = f.read(12)
+    except Exception:
+        return False
+    if len(head) > 3 and head[:3] == b"\xff\xd8\xff":
+        return True
+    if len(head) > 8 and head[:8] == b"\x89PNG\r\n\x1a\n":
+        return True
+    if len(head) > 12 and head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return True
+    if len(head) > 6 and head[:6] in (b"GIF87a", b"GIF89a"):
+        return True
+    return len(head) > 2 and head[:2] == b"BM"
+
+
+def smol_install(args):
+    if smol_installed():
+        out("SmolVLM is already installed; it is ready: smol FILE [QUESTION]")
+        return
+    os.makedirs(SMOL_HOME, exist_ok=True)
+    out("Installing SmolVLM, the small model that reads pictures...")
+    out("One time: about 1.5 GB (the model and the runtime it runs in). It stays on this phone.")
+    pip = [sys.executable, "-m", "pip", "install"]
+    r = subprocess.run(pip + ["--index-url", "https://download.pytorch.org/whl/cpu", "torch"])
+    if r.returncode != 0:
+        out("The CPU torch could not be installed; the full one (bigger) will do.")
+        r = subprocess.run(pip + ["torch"])
+    if r.returncode != 0:
+        raise Refused("smol install: torch could not be installed (check the internet)")
+    r = subprocess.run(pip + ["transformers", "accelerate", "pillow"])
+    if r.returncode != 0:
+        raise Refused("smol install: the reading tools could not be installed (check the internet)")
+    out("Downloading the model itself (SmolVLM-500M)...")
+    import huggingface_hub
+    try:
+        huggingface_hub.snapshot_download(SMOL_MODEL, local_dir=os.path.join(SMOL_HOME, "model"))
+    except Exception as e:
+        raise Refused("smol install: the model could not be downloaded (" + one_line(str(e)) + ")")
+    with open(SMOL_SCRIPT, "w") as f:
+        f.write(SMOL_RUNNER)
+    with open(SMOL_MARKER, "w") as f:
+        f.write(SMOL_MODEL + "\n")
+    out("SmolVLM is installed. It looks at a picture now: smol FILE [QUESTION]")
+
+
+def smol(args):
+    if not args or args[0] in ("help", "-h", "--help"):
+        out("""smol: a picture read by a small model (SmolVLM, Hugging Face), on the phone itself
+  smol FILE [QUESTION]   what the picture shows, or the answer to a question about it
+  smol install           the one-time install: about 1.5 GB, a few minutes
+The picture does not leave the phone; a question takes a minute or less.""")
+        return
+    if args[0] == "install":
+        smol_install(args)
+        return
+    path = os.path.expanduser(args[0])
+    if not os.path.isfile(path):
+        raise Refused("smol: there is no such picture: " + path)
+    if not smol_image_ok(path):
+        raise Refused("smol: this file is not a picture (JPEG, PNG, WebP, GIF or BMP)")
+    if not smol_installed():
+        out("SmolVLM is not installed yet: it is a small model (about 1.5 GB) that stays on this phone.")
+        out("Install it once: smol install    (a few minutes)")
+        return
+    question = " ".join(args[1:]).strip() or SMOL_DEFAULT_QUESTION
+    out("SmolVLM is looking at " + os.path.basename(path) + " (a minute or less)...")
+    r = subprocess.run([sys.executable, SMOL_SCRIPT, os.path.join(SMOL_HOME, "model"), path, question],
+                       stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        tail = (r.stderr or b"").decode("utf-8", "replace").strip().splitlines()
+        raise Refused("smol: the model could not read the picture (" + one_line(tail[-1] if tail else "no answer") + ")")
+
+
 # ---------------------------------------------------------------- apilayer: APILayer's APIs, with the user's key
 
 # APILayer is a marketplace of APIs. Sixty of them stand behind one gateway and answer to one key
@@ -2282,7 +2406,7 @@ There is no API here that draws a picture from words: that is `draw`.""")
 
 
 TOOLS = {"safe": safe, "tidy": tidy, "study": study, "readfile": readfile, "me": me, "watch": watch,
-         "diary": diary, "draw": draw, "apilayer": apilayer, "team": team, "attach": attach, "models": models}
+         "diary": diary, "draw": draw, "smol": smol, "apilayer": apilayer, "team": team, "attach": attach, "models": models}
 
 
 def main():
