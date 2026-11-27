@@ -25,6 +25,7 @@ jobs:
           bash android/ci/learn-check.sh android/assets/guest
           bash android/ci/team-check.sh android/assets/guest
           bash android/ci/kit-check.sh android/assets/guest
+          bash android/ci/app-check.sh
 
   # `draw` makes pictures with two free services that belong to other people. This asks the
   # real ones and keeps their answers and pictures (refs/ci/termant-draw). It never fails the

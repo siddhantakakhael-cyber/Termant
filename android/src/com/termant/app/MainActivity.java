@@ -56,6 +56,7 @@ public class MainActivity extends Activity
     private static final int REQUEST_VOICE = 2;
     private static final int REQUEST_SMS = 3;
     private static final int REQUEST_MIC = 4;
+    private static final int REQUEST_LIVE = 5;
     private static final int REQUEST_ATTACH = 5;
     /** The biggest file the chat takes with a message. */
     private static final long ATTACH_LIMIT = 200L * 1024 * 1024;
@@ -116,6 +117,8 @@ public class MainActivity extends Activity
     private View terminalPanel;
     private ChatView chatPanel;
     private SettingsView settingsPanel;
+    private LiveCallView livePanel;
+    private boolean liveWanted;
     private static MainActivity visible;
     private TerminalView terminal;
     private LinearLayout tabs;
@@ -195,6 +198,11 @@ public class MainActivity extends Activity
             @Override
             public void onAttach() {
                 pickAttachment();
+            }
+
+            @Override
+            public void onLive() {
+                startLive();
             }
         });
         settingsPanel = new SettingsView(this, new SettingsView.Host() {
@@ -277,10 +285,26 @@ public class MainActivity extends Activity
             }
         });
         settingsPanel.setVisibility(View.GONE);
+        livePanel = new LiveCallView(this, new LiveCallView.Host() {
+            @Override
+            public void onLiveEnded(String reason, long millis) {
+                if (service != null) service.resumeWake();
+                if (reason.equals("quota")) {
+                    Toast.makeText(MainActivity.this, R.string.live_quota, Toast.LENGTH_LONG).show();
+                } else if (reason.equals("no-key")) {
+                    Toast.makeText(MainActivity.this, R.string.live_no_key, Toast.LENGTH_LONG).show();
+                } else {
+                    long s = millis / 1000;
+                    Toast.makeText(MainActivity.this,
+                            getString(R.string.live_ended, (s / 60) + " min"), Toast.LENGTH_LONG).show();
+                }
+            }
+        });
         rootView.addView(chatPanel, match());
         rootView.addView(settingsPanel, match());
         rootView.addView(terminalPanel, match());
         rootView.addView(setupPanel, match());
+        rootView.addView(livePanel, match());
         chatPanel.setVisibility(View.GONE);
         terminalPanel.setVisibility(View.GONE);
         setupPanel.setVisibility(View.GONE);
@@ -820,6 +844,36 @@ public class MainActivity extends Activity
         } catch (Exception e) {
             Toast.makeText(this, R.string.voice_missing, Toast.LENGTH_LONG).show();
         }
+    }
+
+    /**
+     * The live voice call: talk to the phone out loud and it talks back, and while
+     * you talk it can run a command in the phone's terminal. The Gemini key comes
+     * from Settings, and a used-up live quota keeps the button off until tomorrow.
+     */
+    private void startLive() {
+        if (Config.liveBlocked(this) > System.currentTimeMillis()) {
+            Toast.makeText(this, R.string.live_quota, Toast.LENGTH_LONG).show();
+            return;
+        }
+        String key = Config.keys(this).get("GOOGLE_GENERATIVE_AI_API_KEY");
+        if (key == null || key.trim().isEmpty()) {
+            Toast.makeText(this, R.string.live_no_key, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            liveWanted = true;
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_LIVE);
+            return;
+        }
+        openLive();
+    }
+
+    private void openLive() {
+        liveWanted = false;
+        if (service != null) service.pauseWake(); // the wake word must not hear the call
+        livePanel.setVisibility(View.VISIBLE);
+        livePanel.begin();
     }
 
     /** Shown in the box first, so a misheard request can be fixed before sending. */
@@ -1441,6 +1495,12 @@ public class MainActivity extends Activity
         }
         if (request == REQUEST_MIC) {
             if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) listen();
+            else Toast.makeText(this, R.string.voice_denied, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (request == REQUEST_LIVE) {
+            liveWanted = false;
+            if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) openLive();
             else Toast.makeText(this, R.string.voice_denied, Toast.LENGTH_LONG).show();
             return;
         }
