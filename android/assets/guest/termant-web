@@ -3,19 +3,24 @@
 
   termant-web youtube search WORDS...                       videos for these words
   termant-web youtube read ID|LINK [--lang hi] [--from MIN]  what is said in a video
-  termant-web voice speak TEXT...     speech by ElevenLabs into a file; prints the file, then a line about it
-  termant-web voice [keys]            the saved ElevenLabs keys: use, and which one rests
-  termant-web voice add KEY...        save keys        termant-web voice remove N
-  termant-web voice list              the voices       termant-web voice use ID
+  termant-web voice speak TEXT...     speech into a file; prints the file, then a line about it
+  termant-web voice [keys]            the saved keys: the engine, and which one rests
+  termant-web voice add KEY...        save ElevenLabs keys   termant-web voice remove N
+  termant-web voice list              the ElevenLabs voices  termant-web voice use ID
   termant-web voice retry             try the resting keys again
+  termant-web voice gemini add KEY... a free Google key (Hindi, Odia and 100+ more languages)
+  termant-web voice gemini remove     take the Gemini key away
+  termant-web voice engine gemini|elevenlabs   which voice speaks
 
 The ElevenLabs keys take turns: when one has used up its limit, the next one speaks.
 The Windows app does the same in windows/src/learn.js and voice.js; keep them alike.
 """
+import base64
 import hashlib
 import json
 import os
 import re
+import struct
 import sys
 import time
 import urllib.error
@@ -27,6 +32,17 @@ CONFIG = os.path.join(HOME, '.config', 'termant')
 KEYS_FILE = os.path.join(CONFIG, 'voice.keys')
 STATE_FILE = os.path.join(CONFIG, 'voice.json')
 SOUND_FILE = os.path.join(HOME, '.cache', 'termant', 'speech.mp3')
+SOUND_WAV = os.path.join(HOME, '.cache', 'termant', 'speech.wav')
+GEMINI_KEY_FILE = os.path.join(CONFIG, 'gemini.key')
+GEMINI_VOICE = 'Kore'
+
+
+def gemini():
+    return os.environ.get('TERMANT_GEMINI_URL', 'https://generativelanguage.googleapis.com').rstrip('/')
+
+
+def gemini_model():
+    return os.environ.get('TERMANT_GEMINI_TTS_MODEL', 'gemini-3.8-flash-lite-tts')
 BROWSER = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
            'Chrome/131.0.0.0 Safari/537.36')
 PHONE_APP = '20.10.38'
@@ -380,6 +396,89 @@ def eleven_ask(path, key, body=None):
     return ask(eleven() + path, body, headers, who='ElevenLabs', wait=60)
 
 
+def gemini_key():
+    try:
+        with open(GEMINI_KEY_FILE) as f:
+            return f.read().strip()
+    except OSError:
+        return ''
+
+
+def gemini_save_key(key):
+    os.makedirs(CONFIG, exist_ok=True)
+    fd = os.open(GEMINI_KEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'w') as f:
+        f.write(key.strip() + '\n')
+    os.chmod(GEMINI_KEY_FILE, 0o600)
+
+
+def wav_wrap(pcm, rate=24000):
+    """Google sends raw 16-bit little-endian PCM; this makes it a file a phone can play."""
+    head = b'RIFF' + struct.pack('<I', 36 + len(pcm)) + b'WAVE'
+    head += b'fmt ' + struct.pack('<IHHIIHH', 16, 1, 1, rate, rate * 2, 2, 16)
+    head += b'data' + struct.pack('<I', len(pcm))
+    return head + pcm
+
+
+def gemini_speak(text):
+    """Returns (sound bytes, notes): Google's voice, with the saved free key."""
+    if not gemini_key():
+        raise Problem('No Gemini key is saved. Add a free one with: phone voice gemini add KEY (aistudio.google.com)')
+    text = ' '.join(text.split())
+    if not text:
+        raise Problem('There is nothing to say.')
+    cut = len(text) > MOST_LETTERS
+    if cut:
+        text = text[:MOST_LETTERS]
+    state = load_state()
+    body = {'contents': [{'parts': [{'text': text}]}],
+            'generationConfig': {'responseModalities': ['AUDIO'],
+                                 'speechConfig': {'voiceConfig': {'prebuiltVoiceConfig':
+                                                                  {'voiceName': state.get('gemini_voice') or GEMINI_VOICE}}}}}
+    status, raw = ask(gemini() + '/v1beta/models/%s:generateContent' % gemini_model(), body,
+                      {'x-goog-api-key': gemini_key()}, who='Google', wait=90)
+    if status == 200:
+        data = parsed(raw)
+        try:
+            inline = data['candidates'][0]['content']['parts'][0]['inlineData']
+            sound = base64.b64decode(inline['data'])
+        except (KeyError, IndexError, TypeError, ValueError):
+            raise Problem('Google answered without sound: %s' % raw.decode('utf-8', 'replace')[:200])
+        if len(sound) < 100:
+            raise Problem('Google sent no sound.')
+        mime = str(inline.get('mimeType', ''))
+        if 'L16' in mime or 'pcm' in mime.lower():
+            sound = wav_wrap(sound)
+        notes = []
+        if cut:
+            notes.append('only the first %d letters were spoken' % MOST_LETTERS)
+        return sound, notes
+    data = parsed(raw)
+    message = ''
+    if isinstance(data, dict):
+        message = str((data.get('error') or {}).get('message') or '')
+    if status in (400, 401, 403):
+        raise Problem('Google refused the key (%s). Check it: phone voice gemini' % (message or 'answer %d' % status))
+    if status == 429:
+        raise Problem('The free Gemini limit is reached for now. Try again later, or: phone voice engine elevenlabs')
+    raise Problem('Google could not speak (answer %d: %s).' % (status, message or raw.decode('utf-8', 'replace')[:160]))
+
+
+def pick_engine():
+    """Which voice speaks now: the chosen one, or the one with keys saved."""
+    state = load_state()
+    engine = state.get('engine') or ''
+    if engine == 'gemini' and gemini_key():
+        return 'gemini'
+    if engine == 'elevenlabs' and saved_keys():
+        return 'elevenlabs'
+    if gemini_key() and not saved_keys():
+        return 'gemini'
+    if saved_keys():
+        return 'elevenlabs'
+    return ''
+
+
 def refusal(raw):
     data = parsed(raw)
     detail = data.get('detail') if isinstance(data, dict) else None
@@ -435,10 +534,15 @@ def speak(text, keys=None, voice=None):
 
 def report(online=True):
     keys = saved_keys()
-    if not keys:
-        return 'No ElevenLabs key is saved. Add them with: phone voice add KEY1 KEY2 ...'
+    if not keys and not gemini_key():
+        return 'No voice key is saved. ElevenLabs: phone voice add KEY1 KEY2 .... A free Google key (Hindi, Odia and more): phone voice gemini add KEY'
     state = load_state()
     lines = []
+    if gemini_key():
+        if pick_engine() == 'gemini':
+            lines.append('Gemini key %s saved; the Gemini voice speaks now.' % tail(gemini_key()))
+        else:
+            lines.append('Gemini key %s saved; the %s voice speaks now. Use: phone voice engine gemini' % (tail(gemini_key()), pick_engine()))
     for n, key in enumerate(keys, 1):
         line = '%d. %s' % (n, tail(key))
         if online:
@@ -466,12 +570,22 @@ def report(online=True):
 def voice_command(args):
     what = args[0] if args else 'keys'
     if what == 'speak':
-        sound, n, notes = speak(' '.join(args[1:]))
-        os.makedirs(os.path.dirname(SOUND_FILE), exist_ok=True)
-        with open(SOUND_FILE, 'wb') as f:
+        engine = pick_engine()
+        if not engine:
+            raise Problem('No voice key is saved. ElevenLabs: phone voice add KEY. Or a free Google key that speaks Hindi and Odia: phone voice gemini add KEY')
+        if engine == 'gemini':
+            sound, notes = gemini_speak(' '.join(args[1:]))
+            path = SOUND_WAV
+            line = 'Said with the Gemini voice (Google, your free key)%s.' % (' (%s)' % '; '.join(notes) if notes else '')
+        else:
+            sound, n, notes = speak(' '.join(args[1:]))
+            path = SOUND_FILE
+            total = len(saved_keys())
+            line = 'Said with ElevenLabs, key %d of %d%s.' % (n, total, ' (%s)' % '; '.join(notes) if notes else '')
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'wb') as f:
             f.write(sound)
-        total = len(saved_keys())
-        return SOUND_FILE + '\nSaid with ElevenLabs, key %d of %d%s.' % (n, total, ' (%s)' % '; '.join(notes) if notes else '')
+        return path + '\n' + line
     if what == 'add':
         before = saved_keys()
         after = keys_from(before + keys_from(args[1:]))
@@ -491,6 +605,44 @@ def voice_command(args):
         state['rest'] = {}
         save_state(state)
         return 'All keys will be tried again.'
+    if what == 'gemini':
+        sub = args[1] if len(args) > 1 else ''
+        if sub == 'add':
+            key = args[2].strip() if len(args) > 2 else ''
+            if len(key) < 20 or not key.startswith('AIza'):
+                raise Problem('That does not look like a Gemini key (it starts with AIza). Get a free one at aistudio.google.com, then: phone voice gemini add KEY')
+            gemini_save_key(key)
+            state = load_state()
+            state['engine'] = 'gemini'
+            save_state(state)
+            return 'Gemini key %s saved; the Gemini voice speaks now.' % tail(key)
+        if sub == 'remove':
+            try:
+                os.remove(GEMINI_KEY_FILE)
+            except OSError:
+                pass
+            state = load_state()
+            state.pop('engine', None)
+            save_state(state)
+            return 'Gemini key removed.'
+        if sub:
+            raise Problem('use: phone voice gemini add KEY | phone voice gemini remove | phone voice gemini')
+        key = gemini_key()
+        if not key:
+            return 'No Gemini key is saved. Add a free one with: phone voice gemini add KEY (aistudio.google.com)'
+        return 'Gemini key %s saved%s.' % (tail(key), '; the Gemini voice speaks now' if pick_engine() == 'gemini' else '')
+    if what == 'engine':
+        want = args[1] if len(args) > 1 else ''
+        if want not in ('gemini', 'elevenlabs'):
+            raise Problem('use: phone voice engine gemini | phone voice engine elevenlabs')
+        if want == 'gemini' and not gemini_key():
+            raise Problem('There is no Gemini key saved yet: phone voice gemini add KEY')
+        if want == 'elevenlabs' and not saved_keys():
+            raise Problem('There is no ElevenLabs key saved yet: phone voice add KEY')
+        state = load_state()
+        state['engine'] = want
+        save_state(state)
+        return 'The %s voice speaks now.' % want
     if what == 'use':
         state = load_state()
         state['voice'] = args[1] if len(args) > 1 else ''
@@ -509,7 +661,7 @@ def voice_command(args):
         raise Problem('No key could list the voices.')
     if what == 'keys':
         return report()
-    raise Problem('use: phone voice | phone voice add KEY... | phone voice remove N | phone voice list | phone voice use ID | phone voice retry')
+    raise Problem('use: phone voice | phone voice add KEY... | phone voice remove N | phone voice list | phone voice use ID | phone voice retry | phone voice gemini add KEY | phone voice engine gemini|elevenlabs')
 
 
 def main(args):

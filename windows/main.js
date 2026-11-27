@@ -302,6 +302,7 @@ function data() {
     notes,
     learned: { today: learned.since(1).map((e) => learned.line(e).slice(2)), skills: learned.skills() },
     voiceKeys: keysFrom(settings.voiceKeys).length,
+    voiceGemini: !!voice.geminiKey(),
     team: team.list(),
   };
 }
@@ -530,7 +531,7 @@ async function sendMessage(text, own, files, from) {
   if (fresh.length) reply.learned = fresh.map((e) => learned.line(e).slice(2));
   log('reply: ' + JSON.stringify({ text: reply.text.slice(0, 300), steps: reply.steps, failed: reply.failed, note: reply.note,
     fast: agent.fast, seconds: reply.seconds, learned: reply.learned, helpers: reply.helpers, pictures: reply.pictures }));
-  if (settings.speak && !own && !reply.failed && reply.text && keysFrom(settings.voiceKeys).length) {
+  if (settings.speak && !own && !reply.failed && reply.text && (keysFrom(settings.voiceKeys).length || voice.geminiKey())) {
     say(reply.text.replace(/```[\s\S]*?```/g, ' ').replace(/[*_#`>|]/g, ' ')).catch((e) => log('speak: ' + e.message));
   }
   if (own) {
@@ -711,8 +712,18 @@ function when(ms) {
   return day + two(d.getHours()) + ':' + two(d.getMinutes());
 }
 
-/** Speaks with ElevenLabs through the window; the keys take turns when one is used up. */
+/** Speaks through the window: the Gemini voice (Google's free key) or ElevenLabs; the
+  ElevenLabs keys take turns when one is used up. */
 async function say(text) {
+  const engine = voice.pickEngine(settings.voiceKeys);
+  if (!engine) throw new Error('No voice key is saved.');
+  if (engine === 'gemini') {
+    const spoken = await voice.geminiSpeak(text);
+    if (SELFTEST) fs.writeFileSync(path.join(SELFTEST, 'said.wav'), spoken.audio);
+    send('voice', spoken.audio.toString('base64'));
+    return 'Said with the Gemini voice (Google, your free key)' +
+      (spoken.notes.length ? ' (' + spoken.notes.join('; ') + ')' : '') + '.';
+  }
   const spoken = await voice.speak(text, settings.voiceKeys, { voice: settings.voiceId });
   if (SELFTEST) fs.writeFileSync(path.join(SELFTEST, 'said.mp3'), spoken.audio);
   send('voice', spoken.audio.toString('base64'));
@@ -760,7 +771,22 @@ async function command(route, body) {
   if (route === '/voice') {
     const keys = keysFrom(settings.voiceKeys);
     if (body.action === 'say') return say(String(body.text || ''));
-    if (body.action === 'has') return keys.length ? 'yes' : 'no';
+    if (body.action === 'has') return (keys.length || voice.geminiKey()) ? 'yes' : 'no';
+    if (body.action === 'gemini-add') {
+      const told = voice.geminiAdd(String(body.key || '').trim());
+      send('data', data());
+      return told;
+    }
+    if (body.action === 'gemini-remove') {
+      const told = voice.geminiRemove();
+      send('data', data());
+      return told;
+    }
+    if (body.action === 'engine') {
+      const told = voice.setEngine(String(body.engine || '').trim(), keys);
+      send('data', data());
+      return told;
+    }
     if (body.action === 'voices') return voice.voices(keys);
     if (body.action === 'use') {
       saveSettings({ voiceId: String(body.id || '').trim() });

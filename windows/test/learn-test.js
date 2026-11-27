@@ -1,6 +1,7 @@
 'use strict';
-// Checks YouTube reading, skills, the diary and the ElevenLabs keys against a
-// pretend YouTube and a pretend ElevenLabs on this computer. Run: node test/learn-test.js
+// Checks YouTube reading, skills, the diary and the voice keys (Gemini and ElevenLabs)
+// against a pretend YouTube, a pretend ElevenLabs and a pretend Gemini on this computer.
+// Run: node test/learn-test.js
 const http = require('http');
 const fs = require('fs');
 const os = require('os');
@@ -61,6 +62,13 @@ const server = http.createServer((req, res) => {
       if (url.pathname.endsWith('/no-such-voice')) return send(400, { detail: { status: 'voice_not_found', message: 'A voice with that id was not found.' } });
       return send(200, Buffer.concat([Buffer.from('ID3'), Buffer.alloc(400, 7)]), 'audio/mpeg');
     }
+    if (url.pathname.startsWith('/v1beta/models/')) {
+      const gkey = req.headers['x-goog-api-key'] || '';
+      asked.push(gkey + ' ' + url.pathname.split('/').pop().split(':')[0] + ' ' + JSON.parse(body).contents[0].parts[0].text);
+      if (gkey === 'AIzaSyDfakegeminikeywrong00000') return send(400, { error: { code: 400, message: 'API key not valid. Please pass a valid API key.' } });
+      if (gkey === 'AIzaSyDfakegeminikeyquota0000') return send(429, { error: { code: 429, message: "Quota exceeded for quota metric 'Generate requests'." } });
+      return send(200, { candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;rate=24000', data: Buffer.alloc(48000, 7).toString('base64') } }] } }] });
+    }
     if (url.pathname === '/v1/user/subscription') {
       if (key === 'key-wrong-22') return send(401, { detail: { status: 'invalid_api_key', message: 'Invalid API key' } });
       return send(200, { tier: 'free', character_count: key === 'key-used-up-1' ? 10000 : 120, character_limit: 10000 });
@@ -87,6 +95,7 @@ server.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + server.address().port;
   process.env.TERMANT_YOUTUBE_URL = base;
   process.env.TERMANT_ELEVEN_URL = base;
+  process.env.TERMANT_GEMINI_URL = base;
   const learn = require('../src/learn');
   const { Voice, keysFrom } = require('../src/voice');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'termant-learn-'));
@@ -187,7 +196,29 @@ server.listen(0, '127.0.0.1', async () => {
     check('no keys gives a clear message', /No ElevenLabs key is saved/.test(await refused(() => voice.speak('x', []))));
     const long = await voice.speak('a'.repeat(3000), keys);
     check('a long text is cut and says so', /first 2500 letters/.test(long.notes.join(' ')), long.notes);
-  } catch (e) {
+
+    // the Gemini voice: one free Google key, which speaks Hindi and Odia
+    const gv = new Voice(dir);
+    check('no Gemini key at first', gv.geminiKey() === '' && /No Gemini key is saved/.test(await refused(() => gv.geminiSpeak('namaste'))));
+    check('a key that does not look like one is refused', /does not look like a Gemini key/.test(await refused(() => gv.geminiAdd('sk-a-very-long-wrong-key'))));
+    check('the Gemini key is saved and speaks now', gv.geminiAdd('AIzaSyDfakegeminikeygood00000') === 'Gemini key ...0000 saved; the Gemini voice speaks now.');
+    asked.length = 0;
+    const gsaid = await gv.geminiSpeak('namaste, kaise ho?');
+    check('the Gemini sound is a WAV file at 24 kHz', gsaid.audio.slice(0, 4).toString() === 'RIFF' && gsaid.audio.slice(8, 12).toString() === 'WAVE' && gsaid.audio.readUInt32LE(24) === 24000 && gsaid.audio.length === 44 + 48000, gsaid.audio.length);
+    check('the Gemini key asked, not shown whole', asked.length === 1 && asked[0] === 'AIzaSyDfakegeminikeygood00000 gemini-3.8-flash-lite-tts namaste, kaise ho?', asked);
+    const greport = await gv.report(keys);
+    check('the report shows the Gemini key first, masked', greport.startsWith('Gemini key ...0000 saved; the Gemini voice speaks now.') && !greport.includes('AIza'), greport);
+    gv.geminiAdd('AIzaSyDfakegeminikeywrong00000');
+    check('a wrong Gemini key is refused, not blamed on the sound', await refused(() => gv.geminiSpeak('key is wrong')) === 'Google refused the key (API key not valid. Please pass a valid API key.). Check it.');
+    gv.geminiAdd('AIzaSyDfakegeminikeyquota0000');
+    check('the free Gemini limit is named', await refused(() => gv.geminiSpeak('quota')) === 'The free Gemini limit is reached for now. Try again later.');
+    const gv3 = new Voice(path.join(dir, 'g3'));
+    gv3.geminiSaveKey('AIzaSyDfakegeminikeygood00000');
+    check('with both kinds of keys and no choice, ElevenLabs speaks', gv3.pickEngine(keys) === 'elevenlabs' && gv3.pickEngine([]) === 'gemini');
+    check('the engine can be chosen, and chosen back', gv3.setEngine('gemini', keys) === 'The gemini voice speaks now.' && gv3.pickEngine(keys) === 'gemini' && gv3.setEngine('elevenlabs', keys) === 'The elevenlabs voice speaks now.' && gv3.pickEngine(keys) === 'elevenlabs');
+    const gv2 = new Voice(path.join(dir, 'g2'));
+    check('the engine cannot be turned to a key that is not saved', (await refused(() => gv2.setEngine('elevenlabs', []))).indexOf('no ElevenLabs key saved yet') !== -1 && (await refused(() => gv2.setEngine('gemini', keys))).indexOf('no Gemini key saved yet') !== -1);
+    check('removing the Gemini key puts it back', gv.geminiRemove() === 'Gemini key removed.' && gv.geminiKey() === '' && gv.pickEngine(keys) === 'elevenlabs');  } catch (e) {
     failed++;
     console.log('FAIL the test itself broke: ' + (e.stack || e));
   }

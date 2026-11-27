@@ -23,7 +23,7 @@ A real Ubuntu 24.04 system on your phone with an AI agent as its home screen. No
 - [A video from a video: the timeline and clip](#a-video-from-a-video-the-timeline-and-clip)
 - [APILayer: ready-made APIs with your own key](#apilayer-ready-made-apis-with-your-own-key)
 - [How far a download is: the newest line of a running command](#how-far-a-download-is-the-newest-line-of-a-running-command)
-- [ElevenLabs voice with several keys](#elevenlabs-voice-with-several-keys)
+- [Voices: the free Gemini voice and ElevenLabs keys](#voices-the-free-gemini-voice-and-elevenlabs-keys)
 - [Faster answers](#faster-answers)
 - [Looking after you: the agent asks first](#looking-after-you-the-agent-asks-first)
 - [Settings: model, workspace, your own API key](#settings-model-workspace-your-own-api-key)
@@ -777,31 +777,59 @@ the command was still running. Not tested: a real phone, a real model, and how
 the lines of `apt` and `pip` look in the chat (the wording rules for `curl` and
 `wget` are checked in the Windows app's tests, where the same rules live).
 
-## ElevenLabs voice with several keys
+## Voices: the free Gemini voice and ElevenLabs keys
 
-Tell the agent your keys in the chat ("ye meri ElevenLabs keys hain: ..."), or
-type in the terminal:
+`phone say "text"` speaks the text aloud. Ask in the chat too ("bol ke batao",
+"bulwao", "read this aloud") and the agent says it. Two voices can be saved,
+and one of them is free:
 
-```
-phone voice add KEY1 KEY2 KEY3      save keys (up to 30)
-phone say "Namaste"                 speaks with ElevenLabs
-phone voice                         each key: letters used, and whether it rests
-phone voice remove N     phone voice retry     phone voice list     phone voice use ID
-```
+- **The Gemini voice (free, recommended).** A free key from
+  [aistudio.google.com](https://aistudio.google.com) (it starts with `AIza`).
+  Google's voice speaks **Hindi, Odia and 100+ more languages**. Ask Google
+  for a free API key, and tell the agent ("ye meri Gemini key hai: ...") or
+  type:
 
-- The keys take turns. When ElevenLabs answers that a key has used up its
+  ```
+  phone voice gemini add KEY        save the free Google key
+  phone say "ନମସ୍କାର, କେମିତି ଅଛନ୍ତି?"      the Gemini voice speaks
+  phone voice engine gemini         choose which voice speaks
+  phone voice gemini remove         take the key away
+  ```
+
+  The free tier is rate-limited (a few speaks a minute, more a day); when
+  Google answers that the limit is reached, Termant says so and the phone's
+  own voice is used for that one line. To speak with ElevenLabs instead:
+  `phone voice engine elevenlabs`.
+- **Know this before you give the key:** on the free tier Google may use
+  what you speak to improve its products, and human reviewers may read the
+  words (not in the EEA, Switzerland or the UK). Do not send passwords,
+  addresses or anything else sensitive to the free voice.
+- **ElevenLabs keys.** Tell the agent your keys in the chat ("ye meri
+  ElevenLabs keys hain: ..."), or type in the terminal:
+
+  ```
+  phone voice add KEY1 KEY2 KEY3      save keys (up to 30)
+  phone say "Namaste"                 speaks with ElevenLabs
+  phone voice                         each key: letters used, and whether it rests
+  phone voice remove N     phone voice retry     phone voice list     phone voice use ID
+  ```
+
+  The keys take turns. When ElevenLabs answers that a key has used up its
   limit, or that the key is wrong, Termant goes on to the next key within the
   same sentence and lets the refused key rest (6 hours for a used-up limit, a
   week for a wrong key), so it is not asked again every time.
-- Without keys, or when no key can speak, the phone's own voice is used.
+- With no saved voice key, or when the voice cannot speak, the phone's own
+  voice is used. It does not speak Odia.
 - Only the last 4 letters of a key are ever shown. The keys are kept in
-  `~/.config/termant/voice.keys` inside Ubuntu, readable by the owner only.
-  One text is at most 2,500 letters.
+  `~/.config/termant/` inside Ubuntu (`gemini.key`, `voice.keys`), readable by
+  the owner only. One text is at most 2,500 letters.
 - `phone play FILE` plays any sound file from Ubuntu.
-- Tested in the emulator with a pretend ElevenLabs: with two keys of which the
-  first is "used up", `phone say` spoke with the second, did not ask the first
-  again the next time, and the phone played the one-second sound. No real
-  ElevenLabs key was used, and nobody listened: the emulator has no speaker.
+- Tested in the emulator with a pretend ElevenLabs and a pretend Gemini: with
+  two ElevenLabs keys of which the first is "used up", `phone say` spoke with
+  the second and did not ask the first again the next time; with a Gemini key,
+  the phone played the one-second sound it made from Google's raw audio; a
+  refused Gemini key fell back to the phone's own voice. No real key was used,
+  and nobody listened: the emulator has no speaker.
 
 ## Faster answers
 

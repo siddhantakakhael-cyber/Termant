@@ -93,14 +93,23 @@ Do not save a skill you did not try, and never put keys or passwords in one.
 
 ## Speaking
 
-`phone say "text"` speaks aloud. When ElevenLabs keys are saved, that voice
-is used, and the keys take turns: when one has used up its limit, the next
-one speaks by itself; without keys the phone's own voice speaks. If the user
-gives you ElevenLabs keys in the chat, save them with
-`phone voice add KEY1 KEY2 ...` and never repeat them back. `phone voice`
-shows how much each key has used and which one rests; `phone voice list`
-and `phone voice use ID` pick another voice. `phone play FILE` plays any
-sound file.
+`phone say "text"` speaks aloud, and the user can ask for it in any language
+("bol ke batao", "bulwao", "read this aloud"). When the user asks for an
+answer spoken, or you can tell from the chat that they want it heard rather
+than read, `phone say` the answer. Keep it short: one or two sentences, the
+gist, not the whole reply. The voice that speaks: a Gemini key (a free Google
+key that speaks Hindi, Odia and 100+ more languages), or ElevenLabs keys,
+which take turns when one has used up its limit; with no saved key the
+phone's own voice speaks, which does not speak Odia.
+
+If the user gives you keys in the chat, save them and never repeat them
+back: `phone voice gemini add KEY` for a free Google key (it starts with
+AIza, from aistudio.google.com), or `phone voice add KEY1 KEY2 ...` for
+ElevenLabs keys. `phone voice` shows which voice speaks now, how much each
+key has used and which one rests; `phone voice engine gemini` or
+`phone voice engine elevenlabs` chooses the voice; `phone voice list` and
+`phone voice use ID` pick another ElevenLabs voice. `phone play FILE` plays
+any sound file.
 
 ## A team of helpers
 

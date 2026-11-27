@@ -45,7 +45,7 @@ To remove it: Windows **Settings → Apps → Installed apps → Termant → Uni
 | **Check-ins** | If you turn it on, the agent writes first at the times of day you choose. |
 | **Tools** | Web search, GitHub token for `git push`, MCP servers. |
 | **Look** | Hindi or English, dark or light. |
-| **Voice** | The microphone button starts Windows dictation (the same as pressing Win+H). With ElevenLabs keys (Settings), `pc say` and "Read answers aloud" use that voice; several keys take turns when one has used up its limit. |
+| **Voice** | The microphone button starts Windows dictation (the same as pressing Win+H). With a saved voice key (Settings) — a free Google key for the Gemini voice (Hindi, Odia and 100+ languages) or ElevenLabs keys — `pc say` and "Read answers aloud" use that voice; several ElevenLabs keys take turns when one has used up its limit. |
 
 | | |
 | --- | --- |
@@ -414,22 +414,39 @@ line that command has printed. It stays while you look at other windows, and it
 goes away on its own when the answer is done. It cannot be closed by the mouse;
 it is not in the taskbar, and it does not take the focus from what you do.
 
-## ElevenLabs voice with several keys
+## Voices: the free Gemini voice and ElevenLabs keys
 
-**Settings → Voice (ElevenLabs) → ElevenLabs keys**: paste your keys, one per
-line (up to 30). Then `pc say "text"` speaks with ElevenLabs, and **Read
-answers aloud** speaks every answer.
+**Settings → Voice** has two voices, and one of them is free:
 
-- The keys take turns. When ElevenLabs answers that a key has used up its
+- **Gemini key (Google).** A free key from
+  [aistudio.google.com](https://aistudio.google.com) (it starts with `AIza`).
+  Google's voice speaks **Hindi, Odia and 100+ more languages**. Paste it in
+  Settings, and `pc say "text"` and **Read answers aloud** use the Gemini
+  voice. The free tier is rate-limited (a few speaks a minute, more a day);
+  when it is reached, Termant says so for that one line.
+- **Know this before you give the key:** on the free tier Google may use
+  what you speak to improve its products, and human reviewers may read the
+  words (not in the EEA, Switzerland or the UK). Do not send passwords,
+  addresses or anything else sensitive to the free voice.
+- **ElevenLabs keys.** Paste your keys, one per line (up to 30).
+  `pc say "text"` and **Read answers aloud** speak with ElevenLabs.
+  The keys take turns. When ElevenLabs answers that a key has used up its
   limit, or that the key is wrong, Termant goes on to the next key within the
   same sentence and lets the refused key rest (6 hours for a used-up limit, a
   week for a wrong key), so it is not asked again every time.
-- `pc voice` shows for each key how many letters are used and whether it
-  rests; only the last 4 letters of a key are ever shown. `pc voice retry`
-  tries all keys again, `pc voice list` and `pc voice use ID` pick the voice.
-- Without keys, or when no key can speak, the PC's own voice is used.
-- The keys are stored in Termant's settings file on this PC, like the other
-  API keys. One text is at most 2,500 letters.
+
+- When both are saved, ElevenLabs speaks; `pc voice engine gemini` (or
+  `pc voice engine elevenlabs`) chooses which one speaks, and the choice is
+  remembered.
+- `pc voice` shows the saved keys and which voice speaks now; only the last
+  4 letters of a key are ever shown. `pc voice retry` tries all keys again,
+  `pc voice list` and `pc voice use ID` pick the ElevenLabs voice.
+- Without keys, or when the voice cannot speak, there is no spoken answer;
+  the answer is shown as usual.
+- The Gemini key is stored in a file of its own in Termant's data folder on
+  this PC, readable by you alone; the ElevenLabs keys are stored in
+  Termant's settings file, like the other API keys. One text is at most
+  2,500 letters.
 
 ## Faster answers
 

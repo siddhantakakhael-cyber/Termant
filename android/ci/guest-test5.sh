@@ -96,8 +96,30 @@ phone play /root/.cache/termant/speech.mp3 > /root/play.txt 2>&1; echo "play-exi
 grep -q '^Playing speech.mp3 (1 s)' /root/play.txt && echo "play-length=yes"
 phone play /usr/local/bin/phone; echo "play-not-a-sound-exit=$?"
 phone play /root/no-such-sound.mp3; echo "play-missing-exit=$?"
-kill $fake 2>/dev/null; unset TERMANT_ELEVEN_URL
-rm -f /root/.config/termant/voice.keys /root/.config/termant/voice.json
+echo "-- the Gemini voice: a free Google key that speaks Hindi and Odia"
+export TERMANT_GEMINI_URL="http://127.0.0.1:$(cat /root/fake-port)"
+phone voice gemini add not-a-key; echo "gemini-bad-key-exit=$?"
+phone voice gemini add AIzaSyDfakegeminikeygood00000 > /root/gemini.txt 2>&1; echo "gemini-add-exit=$?"; cat /root/gemini.txt
+grep -q 'Gemini key \.\.\...0000 saved; the Gemini voice speaks now' /root/gemini.txt && echo "gemini-add-said=yes"
+phone say "namaste, kaise ho?" > /root/gsay.txt 2>&1; echo "gsay-exit=$?"; cat /root/gsay.txt
+grep -q '^Said with the Gemini voice (Google, your free key)\.$' /root/gsay.txt && echo "gsay-said=yes"
+grep -q 'AIzaSyDfakegeminikeygood00000 gemini-3.8-flash-lite-tts namaste, kaise ho?' /root/fake-port.gemini-asked && echo "gsay-asked=yes"
+python3 -c "
+import wave
+w = wave.open('/root/.cache/termant/speech.wav')
+assert w.getnchannels() == 1 and w.getframerate() == 24000 and w.getnframes() == 24000
+" && echo "gsay-wav=yes"
+phone play /root/.cache/termant/speech.wav > /root/gplay.txt 2>&1; echo "gplay-exit=$?"; cat /root/gplay.txt
+grep -q '^Playing speech.wav (1 s)' /root/gplay.txt && echo "gplay-length=yes"
+phone voice > /root/gvoice.txt 2>&1; cat /root/gvoice.txt
+grep -q '^Gemini key \.\.\...0000 saved; the Gemini voice speaks now\.$' /root/gvoice.txt && echo "gvoice-report=yes"
+phone voice gemini add AIzaSyDfakegeminikeywrong00000 > /dev/null
+phone say the key is wrong > /root/gbad.txt 2>&1; echo "gbad-exit=$?"; cat /root/gbad.txt
+grep -q 'Google refused the key' /root/gbad.txt && grep -q 'the voice did not speak, so the phone' /root/gbad.txt && echo "gbad-fell-back=yes"
+phone voice engine elevenlabs > /root/gengine.txt 2>&1; echo "gengine-exit=$?"; cat /root/gengine.txt
+grep -q 'The elevenlabs voice speaks now' /root/gengine.txt && echo "gengine-switch=yes"
+kill $fake 2>/dev/null; unset TERMANT_ELEVEN_URL TERMANT_GEMINI_URL
+rm -f /root/.config/termant/voice.keys /root/.config/termant/voice.json /root/.config/termant/gemini.key /root/fake-port.gemini-asked
 echo "-- the real YouTube from this machine (told, not required: YouTube often refuses data centres)"
 learn youtube search how to make a table in Word > /root/youtube-search.txt 2>&1; echo "youtube-real-search-exit=$?"; head -n 12 /root/youtube-search.txt
 real=$(sed -n 's/^   id \([A-Za-z0-9_-]\{11\}\)$/\1/p' /root/youtube-search.txt | head -n 1)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""A pretend YouTube and a pretend ElevenLabs for the tests: fake_web.py PORT_FILE
+"""A pretend YouTube, a pretend ElevenLabs and a pretend Gemini for the tests: fake_web.py PORT_FILE
 Listens on a free port of this machine and writes the port to PORT_FILE."""
+import base64
 import io
 import json
 import math
@@ -47,6 +48,11 @@ def beep():
         w.setframerate(8000)
         w.writeframes(b''.join(struct.pack('<h', int(3000 * math.sin(i * 2 * math.pi * 440 / 8000))) for i in range(8000)))
     return out.getvalue()
+
+
+def gemini_sound():
+    """One second of raw 16-bit little-endian PCM at 24 kHz: the shape Google sends, with no header."""
+    return b''.join(struct.pack('<h', int(3000 * math.sin(i * 2 * math.pi * 440 / 24000))) for i in range(24000))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -99,6 +105,17 @@ class Handler(BaseHTTPRequestHandler):
             if url.path.endswith('/no-such-voice'):
                 return self.give(400, {'detail': {'status': 'voice_not_found', 'message': 'A voice with that id was not found.'}})
             return self.give(200, beep(), 'audio/wav')
+        if url.path.startswith('/v1beta/models/'):
+            model = url.path.split('/', 3)[3].rsplit(':', 1)[0]
+            key = self.headers.get('x-goog-api-key') or key
+            with open(sys.argv[1] + '.gemini-asked', 'a') as f:
+                f.write('%s %s %s\n' % (key, model, (body.get('contents') or [{}])[0].get('parts', [{}])[0].get('text', '')))
+            if key == 'AIzaSyDfakegeminikeywrong00000':
+                return self.give(400, {'error': {'code': 400, 'message': 'API key not valid. Please pass a valid API key.'}})
+            if key == 'AIzaSyDfakegeminikeyquota0000':
+                return self.give(429, {'error': {'code': 429, 'message': 'Quota exceeded for quota metric\'Generate requests\'.'}})
+            return self.give(200, {'candidates': [{'content': {'parts': [{'inlineData': {
+                'mimeType': 'audio/L16;rate=24000', 'data': base64.b64encode(gemini_sound()).decode('ascii')}}]}}]}, 'application/json')
         if url.path == '/v1/user/subscription':
             if key == 'key-wrong-22':
                 return self.give(401, {'detail': {'status': 'invalid_api_key', 'message': 'Invalid API key'}})

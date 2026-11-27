@@ -19,17 +19,18 @@ if [ "$1" = sms ] && [ -n "$TERMANT_CHAT" ] && [ -z "$TERMANT_UNATTENDED" ]; the
   fi
   shift; set -- sms-ask "$@"
 fi
-# phone voice ...: the ElevenLabs keys live in Ubuntu
+# phone voice ...: the voice keys live in Ubuntu (the Gemini voice: Google; or ElevenLabs)
 if [ "$1" = voice ]; then shift; exec termant-web voice "$@"; fi
-# phone say TEXT: with ElevenLabs keys saved, their voice speaks (the keys take turns when one is
-# used up) and the phone plays it; without keys, or when none can speak, the phone's own voice
+# phone say TEXT: with voice keys saved, that voice speaks (the Gemini voice speaks Hindi and
+# Odia; the ElevenLabs keys take turns when one is used up) and the phone plays it; without
+# keys, or when the voice cannot speak, the phone's own voice
 spoken=
-if [ "$1" = say ] && [ $# -ge 2 ] && [ -s "$HOME/.config/termant/voice.keys" ]; then
+if [ "$1" = say ] && [ $# -ge 2 ] && { [ -s "$HOME/.config/termant/voice.keys" ] || [ -s "$HOME/.config/termant/gemini.key" ]; }; then
   if made=$(termant-web voice speak "${@:2}"); then
     spoken=$(printf '%s\n' "$made" | sed -n 2p)
     set -- play "$(printf '%s\n' "$made" | sed -n 1p)"
   else
-    echo "phone say: ElevenLabs did not speak, so the phone's own voice is used." >&2
+    echo "phone say: the voice did not speak, so the phone's own voice is used." >&2
   fi
 fi
 # phone look FILE, play FILE, gallery FILE: the app cannot see Ubuntu's files, so the file itself is sent along
