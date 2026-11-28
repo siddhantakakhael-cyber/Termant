@@ -2,6 +2,7 @@ package com.termant.app;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
@@ -206,11 +207,17 @@ final class LiveCallView extends LinearLayout {
 
     // -------------------------------------------------- the orb
 
-    /** A disc that breathes, three rings that push out, a comet while it works. */
+    /**
+     * The heart of the call: a white-hot core, a halo of voice that speaks in
+     * bars, a ring that turns, and a comet when the work is running.
+     */
     private final class OrbView extends View {
+        private static final int BARS = 28;
         private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint core = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint bar = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint comet = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF arcRect = new RectF();
         private boolean live;
         private boolean speaking;
@@ -219,8 +226,11 @@ final class LiveCallView extends LinearLayout {
 
         OrbView(Context context) {
             super(context);
+            bar.setStrokeCap(Paint.Cap.ROUND);
+            bar.setStrokeWidth(density * 3f);
             ring.setStyle(Paint.Style.STROKE);
-            ring.setStrokeWidth(density * 2.4f);
+            ring.setStrokeWidth(density * 1.6f);
+            comet.setStrokeCap(Paint.Cap.ROUND);
             spinning = true;
         }
 
@@ -241,6 +251,15 @@ final class LiveCallView extends LinearLayout {
             invalidate();
         }
 
+        /** 0 while it sleeps, 1 while it speaks, in between while it listens. */
+        private float energy() {
+            return speaking ? 1f : (working ? 0.7f : (live ? 0.35f : 0.15f));
+        }
+
+        private int withAlpha(int color, int alpha) {
+            return (color & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
+        }
+
         @Override
         protected void onDraw(Canvas canvas) {
             if (!spinning) return;
@@ -248,37 +267,61 @@ final class LiveCallView extends LinearLayout {
             long t = SystemClock.uptimeMillis();
             float cx = getWidth() / 2f;
             float cy = getHeight() / 2f;
-            float base = Math.min(getWidth(), getHeight()) / 2f - dp(14);
+            float base = Math.min(getWidth(), getHeight()) * 0.28f;
+            float e = energy();
             int color = live ? ACCENT : MUTED;
-            // the glow: it swells while Termant speaks
-            float amp = speaking ? 0.28f : (working ? 0.18f : 0.08f);
-            float pulse = 1f + amp * (float) Math.sin(t / (speaking ? 170 : 430));
-            glow.setShader(new RadialGradient(cx, cy, base * 1.7f * pulse, color, 0x00000000,
-                    Shader.TileMode.CLAMP));
-            canvas.drawCircle(cx, cy, base * 1.7f * pulse, glow);
+            float breath = (float) Math.sin(t / (speaking ? 150 : 420));
+
+            // the halo: it swells with the voice
+            float halo = base * 2.05f * (1f + 0.1f * e * breath);
+            glow.setShader(new RadialGradient(cx, cy, halo,
+                    new int[]{withAlpha(color, (int) (70 + 60 * e)),
+                            withAlpha(color, (int) (30 + 22 * e)), 0x00000000},
+                    new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawCircle(cx, cy, halo, glow);
             glow.setShader(null);
-            // the core
-            core.setColor(color);
-            core.setAlpha((int) (180 + 75 * Math.sin(t / 260)));
-            canvas.drawCircle(cx, cy, base * 0.62f * (1f + 0.05f * (float) Math.sin(t / 240)), core);
-            // the rings: three, pushing out, faster while it speaks
-            float[] frac = {0.78f, 1.0f, 1.22f};
-            int[] alpha = {200, 120, 60};
-            long[] period = {speaking ? 420 : 900, speaking ? 560 : 1200, speaking ? 720 : 1500};
-            for (int i = 0; i < 3; i++) {
-                float r = base * frac[i] * (1f + 0.09f * (float) Math.abs(Math.sin(t / period[i])));
-                ring.setColor(color);
-                ring.setAlpha(alpha[i]);
-                canvas.drawCircle(cx, cy, r, ring);
+
+            // the bars: the voice, drawn round the orb, each with its own phase
+            float arm = base * 1.28f;
+            for (int i = 0; i < BARS; i++) {
+                float w = (t / (speaking ? 90 : 260)) + i * 2.39996f;
+                float lift = 0.5f + 0.5f * (float) Math.sin(w);
+                float len = dp(2) + lift * dp(19) * e;
+                float a = (float) Math.toRadians(i * 360f / BARS);
+                float x = cx + (float) Math.cos(a) * arm;
+                float y = cy + (float) Math.sin(a) * arm;
+                bar.setColor(color);
+                bar.setAlpha((int) (70 + 185 * lift * e));
+                canvas.drawLine(x, y, x + (float) Math.cos(a) * len, y + (float) Math.sin(a) * len, bar);
             }
+
+            // the core: white-hot at the middle, the theme colour at the rim
+            float r = base * (1f + 0.05f * breath + (speaking ? 0.07f * Math.abs(breath) : 0f));
+            core.setShader(new RadialGradient(cx, cy, r,
+                    new int[]{0xFFFBF6EC, withAlpha(color, 235)},
+                    new float[]{0f, 0.62f}, Shader.TileMode.CLAMP));
+            canvas.drawCircle(cx, cy, r, core);
+            core.setShader(null);
+
+            // the ring: it turns, faster when there is work
+            ring.setColor(color);
+            ring.setAlpha(live ? 150 : 80);
+            ring.setPathEffect(new DashPathEffect(new float[]{dp(2), dp(8)}, t / (working ? 5f : 14f)));
+            canvas.drawCircle(cx, cy, base * 1.12f, ring);
+            ring.setPathEffect(null);
+
             // the comet: a command is running
             if (working) {
-                arcRect.set(cx - base * 0.88f, cy - base * 0.88f, cx + base * 0.88f, cy + base * 0.88f);
-                float start = (t / 6f) % 360;
-                ring.setColor(ACCENT);
-                ring.setAlpha(255);
-                ring.setStrokeWidth(density * 3.4f);
-                canvas.drawArc(arcRect, start, 96, false, ring);
+                float orbit = base * 1.55f;
+                float ang = t / 9f;
+                comet.setColor(ACCENT);
+                comet.setAlpha(200);
+                comet.setStrokeWidth(density * 3.6f);
+                arcRect.set(cx - orbit, cy - orbit, cx + orbit, cy + orbit);
+                canvas.drawArc(arcRect, ang - 120f, 120f, false, comet);
+                float hx = cx + (float) Math.cos((float) Math.toRadians(ang)) * orbit;
+                float hy = cy + (float) Math.sin((float) Math.toRadians(ang)) * orbit;
+                canvas.drawCircle(hx, hy, density * 4.6f, comet);
             }
         }
     }
