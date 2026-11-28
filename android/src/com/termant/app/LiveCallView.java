@@ -136,8 +136,15 @@ final class LiveCallView extends LinearLayout {
         call = new LiveCall(getContext(), new LiveCall.Listener() {
             @Override
             public void onState(String state) {
-                if ("connecting".equals(state)) orb.setLive(false);
-                else orb.setLive(true);
+                if ("connecting".equals(state)) {
+                    orb.setLive(false);
+                    workLine.setTextColor(MUTED);
+                    workLine.setText("connecting to Gemini...");
+                } else {
+                    orb.setLive(true);
+                    if (workLine.getText().toString().equals("connecting to Gemini..."))
+                        workLine.setText("");
+                }
                 orb.setSpeaking("speaking".equals(state));
                 orb.setWorking("working".equals(state));
             }
@@ -197,7 +204,7 @@ final class LiveCallView extends LinearLayout {
                 setVisibility(GONE);
                 host.onLiveEnded(reason, millis);
             }
-        }, reason.equals("ended") ? 400 : 2600);
+        }, reason.equals("ended") ? 400 : 6000);
     }
 
     private static String shorten(String s) {

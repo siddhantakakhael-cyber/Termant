@@ -130,6 +130,7 @@ final class LiveCall {
     // ------------------------------------------------------------ the whole call
 
     private void loop() {
+        liveLog("==== call started, " + (System.currentTimeMillis() / 1000) + " ====");
         Map<String, String> keys = Config.keys(context);
         geminiKey = keys.get("GOOGLE_GENERATIVE_AI_API_KEY");
         if (geminiKey == null || geminiKey.trim().isEmpty()) {
@@ -143,6 +144,7 @@ final class LiveCall {
         for (String path : PATHS) {
             if (up) break;
             for (int m = 0; m < MODELS.length && !up; m++) {
+                liveLog("door: " + path);
                 try {
                     open(path);
                     readThread = new Thread(new Runnable() {
@@ -156,6 +158,7 @@ final class LiveCall {
                         startAudio();
                         audioOn = true;
                     }
+                    liveLog("setup: " + MODELS[m]);
                     sendSetup(MODELS[m]);
                     if (waitForSetup()) {
                         up = true;
@@ -223,7 +226,7 @@ final class LiveCall {
     private void open(String path) throws IOException {
         SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         SSLSocket s = (SSLSocket) factory.createSocket();
-        s.connect(new InetSocketAddress(HOST, 443), 20000);
+        s.connect(new InetSocketAddress(HOST, 443), 15000);
         s.setSoTimeout(0);
         DataOutputStream out = new DataOutputStream(s.getOutputStream());
         byte[] nonce = new byte[16];
@@ -239,23 +242,39 @@ final class LiveCall {
         out.writeBytes("\r\n");
         out.flush();
         BufferedInputStream in = new BufferedInputStream(s.getInputStream(), 1 << 16);
-        BufferedReader lines = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-        String status = lines.readLine();
-        if (status == null) {
+        // The status line and the headers, one byte at a time, so that no byte
+        // of what follows the empty line is ever swallowed by a reader ahead.
+        StringBuilder statusLine = new StringBuilder();
+        int c;
+        while ((c = in.read()) >= 0) {
+            if (c == '\n') break;
+            statusLine.append((char) c);
+        }
+        if (c < 0) {
             closeQuietly(s);
             throw new IOException("the server closed the connection");
         }
-        String[] parts = status.split(" ");
+        int p1 = -1, p2 = -1;
+        while (true) {
+            c = in.read();
+            if (c < 0) {
+                closeQuietly(s);
+                throw new IOException("the server closed the connection");
+            }
+            if (p1 == '\r' && p2 == '\n' && c == '\n') break; // \r\n\r\n
+            p2 = p1;
+            p1 = c;
+        }
+        String[] parts = statusLine.toString().split(" ");
         boolean upgrade = parts.length >= 2 && parts[1].equals("101");
         int code = parts.length >= 2 ? parseCode(parts[1]) : 0;
-        String h;
-        while ((h = lines.readLine()) != null && !h.isEmpty()) {
-            // the headers: none of them matter here
-        }
         if (!upgrade) {
             StringBuilder body = new StringBuilder();
-            String line;
-            while ((line = lines.readLine()) != null && body.length() < 4000) body.append(line);
+            int n = 0;
+            while (n < 4000 && (c = in.read()) >= 0) {
+                body.append((char) c);
+                n++;
+            }
             closeQuietly(s);
             throw new LiveReject(classify(body.toString(), code), code, body.toString());
         }
@@ -331,6 +350,40 @@ final class LiveCall {
         }
     }
 
+    private boolean firstServerLogged;
+
+    /** Every step of the connection, written where the phone's terminal can read it. */
+    private void liveLog(String line) {
+        try {
+            String safe = line.replace("'", "").replace('\n', ' ').replace('\r', ' ');
+            ProcessBuilder pb = new ProcessBuilder(Ubuntu.command(context,
+                    "/bin/bash", "-c", "printf '%s\n' '" + safe
+                            + "' >> " + Config.workspace(context) + "/.termant-live.log"));
+            Map<String, String> env = pb.environment();
+            env.clear();
+            for (String e : Ubuntu.hostEnvironment(context)) {
+                int eq = e.indexOf('=');
+                if (eq > 0) env.put(e.substring(0, eq), e.substring(eq + 1));
+            }
+            pb.redirectErrorStream(true);
+            final Process p = pb.start();
+            p.getOutputStream().close();
+            Thread w = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        p.waitFor();
+                    } catch (Exception e2) {
+                    }
+                }
+            });
+            w.setDaemon(true);
+            w.start();
+        } catch (Exception e) {
+            // there is no terminal yet; the log waits for one
+        }
+    }
+
     /** A text frame, masked, as the RFC asks of every client frame. */
     private synchronized void sendText(String text) throws IOException {
         sendFrame(0x1, text.getBytes(StandardCharsets.UTF_8));
@@ -363,7 +416,7 @@ final class LiveCall {
 
     /** Blocks until the server accepts the call (setupComplete) or rejects it (setupError). */
     private boolean waitForSetup() {
-        long deadline = System.currentTimeMillis() + 30000;
+        long deadline = System.currentTimeMillis() + 25000;
         synchronized (setupGate) {
             while (setupResult == null && running) {
                 long left = deadline - System.currentTimeMillis();
@@ -458,6 +511,10 @@ final class LiveCall {
             o = new JSONObject(text);
         } catch (Exception e) {
             return;
+        }
+        if (!firstServerLogged) {
+            firstServerLogged = true;
+            liveLog("first answer: " + (text.length() > 300 ? text.substring(0, 300) : text));
         }
         if (o.has("setupComplete")) {
             setupDone = true;
@@ -749,6 +806,7 @@ final class LiveCall {
         if (finished) return;
         finished = true;
         running = false;
+        liveLog("done: " + reason);
         if (reason.equals("quota"))
             Config.liveBlocked(context, System.currentTimeMillis() + 24L * 3600 * 1000);
         closeSocket();
