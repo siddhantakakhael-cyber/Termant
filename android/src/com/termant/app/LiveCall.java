@@ -58,11 +58,18 @@ final class LiveCall {
     }
 
     static final String HOST = "generativelanguage.googleapis.com";
-    static final String MODEL =
-            "projects/project-public/models/gemini-2.5-flash-native-audio-preview-12-2025";
-    // The same call is served from two doors; the new one first, the old one if
-    // the new one is not there yet.
-    static final String[] PATHS = {"/v1/live/bidiGenerateContent", "/v1beta/live/bidiGenerateContent"};
+    // The doors the call is served from, newest first
+    static final String[] PATHS = {
+            "/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent",
+            "/v1beta/live/bidiGenerateContent",
+            "/v1/live/bidiGenerateContent",
+    };
+    // The voices a key may open differ; try them in order, the richest first
+    static final String[] MODELS = {
+            "models/gemini-2.5-flash-native-audio-preview-12-2025",
+            "models/gemini-2.5-flash-preview-native-audio-dialog",
+            "models/gemini-2.0-flash-live-001",
+    };
 
     private static final int IN_RATE = 16000;
     private static final int OUT_RATE = 24000;
@@ -82,6 +89,9 @@ final class LiveCall {
     private Thread micThread;
     private Thread readThread;
     private String geminiKey;
+    private volatile boolean setupDone;
+    private volatile String setupResult;
+    private final Object setupGate = new Object();
 
     LiveCall(Context context, Listener listener) {
         this.context = context;
@@ -128,29 +138,52 @@ final class LiveCall {
         }
         say("connecting");
         IOException last = null;
+        boolean up = false;
+        boolean audioOn = false;
         for (String path : PATHS) {
-            try {
-                open(path);
-                break;
-            } catch (LiveReject e) {
-                if (e.quota) {
-                    finish("quota");
-                    return;
+            if (up) break;
+            for (int m = 0; m < MODELS.length && !up; m++) {
+                try {
+                    open(path);
+                    readThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            readLoop();
+                        }
+                    }, "termant-live-read");
+                    readThread.start();
+                    if (!audioOn) {
+                        startAudio();
+                        audioOn = true;
+                    }
+                    sendSetup(MODELS[m]);
+                    if (waitForSetup()) {
+                        up = true;
+                        break;
+                    }
+                    if ("quota".equals(setupResult)) {
+                        finish("quota");
+                        return;
+                    }
+                    closeSocket();
+                    last = new IOException(setupResult == null ? "Gemini did not answer" : setupResult);
+                    if (setupResult != null && !modelMissing(setupResult)) break; // a real error, not a wrong door
+                } catch (LiveReject e) {
+                    if (e.quota) {
+                        finish("quota");
+                        return;
+                    }
+                    last = new IOException("code " + e.code + ": " + e.body);
+                    break; // this door is closed; the next one
+                } catch (IOException e) {
+                    closeSocket();
+                    last = e;
+                    break;
                 }
-                last = new IOException("code " + e.code + ": " + e.body);
-            } catch (IOException e) {
-                last = e;
             }
         }
-        if (socket == null) {
+        if (!up) {
             finish("error: " + oneLine(last == null ? "could not reach Gemini" : String.valueOf(last.getMessage())));
-            return;
-        }
-        try {
-            startAudio();
-            sendSetup();
-        } catch (IOException e) {
-            finish("error: " + oneLine(String.valueOf(e.getMessage())));
             return;
         }
         micThread = new Thread(new Runnable() {
@@ -160,15 +193,8 @@ final class LiveCall {
             }
         }, "termant-live-mic");
         micThread.start();
-        readThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                readLoop();
-            }
-        }, "termant-live-read");
-        readThread.start();
         while (running) {
-            if ((micThread != null && !micThread.isAlive()) || (readThread != null && !readThread.isAlive())) break;
+            if (micThread != null && !micThread.isAlive()) break;
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
@@ -202,8 +228,10 @@ final class LiveCall {
         DataOutputStream out = new DataOutputStream(s.getOutputStream());
         byte[] nonce = new byte[16];
         random.nextBytes(nonce);
-        out.writeBytes("GET " + path + "?key=" + geminiKey + " HTTP/1.1\r\n");
+        boolean headerKey = path.startsWith("/ws/");
+        out.writeBytes("GET " + path + (headerKey ? "" : "?key=" + geminiKey) + " HTTP/1.1\r\n");
         out.writeBytes("Host: " + HOST + "\r\n");
+        if (headerKey) out.writeBytes("x-goog-api-key: " + geminiKey + "\r\n");
         out.writeBytes("Upgrade: websocket\r\n");
         out.writeBytes("Connection: Upgrade\r\n");
         out.writeBytes("Sec-WebSocket-Key: " + Base64.encodeToString(nonce, Base64.NO_WRAP) + "\r\n");
@@ -257,10 +285,10 @@ final class LiveCall {
     }
 
     /** The first message of the call: who the model is, the voice, the run tool. */
-    private void sendSetup() throws IOException {
+    private void sendSetup(String model) throws IOException {
         JSONObject setup = new JSONObject();
         try {
-            setup.put("model", MODEL);
+            setup.put("model", model);
             JSONObject gen = new JSONObject();
             gen.put("responseModalities", new JSONArray().put("AUDIO"));
             JSONObject voice = new JSONObject();
@@ -275,6 +303,7 @@ final class LiveCall {
             setup.put("realtimeInputConfig", new JSONObject()
                     .put("automaticActivityDetection", new JSONObject())
                     .put("transcription", new JSONObject()));
+            setup.put("inputAudioTranscription", new JSONObject());
             setup.put("outputAudioTranscription", new JSONObject());
             JSONObject decl = new JSONObject();
             decl.put("name", "run");
@@ -332,6 +361,31 @@ final class LiveCall {
         out.flush();
     }
 
+    /** Blocks until the server accepts the call (setupComplete) or rejects it (setupError). */
+    private boolean waitForSetup() {
+        long deadline = System.currentTimeMillis() + 30000;
+        synchronized (setupGate) {
+            while (setupResult == null && running) {
+                long left = deadline - System.currentTimeMillis();
+                if (left <= 0) return false;
+                try {
+                    setupGate.wait(left);
+                } catch (InterruptedException e) {
+                    return false;
+                }
+            }
+        }
+        return "ok".equals(setupResult);
+    }
+
+    /** A door this key cannot open: the next model may be the right one. */
+    private static boolean modelMissing(String reason) {
+        String r = (reason == null ? "" : reason).toLowerCase(Locale.ROOT);
+        return r.contains("not found") || r.contains("not_found")
+                || r.contains("permission denied") || r.contains("permission_denied")
+                || r.contains("403") || r.contains("404");
+    }
+
     private void readLoop() {
         ByteArrayOutputStream pending = new ByteArrayOutputStream();
         int pendingOpcode = -1;
@@ -368,9 +422,9 @@ final class LiveCall {
                 }
                 dispatch(opcode, payload);
             }
-            finish("ended");
+            if (running && setupDone) finish("ended");
         } catch (IOException e) {
-            finish("ended");
+            if (running && setupDone) finish("ended");
         } catch (Exception e) {
             finish("error: " + oneLine(String.valueOf(e.getMessage())));
         }
@@ -386,9 +440,10 @@ final class LiveCall {
             String body = payload.length > 2
                     ? new String(payload, 2, payload.length - 2, StandardCharsets.UTF_8) : "";
             closeSocket();
-            if (code == 1000 || code == 1001) finish("ended");
-            else finish(classify(body, code) ? "quota"
-                    : "error: the call was closed (" + oneLine(body) + ", code " + code + ")");
+            String reason = classify(body, code) ? "quota"
+                    : "error: the call was closed (" + oneLine(body) + ", code " + code + ")";
+            if (setupDone) finish(reason);
+            else setupFailed(reason);
             return;
         }
         if (opcode != 0x1) return;
@@ -405,13 +460,21 @@ final class LiveCall {
             return;
         }
         if (o.has("setupComplete")) {
+            setupDone = true;
             Config.liveBlocked(context, 0); // it answered: the quota is not out
             say("live");
+            synchronized (setupGate) {
+                if (setupResult == null) {
+                    setupResult = "ok";
+                    setupGate.notifyAll();
+                }
+            }
             return;
         }
         if (o.has("goAway")) {
             closeSocket();
-            finish("ended");
+            if (setupDone) finish("ended");
+            else setupFailed("error: the call was not wanted");
             return;
         }
         if (o.has("setupError") || o.has("error")) {
@@ -423,7 +486,9 @@ final class LiveCall {
                 msg = e.getString("message");
             } catch (Exception e2) {
             }
-            finish(classify(msg, 0) ? "quota" : "error: " + oneLine(msg));
+            String reason = classify(msg, 0) ? "quota" : "error: " + oneLine(msg);
+            if (setupDone) finish(reason);
+            else setupFailed(reason);
             return;
         }
         if (o.has("toolCall")) {
@@ -481,6 +546,16 @@ final class LiveCall {
             return;
         }
         // usageMetadata and the rest: nothing to do
+    }
+
+    /** The setup was refused: tell the door-trying loop, do not end the call. */
+    private void setupFailed(String reason) {
+        synchronized (setupGate) {
+            if (setupResult == null) {
+                setupResult = reason;
+                setupGate.notifyAll();
+            }
+        }
     }
 
     // ------------------------------------------------------------ the work, out loud
