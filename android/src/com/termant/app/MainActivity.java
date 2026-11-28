@@ -293,6 +293,8 @@ public class MainActivity extends Activity
                     Toast.makeText(MainActivity.this, R.string.live_quota, Toast.LENGTH_LONG).show();
                 } else if (reason.equals("no-key")) {
                     Toast.makeText(MainActivity.this, R.string.live_no_key, Toast.LENGTH_LONG).show();
+                } else if (reason.startsWith("error:")) {
+                    Toast.makeText(MainActivity.this, reason, Toast.LENGTH_LONG).show();
                 } else {
                     long s = millis / 1000;
                     Toast.makeText(MainActivity.this,
