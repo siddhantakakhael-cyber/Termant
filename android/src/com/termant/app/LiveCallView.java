@@ -136,13 +136,15 @@ final class LiveCallView extends LinearLayout {
         call = new LiveCall(getContext(), new LiveCall.Listener() {
             @Override
             public void onState(String state) {
-                if ("connecting".equals(state)) {
+                String shown = workLine.getText().toString();
+                if ("connecting".equals(state) || state.startsWith("trying:")) {
                     orb.setLive(false);
                     workLine.setTextColor(MUTED);
-                    workLine.setText("connecting to Gemini...");
+                    workLine.setText(state.startsWith("trying:")
+                            ? state.substring(7) : "connecting to Gemini...");
                 } else {
                     orb.setLive(true);
-                    if (workLine.getText().toString().equals("connecting to Gemini..."))
+                    if (shown.equals("connecting to Gemini...") || shown.startsWith("door "))
                         workLine.setText("");
                 }
                 orb.setSpeaking("speaking".equals(state));

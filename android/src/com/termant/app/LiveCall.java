@@ -141,10 +141,11 @@ final class LiveCall {
         IOException last = null;
         boolean up = false;
         boolean audioOn = false;
-        for (String path : PATHS) {
-            if (up) break;
+        for (int d = 0; d < PATHS.length && !up; d++) {
+            String path = PATHS[d];
             for (int m = 0; m < MODELS.length && !up; m++) {
                 liveLog("door: " + path);
+                say("trying:" + "door " + (d + 1) + " of " + PATHS.length + ", " + shortName(MODELS[m]));
                 try {
                     open(path);
                     readThread = new Thread(new Runnable() {
@@ -226,8 +227,10 @@ final class LiveCall {
     private void open(String path) throws IOException {
         SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         SSLSocket s = (SSLSocket) factory.createSocket();
-        s.connect(new InetSocketAddress(HOST, 443), 15000);
-        s.setSoTimeout(0);
+        s.connect(new InetSocketAddress(HOST, 443), 10000);
+        // The handshake has a deadline: a server that is silent is a failed
+        // door, not a wait without end
+        s.setSoTimeout(10000);
         DataOutputStream out = new DataOutputStream(s.getOutputStream());
         byte[] nonce = new byte[16];
         random.nextBytes(nonce);
@@ -279,6 +282,7 @@ final class LiveCall {
             throw new LiveReject(classify(body.toString(), code), code, body.toString());
         }
         socket = s;
+        s.setSoTimeout(0); // the call itself has no deadline
         wsOut = out;
         wsIn = in;
     }
@@ -384,6 +388,12 @@ final class LiveCall {
         }
     }
 
+    private static String shortName(String model) {
+        String m = model.substring(model.lastIndexOf('/') + 1);
+        if (m.startsWith("gemini-")) m = m.substring(7);
+        return m;
+    }
+
     /** A text frame, masked, as the RFC asks of every client frame. */
     private synchronized void sendText(String text) throws IOException {
         sendFrame(0x1, text.getBytes(StandardCharsets.UTF_8));
@@ -416,7 +426,7 @@ final class LiveCall {
 
     /** Blocks until the server accepts the call (setupComplete) or rejects it (setupError). */
     private boolean waitForSetup() {
-        long deadline = System.currentTimeMillis() + 25000;
+        long deadline = System.currentTimeMillis() + 15000;
         synchronized (setupGate) {
             while (setupResult == null && running) {
                 long left = deadline - System.currentTimeMillis();
