@@ -1,0 +1,10 @@
+11-28 05:57:48.610  2720  2720 I Termant : chat c1795845224760 session: ses_ddf44f96effeEl8kbfNXRGvegv
+11-28 05:58:12.024  2720  2720 I Termant : chat c1795845224760 session: ses_ddf44f96effeEl8kbfNXRGvegv
+11-28 05:58:29.121  2720  2720 I Termant : chat c1795845224760 session: ses_ddf44f96effeEl8kbfNXRGvegv
+11-28 05:59:24.705  2720  2720 I Termant : chat c1795845224760 session: ses_ddf436f22ffejo1rgTiKQUGGUT
+11-28 06:01:44.856  7906  7906 I Termant : chat c1795845224760 session: ses_ddf436f22ffejo1rgTiKQUGGUT
+11-28 06:02:38.387  8455  8455 I Termant : chat c1795845724995 session: ses_ddf40ac10ffe3MdwJguTf6c9H7
+11-28 06:03:08.885  9048  9048 I Termant : chat c1795845724995 session: ses_ddf40ac10ffe3MdwJguTf6c9H7
+11-28 06:04:06.296  9731  9731 I Termant : chat c1795845829764 session: ses_ddf3f1771ffebV737gRcl4sXv2
+11-28 06:04:27.088  9731  9731 I Termant : chat c1795845851009 session: ses_ddf3ec2ecffeE723iuHvPEDap1
+11-28 06:04:48.921  9731  9731 I Termant : chat c1795845829764 session: ses_ddf3f1771ffebV737gRcl4sXv2

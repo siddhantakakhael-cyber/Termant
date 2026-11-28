@@ -1,0 +1,25 @@
+App: Settings (com.android.settings), screen 320x640
+1. [text] "Settings" @90,152
+2. [text] "Search settings" @143,227
+3. [text] "Network & internet" @155,303
+4. [text] "Mobile, Wi‑Fi, hotspot" @138,326
+5. [text] "Connected devices" @156,391
+6. [text] "Bluetooth, pairing" @127,414
+7. [text] "Apps" @94,479
+8. [text] "Recent apps, default apps" @152,502
+9. [text] "Notifications" @128,567
+10. [text] "Notification history, conversations" @178,590
+Read from a picture of the screen by Mirage (2 parts, 16.4 s). The places are right; letters can be wrong (O/0, l/1, capitals) and only Latin letters are read:
+11. [seen] "6:21 >O" @45,12
+12. [seen] "D" @270,12
+13. [seen] "Settings" @88,156
+14. [seen] "Search settings" @135,227
+15. [seen] "Network & internet" @156,303
+16. [seen] "Mobile, Wi-Fi, hotspot" @136,326
+17. [seen] "Connected devices" @155,391
+18. [seen] "CoD" @43,401
+19. [seen] "Bluetooth, pairing" @126,415
+20. [seen] "Apps" @94,481
+21. [seen] "Recent apps, default apps" @151,502
+22. [seen] "Notifications" @130,567
+23. [seen] "Notification history, conversations" @176,590

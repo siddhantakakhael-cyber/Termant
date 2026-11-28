@@ -1,0 +1,49 @@
+PASS six helpers come with Termant
+PASS the list names writer, coder, checker, planner and coach
+PASS no helper made here yet
+PASS each is a file OpenCode reads
+PASS a helper file says it is a subagent
+PASS every helper is told to leave the screen alone
+PASS every helper is told not to send, pay or delete, and of the team notebook
+PASS a helper is made
+PASS making it says what it is for
+PASS its file has the instructions
+PASS its file has what it is for
+PASS it is told to leave the screen alone too
+PASS the diary of what was learned names it
+PASS the same name changes the helper
+PASS the model is written in its file
+PASS the list has the helper with its model
+PASS show prints the helper
+PASS show prints a helper of Termant
+PASS show: an unknown helper is refused
+PASS a helper of Termant cannot be replaced
+PASS a name of OpenCode cannot be taken
+PASS a wrong name is refused
+PASS a helper without a purpose is refused
+PASS a missing file is refused
+PASS too short instructions are refused
+PASS too long instructions are refused
+PASS a wrong model is refused
+PASS quotes and colons in what it is for are kept
+PASS at most 20 helpers made here
+PASS a helper of Termant stays
+PASS an unknown helper cannot be removed
+PASS a path is not a name
+PASS refresh writes Termant's helpers again
+PASS refresh leaves the helpers made here
+PASS an unknown word prints the help and fails
+PASS OpenCode knows the helpers of Termant
+PASS OpenCode knows the helper made here
+PASS the run with helpers ends well
+PASS both helpers were started
+PASS the run waits for the helpers
+PASS the researcher's report comes back
+PASS the poet's report comes back
+PASS a helper runs a command by itself
+PASS the helpers work at the same time
+PASS deleting in the phone's storage with rm is refused
+PASS wiping the home folder is refused, also behind another command
+PASS a folder of the work itself can still be deleted
+PASS an ordinary command runs
+RESULT: PASS

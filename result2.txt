@@ -1,0 +1,6 @@
+Hello, world!
+hello-exit=0
+Package: hello
+Status: install ok installed
+Priority: optional
+TERMANT-TEST-END

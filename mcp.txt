@@ -1,0 +1,4 @@
+chat with an MCP server: answered
+requests the MCP server got:
+server/discover
+MCP: NOT connected

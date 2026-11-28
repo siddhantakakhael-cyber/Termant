@@ -1,0 +1,63 @@
+11-28 06:11:39.660  9731  9731 I Termant : overlay: over other apps
+11-28 06:11:39.664  9731  9731 I Termant : overlay: result shown
+11-28 06:11:40.125  9731  9731 I Termant : overlay: close at 280,80
+11-28 06:11:40.125  9731  9731 I Termant : overlay: reply at 160,212
+11-28 06:11:48.741  9731  9731 I Termant : overlay: hidden
+11-28 06:19:22.059 18009 18009 I Termant : overlay: over other apps
+11-28 06:19:22.073 18009 18009 I Termant : overlay: status shown
+11-28 06:19:22.526 18009 18009 I Termant : overlay: stop at 285,90
+11-28 06:19:25.691 18009 18009 I Termant : overlay: stopped by the user
+11-28 06:19:25.712 18009 18009 I Termant : overlay: hidden
+11-28 06:19:47.346 18009 18009 I Termant : overlay: over other apps
+11-28 06:19:47.383 18009 18009 I Termant : overlay: status shown
+11-28 06:19:47.838 18009 18009 I Termant : overlay: stop at 285,90
+11-28 06:19:54.575 18009 18009 I Termant : overlay: result shown
+11-28 06:19:55.023 18009 18009 I Termant : overlay: close at 280,80
+11-28 06:19:55.026 18009 18009 I Termant : overlay: reply at 160,158
+11-28 06:20:04.638 18009 18009 I Termant : overlay: hidden
+11-28 06:20:20.761 18009 18009 I Termant : overlay: over other apps
+11-28 06:20:20.777 18009 18009 I Termant : overlay: status shown
+11-28 06:20:21.230 18009 18009 I Termant : overlay: stop at 285,90
+11-28 06:20:23.632 18009 18009 I Termant : overlay: result shown
+11-28 06:20:24.081 18009 18009 I Termant : overlay: close at 280,80
+11-28 06:20:24.082 18009 18009 I Termant : overlay: reply at 160,158
+11-28 06:20:24.275 18009 18009 I Termant : overlay: typing the next message
+11-28 06:20:24.710 18009 18009 I Termant : overlay: close at 280,80
+11-28 06:20:24.718 18009 18009 I Termant : overlay: box at 135,151
+11-28 06:20:24.718 18009 18009 I Termant : overlay: send at 277,150
+11-28 06:20:39.414 18009 18009 I Termant : overlay: sent from the card
+11-28 06:20:39.466 18009 18009 I Termant : overlay: status shown
+11-28 06:20:39.919 18009 18009 I Termant : overlay: stop at 285,90
+11-28 06:20:42.320 18009 18009 I Termant : overlay: result shown
+11-28 06:20:42.769 18009 18009 I Termant : overlay: close at 280,80
+11-28 06:20:42.769 18009 18009 I Termant : overlay: reply at 160,158
+11-28 06:20:44.890 18009 18009 I Termant : overlay: swiped away
+11-28 06:20:44.924 18009 18009 I Termant : overlay: hidden
+11-28 06:24:01.328 18009 25322 I Termant : ask: CI: which one? [Alpha, Beta]
+11-28 06:24:01.335 18009 18009 I Termant : overlay: with screen control
+11-28 06:24:01.340 18009 18009 I Termant : overlay: question shown
+11-28 06:24:01.791 18009 18009 I Termant : overlay: close at 280,56
+11-28 06:24:01.791 18009 18009 I Termant : overlay: choice 1 at 160,130
+11-28 06:24:01.791 18009 18009 I Termant : overlay: choice 2 at 160,178
+11-28 06:24:01.791 18009 18009 I Termant : overlay: write at 160,226
+11-28 06:24:03.665 18009 25322 I Termant : ask: answered
+11-28 06:24:03.683 18009 18009 I Termant : overlay: hidden
+11-28 06:24:03.692 18009 25348 I Termant : ask: CI: type a word (typed answer)
+11-28 06:24:03.705 18009 18009 I Termant : overlay: with screen control
+11-28 06:24:03.714 18009 18009 I Termant : overlay: question shown
+11-28 06:24:04.165 18009 18009 I Termant : overlay: close at 280,56
+11-28 06:24:04.166 18009 18009 I Termant : overlay: box at 135,131
+11-28 06:24:04.166 18009 18009 I Termant : overlay: send at 277,130
+11-28 06:24:08.405 18009 25348 I Termant : ask: answered
+11-28 06:24:08.418 18009 18009 I Termant : overlay: hidden
+11-28 06:24:08.451 18009 25403 I Termant : ask: CI: skip this one [Yes, No]
+11-28 06:24:08.489 18009 18009 I Termant : overlay: with screen control
+11-28 06:24:08.498 18009 18009 I Termant : overlay: question shown
+11-28 06:24:08.952 18009 18009 I Termant : overlay: close at 280,56
+11-28 06:24:08.952 18009 18009 I Termant : overlay: choice 1 at 160,130
+11-28 06:24:08.952 18009 18009 I Termant : overlay: choice 2 at 160,178
+11-28 06:24:08.952 18009 18009 I Termant : overlay: write at 160,226
+11-28 06:24:10.840 18009 18009 I Termant : overlay: hidden
+11-28 06:24:14.005 18009 25460 I Termant : ask: CI: inside Termant [One, Two]
+11-28 06:24:14.044 18009 18009 I Termant : ask: shown in Termant
+11-28 06:24:18.904 18009 25460 I Termant : ask: answered

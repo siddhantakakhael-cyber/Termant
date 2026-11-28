@@ -1,0 +1,60 @@
+== before: turned off by the test's settings
+Check-ins: off (turned off by the user)
+Daily at: 09:00 21:00
+Today so far: 0 of at most 6
+Nothing planned to come back to.
+Check-ins are turned off (Termant → Settings). Turn them on only if the user asks: phone care on
+off-exit=1
+Check-ins are turned off (Termant → Settings). Turn them on only if the user asks: phone care on
+off-now-exit=1
+== times
+phone care times: up to 4 times of day such as 09:00 21:30, or none
+badtime-exit=1
+phone care times: up to 4 times of day such as 09:00 21:30, or none
+manytimes-exit=1
+Check-ins: off (turned off by the user)
+Daily at: 03:33
+Today so far: 0 of at most 6
+Nothing planned to come back to.
+times-exit=0
+Check-ins are on.
+Check-ins: on
+Daily at: 03:33
+Today so far: 0 of at most 6
+Nothing planned to come back to.
+on-exit=0
+times-kept=1
+== planning
+Planned: 1  Tue 1 Dec 07:00  CI topic far away
+(moved to the morning: nobody is woken for this)
+You will be started then to write to the user. Do not tell the user a reminder is set; just do it.
+plan-exit=0
+Already planned: 1  Tue 1 Dec 07:00  CI topic far away
+twice-exit=1
+listed=1
+Dropped: 1  Tue 1 Dec 07:00  CI topic far away
+cancel-exit=0
+phone care cancel: no planned check-in with the ID '1'. See: phone care
+cancel-again-exit=1
+left=0
+phone care in: between 1 minute and 30 days
+zero-exit=1
+Say what to come back to, e.g. phone care in 20h "how the exam went"
+notopic-exit=1
+usage: phone care in N[m|h|d] TOPIC   (for example: phone care in 20h "how the exam went")
+badwhen-exit=1
+Planned: 2  Sat 28 Nov 12:30  CI lunch
+You will be started then to write to the user. Do not tell the user a reminder is set; just do it.
+at-exit=0
+Dropped: 2  Sat 28 Nov 12:30  CI lunch
+at-cancel-exit=0
+== in four minutes, about something the agent has a note on
+Planned: 3  Sat 28 Nov 06:11  which colour the user likes best: name the colour from your notes in your question
+You will be started then to write to the user. Do not tell the user a reminder is set; just do it.
+soon-exit=0
+Check-ins: on
+Daily at: 03:33
+Today so far: 0 of at most 6
+Planned (ID, when, about):
+  3  Sat 28 Nov 06:11  which colour the user likes best: name the colour from your notes in your question
+TERMANT-TEST-END

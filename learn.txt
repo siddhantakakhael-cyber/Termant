@@ -1,0 +1,11 @@
+the agent made the tool ci-sum by itself: yes
+#!/bin/bash
+# termant-tool: Prints the sum of two numbers given to it
+python3 -c "
+import sys
+a,b=sys.argv[1],sys.argv[2]
+def n(x):
+    try: return int(x)
+    except ValueError: return float(x)
+print(n(a)+n(b))
+" "$1" "$2"

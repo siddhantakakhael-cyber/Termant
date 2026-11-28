@@ -1,0 +1,8 @@
+11-28 06:21:03.107 18009 20413 I Termant : mirage: downloading the model
+11-28 06:21:06.565 18009 20413 I Termant : mirage: model ready
+11-28 06:21:22.961 18009 20413 I Termant : mirage: 13 pieces from 2 parts in 16394 ms
+11-28 06:21:42.100 18009 20523 I Termant : mirage: 13 pieces from 2 parts in 17076 ms
+11-28 06:21:49.499 18009 20586 I Termant : mirage: saw 6 things in a picture of 768x576 in 7321 ms
+11-28 06:21:57.040 18009 20623 I Termant : mirage: saw 6 things in a picture of 768x576 in 7448 ms
+11-28 06:22:04.668 18009 20664 I Termant : mirage: saw 14 things in a picture of 320x640 in 7542 ms
+11-28 06:22:12.098 18009 20692 I Termant : mirage: saw 6 things in a picture of 768x576 in 7387 ms

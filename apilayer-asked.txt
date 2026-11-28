@@ -1,0 +1,1 @@
+GET /gw/exchangerates_data/latest?base=USD&symbols=INR key=goodkey0123456789goodkey01234567 type=- bytes=0

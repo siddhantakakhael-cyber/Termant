@@ -1,0 +1,39 @@
+== key
+key-set=yes
+-rw-------. 1 root root 103 Nov 28 06:00 /root/.config/termant/keys.env
+== auth
+OpenRouter  OPENROUTER_API_KEY          environment
+== models with the key
+354
+== every provider name in the settings list
+Anthropic   ANTHROPIC_API_KEY           environment
+Cerebras    CEREBRAS_API_KEY            environment
+DeepSeek    DEEPSEEK_API_KEY            environment
+Google      GOOGLE_GENERATIVE_AI_API_KEYenvironment
+Groq        GROQ_API_KEY                environment
+Mistral     MISTRAL_API_KEY             environment
+OpenAI      OPENAI_API_KEY              environment
+OpenRouter  OPENROUTER_API_KEY          environment
+== models per provider
+     18 anthropic
+      2 cerebras
+      2 deepseek
+     19 google
+      7 groq
+     17 mistral
+     75 openai
+     11 opencode
+    354 openrouter
+== rules
+1  on   charging  ->  date > /root/charged.txt   (last run 28 Nov 05:57, exit 0)
+2  on   at 05:57  ->  echo timed-rule-ran > /root/timed.txt   (last run 28 Nov 05:57, exit 0)
+3  off  unplugged  ->  echo this rule fails; exit 3
+4  on   at 23:00  ->  phone wifi off
+charged: Sat Nov 28 05:57:07 UTC 2026
+== screen control is off until the user turns it on
+Screen control is off. Ask the user to turn it on: Termant → Settings → Screen control. Do not try another way.
+screen-off-exit=1
+== wifi
+Wi-Fi off.
+wifi-off-exit=0
+TERMANT-TEST-END

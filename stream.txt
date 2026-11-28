@@ -1,0 +1,22 @@
+11-28 05:57:48.601  2720  5621 I Termant : stream: 5 pieces, first after 13759 ms, reply after 14921 ms
+11-28 05:58:12.021  2720  6010 I Termant : stream: 2 pieces, first after 11227 ms, reply after 11854 ms
+11-28 05:58:29.100  2720  6256 I Termant : stream: 5 pieces, first after 6162 ms, reply after 7035 ms
+11-28 05:59:24.692  2720  6718 I Termant : stream: 1 pieces, first after 6996 ms, reply after 7661 ms
+11-28 06:01:37.710  7906  8010 I Termant : stream: 0 pieces, reply after 4867 ms
+11-28 06:01:44.854  7906  8010 I Termant : stream: 1 pieces, first after 6762 ms, reply after 7142 ms
+11-28 06:02:29.838  8455  8573 I Termant : stream: 1 pieces, first after 12990 ms, reply after 13507 ms
+11-28 06:02:38.375  8455  8573 I Termant : stream: 1 pieces, first after 7896 ms, reply after 8521 ms
+11-28 06:03:08.882  9048  9140 I Termant : stream: 1 pieces, first after 7103 ms, reply after 7549 ms
+11-28 06:03:31.246  9399  9490 I Termant : stream: 0 pieces, reply after 2299 ms
+11-28 06:04:06.292  9731  9845 I Termant : stream: 1 pieces, first after 5863 ms, reply after 6499 ms
+11-28 06:04:27.076  9731 10214 I Termant : stream: 1 pieces, first after 3803 ms, reply after 4446 ms
+11-28 06:04:48.918  9731 10496 I Termant : stream: 1 pieces, first after 2484 ms, reply after 2906 ms
+11-28 06:05:27.540  9731 11364 I Termant : stream: 1 pieces, first after 5266 ms, reply after 6058 ms
+11-28 06:05:46.008  9731 11628 I Termant : stream: 2 pieces, first after 6761 ms, reply after 7326 ms
+11-28 06:06:08.801  9731 12059 I Termant : stream: 1 pieces, first after 5949 ms, reply after 6655 ms
+11-28 06:06:43.556  9731 12330 I Termant : stream: 1 pieces, first after 22962 ms, reply after 23459 ms
+11-28 06:11:39.641  9731 14002 I Termant : stream: 2 pieces, first after 5814 ms, reply after 6443 ms
+11-28 06:12:18.316  9731 14367 I Termant : stream: 4 pieces, first after 14251 ms, reply after 15036 ms
+11-28 06:13:01.924  9731 14936 I Termant : stream: 1 pieces, first after 6034 ms, reply after 6717 ms
+11-28 06:13:19.281  9731 15220 I Termant : stream: 2 pieces, first after 4072 ms, reply after 4554 ms
+11-28 06:14:18.079  9731 15770 I Termant : stream: 20 pieces, first after 2997 ms, reply after 6046 ms

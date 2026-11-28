@@ -1,0 +1,313 @@
+PASS safe keep copies a file before it is changed
+PASS safe keep notes a file that is not there yet
+PASS safe rm deletes into the bin
+PASS the deleted file is gone
+PASS safe mv moves a file
+PASS safe list shows the changes of the message
+PASS the list names what was deleted
+PASS safe has says how many changes a message made
+PASS safe undo reports what it put back
+PASS undo brings the old words back
+PASS undo brings the deleted file back
+PASS undo removes the file the agent made
+PASS undo moves the renamed file back
+PASS a second undo has nothing to do
+PASS an undone message has no undo left
+PASS deleting a folder asks the user first
+PASS without a yes the folder stays
+PASS the folder is still there
+PASS more than 5 files at once need a yes too
+PASS with nobody there (a rule, a night job) a folder is never deleted
+PASS with a yes the folder goes to the bin
+PASS the folder is gone
+PASS a system folder is refused as a whole
+PASS undo by name brings the folder back
+PASS safe rm says when a file is not there
+PASS tidy scan counts the files
+PASS tidy scan counts by kind
+PASS tidy scan names the biggest file first
+PASS tidy scan sees a file that is there twice
+PASS tidy dupes -r looks into folders too
+PASS tidy dupes gives the command for the extras
+PASS tidy sort wants the folder named
+PASS tidy sort reports what it moved
+PASS pictures went to Pictures
+PASS an unknown file went to Other
+PASS a folder that was there is left alone
+PASS a sorted folder has nothing left to sort
+PASS undo puts a sorted folder back as it was
+PASS the folders made by sorting are gone again
+PASS study add makes a card
+PASS the same question is not added twice
+PASS study due lists the cards with their answers
+PASS the answer is shown to the agent
+PASS a right answer comes back tomorrow
+PASS a wrong answer comes back soon
+PASS answered cards are not due any more
+PASS study topics says how a topic is going
+PASS study remove takes a topic away
+PASS a topic name with spaces is refused
+PASS readfile reads a Word document
+PASS it keeps the lines and the & sign
+PASS readfile reads an Excel sheet as rows
+PASS readfile reads PowerPoint slides in order
+PASS readfile reads a PDF
+PASS a file without an ending is known by its first bytes
+PASS and read
+PASS readfile gives a picture's size and how to see it
+PASS it points at phone look
+PASS readfile lists what is in a zip
+PASS it says how to unpack
+PASS readfile unpacks a zip next to it
+PASS readfile unpacks a tar.gz into a named folder
+PASS an archive that writes outside its folder is refused
+PASS nothing escaped
+PASS a long text is cut with the way to go on
+PASS readfile goes on from a place
+PASS readfile reads Hindi text
+PASS a file of no known kind is said to be so, with its readable pieces
+PASS the pieces
+PASS readfile says when a file is not there
+PASS me starts empty
+PASS me set keeps a detail
+PASS me lists the details
+PASS a pin code (of an address) is kept
+PASS a password is refused
+PASS a card number is refused
+PASS a PIN is refused
+PASS me remove takes a detail away
+PASS a watch more often than every 15 minutes is refused
+PASS watch add makes a watch
+PASS the watch is a rule of the app
+PASS a watch that sees nothing does nothing
+PASS nothing ran
+PASS when it happens the command runs
+PASS then the watch ends and its rule is removed
+PASS an ended watch is off the list
+PASS a watch with --keep stays and acts every time
+PASS watch remove stops a watch
+PASS the diary starts empty
+PASS the diary sums the day up
+PASS the diary has one line for each job
+PASS the request is on one line
+PASS a job that failed is marked
+PASS the diary of several days
+PASS the team notebook starts empty
+PASS team note writes into the notebook
+PASS the same note is not written twice
+PASS team notes finds by words
+PASS only the lines that fit
+PASS team seen counts a kind of task
+PASS the third time it says to make a helper
+PASS with the command
+PASS a helper model must be provider/model
+PASS team model sets the helpers' model
+PASS team model off goes back
+PASS a picture goes to a free model that can see, when the chosen one cannot
+PASS the picture is handed to the model
+PASS the change of model is told
+PASS with the automatic model a seeing one is named
+PASS a model that takes pictures and PDFs keeps both
+PASS and stays the chosen one
+PASS no free model reads PDFs: the picture is shown, the PDF is left to readfile
+PASS one file is left to read
+PASS a PDF alone with a model that cannot read it: nothing is forced
+PASS no file is handed over
+PASS a Word file needs no other model
+PASS it is left to readfile
+PASS a message without files keeps its model
+PASS a picture over 4 MB is not pushed into the request
+PASS a command the agent runs belongs to the chat's message
+PASS undo without a name puts that message's change back
+undo said: Undone: 1 change(s) of the message of 2026-01-01 10:10 put back.
+PASS in a job the agent does alone a folder is never deleted
+PASS the folder stays
+PASS and nobody is asked
+PASS in a chat with the user there, a yes deletes it
+PASS draw saves the picture the first service gives
+PASS and says where, how big and who drew it
+PASS the picture is in ~/pictures, named after the words
+PASS it is a JPEG and ends in .jpg
+PASS the file holds the picture
+PASS the phone's gallery gets a copy
+PASS and draw says where the copy is
+PASS the first service was asked for the words and a square picture
+PASS the second service was left alone
+PASS typed by hand, nothing is listed for a chat
+PASS draw last names the newest picture
+PASS when the first service is busy the second one draws
+PASS and draw says why it changed over
+PASS a wide picture has the wide size the free queue allows
+PASS the second service's picture is a PNG, named so
+PASS and the file is a PNG
+PASS the nameless free key and the app's name are sent
+PASS the request asks for a safe picture
+PASS the seed that was given is used
+PASS it waits in the queue, looking again
+PASS in a chat the picture is listed for the reply, with its address on the phone
+PASS the agent is told the chat shows it
+PASS asked to wait a second, draw waits and asks again
+PASS a tall picture is tall
+PASS a web page instead of a picture is not taken for one
+PASS the second service's picture inside its answer is read
+PASS when no computer has the chosen models, any model draws
+PASS the second request names no models
+PASS a picture held back as unsafe is not saved
+PASS nothing new is in ~/pictures
+PASS a failed worker is reported
+PASS a queue that never ends is given up after the wait
+PASS and the waiting request is taken back
+PASS the agent is told not to describe a picture that was not made
+PASS both services down: said plainly, with both reasons
+PASS no connection: asks whether the internet is on
+PASS draw --slow asks the slow service first
+PASS and leaves the quick one alone
+PASS draw --slow falls back to the quick service
+PASS which then draws
+PASS draw --out saves where asked, with the ending the picture really has
+PASS and says so
+PASS in a chat a picture saved outside the home folder is listed by a copy the chat can read
+PASS and the copy is there
+PASS when the gallery refuses, the picture is still saved
+PASS and draw says it is only in Ubuntu
+PASS draw alone explains itself
+PASS an unknown choice is refused
+PASS one letter is not something to draw
+PASS termant-kit draw is the same command
+PASS apilayer help says how the key is saved
+PASS and that nothing there draws
+PASS apilayer list reads the marketplace's list
+PASS and says where it is from
+PASS an API is listed with the name for calls and what it does
+PASS the free plan is named
+PASS and an API that has none
+PASS other companies' services are only counted
+PASS and not shown as callable
+PASS the marketplace is asked under the tool's own name (it refuses Python's)
+PASS the list is kept for a day, not fetched again
+PASS and the kept one says when it was read
+PASS apilayer list WORD keeps the APIs about it
+PASS also fixer
+PASS not the others
+PASS a listed service of another company is shown apart
+PASS by name
+PASS the marketplace's own search is asked too
+PASS a word no API is about is refused
+PASS when the marketplace is down the list read before is used
+PASS and that is said
+PASS with nothing kept, the list inside the tool is used
+PASS and that is said too
+PASS the tool's list has the sixty APIs
+PASS with their free plans
+PASS apilayer about names the API
+PASS the free plan and where to subscribe
+PASS that no key is saved yet
+PASS its endpoints
+PASS with what each does
+PASS a parameter, whether it is needed, and what it is
+PASS a value that goes into the address
+PASS and the command that calls it
+PASS a plan written only in a comment of the page is not taken for one
+PASS an endpoint that takes a file says so
+PASS in its command too
+PASS apilayer about NAME WORD keeps the endpoints about it
+PASS those only
+PASS an API without a free plan says what the cheapest costs
+PASS another company's service is named as one
+PASS that the key does not open
+PASS with its page
+PASS a name that is not an API is refused
+PASS with the names near it
+PASS what was read about an API is kept for a day
+PASS and still answers
+PASS an API that cannot be read now is not invented
+PASS only what the tool's list knows is said
+PASS without a key nothing is asked
+PASS really nothing
+PASS it says where the free key comes from
+PASS how to save it
+PASS and not to make up an answer
+PASS a sign-in link is not taken for the key
+PASS it says what the link is
+PASS and saves nothing
+PASS nor is a sign-in token by itself
+PASS something that cannot be a key is refused
+PASS apilayer key says when none is saved
+PASS apilayer key saves a key
+PASS without printing it whole
+PASS only the user can read the saved key
+PASS a key APILayer does not know is said to be wrong
+PASS the key is not printed whole there either
+PASS an API the user has not subscribed to is explained
+PASS with the page where that is done
+PASS requests that are used up are explained
+PASS and counted
+PASS apilayer get prints the answer
+PASS as it came
+PASS the key goes in the apikey header, the values in the address
+PASS it says how many requests are left
+PASS the count is not mixed into the answer
+PASS the name of the API's page works as its name
+PASS the gateway's whole address works too
+PASS another address is not called
+PASS the key did not go there
+PASS a request the API does not accept gives its reason
+PASS an API that is not there is said
+PASS a word that is not name=value is refused
+PASS a long answer is cut
+PASS to about that much
+PASS and kept whole in a file
+PASS --all prints it whole
+PASS all of it
+PASS --out saves the answer
+PASS where it was told
+PASS a picture that comes back is saved
+PASS and described
+PASS the file is the picture
+PASS typed by hand, it is not listed for a chat
+PASS in a chat the picture is listed for the reply, from the home folder
+PASS which is said
+PASS and it is where it was told to be as well
+PASS a PDF that comes back is saved
+PASS as a PDF
+PASS post --file sends the file
+PASS as what it is
+PASS and prints the answer
+PASS a file that is not there is refused
+PASS post --text sends the words
+PASS as text
+PASS a value with a space arrives whole
+PASS put --json sends JSON
+PASS named as JSON
+PASS --header sends a header
+PASS --form sends a form
+PASS delete works
+PASS --json that is not JSON is refused before anything is sent
+PASS get with something to send is refused
+PASS a command that is not there is refused
+PASS a key can be saved for one API
+PASS that API is asked with its own key
+PASS the others with the main one
+PASS apilayer key lists the keys without showing them
+PASS both
+PASS never whole
+PASS the key for one API can be removed
+PASS apilayer used says what is left for each API
+PASS by name
+PASS a gateway that is down is said
+PASS a gateway that cannot be reached is said
+PASS without an answer made up
+PASS the saved key comes before one in APILAYER_KEY
+PASS apilayer key remove forgets the key
+PASS after that nothing is asked again
+PASS termant-kit apilayer is the same command
+SKIP the real list of models (no answer from OpenCode)
+PASS smol alone explains itself
+PASS termant-kit smol is the same command
+PASS smol with no words explains itself too
+PASS smol names a picture that is not there
+PASS smol refuses a file that is not a picture
+PASS without the install it says so
+PASS and it does not install anything
+PASS and it does not run the model
+RESULT: PASS

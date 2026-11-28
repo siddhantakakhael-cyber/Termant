@@ -1,0 +1,52 @@
+build-tools: /usr/local/lib/android/sdk/build-tools/37.0.0
+platform:    /usr/local/lib/android/sdk/platforms/android-37.2/android.jar
+ndk:         /usr/local/lib/android/sdk/ndk/27.3.13750724
+== proot (from Termux packages)
+arm64-v8a:
+  proot 5.1.107.102 (aarch64)
+  libtalloc 2.5.0 (aarch64)
+  libandroid-shmem 0.7 (aarch64)
+  proot needs: libtalloc.so.2 libandroid-shmem.so libc.so
+armeabi-v7a:
+  proot 5.1.107.102 (arm)
+  libtalloc 2.5.0 (arm)
+  libandroid-shmem 0.7 (arm)
+  proot needs: libtalloc.so.2 libandroid-shmem.so libc.so
+x86_64:
+  proot 5.1.107.102 (x86_64)
+  libtalloc 2.5.0 (x86_64)
+  libandroid-shmem 0.7 (x86_64)
+  proot needs: libtalloc.so.2 libandroid-shmem.so libc.so
+== reader of pictures (Mirage; the Cactus engine from Hugging Face, linked with Zig)
+mirage reader, arm64-v8a: 908848 bytes
+mirage reader, x86_64: 992752 bytes
+mirage reader, armeabi-v7a: the 64-bit program
+== terminal pty helper (NDK)
+-rwxr-xr-x 1 runner runner  14432 Nov 28 05:48 lib/arm64-v8a/libandroid-shmem.so
+-rwxr-xr-x 1 runner runner 908848 Nov 28 05:50 lib/arm64-v8a/libmirage.so
+-rwxr-xr-x 1 runner runner  18136 Nov 28 05:48 lib/arm64-v8a/libproot-loader.so
+-rwxr-xr-x 1 runner runner   6244 Nov 28 05:48 lib/arm64-v8a/libproot-loader32.so
+-rwxr-xr-x 1 runner runner 259832 Nov 28 05:48 lib/arm64-v8a/libproot.so
+-rwxr-xr-x 1 runner runner  33592 Nov 28 05:48 lib/arm64-v8a/libtalloc.so
+-rwxr-xr-x 1 runner runner   9496 Nov 28 05:51 lib/arm64-v8a/libtermux.so
+-rwxr-xr-x 1 runner runner  11028 Nov 28 05:49 lib/armeabi-v7a/libandroid-shmem.so
+-rwxr-xr-x 1 runner runner 908848 Nov 28 05:51 lib/armeabi-v7a/libmirage.so
+-rwxr-xr-x 1 runner runner   5632 Nov 28 05:48 lib/armeabi-v7a/libproot-loader.so
+-rwxr-xr-x 1 runner runner 172676 Nov 28 05:48 lib/armeabi-v7a/libproot.so
+-rwxr-xr-x 1 runner runner  21168 Nov 28 05:48 lib/armeabi-v7a/libtalloc.so
+-rwxr-xr-x 1 runner runner   6556 Nov 28 05:51 lib/armeabi-v7a/libtermux.so
+-rwxr-xr-x 1 runner runner  14368 Nov 28 05:49 lib/x86_64/libandroid-shmem.so
+-rwxr-xr-x 1 runner runner 992752 Nov 28 05:51 lib/x86_64/libmirage.so
+-rwxr-xr-x 1 runner runner  18368 Nov 28 05:49 lib/x86_64/libproot-loader.so
+-rwxr-xr-x 1 runner runner   6036 Nov 28 05:49 lib/x86_64/libproot-loader32.so
+-rwxr-xr-x 1 runner runner 277144 Nov 28 05:49 lib/x86_64/libproot.so
+-rwxr-xr-x 1 runner runner  32536 Nov 28 05:49 lib/x86_64/libtalloc.so
+-rwxr-xr-x 1 runner runner   9416 Nov 28 05:51 lib/x86_64/libtermux.so
+== resources
+== java
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+== dex
+== package and sign
+-rw-r--r-- 1 runner runner 2215329 Nov 28 05:51 Termant-debug.apk
+-rw-r--r-- 1 runner runner 2215329 Nov 28 05:51 Termant.apk

@@ -1,0 +1,60 @@
+PASS search lists both videos, not the advert
+PASS search: title, channel, length, id
+PASS search: the second title keeps its &
+PASS search with no result says so
+PASS read names the video, its length and the link
+PASS read picks English and says a machine wrote it
+PASS read: a time mark each minute
+PASS read --from 1 starts after the first minute
+PASS read --from 1 has the rest
+PASS read --lang de takes the German captions (XML)
+PASS a video without captions gives its description
+PASS ... with the description
+PASS a refused video says why
+PASS a wrong id is refused
+PASS no skills at first
+PASS today is empty at first
+PASS a skill is saved
+PASS saving again updates
+PASS the skill can be read
+PASS ... with what it is for
+PASS the list names it with its day
+PASS the agent's guide names the skill
+PASS the guide says how to learn a skill
+PASS a bad name is refused
+PASS missing steps are refused
+PASS too long is refused
+PASS a missing file is refused
+PASS a note is saved
+PASS today counts what was learned
+PASS today: the skill with where it came from
+PASS today: the note
+PASS older days are left out of today
+PASS the last 7 days
+PASS all days, under their dates
+PASS a skill is removed
+PASS reading a removed skill is refused
+PASS no keys: says how to add them
+PASS no keys: speaking is refused
+PASS three keys are saved, doubles and scraps dropped
+PASS the key file is for the owner only
+PASS the third key speaks after two are refused
+PASS the speech is a sound file
+PASS all three were asked, in order
+PASS next time only the good key is asked
+PASS ... and the used-up ones not at all
+PASS no key is written to voice.json
+PASS the report: the used-up key rests
+PASS the report: the good key is in use
+PASS the report never prints a whole key
+PASS a wrong voice is not blamed on the key
+PASS a key is removed
+PASS with only bad keys the reasons are told
+PASS resting keys are still tried when nothing else is left
+PASS a key that is not a Gemini key is refused
+PASS the Gemini key is saved and speaks now
+PASS the Gemini voice speaks
+PASS the Gemini sound is a sound file
+PASS a wrong Gemini key is refused
+PASS the Gemini key is removed
+RESULT: PASS
