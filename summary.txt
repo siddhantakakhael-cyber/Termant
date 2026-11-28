@@ -1,0 +1,4 @@
+first-as-the-app-asks exit=0 seconds=25
+second-at-once exit=0 seconds=26
+third-after-the-wait exit=0 seconds=46
+slow-service exit=0 seconds=67

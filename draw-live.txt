@@ -1,0 +1,65 @@
+Sat Nov 28 05:46:17 UTC 2026
+== first-as-the-app-asks
+Picture saved: /home/runner/work/Termant/Termant/draw-out/1-cat.jpg (768x768, 56.1 kB, drawn by Pollinations)
+Not copied to the phone's gallery (no answer). It is in Ubuntu, at the path above.
+first-as-the-app-asks: exit=0 seconds=25
+== second-at-once
+The service asks to wait 21 s...
+Picture saved: /home/runner/work/Termant/Termant/draw-out/2-mountain.jpg (768x432, 46.3 kB, drawn by Pollinations)
+Not copied to the phone's gallery (no answer). It is in Ubuntu, at the path above.
+second-at-once: exit=0 seconds=26
+== third-after-the-wait
+Waiting 42 s (the free service draws one picture at a time)...
+Picture saved: /home/runner/work/Termant/Termant/draw-out/3-tree.jpg (432x768, 59.6 kB, drawn by Pollinations)
+Not copied to the phone's gallery (no answer). It is in Ubuntu, at the path above.
+third-after-the-wait: exit=0 seconds=46
+== slow-service
+Asking AI Horde, which takes a minute or more...
+In the queue: place 326, about 340 s more...
+In the queue: place 289, about 314 s more...
+In the queue: place 0, about 12 s more...
+Picture saved: /home/runner/work/Termant/Termant/draw-out/4-boat.webp (512x512, 60.4 kB, drawn by AI Horde)
+Not copied to the phone's gallery (no answer). It is in Ubuntu, at the path above.
+slow-service: exit=0 seconds=67
+== what the services say when asked plainly
+-- image.pollinations.ai without a key
+HTTP/2 200 
+date: Sat, 28 Nov 2026 05:49:02 GMT
+content-type: image/jpeg
+content-length: 13529
+access-control-allow-origin: *
+cache-control: public, max-age=31536000, immutable
+content-disposition: inline; filename="a-red-apple-on-a-table.jpg"
+link: <https://pollinations.ai>; rel="service"
+access-control-expose-headers: Link,X-Pollinations-Logo,X-Powered-By,Payment-Required,Payment-Response,Retry-After
+x-cache: HIT
+x-cache-type: EXACT
+x-pollinations-logo: https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/lockup-horizontal-black.svg
+x-powered-by: Pollinations.AI
+server: cloudflare
+cf-ray: a61716470de25648-IAD
+
+draw-out/raw-pollinations: JPEG image data, Exif standard: [TIFF image data, little-endian, direntries=8, manufacturer=sana, orientation=upper-left, xresolution=110, yresolution=118, resolutionunit=2], baseline, precision 8, 256x256, components 3
+.....jExif..II*...............~.......................n...........v...(.......................i...........................H.......H.......sana..ASCII...{"prompt":"a red apple on a table","originalPrompt":"a red apple on a table","width":256,"height":256,"seed":5,"model":"sana","enhance":false,"nolog
+-- gen.pollinations.ai without a key
+HTTP/2 401 
+date: Sat, 28 Nov 2026 05:49:02 GMT
+content-type: application/json
+content-length: 264
+access-control-allow-origin: *
+www-authenticate: Bearer resource_metadata="https://gen.pollinations.ai/.well-known/oauth-protected-resource"
+access-control-expose-headers: *
+x-cache: MISS
+x-request-id: c1550fa5-2aba-4f59-b8c4-14258f8e900a
+x-robots-tag: noindex, nofollow
+x-model-requested: tongyi-mai/z-image-turbo
+server: cloudflare
+cf-ray: a617164929f28aaa-IAD
+
+draw-out/raw-gen: JSON text data
+{"success":false,"error":{"message":"A valid API key is required. Get one at https://enter.pollinations.ai/keys, or buy one with USDC (x402) at https://enter.pollinations.ai/api/x402/keys","code":"UNAUTHORIZED","timestamp":"2026-11-28T05:49:02.449Z"},"status":401}
+-- AI Horde: how busy
+{"queued_requests":469,"queued_text_requests":40,"worker_count":24,"text_worker_count":40,"thread_count":28,"text_thread_count":71,"queued_megapixelsteps":5588.73,"past_minute_megapixelsteps":1959.94,"queued_forms":2.0,"interrogator_count":11,"interrogator_thread_count":14,"queued_tokens":26541.0,"past_minute_tokens":51118.0}
+
+-- AI Horde: who it thinks the nameless key is
+{"username":"Anonymous#0","id":0,"kudos":-50.0,"concurrency":500,"worker_invited":0,"moderator":false,"kudos_details":{"accumulated":-9551895880.0,"gifted":0.0,"donated":0,"admin":0,"received":196270.0,"recurring":0,"awarded":99758.0,"styled":0},"worker_count":0,"worker_ids":[],"styles":[],"sharedkey_ids":[],"active_generations":{"image":[]},"trusted":false,"flagged":false,"vpn":false,"service":false,"education":false,"customizer":false,"special":false,"deleted":false,"pseudonymous":false,"account_age":132685776,"usage":{"megapixelsteps":null,"requests":null},"contributions":{"megapixelsteps":
