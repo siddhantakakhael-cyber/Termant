@@ -256,7 +256,7 @@ final class LiveCallView extends LinearLayout {
             return speaking ? 1f : (working ? 0.7f : (live ? 0.35f : 0.15f));
         }
 
-        private static int withAlpha(int color, int alpha) {
+        private int withAlpha(int color, int alpha) {
             return (color & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
         }
 
@@ -286,7 +286,7 @@ final class LiveCallView extends LinearLayout {
             for (int i = 0; i < BARS; i++) {
                 float w = (t / (speaking ? 90 : 260)) + i * 2.39996f;
                 float lift = 0.5f + 0.5f * (float) Math.sin(w);
-                float len = dp(2.5f) + lift * dp(19f) * e;
+                float len = dp(2) + lift * dp(19) * e;
                 float a = (float) Math.toRadians(i * 360f / BARS);
                 float x = cx + (float) Math.cos(a) * arm;
                 float y = cy + (float) Math.sin(a) * arm;
@@ -306,7 +306,7 @@ final class LiveCallView extends LinearLayout {
             // the ring: it turns, faster when there is work
             ring.setColor(color);
             ring.setAlpha(live ? 150 : 80);
-            ring.setPathEffect(new DashPathEffect(new float[]{dp(2.2f), dp(8f)}, t / (working ? 5f : 14f)));
+            ring.setPathEffect(new DashPathEffect(new float[]{dp(2), dp(8)}, t / (working ? 5f : 14f)));
             canvas.drawCircle(cx, cy, base * 1.12f, ring);
             ring.setPathEffect(null);
 
